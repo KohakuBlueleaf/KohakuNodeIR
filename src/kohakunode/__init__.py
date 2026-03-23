@@ -60,6 +60,7 @@ from kohakunode.analyzer.validator import validate_or_raise
 # ---------------------------------------------------------------------------
 
 from kohakunode.compiler.dataflow import DataflowCompiler
+from kohakunode.compiler.strip_meta import StripMetaPass
 
 # ---------------------------------------------------------------------------
 # KirGraph (L1 IR)
@@ -137,6 +138,7 @@ __all__ = [
     "validate_or_raise",
     # Compiler
     "DataflowCompiler",
+    "StripMetaPass",
     # KirGraph (L1 IR)
     "KirGraph",
     "KirGraphCompiler",

@@ -1,0 +1,42 @@
+## Mixed control flow + dataflow example
+## Computes sum of squares: 1^2 + 2^2 + 3^2 = 14
+
+# Dataflow: setup (order doesn't matter)
+@dataflow:
+    @meta node_id="val_limit" pos=(100, 100)
+    limit = 3
+    @meta node_id="val_step" pos=(100, 200)
+    step = 1
+
+# Control flow: initialization
+@meta node_id="init_i" pos=(300, 100)
+i = 0
+@meta node_id="init_total" pos=(300, 200)
+total = 0
+
+# Control flow: loop
+@meta node_id="jump_loop" pos=(300, 350)
+()jump(`loop`)
+loop:
+    @meta node_id="inc_i" pos=(500, 350)
+    (i, step)add(i)
+    @meta node_id="square" pos=(500, 450)
+    (i, i)multiply(sq)
+    @meta node_id="accum" pos=(500, 550)
+    (total, sq)add(total)
+    @meta node_id="check" pos=(700, 450)
+    (i, limit)less_than(keep)
+    @meta node_id="branch" pos=(700, 550)
+    (keep)branch(`cont`, `done`)
+    cont:
+        ()jump(`loop`)
+    done:
+
+# Dataflow: format result
+@dataflow:
+    @meta node_id="to_str" pos=(900, 400)
+    (total)to_string(total_str)
+    @meta node_id="fmt" pos=(1100, 400)
+    ("Sum of squares = ", total_str)concat(message)
+    @meta node_id="out" pos=(1300, 400)
+    (message)print()

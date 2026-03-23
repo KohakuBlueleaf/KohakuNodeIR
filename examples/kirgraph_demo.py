@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from kohakunode import DataflowCompiler, Executor, Writer
+from kohakunode.compiler.strip_meta import StripMetaPass
 from kohakunode.kirgraph.compiler import KirGraphCompiler
 from kohakunode.kirgraph.schema import KirGraph
 
@@ -36,11 +37,13 @@ print(kir_l2_text)
 # -----------------------------------------------------------------------
 
 dc = DataflowCompiler()
-program_l3 = dc.transform(program_l2)
+program_l2b = dc.transform(program_l2)
+strip = StripMetaPass()
+program_l3 = strip.transform(program_l2b)
 
 kir_l3_text = writer.write(program_l3)
 
-print("=== Level 3: .kir (pure sequential) ===")
+print("=== Level 3: .kir (pure sequential, no @meta) ===")
 print(kir_l3_text)
 
 # -----------------------------------------------------------------------
