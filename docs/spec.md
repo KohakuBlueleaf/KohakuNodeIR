@@ -10,7 +10,32 @@ The language supports both:
 - **Control-flow** visual programming (Scratch, Lego Mindstorms, Fischer Technik)
 - **Data-flow** visual programming (ComfyUI, Blender node editor)
 
-### 1.1 Design Principles
+### 1.1 Three-Level IR Architecture
+
+KohakuNodeIR uses a three-level intermediate representation:
+
+```
+Level 1: .kirgraph          Level 2: .kir                    Level 3: .kir
+(graph topology)             (human-readable IR)              (execution-ready IR)
+JSON: nodes + edges          @dataflow: scopes, @meta         pure sequential logic
+UI-native format             round-trippable to L1            no @dataflow:, no @meta
+```
+
+| Level | Format | Purpose | Contains |
+|-------|--------|---------|----------|
+| L1 | `.kirgraph` (JSON) | Graph topology from node UI | Node list + edge list, positions, properties |
+| L2 | `.kir` (text) | Human-readable IR, interchange format | `@dataflow:` scopes, `@meta` annotations, control flow |
+| L3 | `.kir` (text) | Engine-ready IR | Pure sequential statements, `@dataflow:` blocks expanded |
+
+**Compilation pipeline:**
+- **L1 → L2**: Graph compiler determines execution order, places `@dataflow:` blocks for unconnected nodes, generates variable names, emits `@meta` for round-tripping
+- **L2 → L3**: Dataflow sanitizer expands `@dataflow:` blocks via topological sort, optionally strips `@meta`
+- **L2 → L1**: Decompiler reconstructs graph topology from `@meta` annotations and variable references
+- **L3 → Engine**: Standard sequential execution
+
+Level 2 (`.kir`) is the **pivot format** — it can convert to both L1 (for UI) and L3 (for execution). The `.kirgraph` format specification is in `kirgraph_spec.md`.
+
+### 1.2 Design Principles
 
 1. **Always sequential**: Execution is strictly line-by-line, top to bottom.
 2. **No built-in functions**: The language standard requires zero built-in functions from the backend. All domain functions are backend-provided.
@@ -282,25 +307,65 @@ The condition must be a variable, not an expression. To evaluate complex conditi
 
 ---
 
-## 5. Dataflow Mode
+## 5. Dataflow
+
+### 5.1 Scoped `@dataflow:` Blocks
+
+```
+@dataflow:
+    (x, y)multiply(product)
+    ()generate(y)
+    (product)finalize(output)
+```
+
+A `@dataflow:` block is a scoped region where statement execution order is determined by **data dependencies**, not line order. The backend compiles each block by topologically sorting its statements before execution.
+
+**Semantics:**
+- Statements inside `@dataflow:` are reordered by the compiler based on which outputs each statement depends on
+- The block is expanded (inlined) at its position in the parent scope
+- After compilation, the `@dataflow:` wrapper is removed — only sorted sequential statements remain
+- Self-referencing updates (e.g., `(total, x)add(total)`) are NOT treated as cycles — the output name is excluded from its own dependency set
+
+**Scoped `@dataflow:` can appear:**
+- At the top level of a program
+- Inside a namespace (e.g., inside a loop body — re-executes each iteration)
+- Inside a `@def` subgraph body
+- Multiple `@dataflow:` blocks can appear in the same file
+
+**Example — mixing control flow and dataflow:**
+
+```
+# Dataflow section: initialization (order resolved by deps)
+@dataflow:
+    (10)to_float(limit)
+    (0)to_float(counter)
+
+# Control flow section: explicit loop
+()jump(`loop`)
+loop:
+    (counter, 1)add(counter)
+    (counter, limit)less_than(keep)
+    (keep)branch(`cont`, `done`)
+    cont:
+        ()jump(`loop`)
+    done:
+
+# Dataflow section: post-processing
+@dataflow:
+    (counter)to_string(s)
+    ("Counted to: ", s)concat(msg)
+    (msg)print()
+```
+
+### 5.2 File-Level `@mode dataflow`
 
 ```
 @mode dataflow
 ```
 
-When declared at the top of a file, this signals that:
-1. The IR was emitted by a data-flow UI
-2. Line order is a **hint** but not the authoritative execution order
-3. The backend **MUST** compile this IR into standard sequential KohakuNodeIR before execution
+When declared at the top of a file, the entire file body is treated as a single `@dataflow:` block. This is equivalent to wrapping all statements in `@dataflow:`.
 
-The compilation step involves:
-- Analyzing data dependencies (which inputs reference which outputs)
-- Producing a valid topological ordering
-- Emitting standard sequential IR
-
-After compilation, the result is executed using the standard sequential model. Dataflow mode is purely a convenience for data-flow UIs that don't want to perform topological sorting themselves.
-
-**Constraint**: Dataflow mode files must NOT contain control-flow constructs (`branch`, `switch`, `jump`, namespaces). If control flow is needed, the UI must compile to standard sequential IR directly.
+**Constraint**: Files with `@mode dataflow` must NOT contain control-flow constructs (`branch`, `switch`, `jump`, namespaces). For mixed control+dataflow, use scoped `@dataflow:` blocks instead.
 
 ---
 
@@ -308,7 +373,7 @@ After compilation, the result is executed using the standard sequential model. D
 
 ```
 program        = { statement }
-statement      = assignment | func_call | namespace_def | meta_anno | subgraph_def | mode_decl | comment
+statement      = assignment | func_call | namespace_def | dataflow_block | meta_anno | subgraph_def | mode_decl | comment
 
 assignment     = IDENT "=" expression
 expression     = literal | IDENT
@@ -324,6 +389,7 @@ namespace_def  = IDENT ":" NEWLINE INDENT { statement } DEDENT
 
 meta_anno      = "@meta" { IDENT "=" expression }
 subgraph_def   = "@def" "(" param_list ")" IDENT "(" output_list ")" ":" NEWLINE INDENT { statement } DEDENT
+dataflow_block = "@dataflow" ":" NEWLINE INDENT { statement } DEDENT
 mode_decl      = "@mode" IDENT
 
 literal        = INT | FLOAT | STRING | BOOL | NONE | list_lit | dict_lit
