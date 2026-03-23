@@ -3,7 +3,12 @@
  *
  * Converts the graph store state (nodes + connections) into valid .kir IR text.
  * Supports both controlflow and dataflow compilation modes.
+ *
+ * Also exports compileViaKirgraph / compileKirgraphToKir for the L1 → L2
+ * pipeline that goes through the .kirgraph intermediate format.
  */
+
+import { graphToKirgraph } from './kirgraph.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -724,3 +729,425 @@ export function compileGraph(nodeList, connectionList, mode = 'controlflow') {
 }
 
 export default compileGraph
+
+// ---------------------------------------------------------------------------
+// Kirgraph pipeline (L1 → L2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert graph store state → .kirgraph → .kir text.
+ * This is the proper L1 → L2 pipeline.
+ *
+ * @param {object[]} nodeList
+ * @param {object[]} connectionList
+ * @returns {string} KIR text
+ */
+export function compileViaKirgraph(nodeList, connectionList) {
+  const kirgraph = graphToKirgraph(nodeList, connectionList)
+  return compileKirgraphToKir(kirgraph)
+}
+
+/**
+ * Compile a .kirgraph object directly to .kir text.
+ * This is the L1 → L2 compiler working from the kirgraph format.
+ *
+ * The algorithm mirrors the existing controlflow compiler but works from the
+ * normalised KGNode / KGEdge structures instead of the raw graph store format.
+ *
+ * @param {{ version: string, nodes: object[], edges: object[] }} kirgraph
+ * @returns {string} KIR text
+ */
+export function compileKirgraphToKir(kirgraph) {
+  const kgNodes = kirgraph.nodes ?? []
+  const kgEdges = kirgraph.edges ?? []
+
+  if (kgNodes.length === 0) return '# (empty graph)\n'
+
+  // ---- Build indices from kirgraph ----------------------------------------
+
+  /** @type {Map<string, object>} nodeId -> KGNode */
+  const nodeMap = new Map()
+  for (const n of kgNodes) nodeMap.set(n.id, n)
+
+  // Control edge adjacency
+  // key: "fromNodeId:fromPortName" -> { toNodeId, toPortName }
+  const ctrlOutEdges  = new Map()
+  // key: "toNodeId:toPortName" -> { fromNodeId, fromPortName }
+  const ctrlInEdges   = new Map()
+  // nodeId -> [edge, ...]
+  const ctrlInByNode  = new Map()
+  const ctrlOutByNode = new Map()
+
+  // Data edge adjacency
+  // key: "toNodeId:toPortName" -> { fromNodeId, fromPortName }
+  const dataInEdges   = new Map()
+
+  for (const edge of kgEdges) {
+    if (edge.type === 'control') {
+      const outKey = `${edge.from.node}:${edge.from.port}`
+      ctrlOutEdges.set(outKey, { toNodeId: edge.to.node, toPortName: edge.to.port })
+
+      const inKey = `${edge.to.node}:${edge.to.port}`
+      ctrlInEdges.set(inKey, { fromNodeId: edge.from.node, fromPortName: edge.from.port })
+
+      if (!ctrlInByNode.has(edge.to.node)) ctrlInByNode.set(edge.to.node, [])
+      ctrlInByNode.get(edge.to.node).push(edge)
+
+      if (!ctrlOutByNode.has(edge.from.node)) ctrlOutByNode.set(edge.from.node, [])
+      ctrlOutByNode.get(edge.from.node).push(edge)
+    } else {
+      const inKey = `${edge.to.node}:${edge.to.port}`
+      dataInEdges.set(inKey, { fromNodeId: edge.from.node, fromPortName: edge.from.port })
+    }
+  }
+
+  const kgIdx = { nodeMap, ctrlOutEdges, ctrlInEdges, ctrlInByNode, ctrlOutByNode, dataInEdges }
+
+  // ---- Variable naming -----------------------------------------------------
+
+  // In kirgraph the node id is already a clean semantic id (e.g. "add1", "val_a").
+  // Variable name: {nodeId}_{portName} (sanitised), matching the spec §5.1.
+  function kgVarName(nodeId, portName) {
+    const cleanId   = nodeId.replace(/[^a-zA-Z0-9_]/g, '_')
+    const cleanPort = portName.replace(/[^a-zA-Z0-9_]/g, '_')
+    return `${cleanId}_${cleanPort}`
+  }
+
+  // ---- Data input resolution -----------------------------------------------
+
+  function kgResolveInput(kgNode, inputPort) {
+    // inputPort is { port, type, default? }
+    const key = `${kgNode.id}:${inputPort.port}`
+    const edge = dataInEdges.get(key)
+
+    if (edge) {
+      // Variable produced by the source node's output port
+      return kgVarName(edge.fromNodeId, edge.fromPortName)
+    }
+
+    // Not connected — use default value
+    if (inputPort.default !== undefined && inputPort.default !== null) {
+      return formatLiteral(inputPort.default, inputPort.type)
+    }
+
+    return 'None'
+  }
+
+  // ---- Meta emission -------------------------------------------------------
+
+  function kgEmitMeta(kgNode, indent) {
+    const pad = '    '.repeat(indent)
+    const pos = kgNode.meta?.pos ?? [0, 0]
+    return `${pad}@meta node_id="${kgNode.id}" pos=(${pos[0]}, ${pos[1]})`
+  }
+
+  // ---- Node statement emission ---------------------------------------------
+
+  function kgEmitNode(kgNode, indent) {
+    const pad   = '    '.repeat(indent)
+    const lines = []
+    lines.push(kgEmitMeta(kgNode, indent))
+
+    switch (kgNode.type) {
+      case 'value':
+        lines.push(...kgEmitValueNode(kgNode, pad))
+        break
+      case 'branch':
+        lines.push(...kgEmitBranchNode(kgNode, pad, indent))
+        break
+      case 'switch':
+        lines.push(...kgEmitSwitchNode(kgNode, pad, indent))
+        break
+      case 'parallel':
+        lines.push(...kgEmitParallelNode(kgNode, pad, indent))
+        break
+      case 'merge':
+        lines.push(`${pad}# merge point`)
+        break
+      default:
+        lines.push(...kgEmitFunctionNode(kgNode, pad))
+        break
+    }
+
+    return lines
+  }
+
+  function kgEmitValueNode(kgNode, pad) {
+    const outPort = (kgNode.data_outputs ?? [])[0]
+    if (!outPort) return [`${pad}# value node with no output port`]
+
+    const vn  = kgVarName(kgNode.id, outPort.port)
+    const val = kgNode.properties?.value !== undefined
+      ? formatLiteral(kgNode.properties.value, kgNode.properties?.value_type)
+      : 'None'
+
+    return [`${pad}${vn} = ${val}`]
+  }
+
+  function kgEmitFunctionNode(kgNode, pad) {
+    const funcName  = sanitizeIdent(kgNode.type)
+    const inputArgs = (kgNode.data_inputs ?? []).map(p => kgResolveInput(kgNode, p))
+    const outVars   = (kgNode.data_outputs ?? []).map(p => kgVarName(kgNode.id, p.port))
+    return [`${pad}(${inputArgs.join(', ')})${funcName}(${outVars.join(', ')})`]
+  }
+
+  function kgEmitBranchNode(kgNode, pad, indent) {
+    const lines = []
+    const condPort = (kgNode.data_inputs ?? [])[0]
+    const condExpr = condPort ? kgResolveInput(kgNode, condPort) : 'False'
+
+    const truePortName  = (kgNode.ctrl_outputs ?? []).find(n => n === 'true' || n.toLowerCase().includes('true'))
+      ?? (kgNode.ctrl_outputs ?? [])[0] ?? 'true'
+    const falsePortName = (kgNode.ctrl_outputs ?? []).find(n => n === 'false' || n.toLowerCase().includes('false'))
+      ?? (kgNode.ctrl_outputs ?? [])[1] ?? 'false'
+
+    const trueNs  = nsLabel(`br_${kgNode.id}_true`)
+    const falseNs = nsLabel(`br_${kgNode.id}_false`)
+
+    lines.push(`${pad}(${condExpr})branch(\`${trueNs}\`, \`${falseNs}\`)`)
+
+    const trueChain  = kgWalkControlChain(kgNode.id, truePortName,  kgIdx)
+    lines.push(`${pad}${trueNs}:`)
+    if (trueChain.length > 0) {
+      for (const n of trueChain) lines.push(...kgEmitNode(n, indent + 1))
+    } else {
+      lines.push(`${pad}    # (empty branch)`)
+    }
+
+    const falseChain = kgWalkControlChain(kgNode.id, falsePortName, kgIdx)
+    lines.push(`${pad}${falseNs}:`)
+    if (falseChain.length > 0) {
+      for (const n of falseChain) lines.push(...kgEmitNode(n, indent + 1))
+    } else {
+      lines.push(`${pad}    # (empty branch)`)
+    }
+
+    return lines
+  }
+
+  function kgEmitSwitchNode(kgNode, pad, indent) {
+    const lines = []
+    const valPort = (kgNode.data_inputs ?? [])[0]
+    const valExpr = valPort ? kgResolveInput(kgNode, valPort) : 'None'
+
+    const cases = (kgNode.ctrl_outputs ?? []).map(portName => {
+      const caseNs  = nsLabel(`sw_${kgNode.id}_${sanitizeIdent(portName)}`)
+      const numMatch = portName.match(/(\d+)/)
+      const caseVal  = numMatch ? numMatch[1] : `"${portName}"`
+      return { portName, caseNs, caseVal }
+    })
+
+    const caseArgs = cases.map(c => `${c.caseVal}=>\`${c.caseNs}\``).join(', ')
+    lines.push(`${pad}(${valExpr})switch(${caseArgs})`)
+
+    for (const c of cases) {
+      const chain = kgWalkControlChain(kgNode.id, c.portName, kgIdx)
+      lines.push(`${pad}${c.caseNs}:`)
+      if (chain.length > 0) {
+        for (const n of chain) lines.push(...kgEmitNode(n, indent + 1))
+      } else {
+        lines.push(`${pad}    # (empty case)`)
+      }
+    }
+
+    return lines
+  }
+
+  function kgEmitParallelNode(kgNode, pad, indent) {
+    const lines   = []
+    const branches = (kgNode.ctrl_outputs ?? []).map((portName, i) => ({
+      portName,
+      ns: nsLabel(`par_${kgNode.id}_${i}`),
+    }))
+
+    const nsArgs = branches.map(b => `\`${b.ns}\``).join(', ')
+    lines.push(`${pad}()parallel(${nsArgs})`)
+
+    for (const b of branches) {
+      const chain = kgWalkControlChain(kgNode.id, b.portName, kgIdx)
+      lines.push(`${pad}${b.ns}:`)
+      if (chain.length > 0) {
+        for (const n of chain) lines.push(...kgEmitNode(n, indent + 1))
+      } else {
+        lines.push(`${pad}    # (empty parallel branch)`)
+      }
+    }
+
+    return lines
+  }
+
+  // ---- Control chain walking -----------------------------------------------
+
+  function kgWalkControlChain(fromNodeId, fromPortName, kgIdx) {
+    const chain   = []
+    const visited = new Set()
+    let curNodeId   = fromNodeId
+    let curPortName = fromPortName
+
+    while (true) {
+      const edgeKey = `${curNodeId}:${curPortName}`
+      const edge    = kgIdx.ctrlOutEdges.get(edgeKey)
+      if (!edge) break
+
+      const nextNode = kgIdx.nodeMap.get(edge.toNodeId)
+      if (!nextNode || visited.has(nextNode.id)) break
+      visited.add(nextNode.id)
+
+      if (nextNode.type === 'merge') break
+
+      chain.push(nextNode)
+
+      if (nextNode.type === 'branch' || nextNode.type === 'switch' || nextNode.type === 'parallel') {
+        const mergeNode = kgFindMergeAfter(nextNode, kgIdx)
+        if (mergeNode) {
+          const mergeOutName = (mergeNode.ctrl_outputs ?? [])[0]
+          if (mergeOutName) {
+            curNodeId   = mergeNode.id
+            curPortName = mergeOutName
+            continue
+          }
+        }
+        break
+      }
+
+      const outPortName = (nextNode.ctrl_outputs ?? [])[0]
+      if (!outPortName) break
+
+      curNodeId   = nextNode.id
+      curPortName = outPortName
+    }
+
+    return chain
+  }
+
+  function kgFindMergeAfter(branchingNode, kgIdx) {
+    const visited = new Set()
+
+    function walk(nodeId, portName, depth) {
+      if (depth > 100) return null
+      const edge = kgIdx.ctrlOutEdges.get(`${nodeId}:${portName}`)
+      if (!edge) return null
+
+      const next = kgIdx.nodeMap.get(edge.toNodeId)
+      if (!next) return null
+      if (next.type === 'merge') return next
+      if (visited.has(next.id)) return null
+      visited.add(next.id)
+
+      if (next.type === 'branch' || next.type === 'switch' || next.type === 'parallel') {
+        const inner = kgFindMergeAfter(next, kgIdx)
+        if (inner) {
+          const innerOut = (inner.ctrl_outputs ?? [])[0]
+          if (innerOut) return walk(inner.id, innerOut, depth + 1)
+        }
+        return null
+      }
+
+      const out = (next.ctrl_outputs ?? [])[0]
+      if (!out) return null
+      return walk(next.id, out, depth + 1)
+    }
+
+    for (const portName of (branchingNode.ctrl_outputs ?? [])) {
+      const m = walk(branchingNode.id, portName, 0)
+      if (m) return m
+    }
+    return null
+  }
+
+  // ---- Partition nodes -------------------------------------------------------
+
+  // Pure data nodes: no ctrl_inputs and no ctrl_outputs
+  const pureDataNodes = kgNodes.filter(n =>
+    (n.ctrl_inputs  ?? []).length === 0 &&
+    (n.ctrl_outputs ?? []).length === 0
+  )
+
+  // Ctrl-connected nodes with no incoming ctrl edges (entry points)
+  const entryNodes = kgNodes.filter(n => {
+    const hasCtrl = (n.ctrl_inputs ?? []).length > 0 || (n.ctrl_outputs ?? []).length > 0
+    if (!hasCtrl) return false
+    const incoming = ctrlInByNode.get(n.id)
+    return !incoming || incoming.length === 0
+  }).sort((a, b) => {
+    const pa = a.meta?.pos ?? [0, 0]
+    const pb = b.meta?.pos ?? [0, 0]
+    return pa[1] - pb[1] || pa[0] - pb[0]
+  })
+
+  // ---- Emit ---------------------------------------------------------------
+
+  const lines = []
+  lines.push('## KohakuNodeIR — compiled via kirgraph')
+  lines.push(`## Nodes: ${kgNodes.length}   Edges: ${kgEdges.length}`)
+  lines.push('')
+
+  if (pureDataNodes.length > 0) {
+    lines.push('@dataflow:')
+    for (const n of pureDataNodes) {
+      for (const l of kgEmitNode(n, 1)) lines.push(l)
+      lines.push('')
+    }
+  }
+
+  if (entryNodes.length > 0) {
+    const emitted = new Set(pureDataNodes.map(n => n.id))
+
+    for (const entry of entryNodes) {
+      if (emitted.has(entry.id)) continue
+
+      // Walk from this entry collecting all nodes in ctrl order
+      const visited2 = new Set()
+      function walkEntry(node) {
+        if (!node || visited2.has(node.id)) return []
+        visited2.add(node.id)
+        const result = [node]
+
+        if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
+          const merge = kgFindMergeAfter(node, kgIdx)
+          if (merge) {
+            const mOut = (merge.ctrl_outputs ?? [])[0]
+            if (mOut) {
+              const nextEdge = ctrlOutEdges.get(`${merge.id}:${mOut}`)
+              if (nextEdge) {
+                const nextNode = nodeMap.get(nextEdge.toNodeId)
+                result.push(...walkEntry(nextNode))
+              }
+            }
+          }
+          return result
+        }
+
+        const outPort = (node.ctrl_outputs ?? [])[0]
+        if (!outPort) return result
+        const nextEdge = ctrlOutEdges.get(`${node.id}:${outPort}`)
+        if (!nextEdge) return result
+        const nextNode = nodeMap.get(nextEdge.toNodeId)
+        result.push(...walkEntry(nextNode))
+        return result
+      }
+
+      const chain = walkEntry(entry)
+      for (const n of chain) {
+        if (emitted.has(n.id)) continue
+        emitted.add(n.id)
+        for (const l of kgEmitNode(n, 0)) lines.push(l)
+        lines.push('')
+      }
+    }
+  } else if (pureDataNodes.length === 0) {
+    // Nothing was organised — fall back to position-sorted emit
+    lines.push('# Warning: no control flow entry point found')
+    const sorted = [...kgNodes].sort((a, b) => {
+      const pa = a.meta?.pos ?? [0, 0]
+      const pb = b.meta?.pos ?? [0, 0]
+      return pa[1] - pb[1] || pa[0] - pb[0]
+    })
+    for (const n of sorted) {
+      for (const l of kgEmitNode(n, 0)) lines.push(l)
+      lines.push('')
+    }
+  }
+
+  return lines.join('\n') + '\n'
+}

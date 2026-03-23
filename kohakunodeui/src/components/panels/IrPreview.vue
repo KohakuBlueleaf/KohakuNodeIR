@@ -3,8 +3,12 @@ import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useGraphStore } from '../../stores/graph.js';
 import { compileGraph } from '../../compiler/graphToIr.js';
+import { graphToKirgraph } from '../../compiler/kirgraph.js';
 
 const graph = useGraphStore();
+
+// ---- Panel tab: 'kir' | 'kirgraph' ----
+const activeTab = ref('kir');
 
 // ---- Compilation mode ----
 const mode = ref('controlflow');
@@ -24,8 +28,15 @@ watch(
   { immediate: true, deep: true },
 );
 
+// ---- Reactive kirgraph JSON ----
+const kirgraphJson = computed(() => {
+  const kg = graphToKirgraph(graph.nodeList, graph.connectionList);
+  return JSON.stringify(kg, null, 2);
+});
+
 // ---- Line count for gutter ----
-const lineCount = computed(() => irText.value.split('\n').length);
+const displayText = computed(() => activeTab.value === 'kirgraph' ? kirgraphJson.value : irText.value);
+const lineCount   = computed(() => displayText.value.split('\n').length);
 
 // ---- Syntax highlight ----
 // Regex-based highlighter for KIR syntax
@@ -39,7 +50,7 @@ function highlight(text) {
   // Comments (# ...)
   s = s.replace(/(#[^\n]*)/g, '<span class="ir-comment">$1</span>');
   // @meta, @mode, @def directives
-  s = s.replace(/(@(?:meta|mode|def)\b)/g, '<span class="ir-directive">$1</span>');
+  s = s.replace(/(@(?:meta|mode|def|dataflow)\b)/g, '<span class="ir-directive">$1</span>');
   // Backtick-quoted namespace labels
   s = s.replace(/(`[^`]*`)/g, '<span class="ir-label">$1</span>');
   // Built-in utilities: branch, switch, jump, parallel
@@ -60,13 +71,41 @@ function highlight(text) {
   return s;
 }
 
-const highlightedIR = computed(() => highlight(irText.value));
+// JSON syntax highlighter for the KirGraph tab
+function highlightJson(text) {
+  let s = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // String values (before keys so keys get re-highlighted below)
+  s = s.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="ir-string">"$1"</span>');
+  // JSON keys: a string followed by a colon
+  s = s.replace(
+    /(<span class="ir-string">"([^"]*)"<\/span>)(\s*:)/g,
+    '<span class="json-key">"$2"</span>$3',
+  );
+  // Numbers
+  s = s.replace(/\b(-?\d+(\.\d+)?([eE][+-]?\d+)?)\b/g, '<span class="ir-number">$1</span>');
+  // Booleans / null
+  s = s.replace(/\b(true|false|null)\b/g, '<span class="ir-literal">$1</span>');
+
+  return s;
+}
+
+const highlightedIR = computed(() =>
+  activeTab.value === 'kirgraph'
+    ? highlightJson(kirgraphJson.value)
+    : highlight(irText.value),
+);
 
 // ---- Copy to clipboard ----
 async function copyToClipboard() {
+  const text = activeTab.value === 'kirgraph' ? kirgraphJson.value : irText.value;
   try {
-    await navigator.clipboard.writeText(irText.value);
-    ElMessage({ message: 'IR copied to clipboard.', type: 'success', duration: 1500 });
+    await navigator.clipboard.writeText(text);
+    const label = activeTab.value === 'kirgraph' ? 'KirGraph JSON' : 'IR';
+    ElMessage({ message: `${label} copied to clipboard.`, type: 'success', duration: 1500 });
   } catch {
     ElMessage({ message: 'Copy failed — check browser permissions.', type: 'error', duration: 2000 });
   }
@@ -77,7 +116,7 @@ function execute() {
   ElMessage({ message: 'Execution is not yet connected to the backend.', type: 'info', duration: 2500 });
 }
 
-// ---- Toggle mode ----
+// ---- Toggle KIR mode ----
 function toggleMode() {
   mode.value = mode.value === 'controlflow' ? 'dataflow' : 'controlflow';
 }
@@ -97,14 +136,37 @@ function toggleMode() {
         {{ graph.connectionList.length }} connection{{ graph.connectionList.length !== 1 ? 's' : '' }}
       </span>
       <div class="ir-toolbar-actions">
+        <!-- Tab switcher -->
+        <div class="ir-tab-group" role="tablist">
+          <button
+            class="ir-tab-btn"
+            :class="{ active: activeTab === 'kir' }"
+            role="tab"
+            :aria-selected="activeTab === 'kir'"
+            title="Show compiled KIR output"
+            @click="activeTab = 'kir'"
+          >KIR</button>
+          <button
+            class="ir-tab-btn"
+            :class="{ active: activeTab === 'kirgraph' }"
+            role="tab"
+            :aria-selected="activeTab === 'kirgraph'"
+            title="Show .kirgraph JSON (L1 IR)"
+            @click="activeTab = 'kirgraph'"
+          >KirGraph JSON</button>
+        </div>
+
+        <!-- KIR mode toggle (only shown on KIR tab) -->
         <button
+          v-if="activeTab === 'kir'"
           class="ir-action-btn ir-mode-btn"
           :title="`Mode: ${mode} (click to toggle)`"
           @click="toggleMode"
         >
           {{ mode === 'controlflow' ? 'CF' : 'DF' }}
         </button>
-        <button class="ir-action-btn" title="Copy IR to clipboard" @click="copyToClipboard">
+
+        <button class="ir-action-btn" title="Copy to clipboard" @click="copyToClipboard">
           <span class="i-carbon-copy" />
           Copy
         </button>
@@ -120,8 +182,8 @@ function toggleMode() {
       </div>
     </div>
 
-    <!-- Compilation errors banner -->
-    <div v-if="compileErrors.length > 0" class="ir-errors">
+    <!-- Compilation errors banner (KIR tab only) -->
+    <div v-if="activeTab === 'kir' && compileErrors.length > 0" class="ir-errors">
       <div v-for="(err, i) in compileErrors" :key="i" class="ir-error-line">
         {{ err }}
       </div>
@@ -234,6 +296,37 @@ function toggleMode() {
   border-color: rgba(249, 226, 175, 0.6);
 }
 
+/* ---- Tab group ---- */
+.ir-tab-group {
+  display: flex;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ir-tab-btn {
+  padding: 3px 10px;
+  background: transparent;
+  border: none;
+  color: #6c7086;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.ir-tab-btn + .ir-tab-btn {
+  border-left: 1px solid #45475a;
+}
+.ir-tab-btn:hover:not(.active) {
+  background: #313244;
+  color: #a6adc8;
+}
+.ir-tab-btn.active {
+  background: #313244;
+  color: #cdd6f4;
+  font-weight: 600;
+}
+
 /* ---- Errors banner ---- */
 .ir-errors {
   background: rgba(243, 139, 168, 0.1);
@@ -335,5 +428,8 @@ function toggleMode() {
 }
 .ir-code :deep(.ir-number) {
   color: #fab387;
+}
+.ir-code :deep(.json-key) {
+  color: #89b4fa;
 }
 </style>

@@ -62,6 +62,14 @@ from kohakunode.analyzer.validator import validate_or_raise
 from kohakunode.compiler.dataflow import DataflowCompiler
 
 # ---------------------------------------------------------------------------
+# KirGraph (L1 IR)
+# ---------------------------------------------------------------------------
+
+from kohakunode.kirgraph.compiler import KirGraphCompiler
+from kohakunode.kirgraph.decompiler import KirGraphDecompiler
+from kohakunode.kirgraph.schema import KirGraph
+
+# ---------------------------------------------------------------------------
 # Serializer
 # ---------------------------------------------------------------------------
 
@@ -129,6 +137,10 @@ __all__ = [
     "validate_or_raise",
     # Compiler
     "DataflowCompiler",
+    # KirGraph (L1 IR)
+    "KirGraph",
+    "KirGraphCompiler",
+    "KirGraphDecompiler",
     # Serializer
     "read",
     "read_string",

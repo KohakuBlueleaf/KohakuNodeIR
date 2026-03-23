@@ -1,26 +1,40 @@
 # Mixed control flow + dataflow example
-# Shows scoped @dataflow: blocks alongside explicit control flow
+# Shows two patterns:
+# 1. @dataflow: block as initialization (before loop)
+# 2. @dataflow: block inside loop (re-executes each iteration)
+# 3. @dataflow: block as post-processing (after loop, sees final values)
 
-# Setup: generate some data (order doesn't matter)
+# ── Pattern 1: Initialization (runs once) ──
 @dataflow:
     (10)to_float(limit)
-    (0)to_float(counter)
     (1)to_float(step)
 
-# Control flow: accumulation loop
+# ── Control flow: accumulation loop ──
+counter = 0
 total = 0
 ()jump(`loop`)
 loop:
-    (total, counter)add(total)
     (counter, step)add(counter)
+
+    # ── Pattern 2: Inside loop (re-executes every iteration) ──
+    # Since total depends on counter which changes each iter,
+    # this block runs every time the loop body executes.
+    @dataflow:
+        (counter, counter)multiply(squared)
+        (total, squared)add(total)
+
     (counter, limit)less_than(keep_going)
     (keep_going)branch(`continue`, `done`)
     continue:
         ()jump(`loop`)
     done:
 
-# Dataflow section: format and display result
+# ── Pattern 3: Post-processing (runs once, sees final values) ──
+# counter=10, total=1+4+9+16+25+36+49+64+81+100=385
 @dataflow:
     (total)to_string(total_str)
-    ("Sum 0..9 = ", total_str)concat(message)
+    (counter)to_string(count_str)
+    ("Sum of squares 1..", count_str)concat(prefix)
+    (prefix, " = ")concat(mid)
+    (mid, total_str)concat(message)
     (message)print()

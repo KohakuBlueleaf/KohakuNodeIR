@@ -1,13 +1,17 @@
 <script setup>
 import { ref } from 'vue';
+import { ElMessage } from 'element-plus';
 import { useEditorStore } from '../../stores/editor.js';
+import { useGraphStore } from '../../stores/graph.js';
 import EditorCanvas from './EditorCanvas.vue';
 import NodePalette from '../panels/NodePalette.vue';
 import PropertyPanel from '../panels/PropertyPanel.vue';
 import NodeDefEditor from '../panels/NodeDefEditor.vue';
 import IrPreview from '../panels/IrPreview.vue';
+import { graphToKirgraph, kirgraphToGraph } from '../../compiler/kirgraph.js';
 
 const editorStore = useEditorStore();
+const graph = useGraphStore();
 
 // --- Zoom state (lifted here so toolbar controls can drive it) ---
 const zoomLevel = ref(1);
@@ -39,6 +43,54 @@ const nodeDefEditorTarget = ref(null); // null = create new, object = edit exist
 function openNodeDefEditor(def) {
   nodeDefEditorTarget.value = def ?? null;
   nodeDefEditorOpen.value = true;
+}
+
+// --- Save graph as .kirgraph ---
+function saveGraph() {
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  const json = JSON.stringify(kirgraph, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'graph.kirgraph';
+  a.click();
+  URL.revokeObjectURL(url);
+  ElMessage({ message: 'Graph saved as graph.kirgraph', type: 'success', duration: 1800 });
+}
+
+// --- Load graph from .kirgraph ---
+function loadGraph() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.kirgraph,.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const kirgraph = JSON.parse(ev.target.result);
+        const { nodes, connections } = kirgraphToGraph(kirgraph);
+        graph.clear();
+        for (const node of nodes) graph.addNode(node);
+        for (const conn of connections) {
+          graph.addConnection(
+            conn.fromNodeId,
+            conn.fromPortId,
+            conn.toNodeId,
+            conn.toPortId,
+            conn.portType,
+          );
+        }
+        ElMessage({ message: `Loaded ${nodes.length} node(s) from ${file.name}`, type: 'success', duration: 2000 });
+      } catch (err) {
+        ElMessage({ message: `Failed to load graph: ${err.message}`, type: 'error', duration: 3000 });
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 </script>
 
@@ -75,6 +127,20 @@ function openNodeDefEditor(def) {
 
       <!-- Title -->
       <span class="editor-title">KohakuNode IR</span>
+
+      <div class="toolbar-sep" />
+
+      <!-- Save / Load -->
+      <div class="toolbar-group">
+        <button class="tool-btn tool-btn--save" title="Save graph as .kirgraph" @click="saveGraph">
+          <span class="i-carbon-save" />
+          Save
+        </button>
+        <button class="tool-btn tool-btn--load" title="Load graph from .kirgraph" @click="loadGraph">
+          <span class="i-carbon-folder-open" />
+          Load
+        </button>
+      </div>
     </header>
 
     <!-- ── Main body ── -->
@@ -191,6 +257,22 @@ function openNodeDefEditor(def) {
 .zoom-label:hover {
   background: #313244;
   color: #cdd6f4;
+}
+
+.tool-btn--save {
+  color: #a6e3a1;
+}
+.tool-btn--save:hover {
+  color: #a6e3a1;
+  border-color: rgba(166, 227, 161, 0.5);
+}
+
+.tool-btn--load {
+  color: #89b4fa;
+}
+.tool-btn--load:hover {
+  color: #89b4fa;
+  border-color: rgba(137, 180, 250, 0.5);
 }
 
 .editor-title {
