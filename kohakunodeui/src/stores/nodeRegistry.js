@@ -111,6 +111,35 @@ const BUILT_IN_DEFINITIONS = [
       outputs: [],
     },
   },
+  // ── Store / Load (remote data connections) ──
+  {
+    type: 'store',
+    name: 'Store',
+    category: 'Data',
+    description: 'Store a value under a name. Use Load with the same name to retrieve it elsewhere.',
+    dataPorts: {
+      inputs: [{ id: 'dp-value', name: 'value', dataType: 'any' }],
+      outputs: [],
+    },
+    controlPorts: {
+      inputs: [{ id: 'cp-in', name: 'in' }],
+      outputs: [{ id: 'cp-out', name: 'out' }],
+    },
+  },
+  {
+    type: 'load',
+    name: 'Load',
+    category: 'Data',
+    description: 'Load a value by name. Must match a Store node with the same name.',
+    dataPorts: {
+      inputs: [],
+      outputs: [{ id: 'dp-value', name: 'value', dataType: 'any' }],
+    },
+    controlPorts: {
+      inputs: [],
+      outputs: [],
+    },
+  },
   // ── Math ──
   {
     type: 'add', name: 'Add', category: 'Math',

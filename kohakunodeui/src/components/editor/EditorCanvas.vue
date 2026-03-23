@@ -4,6 +4,7 @@ import { useGraphStore } from '../../stores/graph.js';
 import { useEditorStore } from '../../stores/editor.js';
 import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
 import { GRID_SIZE, snapToGrid } from '../../utils/grid.js';
+import { kirgraphToGraph } from '../../compiler/kirgraph.js';
 import WireLayer  from '../wire/WireLayer.vue';
 import DraftWire  from '../wire/DraftWire.vue';
 import NodeRenderer from '../nodes/NodeRenderer.vue';
@@ -243,27 +244,53 @@ function onContextMenu(e) {
   e.preventDefault();
 }
 
-// ── Drop from palette ──────────────────────────────────────────────────────
+// ── Drop from palette or file ─────────────────────────────────────────────
 function onDragOver(e) {
-  if (e.dataTransfer.types.includes('application/x-node-type')) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  }
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
 }
 
 function onDrop(e) {
-  const typeName = e.dataTransfer.getData('application/x-node-type');
-  if (!typeName) return;
   e.preventDefault();
 
-  const rect = containerRef.value.getBoundingClientRect();
-  const canvasX = snapToGrid((e.clientX - rect.left - panX.value) / props.zoom);
-  const canvasY = snapToGrid((e.clientY - rect.top - panY.value) / props.zoom);
-
-  const nodeData = registry.createNodeData(typeName, canvasX, canvasY);
-  if (nodeData) {
-    graph.addNode(nodeData);
+  // Drop from palette
+  const typeName = e.dataTransfer.getData('application/x-node-type');
+  if (typeName) {
+    const rect = containerRef.value.getBoundingClientRect();
+    const canvasX = snapToGrid((e.clientX - rect.left - panX.value) / props.zoom);
+    const canvasY = snapToGrid((e.clientY - rect.top - panY.value) / props.zoom);
+    const nodeData = registry.createNodeData(typeName, canvasX, canvasY);
+    if (nodeData) graph.addNode(nodeData);
+    return;
   }
+
+  // Drop file (.kirgraph or .kir)
+  const files = e.dataTransfer.files;
+  if (files && files.length > 0) {
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        loadFileContent(file.name, ev.target.result);
+      } catch (err) {
+        console.error('Failed to load dropped file:', err);
+      }
+    };
+    reader.readAsText(file);
+  }
+}
+
+function loadFileContent(filename, content) {
+  if (filename.endsWith('.kirgraph') || filename.endsWith('.json')) {
+    const kirgraph = JSON.parse(content);
+    const { nodes, connections } = kirgraphToGraph(kirgraph);
+    graph.clear();
+    for (const node of nodes) graph.addNode(node);
+    for (const conn of connections) {
+      graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
+    }
+  }
+  // TODO: .kir file loading via L2→L1 decompiler (backend call)
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────

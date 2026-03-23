@@ -52,6 +52,12 @@ def register_builtins(registry: Registry) -> None:
         output_names=[],
     )
 
+    # ── Data (store/load are handled by the IR compiler as assignments,
+    # but we register identity functions for direct execution) ──────
+    _reg("store", lambda value: value, output_names=["value"])
+    _reg("load", lambda value: value, output_names=["value"])
+    _reg("identity", lambda value: value, output_names=["result"])
+
     # ── Convert ───────────────────────────────────────────────────────
     _reg("to_int", lambda value: int(value), output_names=["result"])
     _reg("to_float", lambda value: float(value), output_names=["result"])

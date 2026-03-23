@@ -10,7 +10,7 @@
       "ctrl_inputs": [],
       "ctrl_outputs": [],
       "properties": { "value_type": "int", "value": 10 },
-      "meta": { "pos": [100, 100], "size": [160, 80] }
+      "meta": { "pos": [100, 100], "size": [160, 100] }
     },
     {
       "id": "val_b",
@@ -21,7 +21,7 @@
       "ctrl_inputs": [],
       "ctrl_outputs": [],
       "properties": { "value_type": "int", "value": 20 },
-      "meta": { "pos": [100, 250], "size": [160, 80] }
+      "meta": { "pos": [100, 260], "size": [160, 100] }
     },
     {
       "id": "add1",
@@ -32,65 +32,52 @@
         { "port": "b", "type": "float", "default": 0 }
       ],
       "data_outputs": [{ "port": "result", "type": "float" }],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": { "pos": [350, 150], "size": [180, 120] }
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": { "pos": [380, 150], "size": [180, 120] }
     },
     {
-      "id": "cmp1",
-      "type": "greater_than",
-      "name": "Greater Than",
+      "id": "mul1",
+      "type": "multiply",
+      "name": "Multiply",
       "data_inputs": [
         { "port": "a", "type": "float", "default": 0 },
-        { "port": "b", "type": "float", "default": 25 }
+        { "port": "b", "type": "float", "default": 2 }
       ],
-      "data_outputs": [{ "port": "result", "type": "bool" }],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": { "pos": [600, 150], "size": [180, 120] }
+      "data_outputs": [{ "port": "result", "type": "float" }],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": { "pos": [660, 100], "size": [180, 120] }
     },
     {
-      "id": "br1",
-      "type": "branch",
-      "name": "Branch",
-      "data_inputs": [{ "port": "condition", "type": "bool" }],
-      "data_outputs": [],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["true", "false"],
-      "meta": { "pos": [850, 150], "size": [180, 120] }
+      "id": "fmt1",
+      "type": "format_string",
+      "name": "Format",
+      "data_inputs": [
+        { "port": "template", "type": "str", "default": "Result: {}" },
+        { "port": "value", "type": "any" }
+      ],
+      "data_outputs": [{ "port": "result", "type": "str" }],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": { "pos": [940, 120], "size": [200, 120] }
     },
     {
-      "id": "print_big",
+      "id": "print1",
       "type": "print",
-      "name": "Print Big",
+      "name": "Print",
       "data_inputs": [{ "port": "value", "type": "any" }],
       "data_outputs": [],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": { "pos": [1100, 50], "size": [180, 100] }
-    },
-    {
-      "id": "print_small",
-      "type": "print",
-      "name": "Print Small",
-      "data_inputs": [{ "port": "value", "type": "any" }],
-      "data_outputs": [],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": { "pos": [1100, 250], "size": [180, 100] }
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": { "pos": [1220, 140], "size": [160, 100] }
     }
   ],
   "edges": [
     { "type": "data", "from": { "node": "val_a", "port": "value" }, "to": { "node": "add1", "port": "a" } },
     { "type": "data", "from": { "node": "val_b", "port": "value" }, "to": { "node": "add1", "port": "b" } },
-    { "type": "data", "from": { "node": "add1", "port": "result" }, "to": { "node": "cmp1", "port": "a" } },
-    { "type": "data", "from": { "node": "cmp1", "port": "result" }, "to": { "node": "br1", "port": "condition" } },
-    { "type": "data", "from": { "node": "add1", "port": "result" }, "to": { "node": "print_big", "port": "value" } },
-    { "type": "data", "from": { "node": "add1", "port": "result" }, "to": { "node": "print_small", "port": "value" } },
-
-    { "type": "control", "from": { "node": "add1", "port": "out" }, "to": { "node": "cmp1", "port": "in" } },
-    { "type": "control", "from": { "node": "cmp1", "port": "out" }, "to": { "node": "br1", "port": "in" } },
-    { "type": "control", "from": { "node": "br1", "port": "true" }, "to": { "node": "print_big", "port": "in" } },
-    { "type": "control", "from": { "node": "br1", "port": "false" }, "to": { "node": "print_small", "port": "in" } }
+    { "type": "data", "from": { "node": "add1", "port": "result" }, "to": { "node": "mul1", "port": "a" } },
+    { "type": "data", "from": { "node": "mul1", "port": "result" }, "to": { "node": "fmt1", "port": "value" } },
+    { "type": "data", "from": { "node": "fmt1", "port": "result" }, "to": { "node": "print1", "port": "value" } }
   ]
 }
