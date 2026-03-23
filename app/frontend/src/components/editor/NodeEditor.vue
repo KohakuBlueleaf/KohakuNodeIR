@@ -13,6 +13,9 @@ import { graphToKirgraph, kirgraphToGraph } from '../../compiler/kirgraph.js';
 const editorStore = useEditorStore();
 const graph = useGraphStore();
 
+// --- Show control ports toggle ---
+const showCtrlPorts = ref(true);
+
 // --- Zoom state (lifted here so toolbar controls can drive it) ---
 const zoomLevel = ref(1);
 const ZOOM_MIN = 0.1;
@@ -106,6 +109,21 @@ function loadGraph() {
           {{ Math.round(zoomLevel * 100) }}%
         </span>
         <button class="tool-btn" title="Zoom in" @click="zoomIn">+</button>
+      </div>
+
+      <div class="toolbar-sep" />
+
+      <!-- Control ports toggle -->
+      <div class="toolbar-group">
+        <button
+          class="tool-btn"
+          :class="{ 'tool-btn--active': showCtrlPorts }"
+          title="Toggle control flow ports"
+          @click="showCtrlPorts = !showCtrlPorts; editorStore.showCtrlPorts = showCtrlPorts"
+        >
+          <span class="i-carbon-flow" />
+          Ctrl Ports
+        </button>
       </div>
 
       <div class="toolbar-sep" />
@@ -257,6 +275,12 @@ function loadGraph() {
 .zoom-label:hover {
   background: #313244;
   color: #cdd6f4;
+}
+
+.tool-btn--active {
+  color: #fab387;
+  border-color: rgba(250, 179, 135, 0.4);
+  background: rgba(250, 179, 135, 0.08);
 }
 
 .tool-btn--save {

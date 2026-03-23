@@ -105,7 +105,7 @@ const nodeStyle = computed(() => ({
     @click.stop="onNodeClick"
   >
     <!-- Control inputs (top) -->
-    <div v-if="hasCtrlIn" class="ctrl-row">
+    <div v-if="hasCtrlIn && editorStore.showCtrlPorts" class="ctrl-row">
       <ControlPort
         v-for="(port, i) in ctrlInputs" :key="port.id"
         :port="port" :node-id="node.id" direction="input"
@@ -194,7 +194,7 @@ const nodeStyle = computed(() => ({
     </div>
 
     <!-- Control outputs (bottom) -->
-    <div v-if="hasCtrlOut" class="ctrl-row ctrl-row--bot">
+    <div v-if="hasCtrlOut && editorStore.showCtrlPorts" class="ctrl-row ctrl-row--bot">
       <ControlPort
         v-for="(port, i) in ctrlOutputs" :key="port.id"
         :port="port" :node-id="node.id" direction="output"

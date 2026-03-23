@@ -32,6 +32,9 @@ export const useEditorStore = defineStore('editor', () => {
   /** @type {import('vue').Ref<'dataflow'|'controlflow'>} */
   const mode = ref('controlflow');
 
+  // ---- Show/hide control ports ----
+  const showCtrlPorts = ref(true);
+
   // ---- Computed ----
   const hasSelection = computed(
     () => selectedNodeIds.size > 0 || selectedConnectionIds.size > 0
@@ -368,5 +371,8 @@ export const useEditorStore = defineStore('editor', () => {
     // Mode
     mode,
     setMode,
+
+    // Control ports visibility
+    showCtrlPorts,
   };
 });
