@@ -1,0 +1,445 @@
+# KohakuNodeIR — Backend API Reference
+
+**Version**: 0.1.0-draft
+**Base URL**: `http://localhost:48888`
+
+The backend exposes a small REST API for node management and synchronous execution, plus a WebSocket endpoint for streaming execution.
+
+---
+
+## REST Endpoints
+
+### POST /api/nodes/register
+
+Register a new user-defined node type, or update an existing one.
+
+Built-in nodes (`add`, `subtract`, `multiply`, `divide`, `greater_than`, `less_than`, `equal`, `and_node`, `not_node`, `concat`, `format_string`, `read_file`, `write_file`, `store`, `load`, `identity`, `to_int`, `to_float`, `to_string`) cannot be overwritten.
+
+**Request body**:
+
+```json
+{
+  "name": "My Squarer",
+  "type": "my_squarer",
+  "category": "math",
+  "description": "Squares a number.",
+  "inputs": [
+    { "name": "value", "type": "float" }
+  ],
+  "outputs": [
+    { "name": "result", "type": "float" }
+  ],
+  "code": "def node_func(value):\n    return value * value"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | yes | Human-readable display name |
+| `type` | string | yes | Unique type key used in KIR function calls |
+| `category` | string | no | UI category (default: `"custom"`) |
+| `description` | string | no | Short description shown in palette |
+| `inputs` | array | no | Input port definitions `[{name, type}]` |
+| `outputs` | array | no | Output port definitions `[{name, type}]` |
+| `code` | string | yes | Python source; must define `node_func` |
+
+The `code` field must contain a Python function named `node_func`. Its parameters must match the declared `inputs` by name. Return values must match the order of `outputs` (single value for one output, tuple for multiple).
+
+```python
+# Single output
+def node_func(value):
+    return value * value
+
+# Multiple outputs
+def node_func(a, b):
+    return a + b, a - b
+```
+
+**Response** (200):
+
+```json
+{ "success": true, "type": "my_squarer" }
+```
+
+**Error** (400):
+
+```json
+{ "detail": "Cannot overwrite built-in node 'add'" }
+```
+
+```json
+{ "detail": "User code for 'my_squarer' must define a function named 'node_func'" }
+```
+
+The definition is persisted to `app/backend/node_defs/{type}.json` and survives server restarts.
+
+---
+
+### GET /api/nodes
+
+List all registered node types, including built-ins and user-defined nodes.
+
+**Request**: No body.
+
+**Response** (200):
+
+```json
+[
+  {
+    "name": "add",
+    "type": "add",
+    "category": "builtin",
+    "description": "",
+    "inputs": [
+      { "name": "a", "type": "any" },
+      { "name": "b", "type": "any" }
+    ],
+    "outputs": [
+      { "name": "result", "type": "any" }
+    ],
+    "builtin": true
+  },
+  {
+    "name": "My Squarer",
+    "type": "my_squarer",
+    "category": "math",
+    "description": "Squares a number.",
+    "inputs": [{ "name": "value", "type": "float" }],
+    "outputs": [{ "name": "result", "type": "float" }],
+    "builtin": false
+  }
+]
+```
+
+Each entry has the following fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Display name |
+| `type` | string | Type key (used as function name in KIR) |
+| `category` | string | `"builtin"` for built-ins, user-defined category otherwise |
+| `description` | string | Short description |
+| `inputs` | array | `[{name, type}]` |
+| `outputs` | array | `[{name, type}]` |
+| `builtin` | boolean | Whether this is a protected built-in |
+
+The frontend's node palette fetches this endpoint on startup to populate the available node types.
+
+---
+
+### DELETE /api/nodes/{type_name}
+
+Unregister a user-defined node type and delete its persisted definition.
+
+Built-in nodes cannot be deleted.
+
+**Path parameter**: `type_name` — the type key to delete.
+
+**Response** (200):
+
+```json
+{ "success": true, "type": "my_squarer" }
+```
+
+**Error** (400):
+
+```json
+{ "detail": "Cannot delete built-in node 'add'" }
+```
+
+**Error** (404):
+
+```json
+{ "detail": "Node type 'nonexistent' is not registered" }
+```
+
+---
+
+### POST /api/execute
+
+Parse and execute a KIR source string synchronously. Returns after execution completes.
+
+**Request body**:
+
+```json
+{
+  "kir_source": "x = 10\ny = 20\n(x, y)add(sum)\n(sum)print()"
+}
+```
+
+**Response** (200, success):
+
+```json
+{
+  "success": true,
+  "variables": {
+    "x": 10,
+    "y": 20,
+    "sum": 30
+  },
+  "output": [
+    { "type": "output", "value": "30" }
+  ]
+}
+```
+
+**Response** (200, failure):
+
+```json
+{
+  "success": false,
+  "error": "Function 'unknown_func' is not registered",
+  "output": []
+}
+```
+
+Note: HTTP status is always 200. The `success` field in the body indicates whether execution succeeded. Partial output captured before the error is included in `output`.
+
+**Response fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | boolean | Whether execution completed without error |
+| `variables` | object | Final variable store snapshot (JSON-serializable values only; non-serializable values appear as their `repr()`) |
+| `output` | array | Ordered list of output events from `print` and `display` calls |
+| `error` | string | Error message (only present when `success` is false) |
+
+**Output event object**:
+
+```json
+{ "type": "output", "value": "some string" }
+```
+
+The `display` built-in produces `repr()` of its argument. The `print` built-in produces `str()`.
+
+---
+
+## WebSocket Endpoint
+
+### WS /api/ws/execute
+
+Execute KIR programs with streaming progress. A single WebSocket connection can run multiple programs sequentially.
+
+**Connection**: `ws://localhost:48888/api/ws/execute`
+
+When the Vite dev server is running, use `ws://localhost:5174/api/ws/execute` (proxied).
+
+### Client → Server Messages
+
+#### execute
+
+Run a KIR program.
+
+```json
+{
+  "type": "execute",
+  "kir_source": "x = 10\n(x, 2)multiply(result)\n(result)print()"
+}
+```
+
+Any message with an unknown `type` field receives an error response and is otherwise ignored.
+
+### Server → Client Messages
+
+Messages are sent in the following order for a successful run:
+
+#### started
+
+Sent immediately after the `execute` message is received, before execution begins.
+
+```json
+{ "type": "started" }
+```
+
+#### output
+
+One message per `print` or `display` call, in execution order.
+
+```json
+{ "type": "output", "value": "20" }
+```
+
+#### variable
+
+One message per variable in the final store, sent after all output events.
+
+```json
+{ "type": "variable", "name": "result", "value": 20 }
+```
+
+#### completed
+
+Sent after all variable messages. Includes the full variable snapshot for convenience.
+
+```json
+{
+  "type": "completed",
+  "variables": { "x": 10, "result": 20 }
+}
+```
+
+#### error
+
+Sent instead of `completed` when execution fails. May appear after some `output` messages if print was called before the error.
+
+```json
+{ "type": "error", "message": "Function 'foo' is not registered" }
+```
+
+Also sent for malformed JSON:
+
+```json
+{ "type": "error", "message": "Invalid JSON" }
+```
+
+### WebSocket Event Flow Diagram
+
+```
+Client                              Server
+  │                                   │
+  │── {"type":"execute","kir_source"} ──►│
+  │                                   │
+  │◄── {"type":"started"} ────────────│
+  │◄── {"type":"output","value":"..."} (0..N times)
+  │◄── {"type":"variable","name":"...","value":...} (0..N times)
+  │◄── {"type":"completed","variables":{...}} ─────│
+  │                                   │
+  │  (connection stays open)          │
+  │── {"type":"execute",...} ──────────►│
+  │   (another program can be sent)   │
+```
+
+---
+
+## Built-in Node Types
+
+The following node types are always registered and cannot be deleted or overwritten:
+
+### Math
+
+| Type | Inputs | Outputs | Description |
+|------|--------|---------|-------------|
+| `add` | `a`, `b` | `result` | `a + b` |
+| `subtract` | `a`, `b` | `result` | `a - b` |
+| `multiply` | `a`, `b` | `result` | `a * b` |
+| `divide` | `a`, `b` | `result` | `a / b` (returns 0 if `b == 0`) |
+
+### Comparison
+
+| Type | Inputs | Outputs | Description |
+|------|--------|---------|-------------|
+| `greater_than` | `a`, `b` | `result` | `a > b` |
+| `less_than` | `a`, `b` | `result` | `a < b` |
+| `equal` | `a`, `b` | `result` | `a == b` |
+| `and_node` | `a`, `b` | `result` | `bool(a) and bool(b)` |
+| `not_node` | `value` | `result` | `not bool(value)` |
+
+### String
+
+| Type | Inputs | Outputs | Description |
+|------|--------|---------|-------------|
+| `concat` | `a`, `b` | `result` | `str(a) + str(b)` |
+| `format_string` | `template`, `value` | `result` | `str(template).format(value)` |
+
+### File I/O
+
+| Type | Inputs | Outputs | Description |
+|------|--------|---------|-------------|
+| `read_file` | `path` | `data` | Read UTF-8 file, return string |
+| `write_file` | `path`, `data` | (none) | Write `str(data)` to file |
+
+### Type Conversion
+
+| Type | Inputs | Outputs | Description |
+|------|--------|---------|-------------|
+| `to_int` | `value` | `result` | `int(value)` |
+| `to_float` | `value` | `result` | `float(value)` |
+| `to_string` | `value` | `result` | `str(value)` |
+
+### Utility
+
+| Type | Inputs | Outputs | Description |
+|------|--------|---------|-------------|
+| `identity` | `value` | `result` | Pass-through (returns input unchanged) |
+| `store` | `value` | `value` | Identity (used in store/load pattern) |
+| `load` | `value` | `value` | Identity (used in store/load pattern) |
+| `print` | `value` | (none) | Print `str(value)` (output captured by server) |
+| `display` | `value` | `pass` | Print `repr(value)`, pass value through |
+
+---
+
+## Error Handling
+
+All error responses from REST endpoints use standard HTTP status codes with a JSON body:
+
+```json
+{ "detail": "error message here" }
+```
+
+HTTP errors use:
+- `400 Bad Request` — invalid input (bad code, overwriting built-in, etc.)
+- `404 Not Found` — resource does not exist (unknown node type)
+
+Execution errors (syntax errors, runtime errors in KIR) do not produce HTTP 4xx/5xx — they return HTTP 200 with `"success": false` in the body, because the request itself was structurally valid.
+
+---
+
+## Python Engine API
+
+The `kohakunode` package can also be used directly in Python, without the server.
+
+### Quick Execute
+
+```python
+from kohakunode import run, Registry
+
+registry = Registry()
+registry.register("add", lambda a, b: a + b, output_names=["result"])
+
+store = run("(3, 4)add(sum)", registry=registry)
+print(store.get("sum"))  # 7
+```
+
+### Full Pipeline
+
+```python
+from kohakunode import (
+    parse, validate_or_raise, DataflowCompiler, StripMetaPass,
+    Executor, Registry, KirGraphCompiler, KirGraph
+)
+
+# Load a .kirgraph and compile to L2 KIR
+graph = KirGraph.from_json(open("graph.kirgraph").read())
+compiler = KirGraphCompiler()
+program = compiler.compile(graph)   # L2 Program AST
+
+# Compile to L3 (expand @dataflow:, strip @meta)
+program = DataflowCompiler().transform(program)
+program = StripMetaPass().transform(program)
+
+# Execute
+registry = Registry()
+# ... register functions ...
+executor = Executor(registry=registry)
+store = executor.execute(program)
+```
+
+### Decompile L2 back to L1
+
+```python
+from kohakunode import KirGraphDecompiler, parse
+
+program = parse(open("compiled_l2.kir").read())
+graph = KirGraphDecompiler().decompile(program)
+print(graph.to_json())
+```
+
+### Error Types
+
+| Exception | When raised |
+|-----------|-------------|
+| `KirSyntaxError` | Parser encounters invalid syntax |
+| `KirAnalysisError` | Validator finds semantic errors |
+| `KirCompilationError` | Dataflow compiler finds control flow in dataflow mode |
+| `KirRuntimeError` | Interpreter error (undefined function, etc.) |
+| `KirError` | Base class for all above |

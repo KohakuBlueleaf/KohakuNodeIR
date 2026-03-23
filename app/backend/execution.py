@@ -3,12 +3,15 @@
 Provides ``ExecutionSession`` which installs special print/display node
 implementations that record their outputs, then runs the KIR program via the
 standard Executor pipeline.
+
+An optional *ws_callback* can be supplied to receive real-time display events
+over a WebSocket connection while execution is still in progress.
 """
 
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Callable
 
 from kohakunode.engine.executor import Executor
 from kohakunode.engine.registry import Registry
@@ -21,11 +24,26 @@ class ExecutionSession:
     A *session* clones the print/display registrations so that every call
     appends to ``self.outputs``.  The caller can inspect this list after
     execution to relay messages to the client.
+
+    Parameters
+    ----------
+    registry:
+        The function registry to use for execution.
+    ws_callback:
+        Optional synchronous callable that will be invoked with a message
+        dict whenever a ``display`` node is called during execution.  This
+        lets callers stream display events to a WebSocket client in real time.
+        The callable signature is ``(message: dict) -> None``.
     """
 
-    def __init__(self, registry: Registry) -> None:
+    def __init__(
+        self,
+        registry: Registry,
+        ws_callback: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
         self.registry = registry
         self.outputs: list[dict[str, Any]] = []
+        self.ws_callback = ws_callback
         self._setup_capture_nodes()
 
     # ------------------------------------------------------------------
@@ -40,10 +58,16 @@ class ExecutionSession:
                 self.registry.unregister(name)
 
         def captured_print(value: Any) -> None:
-            self.outputs.append({"type": "output", "value": str(value)})
+            msg: dict[str, Any] = {"type": "output", "value": str(value)}
+            self.outputs.append(msg)
+            if self.ws_callback is not None:
+                self.ws_callback(msg)
 
         def captured_display(value: Any) -> Any:
-            self.outputs.append({"type": "output", "value": repr(value)})
+            msg: dict[str, Any] = {"type": "display", "value": repr(value)}
+            self.outputs.append(msg)
+            if self.ws_callback is not None:
+                self.ws_callback(msg)
             return value  # pass-through
 
         self.registry.register("print", captured_print, output_names=[])

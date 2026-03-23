@@ -118,6 +118,15 @@ sizes = [1, 2, 3]
 
 Variable reassignment (override) is allowed and expected, especially inside loops.
 
+Assignments may carry `@meta` annotations, just like function calls. This is used by the L1→L2 compiler to annotate Value nodes:
+
+```
+@meta node_id="val_a" pos=(100, 200)
+val_a_value = 10
+```
+
+The executor ignores the annotation. The `@meta` is placed immediately before the assignment statement using the same rules as for function calls (see [Section 3.4](#34-metadata-annotation)).
+
 ### 3.2 Function Call
 
 ```
@@ -161,7 +170,7 @@ label_name:
     indented_body
 ```
 
-A namespace is a labeled, indented block. See [Section 4: Execution Model](#4-execution-model) for semantics.
+A namespace is a labeled, indented block. See [Section 4: Execution Model](#4-execution-model) for semantics. See [Section 6: Dataflow](#6-dataflow) for the `@dataflow:` block variant, which is syntactically similar but has dependency-ordered (not sequential) semantics.
 
 ### 3.4 Metadata Annotation
 
@@ -259,6 +268,8 @@ Assuming `cond` is True (branch goes to `a`):
 
 These are the ONLY language-level constructs beyond assignment and function call. They are NOT functions — they are control-flow primitives.
 
+> **Note on store/load**: The `store` and `load` node types registered in the backend are ordinary identity functions (`value → value`). They have no special meaning in the KIR language itself. They exist as a visual convention for data-passing patterns in the UI. In compiled KIR they become standard function calls or are collapsed into variable assignments.
+
 ### 5.1 branch
 
 ```
@@ -307,9 +318,9 @@ The condition must be a variable, not an expression. To evaluate complex conditi
 
 ---
 
-## 5. Dataflow
+## 6. Dataflow
 
-### 5.1 Scoped `@dataflow:` Blocks
+### 6.1 Scoped `@dataflow:` Blocks
 
 ```
 @dataflow:
@@ -357,7 +368,7 @@ loop:
     (msg)print()
 ```
 
-### 5.2 File-Level `@mode dataflow`
+### 6.2 File-Level `@mode dataflow`
 
 ```
 @mode dataflow
@@ -369,7 +380,7 @@ When declared at the top of a file, the entire file body is treated as a single 
 
 ---
 
-## 6. Grammar Summary (EBNF-style)
+## 7. Grammar Summary (EBNF-style)
 
 ```
 program        = { statement }
@@ -402,7 +413,7 @@ FUNC_IDENT     = IDENT { "." IDENT }
 
 ---
 
-## 7. Reserved Words and Symbols
+## 8. Reserved Words and Symbols
 
 ### Reserved Identifiers
 - `True`, `False`, `None` — literal values
@@ -417,9 +428,9 @@ FUNC_IDENT     = IDENT { "." IDENT }
 
 ---
 
-## 8. Conformance
+## 9. Conformance
 
-### 8.1 Backend Requirements
+### 9.1 Backend Requirements
 
 A conforming backend MUST:
 1. Provide a function registry that maps function names to implementations
@@ -433,7 +444,7 @@ A conforming backend MAY:
 2. Support additional `@`-directives as extensions (must be prefixed to avoid conflicts)
 3. Add caching or optimization as long as observable behavior matches sequential execution
 
-### 8.2 UI Requirements
+### 9.2 UI Requirements
 
 A conforming UI MUST:
 1. Emit valid `.kir` syntax

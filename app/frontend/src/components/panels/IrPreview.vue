@@ -111,9 +111,114 @@ async function copyToClipboard() {
   }
 }
 
-// ---- Execute (stub) ----
+// ---- Execute with WebSocket live output ----
+const isExecuting = ref(false);
+const execOutput = ref('');
+const execError = ref('');
+const showExecOutput = ref(false);
+
 function execute() {
-  ElMessage({ message: 'Execution is not yet connected to the backend.', type: 'info', duration: 2500 });
+  if (isExecuting.value) return;
+
+  // Compile the current graph to KIR
+  const { ir: kirSource, errors } = compileGraph(graph.nodeList, graph.connectionList, mode.value);
+  if (errors.length > 0) {
+    ElMessage({ message: `Cannot execute: compile errors exist.`, type: 'error', duration: 3000 });
+    return;
+  }
+  if (!kirSource.trim()) {
+    ElMessage({ message: 'Graph is empty — nothing to execute.', type: 'warning', duration: 2000 });
+    return;
+  }
+
+  isExecuting.value = true;
+  execOutput.value = '';
+  execError.value = '';
+  showExecOutput.value = true;
+
+  // Connect WebSocket for streaming output
+  const wsUrl = `ws://${window.location.hostname}:48888/api/ws/execute`;
+  let ws = null;
+  try {
+    ws = new WebSocket(wsUrl);
+  } catch (e) {
+    execError.value = `WebSocket connection failed: ${e.message}`;
+    isExecuting.value = false;
+    return;
+  }
+
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'output' || msg.type === 'stdout') {
+        execOutput.value += msg.data ?? msg.text ?? '';
+      } else if (msg.type === 'error' || msg.type === 'stderr') {
+        execOutput.value += `[ERR] ${msg.data ?? msg.text ?? ''}\n`;
+      } else if (msg.type === 'result') {
+        if (msg.variables) {
+          execOutput.value += '\n--- Variables ---\n';
+          for (const [k, v] of Object.entries(msg.variables)) {
+            execOutput.value += `  ${k} = ${JSON.stringify(v)}\n`;
+          }
+        }
+      } else if (msg.type === 'done' || msg.type === 'finished') {
+        isExecuting.value = false;
+        ws.close();
+      }
+    } catch {
+      // Non-JSON message — treat as raw output
+      execOutput.value += event.data + '\n';
+    }
+  };
+
+  ws.onerror = () => {
+    execError.value = 'WebSocket error — is the backend running on port 48888?';
+    isExecuting.value = false;
+  };
+
+  ws.onclose = (event) => {
+    isExecuting.value = false;
+    if (event.code !== 1000 && !execError.value) {
+      execError.value = `Connection closed (code ${event.code}).`;
+    }
+  };
+
+  ws.onopen = () => {
+    // Send the KIR source once the socket is open
+    fetch('/api/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kir_source: kirSource }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          return res.json().catch(() => ({ detail: res.statusText })).then((body) => {
+            execError.value = `Execute failed: ${body.detail ?? body.error ?? res.statusText}`;
+            isExecuting.value = false;
+            ws.close();
+          });
+        }
+        return res.json().then((body) => {
+          // If backend responds synchronously (no WebSocket events):
+          if (body.output !== undefined) execOutput.value += body.output;
+          if (body.variables) {
+            execOutput.value += '\n--- Variables ---\n';
+            for (const [k, v] of Object.entries(body.variables)) {
+              execOutput.value += `  ${k} = ${JSON.stringify(v)}\n`;
+            }
+          }
+          // If no WS messages come, mark done
+          if (!isExecuting.value) return;
+          // Give WS a moment; if done flag never arrives we stop after a grace period
+          setTimeout(() => { isExecuting.value = false; }, 10000);
+        });
+      })
+      .catch((err) => {
+        execError.value = `Network error: ${err.message}`;
+        isExecuting.value = false;
+        ws.close();
+      });
+  };
 }
 
 // ---- Toggle KIR mode ----
@@ -172,12 +277,13 @@ function toggleMode() {
         </button>
         <button
           class="ir-action-btn ir-action-btn--exec"
-          title="Execute (not yet connected)"
-          disabled
+          :class="{ 'ir-action-btn--exec-running': isExecuting }"
+          :title="isExecuting ? 'Executing…' : 'Execute KIR on backend'"
+          :disabled="isExecuting"
           @click="execute"
         >
-          <span class="i-carbon-play" />
-          Execute
+          <span :class="isExecuting ? 'i-carbon-stop-filled' : 'i-carbon-play'" />
+          {{ isExecuting ? 'Executing…' : 'Execute' }}
         </button>
       </div>
     </div>
@@ -200,6 +306,19 @@ function toggleMode() {
         class="ir-code"
         v-html="highlightedIR"
       />
+    </div>
+
+    <!-- Execution output panel -->
+    <div v-if="showExecOutput" class="exec-output-panel">
+      <div class="exec-output-header">
+        <span class="exec-output-title">
+          <span :class="isExecuting ? 'i-carbon-circle-dash exec-spin' : 'i-carbon-checkmark'" />
+          {{ isExecuting ? 'Executing…' : 'Execution Output' }}
+        </span>
+        <button class="exec-close-btn" title="Close output" @click="showExecOutput = false">✕</button>
+      </div>
+      <div v-if="execError" class="exec-error">{{ execError }}</div>
+      <pre class="exec-output-body">{{ execOutput || (isExecuting ? '(waiting for output…)' : '(no output)') }}</pre>
     </div>
 
   </div>
@@ -278,8 +397,17 @@ function toggleMode() {
   border-color: rgba(166, 227, 161, 0.4);
 }
 .ir-action-btn--exec:disabled {
-  opacity: 0.35;
+  opacity: 0.6;
   cursor: not-allowed;
+}
+.ir-action-btn--exec-running {
+  color: #f9e2af;
+  border-color: rgba(249, 226, 175, 0.5);
+  animation: exec-pulse 1.2s ease-in-out infinite;
+}
+@keyframes exec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .ir-mode-btn {
@@ -431,5 +559,96 @@ function toggleMode() {
 }
 .ir-code :deep(.json-key) {
   color: #89b4fa;
+}
+
+/* ---- Execution output panel ---- */
+.exec-output-panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #313244;
+  background: #0d0d17;
+  max-height: 140px;
+  overflow: hidden;
+}
+
+.exec-output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: #181825;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+}
+
+.exec-output-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6c7086;
+}
+
+.exec-close-btn {
+  background: transparent;
+  border: none;
+  color: #585b70;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: color 0.1s, background 0.1s;
+}
+.exec-close-btn:hover {
+  color: #cdd6f4;
+  background: #313244;
+}
+
+.exec-error {
+  padding: 4px 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10px;
+  color: #f38ba8;
+  background: rgba(243, 139, 168, 0.08);
+  border-bottom: 1px solid rgba(243, 139, 168, 0.2);
+  flex-shrink: 0;
+}
+
+.exec-output-body {
+  margin: 0;
+  padding: 6px 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #a6e3a1;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  flex: 1;
+  min-height: 0;
+}
+.exec-output-body::-webkit-scrollbar {
+  width: 4px;
+}
+.exec-output-body::-webkit-scrollbar-track {
+  background: #0d0d17;
+}
+.exec-output-body::-webkit-scrollbar-thumb {
+  background: #313244;
+  border-radius: 2px;
+}
+
+@keyframes exec-spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.exec-spin {
+  display: inline-block;
+  animation: exec-spin-anim 1s linear infinite;
 }
 </style>

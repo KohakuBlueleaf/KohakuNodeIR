@@ -3,6 +3,10 @@
 Each node definition is saved as a JSON file on disk so it survives server
 restarts.  On startup the store can re-register every saved definition into the
 global Registry.
+
+The default *store_dir* is resolved relative to **this file's location** so
+that ``uvicorn main:app`` launched from any working directory always finds the
+same storage folder.
 """
 
 from __future__ import annotations
@@ -13,11 +17,14 @@ from typing import Any
 
 from kohakunode.engine.registry import Registry
 
+# Directory that holds this source file — used for default store resolution.
+_HERE = pathlib.Path(__file__).parent
+
 
 class NodeStore:
     """Manage user-defined node definitions as JSON files on disk."""
 
-    def __init__(self, store_dir: str = "./node_defs") -> None:
+    def __init__(self, store_dir: str | pathlib.Path = _HERE / "node_defs") -> None:
         self._dir = pathlib.Path(store_dir)
         self._dir.mkdir(parents=True, exist_ok=True)
 

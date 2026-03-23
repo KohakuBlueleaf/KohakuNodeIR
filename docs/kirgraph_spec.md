@@ -318,30 +318,29 @@ This compiles to Level 2 KIR:
 ```kir
 # Value nodes without control wires → @dataflow: block
 @dataflow:
-    @meta node_id="val_a" pos=(100, 100)
+    @meta node_id="val_a" pos=(100, 100) size=[160, 80]
     val_a_value = 10
-
-    @meta node_id="val_b" pos=(100, 250)
+    @meta node_id="val_b" pos=(100, 250) size=[160, 80]
     val_b_value = 20
 
 # Control-connected chain
-@meta node_id="add1" pos=(350, 150)
+@meta node_id="add1" pos=(350, 150) size=[180, 120]
 (val_a_value, val_b_value)add(add1_result)
 
-@meta node_id="cmp1" pos=(600, 150)
+@meta node_id="cmp1" pos=(600, 150) size=[180, 120]
 (add1_result, 25)greater_than(cmp1_result)
 
-@meta node_id="br1" pos=(850, 150)
+@meta node_id="br1" pos=(850, 150) size=[180, 120]
 (cmp1_result)branch(`br1_true`, `br1_false`)
 br1_true:
-    @meta node_id="print_big" pos=(1100, 50)
+    @meta node_id="print_big" pos=(1100, 50) size=[180, 100]
     (add1_result)print()
 br1_false:
-    @meta node_id="print_small" pos=(1100, 250)
+    @meta node_id="print_small" pos=(1100, 250) size=[180, 100]
     (add1_result)print()
 ```
 
-Which compiles to Level 3 (execution KIR):
+Which compiles to Level 3 (execution KIR, `@dataflow:` expanded, `@meta` stripped):
 
 ```kir
 val_a_value = 10
@@ -354,6 +353,8 @@ br1_true:
 br1_false:
     (add1_result)print()
 ```
+
+Note: The `@dataflow:` block is expanded (its two assignments are inlined in topological order) and all `@meta` annotations are removed by `StripMetaPass`. The resulting L3 is pure sequential KIR that the interpreter runs directly.
 
 ---
 
@@ -370,35 +371,70 @@ Example: node `add1`, port `result` → `add1_result`
 For each data input port on a node:
 1. If connected via a data edge → use the source's variable name
 2. If not connected but has `default` → use the literal value
-3. If not connected and no default → compilation error
+3. If not connected and no default → use literal `0` (fallback)
 
 ### 5.3 Control Flow Partitioning
 
-1. **Control-connected nodes**: Have at least one control edge (in or out). Emit in control-wire order.
-2. **Unconnected nodes**: No control edges at all. Wrap in `@dataflow:` block, placed at the position where all their data inputs are available.
+The compiler separates nodes into two groups based on control-edge connectivity:
+
+1. **Control-connected nodes**: Have at least one control edge (in or out). Emitted in control-wire traversal order.
+2. **Independent unconnected nodes**: No control edges and no data inputs from control-connected nodes. Wrapped in a single `@dataflow:` block placed at the top of the output program.
+3. **Dependent unconnected nodes**: No control edges but their data inputs come (transitively) from control-connected nodes. Wrapped in `@dataflow:` blocks placed immediately after the control node that satisfies all their data inputs, at the correct nesting depth.
+
+This means `@dataflow:` blocks can appear:
+- At the top level (for independent value nodes)
+- Inside namespace bodies (for data nodes whose inputs are produced inside a loop or branch)
+- At the top level after a control chain (for data nodes dependent on control-chain outputs)
 
 ### 5.4 Branch/Switch/Merge/Parallel
 
-- **Branch**: Emit `(cond)branch(...)`. Each ctrl output becomes a namespace containing the downstream chain.
-- **Switch**: Same pattern with `(val)switch(...)`.
-- **Merge**: Multiple ctrl inputs converge. For post-branch merge: implicit (code continues after namespaces). For loop merge (backward edge): emit namespace + jump pattern.
-- **Parallel**: Emit `()parallel(...)` with namespace per output.
+- **Branch**: Emit `(cond)branch(`true_label`, `false_label`)`. Each ctrl output becomes a namespace containing the downstream control chain.
+- **Switch**: Emit `(val)switch(case_val=>`label`, ...)`. Each ctrl output becomes a namespace.
+- **Merge (post-branch)**: Code naturally converges after the namespace blocks end — no explicit statement needed.
+- **Merge (loop entry)**: A merge node with an unconnected `entry` ctrl input marks the loop entry point. The compiler emits `()jump(`ns_{merge_id}`)` followed by a `ns_{merge_id}:` namespace containing the loop body. The backward edge (from branch `true` back to the merge) becomes `()jump(`ns_{merge_id}`)` inside the branch namespace.
+- **Parallel**: Emit `()parallel(`label1`, `label2`, ...)` with a namespace per ctrl output.
+
+The `@meta` for a merge node is attached to the `jump` statement that precedes the namespace, not to the namespace definition itself. This allows the decompiler to recover the merge node's position.
 
 ### 5.5 @meta Annotations
 
-Each node emits `@meta node_id="..." pos=(x, y)` before its KIR statement. This enables L2 → L1 decompilation.
+Each node emits `@meta node_id="..." pos=(x, y)` before its KIR statement. Additional `meta` fields on the node (e.g., `size`) are also included.
+
+- **FuncCall / Branch / Switch / Parallel / Jump**: `@meta` is stored in the statement's `metadata` field.
+- **Assignment** (Value nodes): `@meta` is also stored in the statement's `metadata` field. The `StripMetaPass` and decompiler both handle this correctly.
+
+This enables full L2 → L1 decompilation from annotated KIR text.
 
 ---
 
 ## 6. L2 → L1 Decompilation Rules
 
-1. Parse the `.kir` file
-2. For each statement with `@meta node_id=...`:
-   - Create a node with the given id
-   - Infer type from the statement (Assignment→value, FuncCall→function type, Branch→branch, etc.)
-   - Extract port names from the statement's inputs/outputs
-3. For each variable reference:
-   - If it matches `{node_id}_{port_name}` pattern → create a data edge
-4. For namespace/branch/switch structure:
-   - Reconstruct control edges from the control flow topology
-5. Recover positions from `@meta pos=(...)`
+Decompilation is a two-pass process implemented by `KirGraphDecompiler`.
+
+### Pass 1: Node Creation and Control Edges
+
+Walk all statements recursively (including inside `@dataflow:` blocks and `Namespace` bodies):
+
+1. For each statement with `@meta node_id=...`, create a `KGNode`:
+   - `Assignment` → `type: "value"`, value and type from the RHS literal
+   - `FuncCall` → `type: func_name`, data input/output ports from statement args/outputs
+   - `Branch` → `type: "branch"`, `ctrl_outputs: ["true", "false"]`
+   - `Switch` → `type: "switch"`, `ctrl_outputs` and `properties.cases` from the case list
+   - `Parallel` → `type: "parallel"`, `ctrl_outputs` from the label list
+   - `Jump` to `ns_{id}` → `type: "merge"` node with `ctrl_inputs: ["entry", "back"]`; `@meta` attached to the jump carries the merge node's position
+2. Emit control edges between sequentially adjacent nodes in the same scope
+3. For `branch`/`switch`/`parallel`, connect each ctrl output port to the first node inside the corresponding namespace body
+
+### Pass 2: Data Edges
+
+Walk all statements again. For each input that is an `Identifier`, attempt to split the variable name as `{node_id}_{port_name}` matching a known node id. If successful, create a data edge from `(source_node, port)` to `(target_node, target_port)`.
+
+The split uses the longest matching known node-id prefix first, then falls back to the last-underscore regex pattern.
+
+### Port Name Convention
+
+Variable naming `{node_id}_{port_name}` (e.g., `add1_result` → node `add1`, port `result`) is the mechanism that makes data edge recovery reliable without additional metadata. Output variables are registered during pass 1; data edges are wired during pass 2.
+
+### Position Recovery
+
+`@meta pos=(x, y)` is read from each statement's annotation and stored in `KGNode.meta["pos"]`. Nodes without a `pos` annotation receive auto-generated grid positions.

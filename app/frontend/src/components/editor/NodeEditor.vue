@@ -13,8 +13,8 @@ import { graphToKirgraph, kirgraphToGraph } from '../../compiler/kirgraph.js';
 const editorStore = useEditorStore();
 const graph = useGraphStore();
 
-// --- Show control ports toggle ---
-const showCtrlPorts = ref(true);
+// --- Show control ports toggle (use store as single source of truth) ---
+// editorStore.showCtrlPorts is the authoritative state; BaseNode reads it directly.
 
 // --- Zoom state (lifted here so toolbar controls can drive it) ---
 const zoomLevel = ref(1);
@@ -117,9 +117,9 @@ function loadGraph() {
       <div class="toolbar-group">
         <button
           class="tool-btn"
-          :class="{ 'tool-btn--active': showCtrlPorts }"
+          :class="{ 'tool-btn--active': editorStore.showCtrlPorts }"
           title="Toggle control flow ports"
-          @click="showCtrlPorts = !showCtrlPorts; editorStore.showCtrlPorts = showCtrlPorts"
+          @click="editorStore.showCtrlPorts = !editorStore.showCtrlPorts"
         >
           <span class="i-carbon-flow" />
           Ctrl Ports
