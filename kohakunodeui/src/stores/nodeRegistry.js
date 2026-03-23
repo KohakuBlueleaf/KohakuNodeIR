@@ -111,6 +111,207 @@ const BUILT_IN_DEFINITIONS = [
       outputs: [],
     },
   },
+  // ── Math ──
+  {
+    type: 'add', name: 'Add', category: 'Math',
+    description: 'Add two numbers.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'float', defaultValue: 0 },
+        { id: 'dp-b', name: 'b', dataType: 'float', defaultValue: 0 },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'float' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'subtract', name: 'Subtract', category: 'Math',
+    description: 'Subtract b from a.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'float', defaultValue: 0 },
+        { id: 'dp-b', name: 'b', dataType: 'float', defaultValue: 0 },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'float' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'multiply', name: 'Multiply', category: 'Math',
+    description: 'Multiply two numbers.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'float', defaultValue: 1 },
+        { id: 'dp-b', name: 'b', dataType: 'float', defaultValue: 1 },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'float' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'divide', name: 'Divide', category: 'Math',
+    description: 'Divide a by b.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'float', defaultValue: 1 },
+        { id: 'dp-b', name: 'b', dataType: 'float', defaultValue: 1 },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'float' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  // ── Comparison ──
+  {
+    type: 'greater_than', name: 'Greater Than', category: 'Comparison',
+    description: 'Returns true if a > b.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'float', defaultValue: 0 },
+        { id: 'dp-b', name: 'b', dataType: 'float', defaultValue: 0 },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'bool' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'less_than', name: 'Less Than', category: 'Comparison',
+    description: 'Returns true if a < b.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'float', defaultValue: 0 },
+        { id: 'dp-b', name: 'b', dataType: 'float', defaultValue: 0 },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'bool' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'equal', name: 'Equal', category: 'Comparison',
+    description: 'Returns true if a == b.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'any' },
+        { id: 'dp-b', name: 'b', dataType: 'any' },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'bool' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'and', name: 'And', category: 'Comparison',
+    description: 'Logical AND of two booleans.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'bool', defaultValue: false },
+        { id: 'dp-b', name: 'b', dataType: 'bool', defaultValue: false },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'bool' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'not', name: 'Not', category: 'Comparison',
+    description: 'Logical NOT.',
+    dataPorts: {
+      inputs: [{ id: 'dp-a', name: 'value', dataType: 'bool', defaultValue: false }],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'bool' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  // ── String ──
+  {
+    type: 'concat', name: 'Concat', category: 'String',
+    description: 'Concatenate two strings.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-a', name: 'a', dataType: 'str', defaultValue: '' },
+        { id: 'dp-b', name: 'b', dataType: 'str', defaultValue: '' },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'str' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'format_string', name: 'Format', category: 'String',
+    description: 'Format a string with values.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-template', name: 'template', dataType: 'str', defaultValue: '{}' },
+        { id: 'dp-value', name: 'value', dataType: 'any' },
+      ],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'str' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  // ── Display ──
+  {
+    type: 'print', name: 'Print', category: 'Display',
+    description: 'Print a value to the console.',
+    dataPorts: {
+      inputs: [{ id: 'dp-value', name: 'value', dataType: 'any' }],
+      outputs: [],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'display', name: 'Display', category: 'Display',
+    description: 'Display a value (shows result in the node).',
+    dataPorts: {
+      inputs: [{ id: 'dp-value', name: 'value', dataType: 'any' }],
+      outputs: [{ id: 'dp-pass', name: 'pass', dataType: 'any' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  // ── File I/O ──
+  {
+    type: 'read_file', name: 'Read File', category: 'File',
+    description: 'Read a file from disk.',
+    dataPorts: {
+      inputs: [{ id: 'dp-path', name: 'path', dataType: 'str', defaultValue: '' }],
+      outputs: [{ id: 'dp-data', name: 'data', dataType: 'any' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'write_file', name: 'Write File', category: 'File',
+    description: 'Write data to a file.',
+    dataPorts: {
+      inputs: [
+        { id: 'dp-path', name: 'path', dataType: 'str', defaultValue: '' },
+        { id: 'dp-data', name: 'data', dataType: 'any' },
+      ],
+      outputs: [],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  // ── Convert ──
+  {
+    type: 'to_int', name: 'To Int', category: 'Convert',
+    description: 'Convert value to integer.',
+    dataPorts: {
+      inputs: [{ id: 'dp-value', name: 'value', dataType: 'any' }],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'int' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'to_float', name: 'To Float', category: 'Convert',
+    description: 'Convert value to float.',
+    dataPorts: {
+      inputs: [{ id: 'dp-value', name: 'value', dataType: 'any' }],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'float' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
+  {
+    type: 'to_string', name: 'To String', category: 'Convert',
+    description: 'Convert value to string.',
+    dataPorts: {
+      inputs: [{ id: 'dp-value', name: 'value', dataType: 'any' }],
+      outputs: [{ id: 'dp-result', name: 'result', dataType: 'str' }],
+    },
+    controlPorts: { inputs: [{ id: 'cp-in', name: 'in' }], outputs: [{ id: 'cp-out', name: 'out' }] },
+  },
 ];
 
 // ---- Store ----

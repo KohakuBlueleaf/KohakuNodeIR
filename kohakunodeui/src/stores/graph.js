@@ -100,6 +100,20 @@ export const useGraphStore = defineStore('graph', () => {
     node.height = snapToGrid(height);
   }
 
+  /**
+   * Recalculate node height to fit all ports. Call after adding/removing ports.
+   */
+  function autoResizeHeight(id) {
+    const node = nodes.get(id);
+    if (!node) return;
+    const hasCtrlIn = node.controlPorts.inputs.length > 0;
+    const hasCtrlOut = node.controlPorts.outputs.length > 0;
+    const dataRows = Math.max(node.dataPorts.inputs.length, node.dataPorts.outputs.length);
+    const minH = (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H + (hasCtrlOut ? CTRL_ROW_H : 0) + 40;
+    const newH = snapToGrid(Math.max(minH, node.height));
+    node.height = newH;
+  }
+
   // ---- Connection Methods ----
 
   /**
@@ -357,6 +371,7 @@ export const useGraphStore = defineStore('graph', () => {
     removeNode,
     updateNodePosition,
     updateNodeSize,
+    autoResizeHeight,
 
     // Connection methods
     addConnection,

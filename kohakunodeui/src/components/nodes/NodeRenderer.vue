@@ -25,6 +25,7 @@ function addControlInput() {
   if (!node) return
   const idx = node.controlPorts.inputs.length
   node.controlPorts.inputs.push({ id: pid('cp-in'), name: `in ${idx}` })
+  graph.autoResizeHeight(props.node.id)
 }
 
 function addCase() {
@@ -32,6 +33,7 @@ function addCase() {
   if (!node) return
   const idx = node.controlPorts.outputs.length
   node.controlPorts.outputs.push({ id: pid('cp-case'), name: `case ${idx}` })
+  graph.autoResizeHeight(props.node.id)
 }
 
 function removeCase(payload) {
@@ -39,6 +41,7 @@ function removeCase(payload) {
   if (!node) return
   const idx = node.controlPorts.outputs.findIndex(p => p.id === payload.portId)
   if (idx !== -1) node.controlPorts.outputs.splice(idx, 1)
+  graph.autoResizeHeight(props.node.id)
 }
 
 function addBranch() {
@@ -46,6 +49,7 @@ function addBranch() {
   if (!node) return
   const idx = node.controlPorts.outputs.length
   node.controlPorts.outputs.push({ id: pid('cp-out'), name: `out ${idx}` })
+  graph.autoResizeHeight(props.node.id)
 }
 
 function removeBranch(payload) {
@@ -53,6 +57,7 @@ function removeBranch(payload) {
   if (!node) return
   const idx = node.controlPorts.outputs.findIndex(p => p.id === payload.portId)
   if (idx !== -1) node.controlPorts.outputs.splice(idx, 1)
+  graph.autoResizeHeight(props.node.id)
 }
 </script>
 

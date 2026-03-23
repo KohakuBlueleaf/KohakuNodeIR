@@ -238,9 +238,14 @@ const nodeStyle = computed(() => ({
 .data-rows { flex-shrink: 0; }
 .data-row { display: flex; align-items: center; height: 28px; }
 
-.dp { display: flex; align-items: center; cursor: crosshair; padding: 2px 0; flex-shrink: 0; }
-.dp--in-dot { margin-left: -5px; }
-.dp--out-dot { margin-right: -5px; }
+.dp {
+  display: flex; align-items: center; justify-content: center;
+  cursor: crosshair; flex-shrink: 0;
+  /* Larger invisible hit area around the 10px dot */
+  width: 20px; height: 24px;
+}
+.dp--in-dot { margin-left: -10px; }
+.dp--out-dot { margin-right: -10px; }
 .dp__dot-spacer { width: 10px; flex-shrink: 0; }
 
 .dp__dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #1e1e2e; flex-shrink: 0; transition: background 0.12s, box-shadow 0.12s; }
