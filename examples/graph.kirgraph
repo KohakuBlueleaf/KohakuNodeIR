@@ -570,39 +570,6 @@
     {
       "type": "control",
       "from": {
-        "node": "inc_i",
-        "port": "out"
-      },
-      "to": {
-        "node": "square",
-        "port": "in"
-      }
-    },
-    {
-      "type": "control",
-      "from": {
-        "node": "square",
-        "port": "out"
-      },
-      "to": {
-        "node": "accum",
-        "port": "in"
-      }
-    },
-    {
-      "type": "control",
-      "from": {
-        "node": "accum",
-        "port": "out"
-      },
-      "to": {
-        "node": "check",
-        "port": "in"
-      }
-    },
-    {
-      "type": "control",
-      "from": {
         "node": "check",
         "port": "out"
       },
@@ -630,28 +597,6 @@
       },
       "to": {
         "node": "to_str",
-        "port": "in"
-      }
-    },
-    {
-      "type": "control",
-      "from": {
-        "node": "to_str",
-        "port": "out"
-      },
-      "to": {
-        "node": "fmt",
-        "port": "in"
-      }
-    },
-    {
-      "type": "control",
-      "from": {
-        "node": "fmt",
-        "port": "out"
-      },
-      "to": {
-        "node": "out",
         "port": "in"
       }
     }

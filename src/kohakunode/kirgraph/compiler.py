@@ -78,15 +78,45 @@ class KirGraphCompiler:
 
         self._visited: set[str] = set()
 
+        # Partition unconnected nodes into:
+        # - independent: only depend on other unconnected or external (value nodes)
+        # - dependent: depend on at least one ctrl-connected node
         ctrl_nodes = [n for n in graph.nodes if n.id in self._ctrl_connected]
         unconnected = [n for n in graph.nodes if n.id not in self._ctrl_connected]
 
+        independent = []
+        self._dependent_nodes: dict[str, KGNode] = {}  # node_id → node
+
+        for n in unconnected:
+            if self._depends_on_ctrl(n.id):
+                self._dependent_nodes[n.id] = n
+            else:
+                independent.append(n)
+
         body: list[Statement] = []
-        if unconnected:
-            body.append(DataflowBlock(body=[s for n in unconnected for s in self._emit_node(n)]))
+        if independent:
+            body.append(DataflowBlock(body=[s for n in independent for s in self._emit_node_raw(n)]))
+            for n in independent:
+                self._visited.add(n.id)
         if ctrl_nodes:
             body.extend(self._emit_ctrl(ctrl_nodes))
         return Program(body=body)
+
+    def _depends_on_ctrl(self, node_id: str) -> bool:
+        """Check if a node (transitively) depends on any ctrl-connected node."""
+        visited: set[str] = set()
+        stack = [node_id]
+        while stack:
+            nid = stack.pop()
+            if nid in visited:
+                continue
+            visited.add(nid)
+            for port, (src_node, _src_port) in self._data_in.get(nid, {}).items():
+                if src_node in self._ctrl_connected:
+                    return True
+                if src_node not in self._ctrl_connected:
+                    stack.append(src_node)
+        return False
 
     # ── Data input resolution ──
 
@@ -103,19 +133,64 @@ class KirGraphCompiler:
 
     def _emit_node(self, node: KGNode) -> list[Statement]:
         m = _meta(node)
+        stmts: list[Statement] = []
+
+        if node.type == "value":
+            val = node.properties.get("value", 0)
+            out = node.data_outputs[0].port if node.data_outputs else "value"
+            stmts.append(Assignment(target=_var(node.id, out), value=_lit(val)))
+        elif node.type == "merge":
+            pass
+        elif node.type == "branch":
+            stmts.extend(self._emit_branch(node, m))
+        elif node.type == "switch":
+            stmts.extend(self._emit_switch(node, m))
+        elif node.type == "parallel":
+            stmts.extend(self._emit_parallel(node, m))
+        else:
+            inputs = [self._input(node, p.port) for p in node.data_inputs]
+            outputs = [_var(node.id, p.port) for p in node.data_outputs]
+            stmts.append(FuncCall(inputs=inputs, func_name=node.type, outputs=outputs, metadata=[m]))
+
+        # After emitting this ctrl node, also emit any dependent non-ctrl nodes
+        # whose data inputs are now satisfied.
+        stmts.extend(self._emit_ready_dependents(node.id))
+        return stmts
+
+    def _emit_ready_dependents(self, just_emitted_id: str) -> list[Statement]:
+        """Emit non-ctrl nodes that depend on just_emitted_id and are now ready."""
+        stmts: list[Statement] = []
+        emitted_ids: set[str] = set()
+
+        # Iteratively emit dependents that become ready
+        changed = True
+        while changed:
+            changed = False
+            for nid, node in list(self._dependent_nodes.items()):
+                if nid in emitted_ids:
+                    continue
+                if self._all_data_sources_emitted(nid, emitted_ids):
+                    emitted_ids.add(nid)
+                    del self._dependent_nodes[nid]
+                    stmts.extend(self._emit_node_raw(node))
+                    changed = True
+
+        return stmts
+
+    def _all_data_sources_emitted(self, node_id: str, extra_emitted: set[str]) -> bool:
+        """Check if ALL data sources for a node have been emitted."""
+        for _port, (src_node, _src_port) in self._data_in.get(node_id, {}).items():
+            if src_node not in self._visited and src_node not in extra_emitted:
+                return False
+        return True
+
+    def _emit_node_raw(self, node: KGNode) -> list[Statement]:
+        """Emit a node without checking dependents (to avoid recursion)."""
+        m = _meta(node)
         if node.type == "value":
             val = node.properties.get("value", 0)
             out = node.data_outputs[0].port if node.data_outputs else "value"
             return [Assignment(target=_var(node.id, out), value=_lit(val))]
-        if node.type == "merge":
-            return []
-        if node.type == "branch":
-            return self._emit_branch(node, m)
-        if node.type == "switch":
-            return self._emit_switch(node, m)
-        if node.type == "parallel":
-            return self._emit_parallel(node, m)
-        # Generic function
         inputs = [self._input(node, p.port) for p in node.data_inputs]
         outputs = [_var(node.id, p.port) for p in node.data_outputs]
         return [FuncCall(inputs=inputs, func_name=node.type, outputs=outputs, metadata=[m])]
