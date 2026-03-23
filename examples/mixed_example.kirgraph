@@ -152,7 +152,9 @@
     }
   ],
   "edges": [
+    {"type": "data", "from": {"node": "val_i", "port": "value"}, "to": {"node": "inc_i", "port": "a"}},
     {"type": "data", "from": {"node": "val_step", "port": "value"}, "to": {"node": "inc_i", "port": "b"}},
+    {"type": "data", "from": {"node": "val_total", "port": "value"}, "to": {"node": "accum", "port": "a"}},
     {"type": "data", "from": {"node": "inc_i", "port": "result"}, "to": {"node": "square", "port": "a"}},
     {"type": "data", "from": {"node": "inc_i", "port": "result"}, "to": {"node": "square", "port": "b"}},
     {"type": "data", "from": {"node": "inc_i", "port": "result"}, "to": {"node": "check", "port": "a"}},
