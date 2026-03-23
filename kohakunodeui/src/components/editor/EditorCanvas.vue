@@ -217,7 +217,22 @@ function onPointerUp(e) {
     return;
   }
   if (editor.isDrawingWire) {
-    editor.cancelDraftWire();
+    // Try to find a port under the cursor to complete the connection
+    const els = document.elementsFromPoint(e.clientX, e.clientY);
+    let connected = false;
+    for (const el of els) {
+      const portId = el.dataset?.portId;
+      const nodeId = el.dataset?.nodeId;
+      const portDir = el.dataset?.portDir;
+      if (portId && nodeId && portDir === 'input') {
+        editor.endDraftWire(nodeId, portId);
+        connected = true;
+        break;
+      }
+    }
+    if (!connected) {
+      editor.cancelDraftWire();
+    }
   }
   if (isSelecting.value) {
     endSelection();

@@ -3,11 +3,10 @@ import { defineStore } from 'pinia';
 import { snapToGrid, snapPoint } from '../utils/grid.js';
 
 // --- Constants ---
-const PORT_PADDING = 20; // px from edge before first port
+const PORT_PADDING = 30; // px from edge before first ctrl port
 const HEADER_H = 32;
 const CTRL_ROW_H = 18;
-const DATA_PORT_PAD = 12;
-const PORT_SPACING = 24; // px between ports
+const DATA_ROW_H = 28; // fixed row height for each data port
 
 let _idCounter = 0;
 function generateId(prefix = 'id') {
@@ -195,53 +194,42 @@ export const useGraphStore = defineStore('graph', () => {
       return PORT_PADDING + index * ((span - PORT_PADDING * 2) / (count - 1));
     }
 
-    // Layout-aware port positioning (must match BaseNode.vue constants)
+    // Row-based layout: fixed position per port index (doesn't depend on node height)
     const hasCtrlIn = controlPorts.inputs.length > 0;
-    const hasCtrlOut = controlPorts.outputs.length > 0;
 
-    // Data ports: positioned in the body area
-    const bodyTop = (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + DATA_PORT_PAD;
-    const bodyBot = height - (hasCtrlOut ? CTRL_ROW_H : 0) - DATA_PORT_PAD;
-    const bodyAvail = bodyBot - bodyTop;
-
-    function dataSpacing(index, count) {
-      if (count <= 1) return bodyTop + bodyAvail / 2;
-      return bodyTop + (bodyAvail / (count - 1)) * index;
+    // Data port Y = ctrlIn area + header + row center
+    function dataRowY(index) {
+      return (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + index * DATA_ROW_H + DATA_ROW_H / 2;
     }
 
     // Data inputs — left edge
     const dataInIndex = dataPorts.inputs.findIndex(p => p.id === portId);
     if (dataInIndex !== -1) {
-      return {
-        x,
-        y: y + dataSpacing(dataInIndex, dataPorts.inputs.length),
-      };
+      return { x, y: y + dataRowY(dataInIndex) };
     }
 
     // Data outputs — right edge
     const dataOutIndex = dataPorts.outputs.findIndex(p => p.id === portId);
     if (dataOutIndex !== -1) {
-      return {
-        x: x + width,
-        y: y + dataSpacing(dataOutIndex, dataPorts.outputs.length),
-      };
+      return { x: x + width, y: y + dataRowY(dataOutIndex) };
     }
 
-    // Control inputs — top edge (centered in ctrl row)
+    // Control inputs — top edge
     const ctrlInIndex = controlPorts.inputs.findIndex(p => p.id === portId);
     if (ctrlInIndex !== -1) {
       return {
         x: x + evenSpacing(ctrlInIndex, controlPorts.inputs.length, width),
-        y,  // top edge of node
+        y,
       };
     }
 
-    // Control outputs — bottom edge (centered in ctrl row)
+    // Control outputs — bottom edge
+    // Use actual node height for ctrl output Y since node may be resized
     const ctrlOutIndex = controlPorts.outputs.findIndex(p => p.id === portId);
     if (ctrlOutIndex !== -1) {
       return {
         x: x + evenSpacing(ctrlOutIndex, controlPorts.outputs.length, width),
-        y: y + height,  // bottom edge of node
+        y: y + height,
       };
     }
 

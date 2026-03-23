@@ -98,10 +98,12 @@ function headerColor(type) {
         @update:property="emit('update:property', $event)"
       />
 
-      <!-- Fallback for unknown / future node types -->
-      <div v-else class="unknown-type">
-        <span class="unknown-label">unknown type: {{ node.type }}</span>
-      </div>
+      <!-- Fallback: treat user-defined / unknown types as function nodes -->
+      <FunctionNode
+        v-else
+        :node="node"
+        @update:property="emit('update:property', $event)"
+      />
 
     </template>
   </BaseNode>
