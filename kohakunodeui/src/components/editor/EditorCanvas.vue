@@ -193,9 +193,12 @@ function onPointerDown(e) {
     beginPan(e.clientX, e.clientY);
     return;
   }
-  // Left mouse → rubber-band selection (only when clicking the canvas itself)
-  if (e.button === 0 && e.target === containerRef.value) {
-    beginSelection(e.clientX, e.clientY);
+  // Left mouse on empty canvas → pan (grab background to move)
+  if (e.button === 0) {
+    const isCanvas = e.target === containerRef.value || e.target.classList.contains('canvas-transform');
+    if (isCanvas) {
+      beginPan(e.clientX, e.clientY);
+    }
   }
 }
 

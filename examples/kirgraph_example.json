@@ -32,8 +32,8 @@
         { "port": "b", "type": "float", "default": 0 }
       ],
       "data_outputs": [{ "port": "result", "type": "float" }],
-      "ctrl_inputs": [],
-      "ctrl_outputs": [],
+      "ctrl_inputs": ["in"],
+      "ctrl_outputs": ["out"],
       "meta": { "pos": [380, 150], "size": [180, 120] }
     },
     {
@@ -45,8 +45,8 @@
         { "port": "b", "type": "float", "default": 2 }
       ],
       "data_outputs": [{ "port": "result", "type": "float" }],
-      "ctrl_inputs": [],
-      "ctrl_outputs": [],
+      "ctrl_inputs": ["in"],
+      "ctrl_outputs": ["out"],
       "meta": { "pos": [660, 100], "size": [180, 120] }
     },
     {
@@ -58,8 +58,8 @@
         { "port": "value", "type": "any" }
       ],
       "data_outputs": [{ "port": "result", "type": "str" }],
-      "ctrl_inputs": [],
-      "ctrl_outputs": [],
+      "ctrl_inputs": ["in"],
+      "ctrl_outputs": ["out"],
       "meta": { "pos": [940, 120], "size": [200, 120] }
     },
     {
@@ -68,8 +68,8 @@
       "name": "Print",
       "data_inputs": [{ "port": "value", "type": "any" }],
       "data_outputs": [],
-      "ctrl_inputs": [],
-      "ctrl_outputs": [],
+      "ctrl_inputs": ["in"],
+      "ctrl_outputs": ["out"],
       "meta": { "pos": [1220, 140], "size": [160, 100] }
     }
   ],

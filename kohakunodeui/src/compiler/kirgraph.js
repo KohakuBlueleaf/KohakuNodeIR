@@ -146,12 +146,21 @@ export function kirgraphToGraph(kirgraph) {
     }))
 
     // Reconstruct controlPorts — ctrl_inputs/outputs are arrays of name strings
-    const ctrlInputs = (kgNode.ctrl_inputs ?? []).map(name => ({
+    // Control flow is first citizen: all non-value/non-load nodes get ctrl ports
+    const NO_CTRL_TYPES = new Set(['value', 'load'])
+    let rawCtrlIn = kgNode.ctrl_inputs ?? []
+    let rawCtrlOut = kgNode.ctrl_outputs ?? []
+    if (!NO_CTRL_TYPES.has(kgNode.type) && rawCtrlIn.length === 0 && rawCtrlOut.length === 0) {
+      rawCtrlIn = ['in']
+      rawCtrlOut = ['out']
+    }
+
+    const ctrlInputs = rawCtrlIn.map(name => ({
       id:   makePortId(kgNode.id, name, 'ci'),
       name,
     }))
 
-    const ctrlOutputs = (kgNode.ctrl_outputs ?? []).map(name => ({
+    const ctrlOutputs = rawCtrlOut.map(name => ({
       id:   makePortId(kgNode.id, name, 'co'),
       name,
     }))
