@@ -6,6 +6,7 @@ from kohakunode import Executor, Registry
 
 reg = Registry()
 reg.register("add", lambda a, b: a + b, output_names=["result"])
+reg.register("multiply", lambda a, b: a * b, output_names=["result"])
 reg.register("less_than", lambda a, b: a < b, output_names=["result"])
 reg.register("to_float", lambda value: float(value), output_names=["result"])
 reg.register("to_string", lambda value: str(value), output_names=["result"])

@@ -55,7 +55,7 @@ print(kir_l3)
 
 # ── L2 → L1: Decompile (roundtrip) ──
 print("=" * 60)
-print("Decompiled: decompiled.kirgraph (L2 → L1 roundtrip)")
+print("Decompiled: decompiled.kirgraph (L2 -> L1 roundtrip)")
 print("=" * 60)
 decompiler = KirGraphDecompiler()
 graph_rt = decompiler.decompile(prog_l2)

@@ -3,7 +3,20 @@
 **Version**: 0.1.0-draft
 **Base URL**: `http://localhost:48888`
 
-The backend exposes a small REST API for node management and synchronous execution, plus a WebSocket endpoint for streaming execution.
+The backend exposes REST endpoints for node management, KIR execution, and graph compilation/decompilation, plus WebSocket endpoints for streaming execution.
+
+**REST endpoints:**
+- `POST /api/nodes/register` — register a user-defined node type
+- `GET /api/nodes` — list all registered node types
+- `DELETE /api/nodes/{type_name}` — unregister a node type
+- `POST /api/execute` — execute a KIR source string synchronously
+- `POST /api/execute/kirgraph` — compile `.kirgraph` to L3 and execute
+- `POST /api/compile` — compile `.kirgraph` to KIR text (L2 or L3)
+- `POST /api/decompile` — convert KIR text back to `.kirgraph`
+
+**WebSocket endpoints:**
+- `WS /api/ws/execute` — execute KIR with streaming progress events
+- `WS /api/ws/execute/kirgraph` — compile `.kirgraph` and execute with streaming events
 
 ---
 
@@ -214,7 +227,120 @@ The `display` built-in produces `repr()` of its argument. The `print` built-in p
 
 ---
 
-## WebSocket Endpoint
+### POST /api/execute/kirgraph
+
+Compile a `.kirgraph` (L1) to L3 KIR and execute it in one step. Combines `KirGraphCompiler`, `DataflowCompiler`, `StripMetaPass`, and `ExecutionSession`.
+
+**Request body**:
+
+```json
+{
+  "kirgraph": {
+    "version": "0.1.0",
+    "nodes": [ ... ],
+    "edges": [ ... ]
+  }
+}
+```
+
+**Response** (200, success):
+
+```json
+{
+  "success": true,
+  "variables": { "x": 10, "sum": 30 },
+  "output": [{ "type": "output", "value": "30" }],
+  "kir_source": "x = 10\n..."
+}
+```
+
+The response includes a `kir_source` field containing the compiled L3 KIR text, so the frontend can inspect what was executed.
+
+**Response** (400):
+
+```json
+{ "detail": "Compilation error: ..." }
+```
+
+---
+
+### POST /api/compile
+
+Compile a `.kirgraph` to KIR text without executing. Supports both L2 (with `@meta`) and L3 (stripped) output.
+
+**Request body**:
+
+```json
+{
+  "kirgraph": {
+    "version": "0.1.0",
+    "nodes": [ ... ],
+    "edges": [ ... ]
+  },
+  "level": 3
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `kirgraph` | object | yes | A valid `.kirgraph` JSON object |
+| `level` | int | no | `2` = L2 with `@meta` (default for round-tripping), `3` = L3 pure sequential (default: `3`) |
+
+**Response** (200):
+
+```json
+{ "kir_text": "val_a_value = 10\n...", "level": 3 }
+```
+
+**Error** (400):
+
+```json
+{ "detail": "Compilation error: ..." }
+```
+
+**Error** (422):
+
+```json
+{ "detail": "level must be 2 or 3, got 1" }
+```
+
+---
+
+### POST /api/decompile
+
+Convert KIR L2 text (with `@meta` annotations) back to a `.kirgraph` JSON object. This is the L2 → L1 direction of the pipeline.
+
+**Request body**:
+
+```json
+{
+  "kir_source": "@meta node_id=\"val_a\" pos=(100, 100)\nval_a_value = 10\n..."
+}
+```
+
+L2 KIR with `@meta node_id=...` annotations is required for accurate round-tripping. L3 KIR (stripped of `@meta`) will still parse but will produce incomplete graph topology.
+
+**Response** (200):
+
+```json
+{
+  "kirgraph": {
+    "version": "0.1.0",
+    "nodes": [ ... ],
+    "edges": [ ... ]
+  }
+}
+```
+
+**Error** (400):
+
+```json
+{ "detail": "Decompilation error: ..." }
+```
+
+---
+
+## WebSocket Endpoints
 
 ### WS /api/ws/execute
 
@@ -307,6 +433,49 @@ Client                              Server
   │  (connection stays open)          │
   │── {"type":"execute",...} ──────────►│
   │   (another program can be sent)   │
+```
+
+---
+
+### WS /api/ws/execute/kirgraph
+
+Compile a `.kirgraph` and execute it with streaming progress. Same event protocol as `WS /api/ws/execute`, with an additional `compiled` event.
+
+**Connection**: `ws://localhost:48888/api/ws/execute/kirgraph`
+
+### Client → Server Messages
+
+#### execute
+
+```json
+{
+  "type": "execute",
+  "kirgraph": {
+    "version": "0.1.0",
+    "nodes": [ ... ],
+    "edges": [ ... ]
+  }
+}
+```
+
+### Server → Client Messages
+
+Same as `WS /api/ws/execute` with one additional message sent before `started`:
+
+#### compiled
+
+Sent after successful compilation, before execution begins.
+
+```json
+{ "type": "compiled", "kir_source": "val_a_value = 10\n..." }
+```
+
+After `compiled`, the server sends `started`, then the standard `output`, `variable`, and `completed` (or `error`) sequence.
+
+On compilation failure:
+
+```json
+{ "type": "error", "message": "Compilation error: ..." }
 ```
 
 ---

@@ -33,13 +33,7 @@ pip install -e .
 
 This installs the `kohakunode` package in editable mode. The backend server depends on it.
 
-Install backend dependencies:
-
-```bash
-pip install fastapi uvicorn
-```
-
-Or if a `requirements.txt` exists in `app/backend/`:
+Install backend dependencies from `app/backend/requirements.txt`:
 
 ```bash
 pip install -r app/backend/requirements.txt
@@ -397,6 +391,7 @@ This runs all `.kir` examples in the directory and prints their outputs.
 Individual examples:
 
 ```bash
+python hello_world.py         # Hello, World! — start here
 python basic_math.py          # simple arithmetic
 python branching.py           # conditional branching
 python control_flow.py        # loops with jump

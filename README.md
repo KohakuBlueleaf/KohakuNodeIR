@@ -18,7 +18,7 @@ The language handles both **control-flow** style programming (sequential, branch
 - **Parallel execution** — `parallel` primitive marks independent branches with no ordering guarantee
 - **Vue 3 node editor** — visual graph editor included (`app/frontend/`)
 - **Python engine** — parser, validator, compiler, and executor in `src/kohakunode/`
-- **327 tests** across 22 test files
+- **424 tests** across 22 test files
 
 ---
 
@@ -247,13 +247,18 @@ KohakuNodeIR/
 │   └── backend/            # FastAPI server
 ├── docs/
 │   ├── spec.md             # Language specification
-│   └── kirgraph_spec.md    # KirGraph format specification
+│   ├── kirgraph_spec.md    # KirGraph format specification
+│   ├── architecture.md     # System architecture reference
+│   ├── api.md              # Backend REST and WebSocket API reference
+│   ├── getting_started.md  # Installation and first-run guide
+│   ├── example.kir         # Full-feature .kir example
+│   └── scoped_dataflow_example.kir  # Mixed control-flow + dataflow example
 ├── examples/
 │   ├── kir_basics/         # .kir programs with Python runners
 │   └── kirgraph_pipeline/  # Full L1→L2→L3 pipeline demo
 ├── editors/
 │   └── vscode/             # VS Code extension (syntax highlighting)
-└── tests/                  # 327 tests across 22 files
+└── tests/                  # 424 tests across 22 files
 ```
 
 ---
@@ -376,6 +381,9 @@ loop:
 
 - [Language Specification](docs/spec.md) — full grammar, execution model, namespace rules, built-in utilities, dataflow semantics
 - [KirGraph Format](docs/kirgraph_spec.md) — L1 JSON schema, node/edge definitions, compilation rules, full pipeline example
+- [Architecture](docs/architecture.md) — system architecture, module structure, execution pipeline
+- [API Reference](docs/api.md) — backend REST and WebSocket endpoints
+- [Getting Started](docs/getting_started.md) — installation, running the editor, first graph walkthrough
 - [Examples](examples/) — runnable `.kir` programs covering all language features
 
 ---

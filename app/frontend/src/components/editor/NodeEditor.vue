@@ -9,6 +9,7 @@ import PropertyPanel from '../panels/PropertyPanel.vue';
 import NodeDefEditor from '../panels/NodeDefEditor.vue';
 import IrPreview from '../panels/IrPreview.vue';
 import { graphToKirgraph, kirgraphToGraph } from '../../compiler/kirgraph.js';
+import { executeKirgraphStreaming } from '../../api/backend.js';
 
 const editorStore = useEditorStore();
 const graph = useGraphStore();
@@ -46,6 +47,83 @@ const nodeDefEditorTarget = ref(null); // null = create new, object = edit exist
 function openNodeDefEditor(def) {
   nodeDefEditorTarget.value = def ?? null;
   nodeDefEditorOpen.value = true;
+}
+
+// --- Quick Run (toolbar) ---
+const isRunning = ref(false);
+let _cancelRun = null;
+
+function runGraph() {
+  if (isRunning.value) {
+    _cancelRun?.();
+    _cancelRun = null;
+    isRunning.value = false;
+    ElMessage({ message: 'Execution cancelled.', type: 'info', duration: 1500 });
+    return;
+  }
+
+  if (!graph.nodeList.length) {
+    ElMessage({ message: 'Graph is empty — add some nodes first.', type: 'warning', duration: 2000 });
+    return;
+  }
+
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  isRunning.value = true;
+
+  // Open the IR preview panel so results are visible
+  irOpen.value = true;
+
+  const outputLines = [];
+  const variables = {};
+
+  const { cancel, ws } = executeKirgraphStreaming(kirgraph, {
+    onOutput(text) {
+      outputLines.push(text.replace(/\n$/, ''));
+    },
+    onError(msg) {
+      isRunning.value = false;
+      _cancelRun = null;
+      ElMessage({ message: `Execution error: ${msg}`, type: 'error', duration: 5000 });
+    },
+    onVariable(name, value) {
+      variables[name] = value;
+    },
+    onCompleted(vars) {
+      isRunning.value = false;
+      _cancelRun = null;
+      const varCount = Object.keys(vars).length;
+      const summary = outputLines.length
+        ? outputLines.slice(-3).join(' | ')
+        : varCount
+          ? `${varCount} variable${varCount !== 1 ? 's' : ''} set`
+          : 'done';
+      ElMessage({
+        message: `Run complete — ${summary}`,
+        type: 'success',
+        duration: 3000,
+      });
+    },
+  });
+
+  _cancelRun = cancel;
+
+  ws.onerror = () => {
+    isRunning.value = false;
+    _cancelRun = null;
+    ElMessage({
+      message: 'Backend connection failed — is the server running on port 48888?',
+      type: 'error',
+      duration: 5000,
+    });
+  };
+
+  ws.onclose = (event) => {
+    isRunning.value = false;
+    _cancelRun = null;
+    if (event.code !== 1000) {
+      ElMessage({ message: `Connection closed (code ${event.code})`, type: 'warning', duration: 3000 });
+    }
+  };
 }
 
 // --- Save graph as .kirgraph ---
@@ -137,6 +215,21 @@ function loadGraph() {
         <button class="tool-btn" title="Redo (Ctrl+Y)" @click="redo">
           <span class="i-carbon-redo" />
           Redo
+        </button>
+      </div>
+
+      <div class="toolbar-sep" />
+
+      <!-- Run -->
+      <div class="toolbar-group">
+        <button
+          class="tool-btn tool-btn--run"
+          :class="{ 'tool-btn--run-active': isRunning }"
+          :title="isRunning ? 'Click to cancel execution' : 'Run graph on backend (opens IR panel)'"
+          @click="runGraph"
+        >
+          <span :class="isRunning ? 'i-carbon-stop-filled' : 'i-carbon-play-filled'" />
+          {{ isRunning ? 'Stop' : 'Run' }}
         </button>
       </div>
 
@@ -297,6 +390,26 @@ function loadGraph() {
 .tool-btn--load:hover {
   color: #89b4fa;
   border-color: rgba(137, 180, 250, 0.5);
+}
+
+.tool-btn--run {
+  color: #a6e3a1;
+  font-weight: 600;
+}
+.tool-btn--run:hover {
+  color: #a6e3a1;
+  border-color: rgba(166, 227, 161, 0.5);
+  background: rgba(166, 227, 161, 0.08);
+}
+.tool-btn--run-active {
+  color: #f9e2af;
+  border-color: rgba(249, 226, 175, 0.5) !important;
+  background: rgba(249, 226, 175, 0.08) !important;
+  animation: run-pulse 1.2s ease-in-out infinite;
+}
+@keyframes run-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
 }
 
 .editor-title {

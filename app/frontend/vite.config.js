@@ -23,6 +23,8 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:48888",
         changeOrigin: true,
+        // Also proxy WebSocket connections on this path prefix
+        ws: true,
       },
     },
   },

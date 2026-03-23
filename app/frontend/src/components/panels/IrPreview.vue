@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus';
 import { useGraphStore } from '../../stores/graph.js';
 import { compileGraph } from '../../compiler/graphToIr.js';
 import { graphToKirgraph } from '../../compiler/kirgraph.js';
+import { executeKirgraphStreaming } from '../../api/backend.js';
 
 const graph = useGraphStore();
 
@@ -115,18 +116,25 @@ async function copyToClipboard() {
 const isExecuting = ref(false);
 const execOutput = ref('');
 const execError = ref('');
+const execVariables = ref({});
 const showExecOutput = ref(false);
 
-function execute() {
-  if (isExecuting.value) return;
+// Active WS cancel handle — allows stopping mid-run
+let _cancelExec = null;
 
-  // Compile the current graph to KIR
-  const { ir: kirSource, errors } = compileGraph(graph.nodeList, graph.connectionList, mode.value);
-  if (errors.length > 0) {
-    ElMessage({ message: `Cannot execute: compile errors exist.`, type: 'error', duration: 3000 });
+function execute() {
+  if (isExecuting.value) {
+    // Cancel the current run
+    _cancelExec?.();
+    _cancelExec = null;
+    isExecuting.value = false;
     return;
   }
-  if (!kirSource.trim()) {
+
+  // Build kirgraph from the current canvas — let the backend compile it
+  // (this path is more reliable than the frontend compiler for execution)
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  if (!graph.nodeList.length) {
     ElMessage({ message: 'Graph is empty — nothing to execute.', type: 'warning', duration: 2000 });
     return;
   }
@@ -134,90 +142,50 @@ function execute() {
   isExecuting.value = true;
   execOutput.value = '';
   execError.value = '';
+  execVariables.value = {};
   showExecOutput.value = true;
 
-  // Connect WebSocket for streaming output
-  const wsUrl = `ws://${window.location.hostname}:48888/api/ws/execute`;
-  let ws = null;
-  try {
-    ws = new WebSocket(wsUrl);
-  } catch (e) {
-    execError.value = `WebSocket connection failed: ${e.message}`;
-    isExecuting.value = false;
-    return;
-  }
+  const { cancel, ws } = executeKirgraphStreaming(kirgraph, {
+    onStarted() {
+      execOutput.value += '[ Execution started ]\n';
+    },
+    onCompiled(kirSrc) {
+      // Silently received — available for debugging if needed
+    },
+    onOutput(text) {
+      execOutput.value += text;
+      // Ensure output ends with newline for readability
+      if (text && !text.endsWith('\n')) execOutput.value += '\n';
+    },
+    onError(msg) {
+      execError.value = msg;
+      isExecuting.value = false;
+    },
+    onVariable(name, value) {
+      execVariables.value = { ...execVariables.value, [name]: value };
+    },
+    onCompleted(variables) {
+      execVariables.value = variables;
+      isExecuting.value = false;
+      _cancelExec = null;
+      ElMessage({ message: 'Execution completed.', type: 'success', duration: 1500 });
+    },
+  });
 
-  ws.onmessage = (event) => {
-    try {
-      const msg = JSON.parse(event.data);
-      if (msg.type === 'output' || msg.type === 'stdout') {
-        execOutput.value += msg.data ?? msg.text ?? '';
-      } else if (msg.type === 'error' || msg.type === 'stderr') {
-        execOutput.value += `[ERR] ${msg.data ?? msg.text ?? ''}\n`;
-      } else if (msg.type === 'result') {
-        if (msg.variables) {
-          execOutput.value += '\n--- Variables ---\n';
-          for (const [k, v] of Object.entries(msg.variables)) {
-            execOutput.value += `  ${k} = ${JSON.stringify(v)}\n`;
-          }
-        }
-      } else if (msg.type === 'done' || msg.type === 'finished') {
-        isExecuting.value = false;
-        ws.close();
-      }
-    } catch {
-      // Non-JSON message — treat as raw output
-      execOutput.value += event.data + '\n';
-    }
-  };
+  _cancelExec = cancel;
 
   ws.onerror = () => {
     execError.value = 'WebSocket error — is the backend running on port 48888?';
     isExecuting.value = false;
+    _cancelExec = null;
   };
 
   ws.onclose = (event) => {
     isExecuting.value = false;
+    _cancelExec = null;
     if (event.code !== 1000 && !execError.value) {
-      execError.value = `Connection closed (code ${event.code}).`;
+      execError.value = `Connection closed unexpectedly (code ${event.code}).`;
     }
-  };
-
-  ws.onopen = () => {
-    // Send the KIR source once the socket is open
-    fetch('/api/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kir_source: kirSource }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          return res.json().catch(() => ({ detail: res.statusText })).then((body) => {
-            execError.value = `Execute failed: ${body.detail ?? body.error ?? res.statusText}`;
-            isExecuting.value = false;
-            ws.close();
-          });
-        }
-        return res.json().then((body) => {
-          // If backend responds synchronously (no WebSocket events):
-          if (body.output !== undefined) execOutput.value += body.output;
-          if (body.variables) {
-            execOutput.value += '\n--- Variables ---\n';
-            for (const [k, v] of Object.entries(body.variables)) {
-              execOutput.value += `  ${k} = ${JSON.stringify(v)}\n`;
-            }
-          }
-          // If no WS messages come, mark done
-          if (!isExecuting.value) return;
-          // Give WS a moment; if done flag never arrives we stop after a grace period
-          setTimeout(() => { isExecuting.value = false; }, 10000);
-        });
-      })
-      .catch((err) => {
-        execError.value = `Network error: ${err.message}`;
-        isExecuting.value = false;
-        ws.close();
-      });
   };
 }
 
@@ -278,12 +246,11 @@ function toggleMode() {
         <button
           class="ir-action-btn ir-action-btn--exec"
           :class="{ 'ir-action-btn--exec-running': isExecuting }"
-          :title="isExecuting ? 'Executing…' : 'Execute KIR on backend'"
-          :disabled="isExecuting"
+          :title="isExecuting ? 'Click to cancel execution' : 'Execute graph on backend'"
           @click="execute"
         >
           <span :class="isExecuting ? 'i-carbon-stop-filled' : 'i-carbon-play'" />
-          {{ isExecuting ? 'Executing…' : 'Execute' }}
+          {{ isExecuting ? 'Stop' : 'Execute' }}
         </button>
       </div>
     </div>
@@ -319,6 +286,19 @@ function toggleMode() {
       </div>
       <div v-if="execError" class="exec-error">{{ execError }}</div>
       <pre class="exec-output-body">{{ execOutput || (isExecuting ? '(waiting for output…)' : '(no output)') }}</pre>
+      <!-- Variable results table -->
+      <div v-if="!isExecuting && Object.keys(execVariables).length > 0" class="exec-vars">
+        <div class="exec-vars-title">Variables</div>
+        <div
+          v-for="(val, key) in execVariables"
+          :key="key"
+          class="exec-var-row"
+        >
+          <span class="exec-var-name">{{ key }}</span>
+          <span class="exec-var-eq">=</span>
+          <span class="exec-var-val">{{ typeof val === 'object' ? JSON.stringify(val) : String(val) }}</span>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -650,5 +630,53 @@ function toggleMode() {
 .exec-spin {
   display: inline-block;
   animation: exec-spin-anim 1s linear infinite;
+}
+
+/* ---- Variable results ---- */
+.exec-vars {
+  flex-shrink: 0;
+  border-top: 1px solid #1e1e2e;
+  padding: 4px 12px 6px;
+  background: #0d0d17;
+}
+
+.exec-vars-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #45475a;
+  margin-bottom: 3px;
+}
+
+.exec-var-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.exec-var-name {
+  color: #89b4fa;
+  min-width: 80px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exec-var-eq {
+  color: #585b70;
+}
+
+.exec-var-val {
+  color: #a6e3a1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 </style>

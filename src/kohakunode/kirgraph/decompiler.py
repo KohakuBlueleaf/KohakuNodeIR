@@ -123,6 +123,7 @@ class KirGraphDecompiler:
         Returns the last node_id emitted (for chaining control edges).
         """
         last_id = prev_node_id
+        first_created_id: str | None = None
 
         for stmt in stmts:
             if isinstance(stmt, DataflowBlock):
@@ -190,6 +191,9 @@ class KirGraphDecompiler:
             if node_id is None:
                 continue
 
+            if first_created_id is None:
+                first_created_id = node_id
+
             # Control edge from previous (skip in dataflow blocks)
             if last_id is not None and not in_dataflow:
                 node = self._nodes[node_id]
@@ -215,7 +219,7 @@ class KirGraphDecompiler:
             else:
                 last_id = node_id
 
-        return last_id
+        return first_created_id
 
     def _create_node_from_stmt(self, stmt: Statement) -> str | None:
         """Create a KGNode from a statement. Returns the node id or None."""

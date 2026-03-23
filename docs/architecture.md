@@ -22,9 +22,11 @@ KohakuNodeIR is a full-stack visual programming system. Users build programs by 
   ┌─────────────────────────▼────────────────────────────────────┐
   │               Backend (FastAPI, Python 3.10+)                │
   │                                                              │
-  │  POST /api/execute        WS /api/ws/execute                 │
-  │  POST /api/nodes/register GET /api/nodes                     │
+  │  POST /api/execute            POST /api/execute/kirgraph     │
+  │  POST /api/compile            POST /api/decompile            │
+  │  POST /api/nodes/register     GET /api/nodes                 │
   │  DELETE /api/nodes/{type}                                    │
+  │  WS /api/ws/execute           WS /api/ws/execute/kirgraph    │
   │                                                              │
   │            ExecutionSession (captures output)                │
   │                      │                                       │
@@ -88,13 +90,15 @@ Produced by `DataflowCompiler` (expands `@dataflow:` blocks) and optionally `Str
 
 ### 2.4 Compilation Example
 
-Given a simple sum-of-squares loop graph (`examples/kirgraph_pipeline/source.kirgraph`):
+Given a branching computation graph (`examples/kirgraph_pipeline/source.kirgraph`):
+adds x=4 and y=7, checks if the sum is below a threshold (10), and either prints the
+sum (if small) or computes and prints the product x*y (if large or equal).
 
 **L1 fragment** (JSON):
 ```json
 {
-  "id": "val_limit", "type": "value",
-  "properties": { "value": 3 },
+  "id": "val_x", "type": "value",
+  "properties": { "value_type": "int", "value": 4 },
   "ctrl_inputs": [], "ctrl_outputs": []
 }
 ```
@@ -102,31 +106,42 @@ Given a simple sum-of-squares loop graph (`examples/kirgraph_pipeline/source.kir
 **L2 output** (compiled KIR with annotations):
 ```kir
 @dataflow:
-    @meta node_id="val_limit" pos=(100, 100)
-    val_limit_value = 3
-    @meta node_id="val_i" pos=(100, 380)
-    val_i_value = 0
-@meta node_id="merge_loop" pos=(340, -20)
-()jump(`ns_merge_loop`)
-ns_merge_loop:
-    @meta node_id="inc_i" pos=(320, 100)
-    (val_i_value, val_step_value)add(inc_i_result)
-    @dataflow:
-        @meta node_id="square" pos=(520, 100)
-        (inc_i_result, inc_i_result)multiply(square_result)
+    @meta node_id="val_x" pos=(100, 100) size=[160, 100]
+    val_x_value = 4
+    @meta node_id="val_y" pos=(100, 240) size=[160, 100]
+    val_y_value = 7
+    @meta node_id="val_threshold" pos=(100, 380) size=[160, 100]
+    val_threshold_value = 10
+@meta node_id="add_xy" pos=(320, 160) size=[180, 120]
+(val_x_value, val_y_value)add(add_xy_result)
+@meta node_id="check" pos=(540, 160) size=[200, 120]
+(add_xy_result, val_threshold_value)less_than(check_result)
+@meta node_id="branch" pos=(540, 320) size=[180, 120]
+(check_result)branch(`branch_true`, `branch_false`)
+branch_true:
+    @meta node_id="msg_small" pos=(760, 200) size=[160, 100]
+    (add_xy_result)print()
+branch_false:
+    @meta node_id="mul_xy" pos=(760, 400) size=[180, 120]
+    (val_x_value, val_y_value)multiply(mul_xy_result)
+    ...
 ```
 
 **L3 output** (execution-ready, no `@dataflow:`, no `@meta`):
 ```kir
-val_limit_value = 3
-val_step_value = 1
-val_total_value = 0
-val_i_value = 0
-()jump(`ns_merge_loop`)
-ns_merge_loop:
-    (val_i_value, val_step_value)add(inc_i_result)
-    (inc_i_result, inc_i_result)multiply(square_result)
-    (val_total_value, square_result)add(accum_result)
+val_x_value = 4
+val_threshold_value = 10
+val_y_value = 7
+(val_x_value, val_y_value)add(add_xy_result)
+(add_xy_result, val_threshold_value)less_than(check_result)
+(check_result)branch(`branch_true`, `branch_false`)
+branch_true:
+    (add_xy_result)print()
+branch_false:
+    (val_x_value, val_y_value)multiply(mul_xy_result)
+    (mul_xy_result)to_string(to_str_result)
+    ("x*y = ", to_str_result)concat(fmt_result)
+    (fmt_result)print()
 ```
 
 ---
