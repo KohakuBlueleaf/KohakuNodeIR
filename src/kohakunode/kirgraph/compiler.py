@@ -158,11 +158,10 @@ class KirGraphCompiler:
         return stmts
 
     def _emit_ready_dependents(self, just_emitted_id: str) -> list[Statement]:
-        """Emit non-ctrl nodes that depend on just_emitted_id and are now ready."""
-        stmts: list[Statement] = []
+        """Emit non-ctrl nodes that are now ready, wrapped in @dataflow: block."""
+        df_stmts: list[Statement] = []
         emitted_ids: set[str] = set()
 
-        # Iteratively emit dependents that become ready
         changed = True
         while changed:
             changed = False
@@ -172,10 +171,13 @@ class KirGraphCompiler:
                 if self._all_data_sources_emitted(nid, emitted_ids):
                     emitted_ids.add(nid)
                     del self._dependent_nodes[nid]
-                    stmts.extend(self._emit_node_raw(node))
+                    df_stmts.extend(self._emit_node_raw(node))
                     changed = True
 
-        return stmts
+        if not df_stmts:
+            return []
+        # Wrap in @dataflow: block since these nodes have no control ordering
+        return [DataflowBlock(body=df_stmts)]
 
     def _all_data_sources_emitted(self, node_id: str, extra_emitted: set[str]) -> bool:
         """Check if ALL data sources for a node have been emitted."""

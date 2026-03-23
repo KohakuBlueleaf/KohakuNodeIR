@@ -7,10 +7,11 @@
 ns_merge_loop:
     @meta node_id="inc_i" pos=(320, 100) size=[180, 120]
     (val_i_value, val_step_value)add(inc_i_result)
-    @meta node_id="square" pos=(520, 100) size=[180, 120]
-    (inc_i_result, inc_i_result)multiply(square_result)
-    @meta node_id="accum" pos=(720, 100) size=[180, 120]
-    (val_total_value, square_result)add(accum_result)
+    @dataflow:
+        @meta node_id="square" pos=(520, 100) size=[180, 120]
+        (inc_i_result, inc_i_result)multiply(square_result)
+        @meta node_id="accum" pos=(720, 100) size=[180, 120]
+        (val_total_value, square_result)add(accum_result)
 @meta node_id="check" pos=(920, 100) size=[180, 120]
 (inc_i_result, val_limit_value)less_than(check_result)
 @meta node_id="branch" pos=(920, 280) size=[180, 120]
@@ -20,7 +21,8 @@ branch_true:
 branch_false:
     @meta node_id="to_str" pos=(920, 440) size=[160, 100]
     (accum_result)to_string(to_str_result)
-    @meta node_id="fmt" pos=(1100, 440) size=[180, 120]
-    ("Sum of squares = ", to_str_result)concat(fmt_result)
-    @meta node_id="out" pos=(1300, 440) size=[160, 100]
-    (fmt_result)print()
+    @dataflow:
+        @meta node_id="fmt" pos=(1100, 440) size=[180, 120]
+        ("Sum of squares = ", to_str_result)concat(fmt_result)
+        @meta node_id="out" pos=(1300, 440) size=[160, 100]
+        (fmt_result)print()

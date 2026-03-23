@@ -287,17 +287,6 @@
     {
       "type": "control",
       "from": {
-        "node": "to_str",
-        "port": "out"
-      },
-      "to": {
-        "node": "fmt",
-        "port": "in"
-      }
-    },
-    {
-      "type": "control",
-      "from": {
         "node": "fmt",
         "port": "out"
       },
@@ -313,7 +302,7 @@
         "port": "false"
       },
       "to": {
-        "node": "out",
+        "node": "to_str",
         "port": "in"
       }
     },
