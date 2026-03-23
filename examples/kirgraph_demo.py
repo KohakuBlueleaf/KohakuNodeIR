@@ -48,10 +48,26 @@ print(kir_l3_text)
 # -----------------------------------------------------------------------
 
 print("=== Execution ===")
-exe = Executor()
+exe = Executor(validate=False)
+
+# Register all node types used in the example
 exe.register("add", lambda a, b: a + b, output_names=["result"])
+exe.register("subtract", lambda a, b: a - b, output_names=["result"])
+exe.register("multiply", lambda a, b: a * b, output_names=["result"])
+exe.register("divide", lambda a, b: a / b if b != 0 else 0, output_names=["result"])
 exe.register("greater_than", lambda a, b: a > b, output_names=["result"])
+exe.register("less_than", lambda a, b: a < b, output_names=["result"])
+exe.register("equal", lambda a, b: a == b, output_names=["result"])
+exe.register("concat", lambda a, b: str(a) + str(b), output_names=["result"])
+exe.register(
+    "format_string",
+    lambda template, value: str(template).format(value),
+    output_names=["result"],
+)
+exe.register("to_int", lambda value: int(value), output_names=["result"])
+exe.register("to_float", lambda value: float(value), output_names=["result"])
+exe.register("to_string", lambda value: str(value), output_names=["result"])
 exe.register("print", lambda v: print(f"  Output: {v}"), output_names=[])
 
 store = exe.execute(program_l3)
-print(f"\nFinal variables: { {k: v for k, v in store._store.items()} }")
+print(f"\n  Final variables: { {k: v for k, v in store.snapshot().items()} }")
