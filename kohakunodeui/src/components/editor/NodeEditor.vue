@@ -9,9 +9,6 @@ import IrPreview from '../panels/IrPreview.vue';
 
 const editorStore = useEditorStore();
 
-// --- Mode (synced with store) ---
-const mode = ref(editorStore.mode);
-
 // --- Zoom state (lifted here so toolbar controls can drive it) ---
 const zoomLevel = ref(1);
 const ZOOM_MIN = 0.1;
@@ -50,26 +47,6 @@ function openNodeDefEditor(def) {
 
     <!-- ── Toolbar ── -->
     <header class="toolbar">
-      <!-- Mode toggle -->
-      <div class="toolbar-group">
-        <button
-          class="mode-btn"
-          :class="{ active: mode === 'dataflow' }"
-          @click="mode = 'dataflow'; editorStore.setMode('dataflow')"
-        >
-          Dataflow
-        </button>
-        <button
-          class="mode-btn"
-          :class="{ active: mode === 'controlflow' }"
-          @click="mode = 'controlflow'; editorStore.setMode('controlflow')"
-        >
-          Control Flow
-        </button>
-      </div>
-
-      <div class="toolbar-sep" />
-
       <!-- Zoom controls -->
       <div class="toolbar-group">
         <button class="tool-btn" title="Zoom out" @click="zoomOut">−</button>
@@ -96,10 +73,8 @@ function openNodeDefEditor(def) {
       <!-- Spacer -->
       <div style="flex: 1" />
 
-      <!-- Mode indicator badge -->
-      <span class="mode-badge" :class="mode">
-        {{ mode === 'dataflow' ? 'Data Flow' : 'Control Flow' }}
-      </span>
+      <!-- Title -->
+      <span class="editor-title">KohakuNode IR</span>
     </header>
 
     <!-- ── Main body ── -->
@@ -203,26 +178,6 @@ function openNodeDefEditor(def) {
   background: #45475a;
 }
 
-.mode-btn {
-  padding: 4px 12px;
-  background: transparent;
-  border: 1px solid #45475a;
-  border-radius: 4px;
-  color: #a6adc8;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-.mode-btn:hover {
-  background: #313244;
-  color: #cdd6f4;
-}
-.mode-btn.active {
-  background: #313244;
-  color: #89b4fa;
-  border-color: #89b4fa;
-}
-
 .zoom-label {
   min-width: 44px;
   text-align: center;
@@ -238,22 +193,11 @@ function openNodeDefEditor(def) {
   color: #cdd6f4;
 }
 
-.mode-badge {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 10px;
+.editor-title {
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.03em;
-}
-.mode-badge.dataflow {
-  background: rgba(137, 180, 250, 0.15);
-  color: #89b4fa;
-  border: 1px solid rgba(137, 180, 250, 0.3);
-}
-.mode-badge.controlflow {
-  background: rgba(250, 179, 135, 0.15);
-  color: #fab387;
-  border: 1px solid rgba(250, 179, 135, 0.3);
+  color: #6c7086;
+  letter-spacing: 0.05em;
 }
 
 /* ── Main body (3-column) ── */
