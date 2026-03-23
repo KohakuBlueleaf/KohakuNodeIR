@@ -74,6 +74,131 @@
       }
     },
     {
+      "id": "merge_loop",
+      "type": "merge",
+      "name": "Merge",
+      "data_inputs": [],
+      "data_outputs": [],
+      "ctrl_inputs": [
+        "entry",
+        "back"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ]
+    },
+    {
+      "id": "inc_i",
+      "type": "add",
+      "name": "Add",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "any"
+        },
+        {
+          "port": "b",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          320,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
+    },
+    {
+      "id": "square",
+      "type": "multiply",
+      "name": "Multiply",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "any"
+        },
+        {
+          "port": "b",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          520,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
+    },
+    {
+      "id": "accum",
+      "type": "add",
+      "name": "Add",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "any"
+        },
+        {
+          "port": "b",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          720,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
+    },
+    {
       "id": "check",
       "type": "less_than",
       "name": "Less Than",
@@ -145,7 +270,7 @@
       "name": "To String",
       "data_inputs": [
         {
-          "port": "a",
+          "port": "value",
           "type": "any"
         }
       ],
@@ -216,7 +341,7 @@
       "name": "Print",
       "data_inputs": [
         {
-          "port": "a",
+          "port": "value",
           "type": "any"
         }
       ],
@@ -243,33 +368,11 @@
     {
       "type": "control",
       "from": {
-        "node": "val_limit",
+        "node": "merge_loop",
         "port": "out"
       },
       "to": {
-        "node": "val_step",
-        "port": "in"
-      }
-    },
-    {
-      "type": "control",
-      "from": {
-        "node": "val_step",
-        "port": "out"
-      },
-      "to": {
-        "node": "val_i",
-        "port": "in"
-      }
-    },
-    {
-      "type": "control",
-      "from": {
-        "node": "val_i",
-        "port": "out"
-      },
-      "to": {
-        "node": "val_total",
+        "node": "inc_i",
         "port": "in"
       }
     },
@@ -287,12 +390,12 @@
     {
       "type": "control",
       "from": {
-        "node": "fmt",
-        "port": "out"
+        "node": "branch",
+        "port": "true"
       },
       "to": {
-        "node": "out",
-        "port": "in"
+        "node": "merge_loop",
+        "port": "back"
       }
     },
     {
@@ -304,6 +407,83 @@
       "to": {
         "node": "to_str",
         "port": "in"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "val_i",
+        "port": "value"
+      },
+      "to": {
+        "node": "inc_i",
+        "port": "a"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "val_step",
+        "port": "value"
+      },
+      "to": {
+        "node": "inc_i",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "inc_i",
+        "port": "result"
+      },
+      "to": {
+        "node": "square",
+        "port": "a"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "inc_i",
+        "port": "result"
+      },
+      "to": {
+        "node": "square",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "val_total",
+        "port": "value"
+      },
+      "to": {
+        "node": "accum",
+        "port": "a"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "square",
+        "port": "result"
+      },
+      "to": {
+        "node": "accum",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "inc_i",
+        "port": "result"
+      },
+      "to": {
+        "node": "check",
+        "port": "a"
       }
     },
     {
@@ -331,6 +511,17 @@
     {
       "type": "data",
       "from": {
+        "node": "accum",
+        "port": "result"
+      },
+      "to": {
+        "node": "to_str",
+        "port": "value"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
         "node": "to_str",
         "port": "result"
       },
@@ -347,7 +538,7 @@
       },
       "to": {
         "node": "out",
-        "port": "a"
+        "port": "value"
       }
     }
   ]

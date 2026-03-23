@@ -192,6 +192,7 @@ class KirGraphCompiler:
         if node.type == "value":
             val = node.properties.get("value", 0)
             out = node.data_outputs[0].port if node.data_outputs else "value"
+            # Use Assignment (no @meta support) — decompiler recovers node_id from var naming
             return [Assignment(target=_var(node.id, out), value=_lit(val))]
         inputs = [self._input(node, p.port) for p in node.data_inputs]
         outputs = [_var(node.id, p.port) for p in node.data_outputs]

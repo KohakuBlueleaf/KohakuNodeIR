@@ -92,6 +92,7 @@ class KirGraphDecompiler:
         self._edges: list[KGEdge] = []
         self._var_to_node_port: dict[str, tuple[str, str]] = {}
         self._node_counter = 0
+        self._handled_namespaces: set[str] = set()
 
         # First pass: collect all nodes and their output variables.
         self._walk_statements(program.body, prev_node_id=None, in_namespace=False)
@@ -114,6 +115,8 @@ class KirGraphDecompiler:
         stmts: list[Statement],
         prev_node_id: str | None,
         in_namespace: bool,
+        in_dataflow: bool = False,
+        parent_branch_edge: tuple[str, str] | None = None,
     ) -> str | None:
         """Walk statements, creating nodes and control edges.
 
@@ -123,41 +126,86 @@ class KirGraphDecompiler:
 
         for stmt in stmts:
             if isinstance(stmt, DataflowBlock):
-                # Dataflow blocks contain unconnected (no ctrl) nodes.
+                # Dataflow blocks: nodes with NO ctrl edges
                 self._walk_statements(
-                    stmt.body, prev_node_id=None, in_namespace=False
+                    stmt.body, prev_node_id=None, in_namespace=False, in_dataflow=True
                 )
-                # Don't update last_id -- dataflow nodes have no ctrl.
                 continue
 
             if isinstance(stmt, Namespace):
-                # Namespaces are control targets; handled by branch/switch.
+                if stmt.name not in self._handled_namespaces:
+                    # Walk namespace body — merge node handles the ctrl edge in
+                    self._walk_statements(stmt.body, prev_node_id=last_id, in_namespace=True)
+                # After a namespace (entered via jump), don't chain to next
+                last_id = None
+                continue
+
+            if isinstance(stmt, Jump):
+                # Jump to a namespace — create a ctrl edge to the target
+                # If target matches a merge node, create backward edge
+                target_ns = stmt.target
+                if target_ns.startswith("ns_"):
+                    merge_id = target_ns[3:]  # strip "ns_" prefix
+                    if merge_id in self._nodes:
+                        # Backward edge (loop back)
+                        merge_node = self._nodes[merge_id]
+                        back_port = "back" if "back" in merge_node.ctrl_inputs else (
+                            merge_node.ctrl_inputs[-1] if merge_node.ctrl_inputs else "back"
+                        )
+                        if last_id:
+                            prev_node = self._nodes[last_id]
+                            from_port = prev_node.ctrl_outputs[0] if prev_node.ctrl_outputs else "out"
+                            self._edges.append(KGEdge(
+                                type="control", from_node=last_id, from_port=from_port,
+                                to_node=merge_id, to_port=back_port,
+                            ))
+                        elif parent_branch_edge:
+                            # Inside a branch namespace with no preceding nodes
+                            self._edges.append(KGEdge(
+                                type="control",
+                                from_node=parent_branch_edge[0],
+                                from_port=parent_branch_edge[1],
+                                to_node=merge_id, to_port=back_port,
+                            ))
+                    else:
+                        # Forward jump — create merge node
+                        merge_node = KGNode(
+                            id=merge_id, type="merge", name="Merge",
+                            data_inputs=[], data_outputs=[],
+                            ctrl_inputs=["entry", "back"], ctrl_outputs=["out"],
+                            meta={},
+                        )
+                        self._nodes[merge_id] = merge_node
+                        if last_id:
+                            prev_node = self._nodes[last_id]
+                            from_port = prev_node.ctrl_outputs[0] if prev_node.ctrl_outputs else "out"
+                            self._edges.append(KGEdge(
+                                type="control", from_node=last_id, from_port=from_port,
+                                to_node=merge_id, to_port="entry",
+                            ))
+                        last_id = merge_id
                 continue
 
             node_id = self._create_node_from_stmt(stmt)
             if node_id is None:
                 continue
 
-            # Add control edge from previous node.
-            if last_id is not None:
+            # Control edge from previous (skip in dataflow blocks)
+            if last_id is not None and not in_dataflow:
                 node = self._nodes[node_id]
                 prev_node = self._nodes[last_id]
                 from_port = prev_node.ctrl_outputs[0] if prev_node.ctrl_outputs else "out"
                 to_port = node.ctrl_inputs[0] if node.ctrl_inputs else "in"
-                self._edges.append(
-                    KGEdge(
-                        type="control",
-                        from_node=last_id,
-                        from_port=from_port,
-                        to_node=node_id,
-                        to_port=to_port,
-                    )
-                )
+                self._edges.append(KGEdge(
+                    type="control", from_node=last_id, from_port=from_port,
+                    to_node=node_id, to_port=to_port,
+                ))
 
-            # Handle control-flow statements with namespaces.
-            if isinstance(stmt, Branch):
+            if in_dataflow:
+                pass  # No ctrl chaining in dataflow blocks
+            elif isinstance(stmt, Branch):
                 self._handle_branch_namespaces(stmt, node_id, stmts)
-                last_id = None  # After branch, no single successor.
+                last_id = None
             elif isinstance(stmt, Switch):
                 self._handle_switch_namespaces(stmt, node_id, stmts)
                 last_id = None
@@ -396,8 +444,10 @@ class KirGraphDecompiler:
         for port, label in [("true", stmt.true_label), ("false", stmt.false_label)]:
             ns = ns_map.get(label)
             if ns is not None:
+                self._handled_namespaces.add(label)
                 first_id = self._walk_statements(
-                    ns.body, prev_node_id=None, in_namespace=True
+                    ns.body, prev_node_id=None, in_namespace=True,
+                    parent_branch_edge=(branch_node_id, port),
                 )
                 if first_id:
                     self._ensure_ctrl_ports(first_id, ctrl_in="in")
@@ -425,6 +475,7 @@ class KirGraphDecompiler:
             port = node.ctrl_outputs[i] if i < len(node.ctrl_outputs) else f"case_{i}"
             ns = ns_map.get(label)
             if ns is not None:
+                self._handled_namespaces.add(label)
                 first_id = self._walk_statements(
                     ns.body, prev_node_id=None, in_namespace=True
                 )
@@ -443,6 +494,7 @@ class KirGraphDecompiler:
         if stmt.default_label:
             ns = ns_map.get(stmt.default_label)
             if ns is not None:
+                self._handled_namespaces.add(stmt.default_label)
                 first_id = self._walk_statements(
                     ns.body, prev_node_id=None, in_namespace=True
                 )
@@ -472,6 +524,7 @@ class KirGraphDecompiler:
             port = node.ctrl_outputs[i] if i < len(node.ctrl_outputs) else f"out_{i}"
             ns = ns_map.get(label)
             if ns is not None:
+                self._handled_namespaces.add(label)
                 first_id = self._walk_statements(
                     ns.body, prev_node_id=None, in_namespace=True
                 )
@@ -604,7 +657,10 @@ class KirGraphDecompiler:
 
     def _infer_input_port_name(self, index: int, stmt: FuncCall) -> str:
         """Infer a port name for a positional input."""
-        # Common convention: a, b, c... for positional args.
+        # Single-input nodes commonly use "value"
+        if len(stmt.inputs) == 1:
+            return "value"
+        # Two-input nodes: a, b
         if index < 26:
             return chr(ord("a") + index)
         return f"in_{index}"
