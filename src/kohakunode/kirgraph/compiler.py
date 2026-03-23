@@ -271,12 +271,14 @@ class KirGraphCompiler:
             node = self._nodes[cur]
 
             # Merge node → wrap rest of loop in a namespace
+            # Attach merge's @meta to the jump so decompiler can recover position
             if node.type == "merge":
                 ns_label = f"ns_{cur}"
+                merge_meta = _meta(node)
                 self._visited.add(cur)
                 next_id = self._next(node)
                 inner = self._walk(next_id) if next_id else []
-                stmts.append(Jump(target=ns_label))
+                stmts.append(Jump(target=ns_label, metadata=[merge_meta]))
                 stmts.append(Namespace(name=ns_label, body=inner))
                 break
 

@@ -141,11 +141,11 @@ class KirGraphDecompiler:
                 continue
 
             if isinstance(stmt, Jump):
-                # Jump to a namespace — create a ctrl edge to the target
-                # If target matches a merge node, create backward edge
                 target_ns = stmt.target
+                # Extract @meta from the jump (carries merge node position)
+                jump_meta = _extract_meta(stmt)
                 if target_ns.startswith("ns_"):
-                    merge_id = target_ns[3:]  # strip "ns_" prefix
+                    merge_id = target_ns[3:]
                     if merge_id in self._nodes:
                         # Backward edge (loop back)
                         merge_node = self._nodes[merge_id]
@@ -173,7 +173,7 @@ class KirGraphDecompiler:
                             id=merge_id, type="merge", name="Merge",
                             data_inputs=[], data_outputs=[],
                             ctrl_inputs=["entry", "back"], ctrl_outputs=["out"],
-                            meta=self._build_meta(None),
+                            meta=self._build_meta(jump_meta),
                         )
                         self._nodes[merge_id] = merge_node
                         if last_id:
