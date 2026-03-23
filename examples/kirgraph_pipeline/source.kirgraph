@@ -2,150 +2,603 @@
   "version": "0.1.0",
   "nodes": [
     {
-      "id": "val_x",
+      "id": "val_limit",
       "type": "value",
-      "name": "x = 4",
+      "name": "Limit",
       "data_inputs": [],
-      "data_outputs": [{"port": "value", "type": "int"}],
-      "ctrl_inputs": [],
-      "ctrl_outputs": [],
-      "meta": {"pos": [100, 100], "size": [160, 100]},
-      "properties": {"value_type": "int", "value": 4}
-    },
-    {
-      "id": "val_y",
-      "type": "value",
-      "name": "y = 7",
-      "data_inputs": [],
-      "data_outputs": [{"port": "value", "type": "int"}],
-      "ctrl_inputs": [],
-      "ctrl_outputs": [],
-      "meta": {"pos": [100, 240], "size": [160, 100]},
-      "properties": {"value_type": "int", "value": 7}
-    },
-    {
-      "id": "val_threshold",
-      "type": "value",
-      "name": "threshold = 10",
-      "data_inputs": [],
-      "data_outputs": [{"port": "value", "type": "int"}],
-      "ctrl_inputs": [],
-      "ctrl_outputs": [],
-      "meta": {"pos": [100, 380], "size": [160, 100]},
-      "properties": {"value_type": "int", "value": 10}
-    },
-    {
-      "id": "add_xy",
-      "type": "add",
-      "name": "x + y",
-      "data_inputs": [
-        {"port": "a", "type": "int", "default": 0},
-        {"port": "b", "type": "int", "default": 0}
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "int"
+        }
       ],
-      "data_outputs": [{"port": "result", "type": "int"}],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": {"pos": [320, 160], "size": [180, 120]}
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          100
+        ],
+        "size": [
+          160,
+          100
+        ]
+      },
+      "properties": {
+        "value_type": "int",
+        "value": 3
+      }
+    },
+    {
+      "id": "val_step",
+      "type": "value",
+      "name": "Step",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "int"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          240
+        ],
+        "size": [
+          160,
+          100
+        ]
+      },
+      "properties": {
+        "value_type": "int",
+        "value": 1
+      }
+    },
+    {
+      "id": "val_i",
+      "type": "value",
+      "name": "Init i",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "int"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          380
+        ],
+        "size": [
+          160,
+          100
+        ]
+      },
+      "properties": {
+        "value_type": "int",
+        "value": 0
+      }
+    },
+    {
+      "id": "val_total",
+      "type": "value",
+      "name": "Init total",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "int"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          520
+        ],
+        "size": [
+          160,
+          100
+        ]
+      },
+      "properties": {
+        "value_type": "int",
+        "value": 0
+      }
+    },
+    {
+      "id": "merge_loop",
+      "type": "merge",
+      "name": "Loop Entry",
+      "data_inputs": [],
+      "data_outputs": [],
+      "ctrl_inputs": [
+        "entry",
+        "back"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          -20
+        ],
+        "size": [
+          140,
+          100
+        ]
+      }
+    },
+    {
+      "id": "inc_i",
+      "type": "add",
+      "name": "i + step",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "float",
+          "default": 0
+        },
+        {
+          "port": "b",
+          "type": "float",
+          "default": 1
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "float"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          320,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
+    },
+    {
+      "id": "square",
+      "type": "multiply",
+      "name": "i * i",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "float",
+          "default": 0
+        },
+        {
+          "port": "b",
+          "type": "float",
+          "default": 0
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "float"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          520,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
+    },
+    {
+      "id": "accum",
+      "type": "add",
+      "name": "total + sq",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "float",
+          "default": 0
+        },
+        {
+          "port": "b",
+          "type": "float",
+          "default": 0
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "float"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          720,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
     },
     {
       "id": "check",
       "type": "less_than",
-      "name": "sum < threshold?",
+      "name": "i < limit",
       "data_inputs": [
-        {"port": "a", "type": "int", "default": 0},
-        {"port": "b", "type": "int", "default": 0}
+        {
+          "port": "a",
+          "type": "float",
+          "default": 0
+        },
+        {
+          "port": "b",
+          "type": "float",
+          "default": 0
+        }
       ],
-      "data_outputs": [{"port": "result", "type": "bool"}],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": {"pos": [540, 160], "size": [200, 120]}
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "bool"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          920,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
     },
     {
       "id": "branch",
       "type": "branch",
-      "name": "Small?",
-      "data_inputs": [{"port": "condition", "type": "bool"}],
-      "data_outputs": [],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["true", "false"],
-      "meta": {"pos": [540, 320], "size": [180, 120]}
-    },
-    {
-      "id": "msg_small",
-      "type": "print",
-      "name": "print small",
-      "data_inputs": [{"port": "value", "type": "any"}],
-      "data_outputs": [],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": {"pos": [760, 200], "size": [160, 100]}
-    },
-    {
-      "id": "mul_xy",
-      "type": "multiply",
-      "name": "x * y",
+      "name": "Continue?",
       "data_inputs": [
-        {"port": "a", "type": "int", "default": 0},
-        {"port": "b", "type": "int", "default": 0}
+        {
+          "port": "condition",
+          "type": "bool"
+        }
       ],
-      "data_outputs": [{"port": "result", "type": "int"}],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": {"pos": [760, 400], "size": [180, 120]}
+      "data_outputs": [],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "true",
+        "false"
+      ],
+      "meta": {
+        "pos": [
+          920,
+          280
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
     },
     {
       "id": "to_str",
       "type": "to_string",
-      "name": "result to str",
-      "data_inputs": [{"port": "value", "type": "any"}],
-      "data_outputs": [{"port": "result", "type": "str"}],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": {"pos": [980, 400], "size": [160, 100]}
+      "name": "To String",
+      "data_inputs": [
+        {
+          "port": "value",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "str"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          920,
+          440
+        ],
+        "size": [
+          160,
+          100
+        ]
+      }
     },
     {
       "id": "fmt",
       "type": "concat",
-      "name": "build message",
+      "name": "Format",
       "data_inputs": [
-        {"port": "a", "type": "str", "default": "x*y = "},
-        {"port": "b", "type": "str", "default": ""}
+        {
+          "port": "a",
+          "type": "str",
+          "default": "Sum of squares = "
+        },
+        {
+          "port": "b",
+          "type": "str",
+          "default": ""
+        }
       ],
-      "data_outputs": [{"port": "result", "type": "str"}],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": {"pos": [1180, 400], "size": [180, 120]}
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "str"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          1100,
+          440
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
     },
     {
       "id": "out",
       "type": "print",
-      "name": "print result",
-      "data_inputs": [{"port": "value", "type": "any"}],
+      "name": "Print",
+      "data_inputs": [
+        {
+          "port": "value",
+          "type": "any"
+        }
+      ],
       "data_outputs": [],
-      "ctrl_inputs": ["in"],
-      "ctrl_outputs": ["out"],
-      "meta": {"pos": [1400, 400], "size": [160, 100]}
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          1300,
+          440
+        ],
+        "size": [
+          160,
+          100
+        ]
+      }
     }
   ],
   "edges": [
-    {"type": "data", "from": {"node": "val_x",         "port": "value"},  "to": {"node": "add_xy",  "port": "a"}},
-    {"type": "data", "from": {"node": "val_y",         "port": "value"},  "to": {"node": "add_xy",  "port": "b"}},
-    {"type": "data", "from": {"node": "add_xy",        "port": "result"}, "to": {"node": "check",   "port": "a"}},
-    {"type": "data", "from": {"node": "val_threshold", "port": "value"},  "to": {"node": "check",   "port": "b"}},
-    {"type": "data", "from": {"node": "check",         "port": "result"}, "to": {"node": "branch",  "port": "condition"}},
-    {"type": "data", "from": {"node": "add_xy",        "port": "result"}, "to": {"node": "msg_small","port": "value"}},
-    {"type": "data", "from": {"node": "val_x",         "port": "value"},  "to": {"node": "mul_xy",  "port": "a"}},
-    {"type": "data", "from": {"node": "val_y",         "port": "value"},  "to": {"node": "mul_xy",  "port": "b"}},
-    {"type": "data", "from": {"node": "mul_xy",        "port": "result"}, "to": {"node": "to_str",  "port": "value"}},
-    {"type": "data", "from": {"node": "to_str",        "port": "result"}, "to": {"node": "fmt",     "port": "b"}},
-    {"type": "data", "from": {"node": "fmt",           "port": "result"}, "to": {"node": "out",     "port": "value"}},
-
-    {"type": "control", "from": {"node": "add_xy",    "port": "out"},   "to": {"node": "check",    "port": "in"}},
-    {"type": "control", "from": {"node": "check",     "port": "out"},   "to": {"node": "branch",   "port": "in"}},
-    {"type": "control", "from": {"node": "branch",    "port": "true"},  "to": {"node": "msg_small","port": "in"}},
-    {"type": "control", "from": {"node": "branch",    "port": "false"}, "to": {"node": "mul_xy",   "port": "in"}},
-    {"type": "control", "from": {"node": "mul_xy",    "port": "out"},   "to": {"node": "to_str",   "port": "in"}},
-    {"type": "control", "from": {"node": "to_str",    "port": "out"},   "to": {"node": "fmt",      "port": "in"}},
-    {"type": "control", "from": {"node": "fmt",       "port": "out"},   "to": {"node": "out",      "port": "in"}}
+    {
+      "type": "data",
+      "from": {
+        "node": "val_i",
+        "port": "value"
+      },
+      "to": {
+        "node": "inc_i",
+        "port": "a"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "val_step",
+        "port": "value"
+      },
+      "to": {
+        "node": "inc_i",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "val_total",
+        "port": "value"
+      },
+      "to": {
+        "node": "accum",
+        "port": "a"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "inc_i",
+        "port": "result"
+      },
+      "to": {
+        "node": "square",
+        "port": "a"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "inc_i",
+        "port": "result"
+      },
+      "to": {
+        "node": "square",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "inc_i",
+        "port": "result"
+      },
+      "to": {
+        "node": "check",
+        "port": "a"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "val_limit",
+        "port": "value"
+      },
+      "to": {
+        "node": "check",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "square",
+        "port": "result"
+      },
+      "to": {
+        "node": "accum",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "check",
+        "port": "result"
+      },
+      "to": {
+        "node": "branch",
+        "port": "condition"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "accum",
+        "port": "result"
+      },
+      "to": {
+        "node": "to_str",
+        "port": "value"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "to_str",
+        "port": "result"
+      },
+      "to": {
+        "node": "fmt",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "fmt",
+        "port": "result"
+      },
+      "to": {
+        "node": "out",
+        "port": "value"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "merge_loop",
+        "port": "out"
+      },
+      "to": {
+        "node": "inc_i",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "check",
+        "port": "out"
+      },
+      "to": {
+        "node": "branch",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "branch",
+        "port": "true"
+      },
+      "to": {
+        "node": "merge_loop",
+        "port": "back"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "branch",
+        "port": "false"
+      },
+      "to": {
+        "node": "to_str",
+        "port": "in"
+      }
+    }
   ]
 }

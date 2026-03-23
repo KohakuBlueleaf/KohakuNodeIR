@@ -1,13 +1,17 @@
-val_y_value = 7
-val_threshold_value = 10
-val_x_value = 4
-(val_x_value, val_y_value)add(add_xy_result)
-(add_xy_result, val_threshold_value)less_than(check_result)
+val_i_value = 0
+val_step_value = 1
+val_limit_value = 3
+val_total_value = 0
+()jump(`ns_merge_loop`)
+ns_merge_loop:
+    (val_i_value, val_step_value)add(inc_i_result)
+    (inc_i_result, inc_i_result)multiply(square_result)
+    (val_total_value, square_result)add(accum_result)
+(inc_i_result, val_limit_value)less_than(check_result)
 (check_result)branch(`branch_true`, `branch_false`)
 branch_true:
-    (add_xy_result)print()
+    ()jump(`ns_merge_loop`)
 branch_false:
-    (val_x_value, val_y_value)multiply(mul_xy_result)
-    (mul_xy_result)to_string(to_str_result)
-    ("x*y = ", to_str_result)concat(fmt_result)
+    (accum_result)to_string(to_str_result)
+    ("Sum of squares = ", to_str_result)concat(fmt_result)
     (fmt_result)print()
