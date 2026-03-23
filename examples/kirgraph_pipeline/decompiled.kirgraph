@@ -17,6 +17,16 @@
       "properties": {
         "value_type": "int",
         "value": 3
+      },
+      "meta": {
+        "pos": [
+          100,
+          100
+        ],
+        "size": [
+          160,
+          100
+        ]
       }
     },
     {
@@ -35,6 +45,16 @@
       "properties": {
         "value_type": "int",
         "value": 1
+      },
+      "meta": {
+        "pos": [
+          100,
+          240
+        ],
+        "size": [
+          160,
+          100
+        ]
       }
     },
     {
@@ -53,6 +73,16 @@
       "properties": {
         "value_type": "int",
         "value": 0
+      },
+      "meta": {
+        "pos": [
+          100,
+          380
+        ],
+        "size": [
+          160,
+          100
+        ]
       }
     },
     {
@@ -71,6 +101,16 @@
       "properties": {
         "value_type": "int",
         "value": 0
+      },
+      "meta": {
+        "pos": [
+          100,
+          520
+        ],
+        "size": [
+          160,
+          100
+        ]
       }
     },
     {
@@ -85,7 +125,17 @@
       ],
       "ctrl_outputs": [
         "out"
-      ]
+      ],
+      "meta": {
+        "pos": [
+          100,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
     },
     {
       "id": "inc_i",

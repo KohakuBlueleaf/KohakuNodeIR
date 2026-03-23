@@ -36,7 +36,7 @@ _VAR_PATTERN = re.compile(r"^(.+?)_([^_]+)$")
 def _extract_meta(stmt: Statement) -> dict[str, Any] | None:
     """Extract @meta data from a statement if it has metadata."""
     metadata: list[MetaAnnotation] | None = None
-    if isinstance(stmt, (FuncCall, Branch, Switch, Jump, Parallel)):
+    if isinstance(stmt, (Assignment, FuncCall, Branch, Switch, Jump, Parallel)):
         metadata = stmt.metadata
     if metadata:
         merged: dict[str, Any] = {}
@@ -173,7 +173,7 @@ class KirGraphDecompiler:
                             id=merge_id, type="merge", name="Merge",
                             data_inputs=[], data_outputs=[],
                             ctrl_inputs=["entry", "back"], ctrl_outputs=["out"],
-                            meta={},
+                            meta=self._build_meta(None),
                         )
                         self._nodes[merge_id] = merge_node
                         if last_id:
@@ -645,11 +645,20 @@ class KirGraphDecompiler:
     def _build_meta(self, meta_data: dict[str, Any] | None) -> dict[str, Any]:
         """Build the meta dict for a KGNode from @meta annotation data."""
         if not meta_data:
-            return {}
+            # No meta — assign a spread-out default position
+            self._auto_pos_counter = getattr(self, "_auto_pos_counter", 0) + 1
+            col = (self._auto_pos_counter - 1) % 4
+            row = (self._auto_pos_counter - 1) // 4
+            return {"pos": [100 + col * 220, 100 + row * 160], "size": [180, 120]}
         result: dict[str, Any] = {}
         if "pos" in meta_data:
             pos = meta_data["pos"]
             result["pos"] = list(pos) if isinstance(pos, tuple) else pos
+        if "pos" not in result:
+            self._auto_pos_counter = getattr(self, "_auto_pos_counter", 0) + 1
+            col = (self._auto_pos_counter - 1) % 4
+            row = (self._auto_pos_counter - 1) // 4
+            result["pos"] = [100 + col * 220, 100 + row * 160]
         for key, val in meta_data.items():
             if key not in ("node_id", "pos"):
                 result[key] = val

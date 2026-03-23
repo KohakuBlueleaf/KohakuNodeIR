@@ -90,10 +90,15 @@ class Writer:
     # ------------------------------------------------------------------
 
     def _write_assignment(self, node: Assignment, indent_level: int) -> list[str]:
-        """Return ``"    target = value"``."""
+        """Return metadata lines (if any) followed by ``"    target = value"``."""
+        lines: list[str] = []
         prefix = self._indent_str * indent_level
+        if node.metadata:
+            for meta in node.metadata:
+                lines.append(self._write_meta(meta, indent_level))
         value_str = self._write_expression(node.value)
-        return [f"{prefix}{node.target} = {value_str}"]
+        lines.append(f"{prefix}{node.target} = {value_str}")
+        return lines
 
     def _write_func_call(self, node: FuncCall, indent_level: int) -> list[str]:
         """Return metadata lines followed by ``"    (inputs)func_name(outputs)"``."""

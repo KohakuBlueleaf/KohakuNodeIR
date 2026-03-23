@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from kohakunode.ast.nodes import (
+    Assignment,
     Branch,
     FuncCall,
     Jump,
@@ -39,6 +40,13 @@ class StripMetaPass(IRPass):
 
     def _strip_stmt(self, stmt: Statement) -> Statement:
         # Clear metadata on types that carry it
+        if isinstance(stmt, Assignment):
+            return Assignment(
+                target=stmt.target,
+                value=stmt.value,
+                metadata=None,
+                line=stmt.line,
+            )
         if isinstance(stmt, FuncCall):
             return FuncCall(
                 inputs=stmt.inputs,

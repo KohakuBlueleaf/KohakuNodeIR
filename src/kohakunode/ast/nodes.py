@@ -90,6 +90,7 @@ class Parameter(ASTNode):
 class Assignment(Statement):
     target: str = field(default="")
     value: Expression = field(default_factory=lambda: Identifier())
+    metadata: list[MetaAnnotation] | None = field(default=None)
 
 
 @dataclass
