@@ -1,13 +1,16 @@
 <script setup>
 import { ref } from 'vue';
+import { useEditorStore } from '../../stores/editor.js';
 import EditorCanvas from './EditorCanvas.vue';
 import NodePalette from '../panels/NodePalette.vue';
 import PropertyPanel from '../panels/PropertyPanel.vue';
 import NodeDefEditor from '../panels/NodeDefEditor.vue';
 import IrPreview from '../panels/IrPreview.vue';
 
-// --- Mode ---
-const mode = ref('dataflow'); // 'dataflow' | 'controlflow'
+const editorStore = useEditorStore();
+
+// --- Mode (synced with store) ---
+const mode = ref(editorStore.mode);
 
 // --- Zoom state (lifted here so toolbar controls can drive it) ---
 const zoomLevel = ref(1);
@@ -52,14 +55,14 @@ function openNodeDefEditor(def) {
         <button
           class="mode-btn"
           :class="{ active: mode === 'dataflow' }"
-          @click="mode = 'dataflow'"
+          @click="mode = 'dataflow'; editorStore.setMode('dataflow')"
         >
           Dataflow
         </button>
         <button
           class="mode-btn"
           :class="{ active: mode === 'controlflow' }"
-          @click="mode = 'controlflow'"
+          @click="mode = 'controlflow'; editorStore.setMode('controlflow')"
         >
           Control Flow
         </button>

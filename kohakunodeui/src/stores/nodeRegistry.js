@@ -206,8 +206,10 @@ export const useNodeRegistryStore = defineStore('nodeRegistry', () => {
       (def.controlPorts.inputs.length),
       (def.controlPorts.outputs.length),
     );
-    const width  = Math.max(160, maxCtrlPorts * 60);
-    const height = Math.max(100, maxDataPorts * 30 + 60);
+    const ctrlRowH = (def.controlPorts.inputs.length > 0 ? 18 : 0)
+      + (def.controlPorts.outputs.length > 0 ? 18 : 0);
+    const width  = Math.max(180, maxCtrlPorts * 60);
+    const height = Math.max(120, maxDataPorts * 28 + ctrlRowH + 60);
 
     return {
       type: def.type,

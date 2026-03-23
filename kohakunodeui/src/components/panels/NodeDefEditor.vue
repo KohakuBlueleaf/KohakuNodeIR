@@ -500,36 +500,7 @@ function handleCancel() {
   display: block;
 }
 
-/* ── El-input dark overrides ── */
-.nde-input :deep(.el-input__wrapper),
-.nde-input :deep(.el-textarea__inner),
-.nde-input :deep(.el-select__wrapper) {
-  background: #1e1e2e;
-  box-shadow: none;
-  border: 1px solid #313244;
-  border-radius: 4px;
-  color: #cdd6f4;
-  font-size: 12px;
-}
-.nde-input :deep(.el-input__wrapper:hover),
-.nde-input :deep(.el-input__wrapper.is-focus),
-.nde-input :deep(.el-textarea__inner:focus),
-.nde-input :deep(.el-select__wrapper:hover),
-.nde-input :deep(.el-select__wrapper.is-focused) {
-  border-color: #585b70;
-  box-shadow: none;
-}
-.nde-input :deep(.el-input__inner),
-.nde-input :deep(.el-textarea__inner) {
-  color: #cdd6f4;
-}
-.nde-input :deep(.el-input__inner::placeholder),
-.nde-input :deep(.el-textarea__inner::placeholder) {
-  color: #45475a;
-}
-.nde-input :deep(.el-select__selected-item) {
-  color: #cdd6f4;
-}
+/* EP dark mode handles element styling */
 
 /* ── Empty hint ── */
 .nde-empty-hint {
@@ -614,37 +585,7 @@ function handleCancel() {
   background: rgba(243, 139, 168, 0.1);
 }
 
-/* ── Port row el-input overrides ── */
-.nde-port-name :deep(.el-input__wrapper),
-.nde-port-default :deep(.el-input__wrapper),
-.nde-port-type :deep(.el-select__wrapper) {
-  background: #1e1e2e;
-  box-shadow: none;
-  border: 1px solid #313244;
-  border-radius: 4px;
-}
-.nde-port-name :deep(.el-input__wrapper:hover),
-.nde-port-name :deep(.el-input__wrapper.is-focus),
-.nde-port-default :deep(.el-input__wrapper:hover),
-.nde-port-default :deep(.el-input__wrapper.is-focus),
-.nde-port-type :deep(.el-select__wrapper:hover),
-.nde-port-type :deep(.el-select__wrapper.is-focused) {
-  border-color: #585b70;
-  box-shadow: none;
-}
-.nde-port-name :deep(.el-input__inner),
-.nde-port-default :deep(.el-input__inner) {
-  color: #cdd6f4;
-  font-size: 11px;
-}
-.nde-port-name :deep(.el-input__inner::placeholder),
-.nde-port-default :deep(.el-input__inner::placeholder) {
-  color: #45475a;
-}
-.nde-port-type :deep(.el-select__selected-item) {
-  color: #cdd6f4;
-  font-size: 11px;
-}
+/* EP dark mode handles port row element styling */
 
 /* ── Signature ── */
 .nde-signature {
