@@ -1,0 +1,3 @@
+(cond)branch(`exists`, `nonexistent`)
+exists:
+    ("ok")print()

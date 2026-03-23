@@ -1,0 +1,13 @@
+(x)check(level)
+(level)switch(0=>`level_0`, 1=>`level_1`, _=>`level_default`)
+level_0:
+    (x)basic(out)
+level_1:
+    (x)deeper_check(sub)
+    (sub)branch(`l1a`, `l1b`)
+    l1a:
+        (x, mode="a")process(out)
+    l1b:
+        (x, mode="b")process(out)
+level_default:
+    (x)fallback(out)

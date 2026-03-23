@@ -1,0 +1,4 @@
+sizes = [512, 768, 1024]
+config = {"mode": "fast", "quality": "high"}
+nested = [1, [2, 3], "four"]
+(sizes, config)process(result)

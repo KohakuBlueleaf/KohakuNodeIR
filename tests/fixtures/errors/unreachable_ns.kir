@@ -1,0 +1,4 @@
+x = 1
+orphan:
+    ("unreachable")print()
+(x)process(result)
