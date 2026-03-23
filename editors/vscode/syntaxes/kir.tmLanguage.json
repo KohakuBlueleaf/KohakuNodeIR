@@ -5,26 +5,36 @@
     "patterns": [
         { "include": "#section-comment" },
         { "include": "#comment" },
-        { "include": "#directive" },
         { "include": "#subgraph-def" },
+        { "include": "#directive" },
         { "include": "#namespace-label" },
+        { "include": "#builtin-call" },
         { "include": "#function-call" },
         { "include": "#assignment" },
-        { "include": "#strings" },
-        { "include": "#numbers" },
-        { "include": "#constants" },
-        { "include": "#label-ref" },
-        { "include": "#wildcard" }
+        { "include": "#expression" }
     ],
     "repository": {
+        "expression": {
+            "patterns": [
+                { "include": "#strings" },
+                { "include": "#numbers" },
+                { "include": "#constants" },
+                { "include": "#label-ref" },
+                { "include": "#switch-arrow" },
+                { "include": "#keyword-arg" },
+                { "include": "#wildcard" }
+            ]
+        },
+
         "section-comment": {
-            "match": "^##.*$",
+            "match": "^\\s*##.*$",
             "name": "comment.block.documentation.kir"
         },
         "comment": {
             "match": "#.*$",
             "name": "comment.line.hash.kir"
         },
+
         "directive": {
             "patterns": [
                 {
@@ -44,6 +54,7 @@
                 }
             ]
         },
+
         "subgraph-def": {
             "match": "(@def)\\s*\\(([^)]*)\\)(\\w+)\\(([^)]*)\\)\\s*:",
             "captures": {
@@ -53,6 +64,7 @@
                 "4": { "name": "variable.other.output.kir" }
             }
         },
+
         "namespace-label": {
             "match": "^(\\s*)(\\w+)(\\s*:\\s*)$",
             "captures": {
@@ -60,32 +72,64 @@
                 "3": { "name": "punctuation.separator.colon.kir" }
             }
         },
-        "function-call": {
+
+        "builtin-call": {
+            "comment": "Multi-line aware: )builtin( ... ) with begin/end for the output parens",
+            "begin": "(\\))(branch|switch|jump|parallel)(\\()",
+            "beginCaptures": {
+                "1": { "name": "punctuation.paren.close.kir" },
+                "2": { "name": "keyword.control.builtin.kir" },
+                "3": { "name": "punctuation.paren.open.kir" }
+            },
+            "end": "(\\))",
+            "endCaptures": {
+                "1": { "name": "punctuation.paren.close.kir" }
+            },
             "patterns": [
-                {
-                    "comment": "Built-in utilities: branch, switch, jump, parallel",
-                    "match": "\\)(branch|switch|jump|parallel)\\(",
-                    "captures": {
-                        "1": { "name": "keyword.control.builtin.kir" }
-                    }
-                },
-                {
-                    "comment": "Regular function call: )func_name( or )ns.func_name(",
-                    "match": "\\)([a-zA-Z_][a-zA-Z0-9_.]*)(\\()",
-                    "captures": {
-                        "1": { "name": "entity.name.function.kir" },
-                        "2": { "name": "punctuation.paren.open.kir" }
-                    }
-                }
+                { "include": "#expression" },
+                { "include": "#comment" }
             ]
         },
+
+        "function-call": {
+            "comment": "Multi-line aware: )func_name( ... ) with begin/end for the output parens",
+            "begin": "(\\))([a-zA-Z_][a-zA-Z0-9_.]*)(\\()",
+            "beginCaptures": {
+                "1": { "name": "punctuation.paren.close.kir" },
+                "2": { "name": "entity.name.function.kir" },
+                "3": { "name": "punctuation.paren.open.kir" }
+            },
+            "end": "(\\))",
+            "endCaptures": {
+                "1": { "name": "punctuation.paren.close.kir" }
+            },
+            "patterns": [
+                { "include": "#expression" },
+                { "include": "#comment" }
+            ]
+        },
+
         "assignment": {
-            "match": "^(\\s*)(\\w+)(\\s*=\\s*)",
+            "match": "^(\\s*)(\\w+)(\\s*=)(?!=\\>)",
             "captures": {
                 "2": { "name": "variable.other.assignment.kir" },
                 "3": { "name": "keyword.operator.assignment.kir" }
             }
         },
+
+        "switch-arrow": {
+            "match": "=>",
+            "name": "keyword.operator.arrow.kir"
+        },
+
+        "keyword-arg": {
+            "match": "(\\w+)(=)(?!=\\>)(?=[^,)]*[,)])",
+            "captures": {
+                "1": { "name": "variable.parameter.kir" },
+                "2": { "name": "keyword.operator.assignment.kir" }
+            }
+        },
+
         "label-ref": {
             "match": "`(\\w+)`",
             "name": "string.quoted.backtick.label-ref.kir",
@@ -93,39 +137,32 @@
                 "1": { "name": "entity.name.tag.namespace.reference.kir" }
             }
         },
+
         "strings": {
             "patterns": [
                 {
                     "name": "string.quoted.triple.double.kir",
                     "begin": "\"\"\"",
                     "end": "\"\"\"",
-                    "patterns": [
-                        { "include": "#string-escape" }
-                    ]
+                    "patterns": [{ "include": "#string-escape" }]
                 },
                 {
                     "name": "string.quoted.triple.single.kir",
                     "begin": "'''",
                     "end": "'''",
-                    "patterns": [
-                        { "include": "#string-escape" }
-                    ]
+                    "patterns": [{ "include": "#string-escape" }]
                 },
                 {
                     "name": "string.quoted.double.kir",
                     "begin": "\"",
                     "end": "\"",
-                    "patterns": [
-                        { "include": "#string-escape" }
-                    ]
+                    "patterns": [{ "include": "#string-escape" }]
                 },
                 {
                     "name": "string.quoted.single.kir",
                     "begin": "'",
                     "end": "'",
-                    "patterns": [
-                        { "include": "#string-escape" }
-                    ]
+                    "patterns": [{ "include": "#string-escape" }]
                 }
             ]
         },
@@ -133,6 +170,7 @@
             "match": "\\\\.",
             "name": "constant.character.escape.kir"
         },
+
         "numbers": {
             "patterns": [
                 {
@@ -165,6 +203,7 @@
                 }
             ]
         },
+
         "constants": {
             "patterns": [
                 {
@@ -177,6 +216,7 @@
                 }
             ]
         },
+
         "wildcard": {
             "match": "\\b_\\b",
             "name": "variable.language.wildcard.kir"
