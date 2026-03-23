@@ -1,0 +1,365 @@
+{
+  "version": "0.1.0",
+  "nodes": [
+    {
+      "id": "val_limit",
+      "type": "value",
+      "name": "Value val_limit",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "int"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "value_type": "int",
+        "value": 3
+      }
+    },
+    {
+      "id": "val_step",
+      "type": "value",
+      "name": "Value val_step",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "int"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "value_type": "int",
+        "value": 1
+      }
+    },
+    {
+      "id": "val_i",
+      "type": "value",
+      "name": "Value val_i",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "int"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "value_type": "int",
+        "value": 0
+      }
+    },
+    {
+      "id": "val_total",
+      "type": "value",
+      "name": "Value val_total",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "int"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "value_type": "int",
+        "value": 0
+      }
+    },
+    {
+      "id": "check",
+      "type": "less_than",
+      "name": "Less Than",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "any"
+        },
+        {
+          "port": "b",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          920,
+          100
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
+    },
+    {
+      "id": "branch",
+      "type": "branch",
+      "name": "Branch",
+      "data_inputs": [
+        {
+          "port": "condition",
+          "type": "bool"
+        }
+      ],
+      "data_outputs": [],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "true",
+        "false"
+      ],
+      "meta": {
+        "pos": [
+          920,
+          280
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
+    },
+    {
+      "id": "to_str",
+      "type": "to_string",
+      "name": "To String",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          920,
+          440
+        ],
+        "size": [
+          160,
+          100
+        ]
+      }
+    },
+    {
+      "id": "fmt",
+      "type": "concat",
+      "name": "Concat",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "any",
+          "default": "Sum of squares = "
+        },
+        {
+          "port": "b",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "result",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          1100,
+          440
+        ],
+        "size": [
+          180,
+          120
+        ]
+      }
+    },
+    {
+      "id": "out",
+      "type": "print",
+      "name": "Print",
+      "data_inputs": [
+        {
+          "port": "a",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          1300,
+          440
+        ],
+        "size": [
+          160,
+          100
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "type": "control",
+      "from": {
+        "node": "val_limit",
+        "port": "out"
+      },
+      "to": {
+        "node": "val_step",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "val_step",
+        "port": "out"
+      },
+      "to": {
+        "node": "val_i",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "val_i",
+        "port": "out"
+      },
+      "to": {
+        "node": "val_total",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "check",
+        "port": "out"
+      },
+      "to": {
+        "node": "branch",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "to_str",
+        "port": "out"
+      },
+      "to": {
+        "node": "fmt",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "fmt",
+        "port": "out"
+      },
+      "to": {
+        "node": "out",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "branch",
+        "port": "false"
+      },
+      "to": {
+        "node": "out",
+        "port": "in"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "val_limit",
+        "port": "value"
+      },
+      "to": {
+        "node": "check",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "check",
+        "port": "result"
+      },
+      "to": {
+        "node": "branch",
+        "port": "condition"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "to_str",
+        "port": "result"
+      },
+      "to": {
+        "node": "fmt",
+        "port": "b"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "fmt",
+        "port": "result"
+      },
+      "to": {
+        "node": "out",
+        "port": "a"
+      }
+    }
+  ]
+}

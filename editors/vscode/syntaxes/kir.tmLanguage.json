@@ -45,6 +45,10 @@
                     }
                 },
                 {
+                    "match": "(@dataflow)\\s*:",
+                    "name": "keyword.control.directive.kir"
+                },
+                {
                     "match": "(@meta)\\b",
                     "name": "keyword.control.directive.kir"
                 },
