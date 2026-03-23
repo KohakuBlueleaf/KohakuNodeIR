@@ -9,8 +9,7 @@ import ControlPort from '../ports/ControlPort.vue'
 
 const HEADER_H = 32
 const CTRL_ROW_H = 18
-const PORT_ROW_H = 22
-const PORT_PADDING = 12
+const DATA_PORT_PAD = 12
 
 const props = defineProps({
   node: { type: Object, required: true },
@@ -46,14 +45,10 @@ const ctrlOutputs = computed(() => props.node.controlPorts?.outputs ?? [])
 const hasCtrlIn = computed(() => ctrlInputs.value.length > 0)
 const hasCtrlOut = computed(() => ctrlOutputs.value.length > 0)
 
-// ── Data port row count (max of inputs/outputs) ──
-const dataRowCount = computed(() => Math.max(dataInputs.value.length, dataOutputs.value.length))
-
 // ── Data port circle positions (absolute relative to node root) ──
-// Top offset = ctrl-in area + header + padding into body
 function dataPortTop(index, count) {
-  const bodyTop = (hasCtrlIn.value ? CTRL_ROW_H : 0) + HEADER_H + PORT_PADDING
-  const bodyAvail = props.node.height - bodyTop - (hasCtrlOut.value ? CTRL_ROW_H : 0) - PORT_PADDING
+  const bodyTop = (hasCtrlIn.value ? CTRL_ROW_H : 0) + HEADER_H + DATA_PORT_PAD
+  const bodyAvail = props.node.height - bodyTop - (hasCtrlOut.value ? CTRL_ROW_H : 0) - DATA_PORT_PAD
   if (count <= 1) return bodyTop + bodyAvail / 2
   return bodyTop + (bodyAvail / (count - 1)) * index
 }
@@ -139,21 +134,6 @@ const nodeStyle = computed(() => ({
 
     <!-- ── Body ── -->
     <div class="node-body">
-      <!-- Port label rows -->
-      <div
-        v-for="i in dataRowCount"
-        :key="'row-' + i"
-        class="port-row"
-      >
-        <span class="port-label port-label--in">
-          {{ dataInputs[i - 1]?.name ?? '' }}
-        </span>
-        <span class="port-label port-label--out">
-          {{ dataOutputs[i - 1]?.name ?? '' }}
-        </span>
-      </div>
-
-      <!-- Type-specific body content -->
       <slot name="body" />
     </div>
 
@@ -281,16 +261,4 @@ const nodeStyle = computed(() => ({
   overflow: hidden;
 }
 
-.port-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 22px;
-}
-.port-label {
-  font-size: 11px; color: #a6adc8;
-  white-space: nowrap;
-}
-.port-label--in { text-align: left; }
-.port-label--out { text-align: right; color: #89b4fa; }
 </style>

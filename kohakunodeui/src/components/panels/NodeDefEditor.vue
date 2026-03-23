@@ -432,43 +432,9 @@ function handleCancel() {
 </template>
 
 <style>
-/* ── Dialog host overrides (global — dialog is teleported to body) ── */
-.node-def-dialog .el-dialog {
-  background: #181825;
-  border: 1px solid #313244;
-  border-radius: 8px;
-}
-.node-def-dialog .el-dialog__header {
-  background: #1e1e2e;
-  border-bottom: 1px solid #313244;
-  padding: 12px 16px;
-  margin: 0;
-  border-radius: 8px 8px 0 0;
-}
-.node-def-dialog .el-dialog__title {
-  color: #cdd6f4;
-  font-size: 13px;
-  font-weight: 700;
-}
-.node-def-dialog .el-dialog__headerbtn .el-dialog__close {
-  color: #6c7086;
-}
-.node-def-dialog .el-dialog__headerbtn:hover .el-dialog__close {
-  color: #cdd6f4;
-}
+/* ── Dialog body padding override (EP dark mode handles the rest) ── */
 .node-def-dialog .el-dialog__body {
   padding: 0;
-  color: #cdd6f4;
-}
-.node-def-dialog .el-dialog__footer {
-  background: #1e1e2e;
-  border-top: 1px solid #313244;
-  padding: 10px 16px;
-  border-radius: 0 0 8px 8px;
-}
-/* ── Overlay backdrop ── */
-.node-def-dialog.el-overlay {
-  background: rgba(0, 0, 0, 0.6);
 }
 
 /* ── Root two-column layout ── */
@@ -867,44 +833,5 @@ function handleCancel() {
   gap: 8px;
 }
 
-/* ── El-Button dark overrides (inside dialog) ── */
-.node-def-dialog .el-button--small {
-  font-size: 12px;
-}
-.node-def-dialog .el-button.is-plain {
-  background: transparent;
-  border-color: #45475a;
-  color: #a6adc8;
-}
-.node-def-dialog .el-button.is-plain:hover {
-  background: #313244;
-  border-color: #585b70;
-  color: #cdd6f4;
-}
-.node-def-dialog .el-button--primary {
-  background: #89b4fa;
-  border-color: #89b4fa;
-  color: #1e1e2e;
-}
-.node-def-dialog .el-button--primary:hover {
-  background: #a6c8ff;
-  border-color: #a6c8ff;
-}
 
-/* ── El-Select dropdown (teleported to body) ── */
-.el-select-dropdown {
-  background: #1e1e2e !important;
-  border: 1px solid #313244 !important;
-}
-.el-select-dropdown__item {
-  color: #cdd6f4 !important;
-  font-size: 12px;
-}
-.el-select-dropdown__item.is-hovering {
-  background: #313244 !important;
-}
-.el-select-dropdown__item.is-selected {
-  color: #89b4fa !important;
-  background: rgba(137, 180, 250, 0.1) !important;
-}
 </style>

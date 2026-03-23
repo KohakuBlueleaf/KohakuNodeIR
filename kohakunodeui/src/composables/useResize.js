@@ -87,7 +87,7 @@ export function useResize(nodeId, elementRef, getCurrentZoom) {
     startMouseX = e.clientX / zoom
     startMouseY = e.clientY / zoom
 
-    const node = graphStore.getNodeById(nodeId)
+    const node = graphStore.nodes.get(nodeId)
     if (!node) return
     startWidth = node.width ?? MIN_WIDTH
     startHeight = node.height ?? MIN_HEIGHT
