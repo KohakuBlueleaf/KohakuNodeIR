@@ -140,12 +140,19 @@ class DependencyGraphBuilder:
                 for inp in stmt.inputs:
                     input_names |= _collect_identifier_names(inp)
 
-                # Map each concrete output name to those inputs
+                # Collect output names for self-reference exclusion
+                output_names: set[str] = set()
+                for out in stmt.outputs:
+                    if not isinstance(out, Wildcard):
+                        output_names.add(out)
+
+                # Map each concrete output name to those inputs,
+                # excluding self-references (e.g., (total, x)add(total) is
+                # an update, not a cycle)
                 for out in stmt.outputs:
                     if isinstance(out, Wildcard):
                         continue
-                    # out is str here
-                    graph[out] = set(input_names)
+                    graph[out] = input_names - output_names
 
             elif isinstance(stmt, Namespace):
                 # Namespaces should not appear in dataflow mode; skip silently.
