@@ -199,7 +199,7 @@ Namespaces are the core scoping and control-flow mechanism.
 
 **Rule 3 — Automatic exit**: When execution reaches the end of a namespace's indented block, it continues at the next line in the parent scope. This is automatic — no explicit "return" or "end" statement is needed.
 
-**Rule 4 — No implicit upward escape**: Code inside a child namespace cannot reach the parent scope without an explicit `jump`. But when the child block ends naturally, execution automatically continues in the parent.
+**Rule 4 — Explicit entry, automatic exit**: A lower-level (parent/root) scope cannot enter a higher-level (child) namespace without an explicit `branch`, `switch`, `jump`, or `parallel`. But when a higher-level (child) namespace block ends naturally, execution automatically continues in the lower-level (parent) scope.
 
 **Rule 5 — Nesting**: Namespaces can be nested to any depth. Inner namespaces follow the same rules: skipped during sequential execution within their parent, entered only via explicit control flow.
 

@@ -106,9 +106,10 @@ x3_backup = x3
 #   3. When a namespace block ends (indentation ends), execution continues
 #      at the next line in the parent scope — which may itself be the end
 #      of a parent namespace.
-#   4. A lower-level (child) namespace CANNOT reach a higher-level (parent)
-#      namespace without an explicit jump. But a higher-level namespace
-#      automatically exits into the parent scope when its block ends.
+#   4. A lower-level (parent/root) scope CANNOT enter a higher-level (child)
+#      namespace without an explicit branch/jump/switch. But a higher-level
+#      (child) namespace automatically exits back to the lower-level (parent)
+#      scope when its block ends.
 #
 # That's it. No special merge points. Just sequential execution + goto.
 
@@ -153,7 +154,12 @@ on_no_match:
 
 (x4)classify(category)
 
-(category)switch(0=>`case_low`, 1=>`case_mid`, 2=>`case_high`, _=>`case_unknown`)
+(category)switch(
+    0=>`case_low`,
+    1=>`case_mid`,
+    2=>`case_high`,
+    _=>`case_unknown`
+)
 case_low:
     ("low quality")print()
 case_mid:
