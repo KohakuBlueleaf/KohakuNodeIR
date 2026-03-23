@@ -6,13 +6,14 @@ from kohakunode.analyzer.errors import UndefinedVariableError, WildcardInInputEr
 from kohakunode.ast.nodes import (
     Assignment,
     Branch,
+    DataflowBlock,
     Expression,
     FuncCall,
     Identifier,
     Jump,
     KeywordArg,
-    Literal,
     LabelRef,
+    Literal,
     Namespace,
     Parallel,
     Program,
@@ -79,6 +80,10 @@ class VariableAnalyzer:
             # escape to the top-level defined set.
             inner_defined = set(defined)
             self._walk_body(stmt.body, inner_defined, errors, top_level=False)
+
+        elif isinstance(stmt, DataflowBlock):
+            # Walk body; definitions inside are visible after the block.
+            self._walk_body(stmt.body, defined, errors, top_level=False)
 
         elif isinstance(stmt, SubgraphDef):
             self._check_subgraphdef(stmt, defined, errors)

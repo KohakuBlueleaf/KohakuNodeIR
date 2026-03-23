@@ -2,80 +2,24 @@
 import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useGraphStore } from '../../stores/graph.js';
+import { compileGraph } from '../../compiler/graphToIr.js';
 
 const graph = useGraphStore();
 
-// ---- IR generation (placeholder until the real compiler arrives) ----
-
-/**
- * Build a placeholder .kir text from the current graph state.
- * The actual graph->IR compiler will replace this function later.
- */
-function generateIR(nodeList, connectionList) {
-  if (nodeList.length === 0) {
-    return '; (empty graph)\n';
-  }
-
-  const lines = [];
-
-  lines.push('; KohakuNodeIR — .kir intermediate representation');
-  lines.push(`; Generated: ${new Date().toISOString()}`);
-  lines.push(`; Nodes: ${nodeList.length}   Connections: ${connectionList.length}`);
-  lines.push('');
-
-  // Declarations
-  lines.push('; ── Node declarations ──────────────────────────');
-  for (const node of nodeList) {
-    const dataIn = node.dataPorts.inputs.map(p => `${p.name}:${p.dataType ?? 'any'}`).join(', ');
-    const dataOut = node.dataPorts.outputs.map(p => `${p.name}:${p.dataType ?? 'any'}`).join(', ');
-    const ctrlIn = node.controlPorts.inputs.map(p => p.name).join(', ');
-    const ctrlOut = node.controlPorts.outputs.map(p => p.name).join(', ');
-
-    lines.push(`node %${node.id.replace(/-/g, '_')} {`);
-    lines.push(`  type     = "${node.type}"`);
-    lines.push(`  name     = "${node.name}"`);
-    if (dataIn)  lines.push(`  data_in  = [${dataIn}]`);
-    if (dataOut) lines.push(`  data_out = [${dataOut}]`);
-    if (ctrlIn)  lines.push(`  ctrl_in  = [${ctrlIn}]`);
-    if (ctrlOut) lines.push(`  ctrl_out = [${ctrlOut}]`);
-    if (node.properties?.code) {
-      const escaped = node.properties.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      lines.push(`  code     = """\n${node.properties.code.split('\n').map(l => '    ' + l).join('\n')}\n  """`);
-    }
-    if (node.type === 'value' && node.properties?.value !== undefined) {
-      lines.push(`  value    = ${JSON.stringify(node.properties.value)}`);
-    }
-    lines.push(`}`);
-    lines.push('');
-  }
-
-  // Connections
-  if (connectionList.length > 0) {
-    lines.push('; ── Connections ─────────────────────────────────');
-    for (const conn of connectionList) {
-      const fromId = conn.fromNodeId.replace(/-/g, '_');
-      const toId = conn.toNodeId.replace(/-/g, '_');
-      const portType = conn.portType === 'control' ? '~>' : '->';
-      lines.push(
-        `connect %${fromId}.${conn.fromPortId} ${portType} %${toId}.${conn.toPortId}`
-      );
-    }
-    lines.push('');
-  }
-
-  lines.push('; ── End of IR ────────────────────────────────────');
-
-  return lines.join('\n');
-}
+// ---- Compilation mode ----
+const mode = ref('controlflow');
 
 // ---- Reactive IR text ----
 const irText = ref('');
+const compileErrors = ref([]);
 
-// Recompute whenever the graph changes
+// Recompute whenever the graph changes or mode changes
 watch(
-  [() => graph.nodeList, () => graph.connectionList],
-  ([nodes, conns]) => {
-    irText.value = generateIR(nodes, conns);
+  [() => graph.nodeList, () => graph.connectionList, mode],
+  ([nodes, conns, m]) => {
+    const { ir, errors } = compileGraph(nodes, conns, m);
+    irText.value = ir;
+    compileErrors.value = errors;
   },
   { immediate: true, deep: true },
 );
@@ -84,7 +28,7 @@ watch(
 const lineCount = computed(() => irText.value.split('\n').length);
 
 // ---- Syntax highlight ----
-// Simple regex-based highlighter — no external dep needed
+// Regex-based highlighter for KIR syntax
 function highlight(text) {
   // Escape HTML first
   let s = text
@@ -92,21 +36,26 @@ function highlight(text) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Comments (;...)
-  s = s.replace(/(;[^\n]*)/g, '<span class="ir-comment">$1</span>');
-  // Keywords: node, connect, type, name, data_in, data_out, ctrl_in, ctrl_out, code, value
-  s = s.replace(/\b(node|connect|type|name|data_in|data_out|ctrl_in|ctrl_out|code|value)\b/g,
-    '<span class="ir-keyword">$1</span>');
-  // Port type arrows
-  s = s.replace(/(-&gt;|~&gt;)/g, '<span class="ir-arrow">$1</span>');
-  // Node references (%id)
-  s = s.replace(/(%[a-z0-9_]+)/g, '<span class="ir-ref">$1</span>');
-  // String literals
+  // Comments (# ...)
+  s = s.replace(/(#[^\n]*)/g, '<span class="ir-comment">$1</span>');
+  // @meta, @mode, @def directives
+  s = s.replace(/(@(?:meta|mode|def)\b)/g, '<span class="ir-directive">$1</span>');
+  // Backtick-quoted namespace labels
+  s = s.replace(/(`[^`]*`)/g, '<span class="ir-label">$1</span>');
+  // Built-in utilities: branch, switch, jump, parallel
+  s = s.replace(/\b(branch|switch|jump|parallel)\b/g, '<span class="ir-keyword">$1</span>');
+  // Python-style booleans and None
+  s = s.replace(/\b(True|False|None)\b/g, '<span class="ir-literal">$1</span>');
+  // Namespace labels (word followed by colon at line start or after indent)
+  s = s.replace(/^(\s*\w+)(:)$/gm, '<span class="ir-label">$1$2</span>');
+  // String literals (double-quoted)
   s = s.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="ir-string">"$1"</span>');
   // Numbers
   s = s.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="ir-number">$1</span>');
-  // Port type annotations e.g. :int :any
-  s = s.replace(/:([a-z]+)/g, ':<span class="ir-type">$1</span>');
+  // Variable assignments (identifier = ...)
+  s = s.replace(/^(\s*)(v_\w+)(\s*=)/gm, '$1<span class="ir-var">$2</span>$3');
+  // Function call output vars in right parens — highlight variable names
+  s = s.replace(/\)([\w.]+)\(/g, ')<span class="ir-func">$1</span>(');
 
   return s;
 }
@@ -127,6 +76,11 @@ async function copyToClipboard() {
 function execute() {
   ElMessage({ message: 'Execution is not yet connected to the backend.', type: 'info', duration: 2500 });
 }
+
+// ---- Toggle mode ----
+function toggleMode() {
+  mode.value = mode.value === 'controlflow' ? 'dataflow' : 'controlflow';
+}
 </script>
 
 <template>
@@ -143,6 +97,13 @@ function execute() {
         {{ graph.connectionList.length }} connection{{ graph.connectionList.length !== 1 ? 's' : '' }}
       </span>
       <div class="ir-toolbar-actions">
+        <button
+          class="ir-action-btn ir-mode-btn"
+          :title="`Mode: ${mode} (click to toggle)`"
+          @click="toggleMode"
+        >
+          {{ mode === 'controlflow' ? 'CF' : 'DF' }}
+        </button>
         <button class="ir-action-btn" title="Copy IR to clipboard" @click="copyToClipboard">
           <span class="i-carbon-copy" />
           Copy
@@ -156,6 +117,13 @@ function execute() {
           <span class="i-carbon-play" />
           Execute
         </button>
+      </div>
+    </div>
+
+    <!-- Compilation errors banner -->
+    <div v-if="compileErrors.length > 0" class="ir-errors">
+      <div v-for="(err, i) in compileErrors" :key="i" class="ir-error-line">
+        {{ err }}
       </div>
     </div>
 
@@ -252,6 +220,34 @@ function execute() {
   cursor: not-allowed;
 }
 
+.ir-mode-btn {
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: #f9e2af;
+  border-color: rgba(249, 226, 175, 0.4);
+  min-width: 32px;
+  justify-content: center;
+}
+.ir-mode-btn:hover {
+  background: rgba(249, 226, 175, 0.1);
+  border-color: rgba(249, 226, 175, 0.6);
+}
+
+/* ---- Errors banner ---- */
+.ir-errors {
+  background: rgba(243, 139, 168, 0.1);
+  border-bottom: 1px solid rgba(243, 139, 168, 0.3);
+  padding: 6px 14px;
+  flex-shrink: 0;
+}
+.ir-error-line {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 11px;
+  color: #f38ba8;
+  line-height: 1.5;
+}
+
 /* ---- Code wrapper ---- */
 .ir-code-wrapper {
   flex: 1;
@@ -312,24 +308,32 @@ function execute() {
   color: #585b70;
   font-style: italic;
 }
+.ir-code :deep(.ir-directive) {
+  color: #f5c2e7;
+  font-weight: 700;
+}
 .ir-code :deep(.ir-keyword) {
   color: #cba6f7;
   font-weight: 600;
 }
-.ir-code :deep(.ir-arrow) {
-  color: #fab387;
-  font-weight: 700;
+.ir-code :deep(.ir-label) {
+  color: #89dceb;
+  font-weight: 600;
 }
-.ir-code :deep(.ir-ref) {
+.ir-code :deep(.ir-literal) {
+  color: #fab387;
+  font-weight: 600;
+}
+.ir-code :deep(.ir-func) {
   color: #89b4fa;
+}
+.ir-code :deep(.ir-var) {
+  color: #a6e3a1;
 }
 .ir-code :deep(.ir-string) {
   color: #a6e3a1;
 }
 .ir-code :deep(.ir-number) {
   color: #fab387;
-}
-.ir-code :deep(.ir-type) {
-  color: #f9e2af;
 }
 </style>

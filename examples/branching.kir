@@ -1,0 +1,15 @@
+# Branching example: classify a number
+value = 42
+
+# Compare against thresholds
+(value, 0)less_than(is_negative)
+(is_negative)branch(`handle_negative`, `check_positive`)
+handle_negative:
+    ("negative")print()
+check_positive:
+    (value, 100)greater_than(is_large)
+    (is_large)branch(`handle_large`, `handle_normal`)
+    handle_large:
+        ("large positive")print()
+    handle_normal:
+        ("normal positive")print()

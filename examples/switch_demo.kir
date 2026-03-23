@@ -1,0 +1,12 @@
+# Switch/case demonstration
+day = 3
+
+(day)switch(1=>`monday`, 2=>`tuesday`, 3=>`wednesday`, _=>`other`)
+monday:
+    ("It's Monday")print()
+tuesday:
+    ("It's Tuesday")print()
+wednesday:
+    ("It's Wednesday!")print()
+other:
+    ("Some other day")print()

@@ -1,0 +1,21 @@
+## Scoped Dataflow Example
+## Shows mixing control flow and dataflow in the same file
+
+# Control flow section: a simple loop
+counter = 0
+limit = 3
+
+()jump(`loop`)
+loop:
+    (counter, 1)add(counter)
+    (counter, limit)less_than(keep_going)
+    (keep_going)branch(`continue_loop`, `exit_loop`)
+    continue_loop:
+        ()jump(`loop`)
+    exit_loop:
+
+# Dataflow section: order resolved by backend
+@dataflow:
+    (counter)to_string(count_str)
+    ("Counted to: ", count_str)concat(message)
+    (message)print()

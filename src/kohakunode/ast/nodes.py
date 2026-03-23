@@ -115,6 +115,13 @@ class SubgraphDef(Statement):
 
 
 @dataclass
+class DataflowBlock(Statement):
+    """@dataflow: scoped block -- execution order resolved by data dependencies."""
+
+    body: list[Statement] = field(default_factory=list)
+
+
+@dataclass
 class ModeDecl(Statement):
     mode: str = field(default="")
 

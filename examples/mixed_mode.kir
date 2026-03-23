@@ -1,0 +1,26 @@
+# Mixed control flow + dataflow example
+# Shows scoped @dataflow: blocks alongside explicit control flow
+
+# Setup: generate some data (order doesn't matter)
+@dataflow:
+    (10)to_float(limit)
+    (0)to_float(counter)
+    (1)to_float(step)
+
+# Control flow: accumulation loop
+total = 0
+()jump(`loop`)
+loop:
+    (total, counter)add(total)
+    (counter, step)add(counter)
+    (counter, limit)less_than(keep_going)
+    (keep_going)branch(`continue`, `done`)
+    continue:
+        ()jump(`loop`)
+    done:
+
+# Dataflow section: format and display result
+@dataflow:
+    (total)to_string(total_str)
+    ("Sum 0..9 = ", total_str)concat(message)
+    (message)print()

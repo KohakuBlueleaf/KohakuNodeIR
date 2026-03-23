@@ -18,6 +18,7 @@ from kohakunode.ast.nodes import Parameter
 from kohakunode.ast.nodes import Wildcard
 from kohakunode.ast.nodes import Assignment
 from kohakunode.ast.nodes import Branch
+from kohakunode.ast.nodes import DataflowBlock
 from kohakunode.ast.nodes import FuncCall
 from kohakunode.ast.nodes import Jump
 from kohakunode.ast.nodes import ModeDecl
@@ -101,6 +102,7 @@ __all__ = [
     # AST — statements
     "Assignment",
     "Branch",
+    "DataflowBlock",
     "FuncCall",
     "Jump",
     "ModeDecl",

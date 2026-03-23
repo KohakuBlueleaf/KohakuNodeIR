@@ -10,6 +10,7 @@ from kohakunode.analyzer.errors import (
 )
 from kohakunode.ast.nodes import (
     Branch,
+    DataflowBlock,
     Jump,
     Namespace,
     Parallel,
@@ -147,6 +148,8 @@ class ScopeAnalyzer:
                 self._analyze_scope(stmt.body, errors, child_ancestors)
             elif isinstance(stmt, SubgraphDef):
                 self._analyze_scope(stmt.body, errors)
+            elif isinstance(stmt, DataflowBlock):
+                self._analyze_scope(stmt.body, errors, child_ancestors)
 
     # ------------------------------------------------------------------
     # Label reference collection

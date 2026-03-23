@@ -9,6 +9,7 @@ import lark
 from kohakunode.ast.nodes import (
     Assignment,
     Branch,
+    DataflowBlock,
     FuncCall,
     Identifier,
     Jump,
@@ -475,6 +476,16 @@ class KirTransformer(lark.Transformer):
             body=body,
             line=line,
         )
+
+    # ------------------------------------------------------------------ #
+    # Dataflow block                                                      #
+    # ------------------------------------------------------------------ #
+
+    def dataflow_block(self, children: list) -> DataflowBlock:
+        raw_body = [c for c in children if not isinstance(c, lark.Token)]
+        body = _process_body(raw_body)
+        line = _get_line(children[0]) if children else None
+        return DataflowBlock(body=body, line=line)
 
     # ------------------------------------------------------------------ #
     # Statement / compound_stmt pass-through                              #

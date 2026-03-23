@@ -75,6 +75,7 @@ simple_stmt : assignment
 
 compound_stmt : namespace_def
               | subgraph_def
+              | dataflow_block
 
 // ============================================================
 // Variable Assignment
@@ -216,6 +217,17 @@ param : NAME "=" expr  -> param_with_default
       | NAME           -> param_plain
 
 def_output_list : NAME ("," NAME)* ","?
+
+// ============================================================
+// Dataflow block
+// ============================================================
+// @dataflow:
+//     statements...
+//
+// Scoped block whose statements are reordered by the compiler
+// according to data dependencies before execution.
+
+dataflow_block : "@dataflow" ":" _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT
 
 // ============================================================
 // Metadata annotation

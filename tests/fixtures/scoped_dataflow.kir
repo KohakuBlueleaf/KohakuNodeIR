@@ -1,0 +1,6 @@
+x = 10
+@dataflow:
+    (x)process_b(z)
+    ()generate(y)
+    (y, z)combine(result)
+(result)print()

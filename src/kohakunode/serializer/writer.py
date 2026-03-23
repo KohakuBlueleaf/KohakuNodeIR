@@ -5,6 +5,7 @@ from typing import Any
 from kohakunode.ast.nodes import (
     Assignment,
     Branch,
+    DataflowBlock,
     Expression,
     FuncCall,
     Identifier,
@@ -80,6 +81,8 @@ class Writer:
             return self._write_namespace(stmt, indent_level)
         if isinstance(stmt, SubgraphDef):
             return self._write_subgraph_def(stmt, indent_level)
+        if isinstance(stmt, DataflowBlock):
+            return self._write_dataflow_block(stmt, indent_level)
         raise TypeError(f"Unknown statement type: {type(stmt)!r}")
 
     # ------------------------------------------------------------------
@@ -182,6 +185,18 @@ class Writer:
             lines.extend(self._write_statement(stmt, indent_level + 1))
 
         lines.append("")  # blank line after each @def block
+        return lines
+
+    def _write_dataflow_block(
+        self, node: DataflowBlock, indent_level: int
+    ) -> list[str]:
+        """Return ``"@dataflow:"`` line plus indented body."""
+        prefix = self._indent_str * indent_level
+        lines: list[str] = [f"{prefix}@dataflow:"]
+
+        for stmt in node.body:
+            lines.extend(self._write_statement(stmt, indent_level + 1))
+
         return lines
 
     # ------------------------------------------------------------------

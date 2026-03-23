@@ -5,6 +5,7 @@ from typing import Any
 from kohakunode.ast.nodes import (
     Assignment,
     Branch,
+    DataflowBlock,
     Expression,
     FuncCall,
     Identifier,
@@ -146,6 +147,11 @@ class Interpreter:
         elif isinstance(stmt, SubgraphDef):
             # Already collected; nothing to do.
             pass
+
+        elif isinstance(stmt, DataflowBlock):
+            # Should have been compiled away, but execute body sequentially
+            # as fallback.
+            self._run_body(stmt.body)
 
         elif isinstance(stmt, ModeDecl):
             # Informational only.

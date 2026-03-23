@@ -5,6 +5,7 @@ from typing import Any, List, Optional
 from kohakunode.ast.nodes import (
     Assignment,
     Branch,
+    DataflowBlock,
     FuncCall,
     Identifier,
     Jump,
@@ -106,6 +107,9 @@ class ASTVisitor:
         self.visit_children(node)
 
     def visit_SubgraphDef(self, node: SubgraphDef) -> None:
+        self.visit_children(node)
+
+    def visit_DataflowBlock(self, node: DataflowBlock) -> None:
         self.visit_children(node)
 
     def visit_ModeDecl(self, node: ModeDecl) -> None:
@@ -210,6 +214,9 @@ class ASTTransformer:
         return self.generic_visit(node)
 
     def visit_SubgraphDef(self, node: SubgraphDef) -> SubgraphDef:
+        return self.generic_visit(node)
+
+    def visit_DataflowBlock(self, node: DataflowBlock) -> DataflowBlock:
         return self.generic_visit(node)
 
     def visit_ModeDecl(self, node: ModeDecl) -> ModeDecl:
