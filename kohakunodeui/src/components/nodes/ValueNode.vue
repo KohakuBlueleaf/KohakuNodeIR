@@ -124,7 +124,7 @@ function onBoolChange(event) {
         class="value-input"
         :type="inputType"
         :value="localValue"
-        :placeholder="localType === 'string' ? '\"value\"' : '0'"
+        :placeholder="localType === 'string' ? 'text' : '0'"
         @change="onValueChange"
         @pointerdown.stop
         @click.stop

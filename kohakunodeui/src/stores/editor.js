@@ -30,7 +30,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   // ---- Mode ----
   /** @type {import('vue').Ref<'dataflow'|'controlflow'>} */
-  const mode = ref('dataflow');
+  const mode = ref('controlflow');
 
   // ---- Computed ----
   const hasSelection = computed(

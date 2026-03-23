@@ -42,15 +42,15 @@ export function useDrag(nodeId, elementRef, getCurrentZoom) {
     startMouseY = e.clientY / zoom
 
     // Determine which nodes will move
-    const selection = editorStore.selectedNodeIds ?? []
-    const movingIds = selection.includes(nodeId)
-      ? selection
+    const selection = editorStore.selectedNodeIds
+    const movingIds = selection && selection.has(nodeId)
+      ? [...selection]
       : [nodeId]
 
     // Snapshot starting positions
     startPositions = new Map()
     for (const id of movingIds) {
-      const node = graphStore.getNodeById(id)
+      const node = graphStore.nodes.get(id)
       if (node) {
         startPositions.set(id, { x: node.x, y: node.y })
       }

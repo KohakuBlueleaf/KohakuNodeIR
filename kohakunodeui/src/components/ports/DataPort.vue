@@ -124,18 +124,7 @@ function onMouseLeave() { isHovered.value = false }
     <!-- The circle dot -->
     <div class="data-port__dot" />
 
-    <!-- Label — rendered inside the node body, never outside the edge -->
-    <span
-      class="data-port__label"
-      :class="`data-port__label--${direction}`"
-    >
-      {{ port.name }}
-      <template v-if="port.dataType">
-        <span class="data-port__type">({{ port.dataType }})</span>
-      </template>
-    </span>
-
-    <!-- Tooltip shown on hover -->
+      <!-- Tooltip shown on hover -->
     <div v-if="isHovered" class="data-port__tooltip">
       {{ port.name }}<template v-if="port.dataType"> · {{ port.dataType }}</template>
       <template v-if="port.defaultValue !== undefined && direction === 'input'">

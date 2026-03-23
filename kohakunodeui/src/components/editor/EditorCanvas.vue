@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useGraphStore } from '../../stores/graph.js';
-import { GRID_SIZE } from '../../utils/grid.js';
+import { useEditorStore } from '../../stores/editor.js';
+import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
+import { GRID_SIZE, snapToGrid } from '../../utils/grid.js';
 import WireLayer  from '../wire/WireLayer.vue';
 import DraftWire  from '../wire/DraftWire.vue';
-import BaseNode   from '../nodes/BaseNode.vue';
+import NodeRenderer from '../nodes/NodeRenderer.vue';
 import SelectionBox from './SelectionBox.vue';
 
 // ── Props / emits ──────────────────────────────────────────────────────────────
@@ -19,6 +21,8 @@ const emit = defineEmits(['update:zoom']);
 
 // ── Store ──────────────────────────────────────────────────────────────────────
 const graph = useGraphStore();
+const editor = useEditorStore();
+const registry = useNodeRegistryStore();
 
 // ── Refs ───────────────────────────────────────────────────────────────────────
 const containerRef = ref(null);
@@ -141,10 +145,25 @@ function endSelection() {
   isSelecting.value = false;
 }
 
-// ── Draft wire ────────────────────────────────────────────────────────────────
-// Populated by child port components via provide/inject in the full implementation.
-// Here we just declare the ref; DraftWire is shown when non-null.
-const draftWire = ref(null);
+// ── Draft wire — derived from editor store ───────────────────────────────────
+const draftWire = computed(() => {
+  const dw = editor.draftWire;
+  if (!dw) return null;
+  const fromPos = graph.getPortPosition(dw.fromNodeId, dw.fromPortId);
+  if (!fromPos) return null;
+  // Convert canvas coords to screen coords for the SVG overlay
+  const fromScreen = {
+    x: fromPos.x * props.zoom + panX.value,
+    y: fromPos.y * props.zoom + panY.value,
+  };
+  return {
+    fromX: fromScreen.x,
+    fromY: fromScreen.y,
+    toX: dw.mouseX,
+    toY: dw.mouseY,
+    portType: dw.portType,
+  };
+});
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 function onKeyDown(e) {
@@ -184,6 +203,11 @@ function onPointerMove(e) {
     continuePan(e.clientX, e.clientY);
     return;
   }
+  // Update draft wire endpoint (screen coords)
+  if (editor.isDrawingWire) {
+    const rect = containerRef.value.getBoundingClientRect();
+    editor.updateDraftWire(e.clientX - rect.left, e.clientY - rect.top);
+  }
   updateSelection(e.clientX, e.clientY);
 }
 
@@ -192,6 +216,9 @@ function onPointerUp(e) {
     endPan();
     return;
   }
+  if (editor.isDrawingWire) {
+    editor.cancelDraftWire();
+  }
   if (isSelecting.value) {
     endSelection();
   }
@@ -199,7 +226,29 @@ function onPointerUp(e) {
 
 function onContextMenu(e) {
   e.preventDefault();
-  // Context menu will be implemented later
+}
+
+// ── Drop from palette ──────────────────────────────────────────────────────
+function onDragOver(e) {
+  if (e.dataTransfer.types.includes('application/x-node-type')) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }
+}
+
+function onDrop(e) {
+  const typeName = e.dataTransfer.getData('application/x-node-type');
+  if (!typeName) return;
+  e.preventDefault();
+
+  const rect = containerRef.value.getBoundingClientRect();
+  const canvasX = snapToGrid((e.clientX - rect.left - panX.value) / props.zoom);
+  const canvasY = snapToGrid((e.clientY - rect.top - panY.value) / props.zoom);
+
+  const nodeData = registry.createNodeData(typeName, canvasX, canvasY);
+  if (nodeData) {
+    graph.addNode(nodeData);
+  }
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -227,6 +276,8 @@ onBeforeUnmount(() => {
     @pointerup="onPointerUp"
     @pointerleave="onPointerUp"
     @contextmenu="onContextMenu"
+    @dragover="onDragOver"
+    @drop="onDrop"
   >
     <!-- ── Pan/zoom transform wrapper ── -->
     <div class="canvas-transform" :style="transformStyle">
@@ -234,7 +285,7 @@ onBeforeUnmount(() => {
       <WireLayer />
 
       <!-- Nodes -->
-      <BaseNode
+      <NodeRenderer
         v-for="node in graph.nodeList"
         :key="node.id"
         :node="node"
