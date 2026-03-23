@@ -178,8 +178,8 @@ function handleSave() {
       })),
     },
     controlPorts: {
-      inputs: [],
-      outputs: [],
+      inputs: [{ id: 'cp-in', name: 'in' }],
+      outputs: [{ id: 'cp-out', name: 'out' }],
     },
     code,
   };

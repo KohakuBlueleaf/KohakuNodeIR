@@ -1,121 +1,72 @@
 <script setup>
-/**
- * NodeRenderer — dispatcher that wraps BaseNode and injects type-specific body content.
- *
- * Usage:
- *   <NodeRenderer :node="node" />
- *
- * BaseNode receives an optional `headerColor` for node types that have a
- * distinctive header tint. Type-specific components are mounted inside the
- * named #body slot.
- *
- * Event forwarding:
- *   All emitted events from child type components bubble through NodeRenderer
- *   as-is so the parent canvas / editor can handle them centrally.
- */
+import { useGraphStore } from '../../stores/graph.js'
+import BaseNode from './BaseNode.vue'
+import FunctionNode from './FunctionNode.vue'
+import BranchNode from './BranchNode.vue'
+import MergeNode from './MergeNode.vue'
+import SwitchNode from './SwitchNode.vue'
+import ParallelNode from './ParallelNode.vue'
+import ValueNode from './ValueNode.vue'
 
-import BaseNode    from './BaseNode.vue';
-import FunctionNode from './FunctionNode.vue';
-import BranchNode   from './BranchNode.vue';
-import MergeNode    from './MergeNode.vue';
-import SwitchNode   from './SwitchNode.vue';
-import ParallelNode from './ParallelNode.vue';
-import ValueNode    from './ValueNode.vue';
+const props = defineProps({ node: { type: Object, required: true } })
+const graph = useGraphStore()
 
-const props = defineProps({
-  node: {
-    type: Object,
-    required: true,
-  },
-});
-
-const emit = defineEmits([
-  // FunctionNode
-  'update:property',
-  // MergeNode
-  'add-control-input',
-  // SwitchNode
-  'add-case',
-  'remove-case',
-  // ParallelNode
-  'add-branch',
-  'remove-branch',
-]);
-
-/**
- * Map node type -> distinctive header background color.
- * null = use BaseNode's default (#313244).
- */
 const HEADER_COLORS = {
-  branch:   '#3d2f1e',
-  switch:   '#2d2040',
+  branch: '#3d2f1e',
+  switch: '#2d2040',
   parallel: '#1e3d2f',
-};
+}
 
-function headerColor(type) {
-  return HEADER_COLORS[type] ?? null;
+let _cnt = 0
+function pid(label) { return `${label}-${++_cnt}-${Date.now()}` }
+
+function addControlInput() {
+  const node = graph.nodes.get(props.node.id)
+  if (!node) return
+  const idx = node.controlPorts.inputs.length
+  node.controlPorts.inputs.push({ id: pid('cp-in'), name: `in ${idx}` })
+}
+
+function addCase() {
+  const node = graph.nodes.get(props.node.id)
+  if (!node) return
+  const idx = node.controlPorts.outputs.length
+  node.controlPorts.outputs.push({ id: pid('cp-case'), name: `case ${idx}` })
+}
+
+function removeCase(payload) {
+  const node = graph.nodes.get(props.node.id)
+  if (!node) return
+  const idx = node.controlPorts.outputs.findIndex(p => p.id === payload.portId)
+  if (idx !== -1) node.controlPorts.outputs.splice(idx, 1)
+}
+
+function addBranch() {
+  const node = graph.nodes.get(props.node.id)
+  if (!node) return
+  const idx = node.controlPorts.outputs.length
+  node.controlPorts.outputs.push({ id: pid('cp-out'), name: `out ${idx}` })
+}
+
+function removeBranch(payload) {
+  const node = graph.nodes.get(props.node.id)
+  if (!node) return
+  const idx = node.controlPorts.outputs.findIndex(p => p.id === payload.portId)
+  if (idx !== -1) node.controlPorts.outputs.splice(idx, 1)
 }
 </script>
 
 <template>
-  <BaseNode :node="node" :header-color="headerColor(node.type)">
+  <BaseNode :node="node" :header-color="HEADER_COLORS[node.type] ?? null">
     <template #body>
-
-      <FunctionNode
-        v-if="node.type === 'function'"
-        :node="node"
-        @update:property="emit('update:property', $event)"
-      />
-
-      <BranchNode
-        v-else-if="node.type === 'branch'"
-        :node="node"
-      />
-
-      <MergeNode
-        v-else-if="node.type === 'merge'"
-        :node="node"
-        @add-control-input="emit('add-control-input')"
-      />
-
-      <SwitchNode
-        v-else-if="node.type === 'switch'"
-        :node="node"
-        @add-case="emit('add-case')"
-        @remove-case="emit('remove-case', $event)"
-      />
-
-      <ParallelNode
-        v-else-if="node.type === 'parallel'"
-        :node="node"
-        @add-branch="emit('add-branch')"
-        @remove-branch="emit('remove-branch', $event)"
-      />
-
-      <ValueNode
-        v-else-if="node.type === 'value'"
-        :node="node"
-        @update:property="emit('update:property', $event)"
-      />
-
-      <!-- Fallback: treat user-defined / unknown types as function nodes -->
-      <FunctionNode
-        v-else
-        :node="node"
-        @update:property="emit('update:property', $event)"
-      />
-
+      <FunctionNode v-if="node.type === 'function'" :node="node" />
+      <BranchNode v-else-if="node.type === 'branch'" :node="node" />
+      <MergeNode v-else-if="node.type === 'merge'" :node="node" @add-control-input="addControlInput" />
+      <SwitchNode v-else-if="node.type === 'switch'" :node="node" @add-case="addCase" @remove-case="removeCase" />
+      <ParallelNode v-else-if="node.type === 'parallel'" :node="node" @add-branch="addBranch" @remove-branch="removeBranch" />
+      <ValueNode v-else-if="node.type === 'value'" :node="node" />
+      <!-- User-defined types: render as function -->
+      <FunctionNode v-else :node="node" />
     </template>
   </BaseNode>
 </template>
-
-<style scoped>
-.unknown-type {
-  padding: 4px 0;
-}
-.unknown-label {
-  font-size: 10px;
-  color: #f38ba8;
-  font-family: monospace;
-}
-</style>
