@@ -194,9 +194,7 @@ def _count_crossings(
             t_right = (step + 1) / span
             row_left = src_row + t_left * (dst_row - src_row)
             row_right = src_row + t_right * (dst_row - src_row)
-            col_pair_edges[(left_col, right_col)].append(
-                (row_left, row_right)
-            )
+            col_pair_edges[(left_col, right_col)].append((row_left, row_right))
 
     # Count crossings per column-pair
     total_crossings = 0

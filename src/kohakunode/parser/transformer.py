@@ -80,6 +80,72 @@ def _process_body(
 
 
 # ---------------------------------------------------------------------------
+# Builtin call dispatch helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_branch(inputs: list, outputs: list, line: int | None) -> Branch:
+    condition = inputs[0] if inputs else Identifier()
+    label_refs = [o for o in outputs if isinstance(o, LabelRef)]
+    true_label = label_refs[0].name if len(label_refs) >= 1 else ""
+    false_label = label_refs[1].name if len(label_refs) >= 2 else ""
+    return Branch(
+        condition=condition, true_label=true_label, false_label=false_label, line=line
+    )
+
+
+def _make_switch(inputs: list, outputs: list, line: int | None) -> Switch:
+    value = inputs[0] if inputs else Identifier()
+    cases: list[tuple] = []
+    default_label: str | None = None
+    for item in outputs:
+        if isinstance(item, tuple):
+            key, label_name = item
+            if key == "_default_":
+                default_label = label_name
+            else:
+                cases.append((key, label_name))
+    return Switch(value=value, cases=cases, default_label=default_label, line=line)
+
+
+def _make_jump(outputs: list, line: int | None) -> Jump:
+    label_refs = [o for o in outputs if isinstance(o, LabelRef)]
+    target = label_refs[0].name if label_refs else ""
+    return Jump(target=target, line=line)
+
+
+def _make_parallel(outputs: list, line: int | None) -> Parallel:
+    label_refs = [o for o in outputs if isinstance(o, LabelRef)]
+    return Parallel(labels=[lr.name for lr in label_refs], line=line)
+
+
+def _parse_subgraph_children(
+    children: list,
+) -> tuple[list[Parameter], list[str], list, lark.Token | None]:
+    """Extract (params, output_names, body_stmts, name_token) from subgraph_def children."""
+    params: list[Parameter] = []
+    output_names: list[str] = []
+    body_stmts: list = []
+    name_tokens: list[lark.Token] = []
+
+    for child in children:
+        if isinstance(child, lark.Token):
+            name_tokens.append(child)
+        elif isinstance(child, list):
+            if child and isinstance(child[0], Parameter):
+                params = child
+            elif child and isinstance(child[0], str):
+                output_names = child
+        elif isinstance(child, Statement):
+            body_stmts.append(child)
+
+    bracket_values = {"(", ")", "[", "]", "{", "}"}
+    real_tokens = [t for t in name_tokens if str(t) not in bracket_values]
+    name_token = real_tokens[0] if real_tokens else None
+    return params, output_names, body_stmts, name_token
+
+
+# ---------------------------------------------------------------------------
 # Transformer
 # ---------------------------------------------------------------------------
 
@@ -220,43 +286,11 @@ class KirTransformer(lark.Transformer):
 
     def call_stmt(self, children: list) -> Statement:
         # Grammar: LPAR call_in_list? RPAR func_name LPAR call_out_list? RPAR
-        # After transformation:
-        #   children[0] = LPAR token
-        #   children[1] = call_in_list result OR RPAR token (if no inputs)
-        #   ...
-        # Because LPAR/RPAR are *named* terminals they appear as Tokens.
-        # We scan children by type to extract the relevant pieces.
+        # LPAR/RPAR appear as named Tokens; we scan children by type.
+        tokens = [c for c in children if isinstance(c, lark.Token)]
+        non_tokens = [c for c in children if not isinstance(c, lark.Token)]
 
-        # Collect tokens and non-token items in order.
-        tokens: list[lark.Token] = []
-        non_tokens: list = []
-        for child in children:
-            if isinstance(child, lark.Token):
-                tokens.append(child)
-            else:
-                non_tokens.append(child)
-
-        # non_tokens layout:
-        #   [0]            = func_name (str)
-        #   [1] (optional) = call_in_list  (list)  — present when inputs exist
-        #   [2] (optional) = call_out_list (list)  — present when outputs exist
-        #
-        # But call_in_list and call_out_list are both lists; func_name is str.
-        # So: exactly one str and up to two lists.
-
-        fn: str = ""
-        lists: list[list] = []
-        for item in non_tokens:
-            if isinstance(item, str):
-                fn = item
-            elif isinstance(item, list):
-                lists.append(item)
-
-        # Determine which list is inputs and which is outputs by their position
-        # in the original grammar.  The first list before the func_name token
-        # must be inputs; the list after must be outputs.  We derive this from
-        # the order non_tokens appear — the transformer preserves child order.
-        # Find insertion index of fn among non_tokens.
+        fn: str = next((x for x in non_tokens if isinstance(x, str)), "")
         fn_index = next(i for i, x in enumerate(non_tokens) if isinstance(x, str))
 
         inputs: list = []
@@ -268,55 +302,16 @@ class KirTransformer(lark.Transformer):
                 else:
                     outputs = item
 
-        # Determine line from the opening LPAR token.
         line: int | None = _get_line(tokens[0]) if tokens else None
 
-        # Dispatch on builtin function names.
         if fn == "branch":
-            condition = inputs[0] if inputs else Identifier()
-            true_label = ""
-            false_label = ""
-            label_refs = [o for o in outputs if isinstance(o, LabelRef)]
-            if len(label_refs) >= 1:
-                true_label = label_refs[0].name
-            if len(label_refs) >= 2:
-                false_label = label_refs[1].name
-            return Branch(
-                condition=condition,
-                true_label=true_label,
-                false_label=false_label,
-                line=line,
-            )
-
+            return _make_branch(inputs, outputs, line)
         if fn == "switch":
-            value = inputs[0] if inputs else Identifier()
-            cases: list[tuple] = []
-            default_label: str | None = None
-            for item in outputs:
-                if isinstance(item, tuple):
-                    key, label_name = item
-                    if key == "_default_":
-                        default_label = label_name
-                    else:
-                        cases.append((key, label_name))
-            return Switch(
-                value=value,
-                cases=cases,
-                default_label=default_label,
-                line=line,
-            )
-
+            return _make_switch(inputs, outputs, line)
         if fn == "jump":
-            label_refs = [o for o in outputs if isinstance(o, LabelRef)]
-            target = label_refs[0].name if label_refs else ""
-            return Jump(target=target, line=line)
-
+            return _make_jump(outputs, line)
         if fn == "parallel":
-            label_refs = [o for o in outputs if isinstance(o, LabelRef)]
-            labels = [lr.name for lr in label_refs]
-            return Parallel(labels=labels, line=line)
-
-        # Regular function call.
+            return _make_parallel(outputs, line)
         return FuncCall(inputs=inputs, func_name=fn, outputs=outputs, line=line)
 
     # ------------------------------------------------------------------ #
@@ -420,52 +415,11 @@ class KirTransformer(lark.Transformer):
     def subgraph_def(self, children: list) -> SubgraphDef:
         # Grammar: "@def" LPAR param_list? RPAR NAME LPAR def_output_list? RPAR
         #          ":" _NEWLINE _INDENT statements+ _DEDENT
-        # After transformation, tokens are Tokens; param_list → list of Parameter;
-        # def_output_list → list of str; NAME → Token; statements → Statement nodes.
-
-        # Extract the subgraph name: first NAME token that is NOT a param name.
-        # Strategy: collect all items in order; NAME token comes after RPAR.
-        # We know: first non-bracket token = potential "@def" (not passed as child
-        # since it's an anonymous literal); then bracket tokens; then param_list;
-        # then the subgraph NAME token; then bracket tokens; then def_output_list;
-        # then body statements.
-
-        params: list[Parameter] = []
-        output_names: list[str] = []
-        body_stmts: list = []
-        subgraph_name_token: lark.Token | None = None
-
-        # Pass 1: separate by type.
-        name_tokens: list[lark.Token] = []
-        for child in children:
-            if isinstance(child, lark.Token):
-                name_tokens.append(child)
-            elif isinstance(child, list):
-                # Determine if it's param_list or def_output_list by element type.
-                if child and isinstance(child[0], Parameter):
-                    params = child
-                elif child and isinstance(child[0], str):
-                    output_names = child
-                elif not child:
-                    # Empty list — could be either; skip.
-                    pass
-            elif isinstance(child, Statement):
-                body_stmts.append(child)
-            elif child is None:
-                pass
-
-        # Among the NAME tokens (excluding LPAR, RPAR, LBRACE-style bracket tokens),
-        # find the subgraph name.  Bracket tokens have specific string values.
-        bracket_values = {"(", ")", "[", "]", "{", "}"}
-        real_name_tokens = [
-            t for t in name_tokens if str(t) not in bracket_values
-        ]
-        if real_name_tokens:
-            subgraph_name_token = real_name_tokens[0]
-
-        name_str = str(subgraph_name_token) if subgraph_name_token else ""
-        line = _get_line(subgraph_name_token) if subgraph_name_token else None
-
+        params, output_names, body_stmts, name_token = _parse_subgraph_children(
+            children
+        )
+        name_str = str(name_token) if name_token else ""
+        line = _get_line(name_token) if name_token else None
         body = _process_body(body_stmts)
         return SubgraphDef(
             name=name_str,

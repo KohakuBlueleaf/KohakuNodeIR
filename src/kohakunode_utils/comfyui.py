@@ -101,15 +101,18 @@ def _is_api_format(workflow: dict) -> bool:
     return False
 
 
-def _convert_api_format(workflow: dict) -> KirGraph:
-    """Convert ComfyUI API format to KirGraph.
+# ---------------------------------------------------------------------------
+# API format conversion
+# ---------------------------------------------------------------------------
 
-    API format: { "node_id": { "class_type": "...", "inputs": { "param": value_or_[node_id, slot] } } }
+
+def _api_build_nodes(workflow: dict) -> tuple[list[KGNode], dict[str, set[str]]]:
+    """First pass: build KGNodes from API-format workflow.
+
+    Returns (kg_nodes, output_ports_seen) where output_ports_seen tracks
+    which output ports are referenced by connections (filled in second pass).
     """
     kg_nodes: list[KGNode] = []
-    kg_edges: list[KGEdge] = []
-
-    # First pass: create nodes
     node_ids = sorted(workflow.keys(), key=lambda k: int(k) if k.isdigit() else k)
     for i, nid in enumerate(node_ids):
         node_data = workflow[nid]
@@ -117,68 +120,77 @@ def _convert_api_format(workflow: dict) -> KirGraph:
         inputs_data = node_data.get("inputs", {})
 
         data_inputs: list[KGPort] = []
-        data_outputs: list[KGPort] = []
-
-        # Inputs: values are either literals (defaults) or [node_id, slot] (connections)
         for port_name, value in inputs_data.items():
             safe_name = _sanitize_port_name(port_name)
             if isinstance(value, list) and len(value) == 2:
-                # Connection reference [source_node_id, output_slot]
                 data_inputs.append(KGPort(port=safe_name, type="any"))
-                # We'll create the edge below
             else:
-                # Literal default value
                 data_inputs.append(KGPort(port=safe_name, type="any", default=value))
-
-        # API format doesn't list outputs explicitly — infer from connections
-        # We'll add output ports when we see connections referencing them
 
         col = i % 4
         row = i // 4
-        kg_nodes.append(KGNode(
-            id=_node_id(nid),
-            type=_sanitize_type(comfy_type),
-            name=comfy_type,
-            data_inputs=data_inputs,
-            data_outputs=data_outputs,
-            ctrl_inputs=[],
-            ctrl_outputs=[],
-            properties={},
-            meta={
-                "pos": [100 + col * 300, 100 + row * 200],
-                "size": [250, 120],
-                "comfyui_type": comfy_type,
-                "comfyui_id": nid,
-                "comfyui_api_inputs": inputs_data,
-            },
-        ))
+        kg_nodes.append(
+            KGNode(
+                id=_node_id(nid),
+                type=_sanitize_type(comfy_type),
+                name=comfy_type,
+                data_inputs=data_inputs,
+                data_outputs=[],
+                ctrl_inputs=[],
+                ctrl_outputs=[],
+                properties={},
+                meta={
+                    "pos": [100 + col * 300, 100 + row * 200],
+                    "size": [250, 120],
+                    "comfyui_type": comfy_type,
+                    "comfyui_id": nid,
+                    "comfyui_api_inputs": inputs_data,
+                },
+            )
+        )
+    return kg_nodes, {}
 
-    # Second pass: create edges and infer output ports
-    output_ports_seen: dict[str, set[str]] = {}  # node_id -> set of port names
+
+def _api_build_edges(
+    workflow: dict, node_ids: list[str]
+) -> tuple[list[KGEdge], dict[str, set[str]]]:
+    """Second pass: build edges and track which output ports are used."""
+    kg_edges: list[KGEdge] = []
+    output_ports_seen: dict[str, set[str]] = {}
+
     for nid in node_ids:
         inputs_data = workflow[nid].get("inputs", {})
         for port_name, value in inputs_data.items():
-            if isinstance(value, list) and len(value) == 2:
-                src_nid = str(value[0])
-                src_slot = int(value[1])
-                src_kg_id = _node_id(src_nid)
-                dst_kg_id = _node_id(nid)
-
-                out_port_name = f"output_{src_slot}"
-                # Track output ports
-                if src_kg_id not in output_ports_seen:
-                    output_ports_seen[src_kg_id] = set()
-                output_ports_seen[src_kg_id].add(out_port_name)
-
-                kg_edges.append(KGEdge(
+            if not (isinstance(value, list) and len(value) == 2):
+                continue
+            src_nid = str(value[0])
+            src_slot = int(value[1])
+            src_kg_id = _node_id(src_nid)
+            dst_kg_id = _node_id(nid)
+            out_port_name = f"output_{src_slot}"
+            output_ports_seen.setdefault(src_kg_id, set()).add(out_port_name)
+            kg_edges.append(
+                KGEdge(
                     type="data",
                     from_node=src_kg_id,
                     from_port=out_port_name,
                     to_node=dst_kg_id,
                     to_port=_sanitize_port_name(port_name),
-                ))
+                )
+            )
 
-    # Add inferred output ports to nodes
+    return kg_edges, output_ports_seen
+
+
+def _convert_api_format(workflow: dict) -> KirGraph:
+    """Convert ComfyUI API format to KirGraph.
+
+    API format: { "node_id": { "class_type": "...", "inputs": { "param": value_or_[node_id, slot] } } }
+    """
+    node_ids = sorted(workflow.keys(), key=lambda k: int(k) if k.isdigit() else k)
+    kg_nodes, _ = _api_build_nodes(workflow)
+    kg_edges, output_ports_seen = _api_build_edges(workflow, node_ids)
+
     node_map = {n.id: n for n in kg_nodes}
     for kg_id, port_names in output_ports_seen.items():
         node = node_map.get(kg_id)
@@ -188,6 +200,152 @@ def _convert_api_format(workflow: dict) -> KirGraph:
                     node.data_outputs.append(KGPort(port=pname, type="any"))
 
     return KirGraph(version="0.1.0", nodes=kg_nodes, edges=kg_edges)
+
+
+# ---------------------------------------------------------------------------
+# Workflow format conversion
+# ---------------------------------------------------------------------------
+
+
+def _build_comfy_node(cn: dict, parsed_links: list[dict[str, Any]]) -> KGNode:
+    """Convert a single ComfyUI workflow node dict to a KGNode."""
+    cn_id = cn["id"]
+    kg_id = _node_id(cn_id)
+    comfy_type = cn.get("type", "unknown")
+    kg_type = _sanitize_type(comfy_type)
+
+    pos = _normalize_pos(cn.get("pos"))
+    size = _normalize_size(cn.get("size"))
+
+    raw_inputs = cn.get("inputs") or []
+    data_inputs: list[KGPort] = [
+        KGPort(
+            port=_sanitize_port_name(inp.get("name", "input")),
+            type=str(inp.get("type", "any")).lower(),
+        )
+        for inp in raw_inputs
+    ]
+
+    raw_outputs = cn.get("outputs") or []
+    data_outputs: list[KGPort] = [
+        KGPort(
+            port=_sanitize_port_name(out.get("name", "output")),
+            type=str(out.get("type", "any")).lower(),
+        )
+        for out in raw_outputs
+    ]
+
+    widgets = cn.get("widgets_values")
+    properties: dict[str, Any] = {}
+    if widgets is not None:
+        properties["widgets"] = widgets
+    comfy_props = cn.get("properties")
+    if comfy_props:
+        properties["comfyui"] = comfy_props
+
+    if widgets:
+        _apply_widget_defaults(cn_id, raw_inputs, data_inputs, widgets, parsed_links)
+
+    meta: dict[str, Any] = {
+        "pos": pos,
+        "size": size,
+        "comfyui_type": comfy_type,
+        "comfyui_id": cn_id,
+        "comfyui_inputs": raw_inputs,
+        "comfyui_outputs": raw_outputs,
+    }
+    for key in ("mode", "order", "flags", "color", "bgcolor"):
+        if key in cn:
+            meta[key] = cn[key]
+
+    return KGNode(
+        id=kg_id,
+        type=kg_type,
+        name=comfy_type,
+        data_inputs=data_inputs,
+        data_outputs=data_outputs,
+        ctrl_inputs=[],
+        ctrl_outputs=[],
+        properties=properties,
+        meta=meta,
+    )
+
+
+def _apply_widget_defaults(
+    cn_id: Any,
+    raw_inputs: list,
+    data_inputs: list[KGPort],
+    widgets: list,
+    parsed_links: list[dict[str, Any]],
+) -> None:
+    """Fill unconnected input slots with widget values and add extra widget ports."""
+    connected_input_indices: set[int] = {
+        plk["target_slot"] for plk in parsed_links if plk["target_id"] == cn_id
+    }
+
+    widget_idx = 0
+    for slot_idx in range(len(raw_inputs)):
+        if slot_idx in connected_input_indices:
+            continue
+        if widget_idx < len(widgets):
+            p = data_inputs[slot_idx]
+            data_inputs[slot_idx] = KGPort(
+                port=p.port, type=p.type, default=widgets[widget_idx]
+            )
+            widget_idx += 1
+
+    while widget_idx < len(widgets):
+        data_inputs.append(
+            KGPort(port=f"widget_{widget_idx}", type="any", default=widgets[widget_idx])
+        )
+        widget_idx += 1
+
+
+def _build_port_name_lookups(
+    comfy_nodes: list[dict],
+) -> tuple[dict[tuple, str], dict[tuple, str]]:
+    """Build (node_id, slot_index) -> port_name lookups for outputs and inputs."""
+    output_port_names: dict[tuple, str] = {}
+    input_port_names: dict[tuple, str] = {}
+    for cn in comfy_nodes:
+        cn_id = cn["id"]
+        for idx, out in enumerate(cn.get("outputs") or []):
+            output_port_names[(cn_id, idx)] = _sanitize_port_name(
+                out.get("name", f"output_{idx}")
+            )
+        for idx, inp in enumerate(cn.get("inputs") or []):
+            input_port_names[(cn_id, idx)] = _sanitize_port_name(
+                inp.get("name", f"input_{idx}")
+            )
+    return output_port_names, input_port_names
+
+
+def _build_edges_from_links(
+    parsed_links: list[dict[str, Any]],
+    output_port_names: dict[tuple, str],
+    input_port_names: dict[tuple, str],
+) -> list[KGEdge]:
+    """Convert parsed ComfyUI links to KGEdges."""
+    kg_edges: list[KGEdge] = []
+    for plk in parsed_links:
+        origin_id = plk["origin_id"]
+        origin_slot = plk["origin_slot"]
+        target_id = plk["target_id"]
+        target_slot = plk["target_slot"]
+        from_port = output_port_names.get(
+            (origin_id, origin_slot), f"output_{origin_slot}"
+        )
+        to_port = input_port_names.get((target_id, target_slot), f"input_{target_slot}")
+        kg_edges.append(
+            KGEdge(
+                type="data",
+                from_node=_node_id(origin_id),
+                from_port=from_port,
+                to_node=_node_id(target_id),
+                to_port=to_port,
+            )
+        )
+    return kg_edges
 
 
 def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
@@ -209,163 +367,12 @@ def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
 
     comfy_nodes = workflow.get("nodes", [])
     comfy_links = workflow.get("links", [])
-
-    # Build a lookup: comfy_node_id -> node dict
-    node_map: dict[int | str, dict] = {}
-    for cn in comfy_nodes:
-        node_map[cn["id"]] = cn
-
-    # Build a lookup: link_id -> parsed link
     parsed_links: list[dict[str, Any]] = [_parse_link(lk) for lk in comfy_links]
 
-    # Build output port lookup: (node_id, slot_index) -> port info
-    # and input port lookup: (node_id, slot_index) -> port info
-    # These are needed to resolve slot indices to port names.
-
-    kg_nodes: list[KGNode] = []
-    kg_edges: list[KGEdge] = []
-
-    for cn in comfy_nodes:
-        cn_id = cn["id"]
-        kg_id = _node_id(cn_id)
-        comfy_type = cn.get("type", "unknown")
-        kg_type = _sanitize_type(comfy_type)
-
-        # Position and size
-        pos = _normalize_pos(cn.get("pos"))
-        size = _normalize_size(cn.get("size"))
-
-        # Data inputs
-        raw_inputs = cn.get("inputs") or []
-        data_inputs: list[KGPort] = []
-        for inp in raw_inputs:
-            port_name = _sanitize_port_name(inp.get("name", "input"))
-            port_type = str(inp.get("type", "any")).lower()
-            data_inputs.append(KGPort(port=port_name, type=port_type))
-
-        # Data outputs
-        raw_outputs = cn.get("outputs") or []
-        data_outputs: list[KGPort] = []
-        for out in raw_outputs:
-            port_name = _sanitize_port_name(out.get("name", "output"))
-            port_type = str(out.get("type", "any")).lower()
-            data_outputs.append(KGPort(port=port_name, type=port_type))
-
-        # Widget values -> properties
-        widgets = cn.get("widgets_values")
-        properties: dict[str, Any] = {}
-        if widgets is not None:
-            properties["widgets"] = widgets
-        # Preserve original ComfyUI properties too
-        comfy_props = cn.get("properties")
-        if comfy_props:
-            properties["comfyui"] = comfy_props
-
-        # Widget values are actual functional inputs, not metadata.
-        # In ComfyUI, widgets_values contains values for ALL parameters that
-        # are set via UI widgets (not connected via wires).
-        #
-        # Strategy:
-        # 1. Unconnected input slots get their widget value as default
-        # 2. Remaining widget values become additional input ports (widget-only
-        #    params like seed, steps, cfg that aren't in the inputs array)
-        if widgets:
-            connected_input_indices: set[int] = set()
-            for plk in parsed_links:
-                if plk["target_id"] == cn_id:
-                    connected_input_indices.add(plk["target_slot"])
-
-            widget_idx = 0
-            # Fill unconnected input slots first
-            for slot_idx, inp in enumerate(raw_inputs):
-                if slot_idx in connected_input_indices:
-                    continue
-                if widget_idx < len(widgets):
-                    data_inputs[slot_idx] = KGPort(
-                        port=data_inputs[slot_idx].port,
-                        type=data_inputs[slot_idx].type,
-                        default=widgets[widget_idx],
-                    )
-                    widget_idx += 1
-
-            # Add remaining widget values as additional input ports
-            while widget_idx < len(widgets):
-                val = widgets[widget_idx]
-                port_name = f"widget_{widget_idx}"
-                data_inputs.append(KGPort(port=port_name, type="any", default=val))
-                widget_idx += 1
-
-        meta: dict[str, Any] = {"pos": pos, "size": size}
-        # Preserve everything needed for ComfyUI roundtrip in meta
-        meta["comfyui_type"] = comfy_type  # original casing
-        meta["comfyui_id"] = cn_id  # original numeric id
-        if "mode" in cn:
-            meta["mode"] = cn["mode"]
-        if "order" in cn:
-            meta["order"] = cn["order"]
-        if "flags" in cn:
-            meta["flags"] = cn["flags"]
-        if "color" in cn:
-            meta["color"] = cn["color"]
-        if "bgcolor" in cn:
-            meta["bgcolor"] = cn["bgcolor"]
-        # Store original slot info for reverse conversion (meta is for UI data)
-        meta["comfyui_inputs"] = raw_inputs
-        meta["comfyui_outputs"] = raw_outputs
-
-        kg_nodes.append(
-            KGNode(
-                id=kg_id,
-                type=kg_type,
-                name=comfy_type,
-                data_inputs=data_inputs,
-                data_outputs=data_outputs,
-                ctrl_inputs=[],
-                ctrl_outputs=[],
-                properties=properties,
-                meta=meta,
-            )
-        )
-
-    # Build port name lookups for edge resolution
-    # (comfy_node_id, slot_index) -> port_name
-    output_port_names: dict[tuple[int | str, int], str] = {}
-    input_port_names: dict[tuple[int | str, int], str] = {}
-
-    for cn in comfy_nodes:
-        cn_id = cn["id"]
-        for idx, out in enumerate(cn.get("outputs") or []):
-            output_port_names[(cn_id, idx)] = _sanitize_port_name(
-                out.get("name", f"output_{idx}")
-            )
-        for idx, inp in enumerate(cn.get("inputs") or []):
-            input_port_names[(cn_id, idx)] = _sanitize_port_name(
-                inp.get("name", f"input_{idx}")
-            )
-
-    # Convert links to edges
-    for plk in parsed_links:
-        origin_id = plk["origin_id"]
-        origin_slot = plk["origin_slot"]
-        target_id = plk["target_id"]
-        target_slot = plk["target_slot"]
-
-        # Resolve port names
-        from_port = output_port_names.get(
-            (origin_id, origin_slot), f"output_{origin_slot}"
-        )
-        to_port = input_port_names.get(
-            (target_id, target_slot), f"input_{target_slot}"
-        )
-
-        kg_edges.append(
-            KGEdge(
-                type="data",
-                from_node=_node_id(origin_id),
-                from_port=from_port,
-                to_node=_node_id(target_id),
-                to_port=to_port,
-            )
-        )
+    kg_nodes = [_build_comfy_node(cn, parsed_links) for cn in comfy_nodes]
+    output_port_names, input_port_names = _build_port_name_lookups(comfy_nodes)
+    kg_edges = _build_edges_from_links(
+        parsed_links, output_port_names, input_port_names
+    )
 
     return KirGraph(version="0.1.0", nodes=kg_nodes, edges=kg_edges)
