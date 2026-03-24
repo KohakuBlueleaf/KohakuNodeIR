@@ -151,7 +151,9 @@ def kir_to_graph(source: str) -> KirGraph:
                                 inner = walk(s.body, None, False, s.name)
                                 if ns_first_node.get(s.name):
                                     ctrl_edge(nid, "false", ns_first_node[s.name], "in")
-                    last_ctrl = None  # branches split
+                    # After branch, code continues — keep branch as last_ctrl
+                    # so post-branch statements connect from it
+                    last_ctrl = nid
 
                 case Switch():
                     nid = _meta_id(stmt) or gen_id("switch")
@@ -185,7 +187,7 @@ def kir_to_graph(source: str) -> KirGraph:
                                 walk(s.body, None, False, s.name)
                                 if ns_first_node.get(s.name):
                                     ctrl_edge(nid, stmt.default_label, ns_first_node[s.name], "in")
-                    last_ctrl = None
+                    last_ctrl = nid
 
                 case Parallel():
                     nid = _meta_id(stmt) or gen_id("parallel")
@@ -205,7 +207,7 @@ def kir_to_graph(source: str) -> KirGraph:
                             walk(s.body, None, False, s.name)
                             if ns_first_node.get(s.name):
                                 ctrl_edge(nid, s.name, ns_first_node[s.name], "in")
-                    last_ctrl = None
+                    last_ctrl = nid
 
                 case Jump():
                     # Jump = ctrl wire, not a node
@@ -213,21 +215,29 @@ def kir_to_graph(source: str) -> KirGraph:
                     last_ctrl = None
 
                 case Namespace():
-                    # Only walk if not already handled by branch/switch/parallel
                     if stmt.name not in ns_first_node:
-                        walk(stmt.body, last_ctrl, in_dataflow, stmt.name)
-                    last_ctrl = None
+                        ns_last = walk(stmt.body, last_ctrl, in_dataflow, stmt.name)
+                        if ns_last:
+                            last_ctrl = ns_last
 
                 case DataflowBlock():
-                    # @dataflow: is a transparent ctrl scope
-                    # Walk contents, wire ctrl from prev to first node inside,
-                    # and from last node inside to whatever comes after
-                    df_first = walk(stmt.body, None, True)
-                    # If we had a ctrl predecessor, connect to dataflow roots
-                    # (nodes inside with no data deps from inside the block)
-                    # Simplified: just continue ctrl chain
-                    # The key: after dataflow block, ctrl continues from last_ctrl
-                    pass
+                    # @dataflow: block — transparent in ctrl flow.
+                    # Walk contents, create nodes, then chain them sequentially
+                    # for visualization (they execute in dependency order).
+                    df_nodes_before = len(nodes)
+                    walk(stmt.body, None, True)
+                    df_new = nodes[df_nodes_before:]
+
+                    if df_new:
+                        # Entry: last_ctrl → first node
+                        if last_ctrl:
+                            ctrl_edge(last_ctrl, "out", df_new[0].id, "in")
+
+                        # Chain within block (sequential for visualization)
+                        for i in range(len(df_new) - 1):
+                            ctrl_edge(df_new[i].id, "out", df_new[i + 1].id, "in")
+
+                        last_ctrl = df_new[-1].id
 
                 case _:
                     pass

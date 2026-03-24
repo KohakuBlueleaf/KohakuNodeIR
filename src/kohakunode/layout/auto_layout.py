@@ -19,7 +19,7 @@ DATA_ROW_H = 28
 MIN_WIDTH = 180
 MIN_HEIGHT = 100
 H_SPACING = 60
-V_SPACING = 40
+V_SPACING = 60
 
 
 def estimate_node_size(node: KGNode) -> tuple[float, float]:
