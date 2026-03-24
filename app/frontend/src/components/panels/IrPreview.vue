@@ -5,6 +5,7 @@ import { useGraphStore } from '../../stores/graph.js';
 import { compileGraph } from '../../compiler/graphToIr.js';
 import { graphToKirgraph } from '../../compiler/kirgraph.js';
 import { executeKirgraphStreaming } from '../../api/backend.js';
+import { compileGraphToKir, isPyodideReady } from '../../parser/pyodideParser.js';
 
 const graph = useGraphStore();
 
@@ -18,13 +19,35 @@ const mode = ref('controlflow');
 const irText = ref('');
 const compileErrors = ref([]);
 
-// Recompute whenever the graph changes or mode changes
+// 'python' | 'js' | 'loading'
+const compilerSource = ref('loading');
+
+// Recompute whenever the graph changes or mode changes.
+// Tries the Pyodide Python compiler first; falls back to the JS compiler.
 watch(
   [() => graph.nodeList, () => graph.connectionList, mode],
-  ([nodes, conns, m]) => {
-    const { ir, errors } = compileGraph(nodes, conns, m);
-    irText.value = ir;
-    compileErrors.value = errors;
+  async ([nodes, conns]) => {
+    if (!nodes.length) {
+      irText.value = '';
+      compileErrors.value = [];
+      compilerSource.value = 'python';
+      return;
+    }
+
+    const kirgraph = graphToKirgraph(nodes, conns);
+    const pyKir = await compileGraphToKir(JSON.stringify(kirgraph));
+
+    if (pyKir !== null) {
+      irText.value = pyKir;
+      compileErrors.value = [];
+      compilerSource.value = 'python';
+    } else {
+      // Pyodide not ready — fall back to JS compiler
+      const { ir, errors } = compileGraph(nodes, conns);
+      irText.value = ir;
+      compileErrors.value = errors;
+      compilerSource.value = isPyodideReady() ? 'js' : 'loading';
+    }
   },
   { immediate: true, deep: true },
 );
@@ -239,6 +262,16 @@ function toggleMode() {
           {{ mode === 'controlflow' ? 'CF' : 'DF' }}
         </button>
 
+        <!-- Compiler source indicator (KIR tab only) -->
+        <span
+          v-if="activeTab === 'kir'"
+          class="ir-compiler-badge"
+          :class="`ir-compiler-badge--${compilerSource}`"
+          :title="compilerSource === 'python' ? 'Compiled by Python (KirGraphCompiler)' : compilerSource === 'loading' ? 'Pyodide loading — showing JS fallback' : 'Compiled by JS fallback compiler'"
+        >
+          {{ compilerSource === 'python' ? 'Py' : compilerSource === 'loading' ? '...' : 'JS' }}
+        </span>
+
         <button class="ir-action-btn" title="Copy to clipboard" @click="copyToClipboard">
           <span class="i-carbon-copy" />
           Copy
@@ -402,6 +435,35 @@ function toggleMode() {
 .ir-mode-btn:hover {
   background: rgba(249, 226, 175, 0.1);
   border-color: rgba(249, 226, 175, 0.6);
+}
+
+.ir-compiler-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+  cursor: default;
+  min-width: 28px;
+}
+.ir-compiler-badge--python {
+  color: #a6e3a1;
+  border-color: rgba(166, 227, 161, 0.4);
+  background: rgba(166, 227, 161, 0.08);
+}
+.ir-compiler-badge--js {
+  color: #f9e2af;
+  border-color: rgba(249, 226, 175, 0.4);
+  background: rgba(249, 226, 175, 0.08);
+}
+.ir-compiler-badge--loading {
+  color: #6c7086;
+  border-color: rgba(108, 112, 134, 0.4);
+  background: transparent;
 }
 
 /* ---- Tab group ---- */

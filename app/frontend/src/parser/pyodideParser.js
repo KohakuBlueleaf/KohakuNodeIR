@@ -173,6 +173,41 @@ export function isPyodideReady() {
 }
 
 /**
+ * Compile a .kirgraph JSON object to L2 KIR text using the Python
+ * KirGraphCompiler pipeline inside Pyodide.
+ *
+ * @param {string} kirgraphJson - JSON.stringify()'d kirgraph object
+ * @returns {Promise<string|null>} L2 KIR text, or null if Pyodide is not ready
+ */
+export async function compileGraphToKir(kirgraphJson) {
+  if (!ready) {
+    const ok = await initPyodide();
+    if (!ok) return null;
+  }
+
+  try {
+    pyodide.globals.set('_kirgraph_json_str', kirgraphJson);
+
+    const kirText = await pyodide.runPythonAsync(`
+import json
+from kohakunode.kirgraph.schema import KirGraph
+from kohakunode.kirgraph.compiler import KirGraphCompiler
+from kohakunode.serializer.writer import Writer
+
+kg_dict = json.loads(_kirgraph_json_str)
+graph = KirGraph.from_dict(kg_dict)
+program = KirGraphCompiler().compile(graph)
+Writer().write(program)
+`);
+
+    return kirText;
+  } catch (err) {
+    console.error('[pyodideParser] compileGraphToKir error:', err);
+    return null;
+  }
+}
+
+/**
  * Parse KIR text using Python and return a plain-JS AST object.
  * Returns null on failure.
  *

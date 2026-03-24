@@ -10,6 +10,7 @@ import { autoLayout, graphStoreToLayoutFormat, applyLayoutToStore } from '../../
 import { executeKirStreaming } from '../../api/backend.js';
 import { detectAndParseAsync } from '../../parser/index.js';
 import { parserResultToGraph } from '../../utils/parserResultToGraph.js';
+import { compileGraphToKir, isPyodideReady } from '../../parser/pyodideParser.js';
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 const props = defineProps({
@@ -63,7 +64,7 @@ function redo() {
 const isRunning = ref(false);
 let _cancelRun = null;
 
-function runGraph() {
+async function runGraph() {
   if (isRunning.value) {
     _cancelRun?.();
     _cancelRun = null;
@@ -77,9 +78,21 @@ function runGraph() {
     return;
   }
 
-  // Compile graph to KIR text and execute that directly
-  // (avoids mismatch between preview variable names and execution variable names)
-  const { ir } = compileGraph(graph.nodeList, graph.connectionList);
+  // Try Pyodide first (produces correct L2 KIR)
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  let kir = await compileGraphToKir(JSON.stringify(kirgraph));
+
+  if (kir) {
+    ElMessage({ message: 'Compiled with Python compiler.', type: 'success', duration: 1200 });
+  } else {
+    // Fall back to JS compiler if Pyodide not ready
+    if (!isPyodideReady()) {
+      ElMessage({ message: 'Pyodide not ready — using JS compiler as fallback.', type: 'warning', duration: 2500 });
+    }
+    const { ir: jsIr } = compileGraph(graph.nodeList, graph.connectionList);
+    kir = jsIr;
+  }
+
   isRunning.value = true;
 
   // Ask the parent to open IR preview so results are visible
@@ -88,7 +101,7 @@ function runGraph() {
   const outputLines = [];
   const variables = {};
 
-  const { cancel, ws } = executeKirStreaming(ir, {
+  const { cancel, ws } = executeKirStreaming(kir, {
     onOutput(text) {
       outputLines.push(text.replace(/\n$/, ''));
     },
