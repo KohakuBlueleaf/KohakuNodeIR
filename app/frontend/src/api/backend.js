@@ -186,7 +186,7 @@ export function executeKirStreaming(kirSource, callbacks = {}) {
         break
       case 'output':
       case 'stdout':
-        onOutput?.(msg.data ?? msg.text ?? '')
+        onOutput?.(msg.value ?? msg.data ?? msg.text ?? '')
         break
       case 'error':
       case 'stderr':
@@ -251,7 +251,7 @@ export function executeKirgraphStreaming(kirgraph, callbacks = {}) {
         break
       case 'output':
       case 'stdout':
-        onOutput?.(msg.data ?? msg.text ?? '')
+        onOutput?.(msg.value ?? msg.data ?? msg.text ?? '')
         break
       case 'error':
       case 'stderr':
