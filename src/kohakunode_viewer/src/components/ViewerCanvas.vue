@@ -108,9 +108,10 @@ function getPortPosition(nodeId, portName) {
   const ctrlOutputs = node.ctrlOutputs || [];
   const hasCtrlIn = ctrlInputs.length > 0;
 
-  // Auto-calculate height if missing/zero
+  // ALWAYS auto-calculate height from port count (stored height may be wrong)
   const dataRows = Math.max(dataInputs.length, dataOutputs.length);
-  const nodeH = height || (
+  const nodeH = Math.max(
+    height || 0,
     (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H +
     (ctrlOutputs.length > 0 ? CTRL_ROW_H : 0) + 16
   );

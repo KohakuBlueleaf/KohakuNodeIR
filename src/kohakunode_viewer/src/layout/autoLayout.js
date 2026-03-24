@@ -1,152 +1,155 @@
 /**
- * autoLayout.js — Simple topological-sort-based auto-layout for KirGraph nodes.
+ * Auto-layout for viewer nodes — Fischer-style.
  *
- * Nodes that already have a non-zero position (x !== 0 || y !== 0) are left
- * in place.  Nodes at (0, 0) or missing coordinates are repositioned using a
- * BFS column layout derived from the graph's data edges.
- *
- * Layout parameters
- * -----------------
- *  Column width  : 280 px
- *  Row height    : 160 px
- *  Origin offset : (100, 100)
+ * Data dependencies flow LEFT → RIGHT (columns by data depth).
+ * Control dependencies flow TOP → BOTTOM (order within columns).
+ * Goal: minimize wire bending.
  */
 
-const COL_WIDTH  = 280
-const ROW_HEIGHT = 160
-const ORIGIN_X   = 100
-const ORIGIN_Y   = 100
+const CTRL_ROW_H = 18;
+const HEADER_H = 32;
+const DATA_ROW_H = 28;
+const H_GAP = 80;
+const V_GAP = 50;
 
-/**
- * Assign x/y positions to nodes that don't have them yet.
- *
- * @param {object[]} nodes
- *   Array of node objects (shape from kirgraphToGraph). Each node has at
- *   least: { id, x, y, dataPorts?, controlPorts? }.
- *   The function mutates copies — the originals are NOT modified.
- *
- * @param {object[]} edges
- *   Array of edge objects. Each edge has at least:
- *   { fromNodeId, toNodeId, portType: 'data'|'control' }
- *   (the shape produced by kirgraphToGraph).
- *
- * @returns {object[]} New array of node objects with updated x / y values.
- */
-export function autoLayout(nodes, edges) {
-  if (!nodes || nodes.length === 0) return []
-
-  // Build a set of node ids that already have explicit positions.
-  const nodeIds = new Set(nodes.map(n => n.id))
-
-  // Identify nodes that need placement (x === 0 && y === 0, or missing coords).
-  const needsLayout = new Set(
-    nodes
-      .filter(n => !hasPosition(n))
-      .map(n => n.id)
-  )
-
-  if (needsLayout.size === 0) {
-    // All nodes positioned — nothing to do.
-    return nodes.map(n => ({ ...n }))
-  }
-
-  // ── Build adjacency from data edges only (control edges represent execution
-  //    order which may differ from the useful left-to-right data flow layout).
-  //    We include all edge types so isolated control-only subgraphs are placed.
-  const outEdges = new Map() // nodeId -> Set<nodeId>
-  const inDegree = new Map() // nodeId -> number (among nodes needing layout)
-
-  for (const id of needsLayout) {
-    outEdges.set(id, new Set())
-    inDegree.set(id, 0)
-  }
-
-  for (const edge of edges) {
-    const src = edge.fromNodeId
-    const dst = edge.toNodeId
-    if (!needsLayout.has(src) || !needsLayout.has(dst)) continue
-    if (!outEdges.get(src).has(dst)) {
-      outEdges.get(src).add(dst)
-      inDegree.set(dst, (inDegree.get(dst) ?? 0) + 1)
-    }
-  }
-
-  // ── BFS topological level assignment ────────────────────────────────────────
-  // level[id] = column index (depth from the nearest root)
-  const level = new Map()
-  const queue = []
-
-  for (const [id, deg] of inDegree) {
-    if (deg === 0) {
-      queue.push(id)
-      level.set(id, 0)
-    }
-  }
-
-  let head = 0
-  while (head < queue.length) {
-    const cur = queue[head++]
-    const curLevel = level.get(cur)
-    for (const next of (outEdges.get(cur) ?? [])) {
-      const existing = level.get(next) ?? -1
-      if (curLevel + 1 > existing) {
-        level.set(next, curLevel + 1)
-      }
-      inDegree.set(next, inDegree.get(next) - 1)
-      if (inDegree.get(next) === 0) {
-        queue.push(next)
-      }
-    }
-  }
-
-  // ── Handle cycles: any node not yet assigned a level goes in the next column
-  let maxLevel = 0
-  for (const [, l] of level) maxLevel = Math.max(maxLevel, l)
-
-  for (const id of needsLayout) {
-    if (!level.has(id)) {
-      level.set(id, maxLevel + 1)
-    }
-  }
-
-  // ── Group nodes by column, assign row within each column ────────────────────
-  const columns = new Map() // colIndex -> [nodeId, ...]
-  for (const [id, col] of level) {
-    if (!columns.has(col)) columns.set(col, [])
-    columns.get(col).push(id)
-  }
-
-  // Preserve deterministic ordering within each column by sorting node ids.
-  for (const [, list] of columns) list.sort()
-
-  // Build a position map for nodes that need layout.
-  const positions = new Map() // nodeId -> { x, y }
-  for (const [col, list] of columns) {
-    list.forEach((id, row) => {
-      positions.set(id, {
-        x: ORIGIN_X + col * COL_WIDTH,
-        y: ORIGIN_Y + row * ROW_HEIGHT,
-      })
-    })
-  }
-
-  // ── Return updated node array ────────────────────────────────────────────────
-  return nodes.map(n => {
-    if (!needsLayout.has(n.id)) return { ...n }
-    const pos = positions.get(n.id)
-    return { ...n, x: pos.x, y: pos.y }
-  })
+function estimateSize(node) {
+  const nIn = (node.dataInputs || []).length;
+  const nOut = (node.dataOutputs || []).length;
+  const nCtrlIn = (node.ctrlInputs || []).length;
+  const nCtrlOut = (node.ctrlOutputs || []).length;
+  const dataRows = Math.max(nIn, nOut);
+  const w = Math.max(180, Math.max(nCtrlIn, nCtrlOut) * 60 + 60);
+  const h =
+    (nCtrlIn > 0 ? CTRL_ROW_H : 0) +
+    HEADER_H +
+    dataRows * DATA_ROW_H +
+    (nCtrlOut > 0 ? CTRL_ROW_H : 0) +
+    16;
+  return { w: Math.max(w, node.width || 0), h: Math.max(h, node.height || 0) };
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+export function autoLayout(nodes, edges) {
+  if (!nodes || nodes.length === 0) return nodes;
 
-/**
- * Returns true if a node has a non-default position stored.
- * (0, 0) is treated as "not positioned" because that is the default
- * produced by kirgraphToGraph when the .kirgraph has no meta.pos.
- */
-function hasPosition(node) {
-  const x = node.x ?? 0
-  const y = node.y ?? 0
-  return x !== 0 || y !== 0
+  const dataAdj = {};
+  const dataRev = {};
+  const ctrlAdj = {};
+
+  for (const e of edges) {
+    if (e.type === "data") {
+      if (!dataAdj[e.fromNode]) dataAdj[e.fromNode] = [];
+      dataAdj[e.fromNode].push(e.toNode);
+      if (!dataRev[e.toNode]) dataRev[e.toNode] = [];
+      dataRev[e.toNode].push(e.fromNode);
+    } else if (e.type === "control") {
+      if (!ctrlAdj[e.fromNode]) ctrlAdj[e.fromNode] = [];
+      ctrlAdj[e.fromNode].push(e.toNode);
+    }
+  }
+
+  const nodeMap = {};
+  const sizes = {};
+  for (const n of nodes) {
+    nodeMap[n.id] = n;
+    sizes[n.id] = estimateSize(n);
+  }
+
+  const allIds = nodes.map((n) => n.id);
+  const needsLayout = allIds.filter((id) => !nodeMap[id].x && !nodeMap[id].y);
+  if (needsLayout.length === 0) {
+    // Still update sizes
+    for (const n of nodes) {
+      const s = sizes[n.id];
+      n.width = s.w;
+      n.height = s.h;
+    }
+    return nodes;
+  }
+
+  // Column assignment: data dependency depth (BFS)
+  const col = {};
+  const roots = allIds.filter((id) => !dataRev[id] || dataRev[id].length === 0);
+  if (roots.length === 0) roots.push(allIds[0]);
+
+  const queue = [...roots];
+  for (const r of roots) col[r] = 0;
+  let qi = 0;
+  while (qi < queue.length) {
+    const nid = queue[qi++];
+    for (const child of dataAdj[nid] || []) {
+      const nc = (col[nid] || 0) + 1;
+      if (col[child] === undefined || col[child] < nc) {
+        col[child] = nc;
+        queue.push(child);
+      }
+    }
+  }
+  const maxCol = Math.max(0, ...Object.values(col));
+  for (const id of allIds) {
+    if (col[id] === undefined) col[id] = maxCol + 1;
+  }
+
+  // Group by column
+  const columns = {};
+  for (const id of allIds) {
+    const c = col[id];
+    if (!columns[c]) columns[c] = [];
+    columns[c].push(id);
+  }
+
+  // Order within columns by control flow
+  for (const ids of Object.values(columns)) {
+    const inCol = new Set(ids);
+    const order = {};
+    let idx = 0;
+    const ctrlRoots = ids.filter(
+      (id) =>
+        !Object.entries(ctrlAdj).some(
+          ([from, tos]) => tos.includes(id) && inCol.has(from)
+        )
+    );
+    const bfs = ctrlRoots.length > 0 ? [...ctrlRoots] : [ids[0]];
+    const vis = new Set();
+    for (const r of bfs) {
+      if (!vis.has(r)) { vis.add(r); order[r] = idx++; }
+    }
+    let bi = 0;
+    while (bi < bfs.length) {
+      for (const child of ctrlAdj[bfs[bi]] || []) {
+        if (inCol.has(child) && !vis.has(child)) {
+          vis.add(child);
+          order[child] = idx++;
+          bfs.push(child);
+        }
+      }
+      bi++;
+    }
+    for (const id of ids) {
+      if (!vis.has(id)) order[id] = idx++;
+    }
+    ids.sort((a, b) => (order[a] || 0) - (order[b] || 0));
+  }
+
+  // Assign coordinates
+  const sortedCols = Object.keys(columns).map(Number).sort((a, b) => a - b);
+  let xOff = 100;
+  for (const c of sortedCols) {
+    const ids = columns[c];
+    const colW = Math.max(...ids.map((id) => sizes[id].w));
+    let yOff = 100;
+    for (const id of ids) {
+      const s = sizes[id];
+      const n = nodeMap[id];
+      if (!n.x && !n.y) {
+        n.x = xOff;
+        n.y = yOff;
+      }
+      n.width = s.w;
+      n.height = s.h;
+      yOff += s.h + V_GAP;
+    }
+    xOff += colW + H_GAP;
+  }
+
+  return nodes;
 }

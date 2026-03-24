@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import ViewerCanvas from "./components/ViewerCanvas.vue";
 import FileDropZone from "./components/FileDropZone.vue";
+import { autoLayout } from "./layout/autoLayout.js";
 
 // ── Graph state ───────────────────────────────────────────────────────────────
 const nodes = ref([]);
@@ -15,6 +16,8 @@ const pasteError = ref("");
 
 // ── File loading ──────────────────────────────────────────────────────────────
 function onGraphLoaded({ nodes: n, edges: e, filename }) {
+  // Auto-layout nodes without positions, estimate sizes for all
+  autoLayout(n, e);
   nodes.value = n;
   edges.value = e;
   loadedFilename.value = filename ?? null;
