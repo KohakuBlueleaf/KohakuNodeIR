@@ -245,11 +245,13 @@ export const useGraphStore = defineStore('graph', () => {
     }
 
     // Control inputs — top edge
+    // The diamond center sits at the vertical midpoint of the ctrl-row div
+    // (CTRL_ROW_H / 2 = 9px below the top of the node).
     const ctrlInIndex = controlPorts.inputs.findIndex(p => p.id === portId);
     if (ctrlInIndex !== -1) {
       return {
         x: x + evenSpacing(ctrlInIndex, controlPorts.inputs.length, width),
-        y,
+        y: y + CTRL_ROW_H / 2,
       };
     }
 
@@ -257,12 +259,13 @@ export const useGraphStore = defineStore('graph', () => {
     // Use the effective height: max of stored height and the CSS minHeight
     // so the wire anchor matches the visual bottom of the node even when the
     // node has more data ports than the stored height accounts for.
+    // The diamond center sits CTRL_ROW_H / 2 px above the bottom of the node.
     const ctrlOutIndex = controlPorts.outputs.findIndex(p => p.id === portId);
     if (ctrlOutIndex !== -1) {
       const effectiveHeight = Math.max(height, computeMinHeight(node));
       return {
         x: x + evenSpacing(ctrlOutIndex, controlPorts.outputs.length, width),
-        y: y + effectiveHeight,
+        y: y + effectiveHeight - CTRL_ROW_H / 2,
       };
     }
 
