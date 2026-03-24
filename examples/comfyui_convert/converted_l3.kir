@@ -1,0 +1,7 @@
+()checkpointloadersimple(comfy_1_model, comfy_1_clip, comfy_1_vae)
+()emptylatentimage(comfy_5_latent)
+(comfy_1_clip)cliptextencode(comfy_2_conditioning)
+(comfy_1_clip)cliptextencode(comfy_3_conditioning)
+(comfy_1_model, comfy_2_conditioning, comfy_3_conditioning, comfy_5_latent)ksampler(comfy_4_latent)
+(comfy_4_latent, comfy_1_vae)vaedecode(comfy_6_image)
+(comfy_6_image)saveimage()

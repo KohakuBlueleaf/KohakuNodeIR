@@ -1,16 +1,21 @@
-"""ComfyUI workflow → KirGraph → KIR conversion demo.
+"""ComfyUI workflow -> KirGraph -> KIR conversion demo.
 
-Reads example_workflow.json, converts it to .kirgraph and L2 KIR,
-and prints both outputs.
+Reads example_workflow.json, converts to .kirgraph and L2 KIR,
+saves output files and prints results.
 """
 
 import json
 from pathlib import Path
 
+from kohakunode.compiler.dataflow import DataflowCompiler
+from kohakunode.compiler.strip_meta import StripMetaPass
+from kohakunode.kirgraph.compiler import KirGraphCompiler
+from kohakunode.serializer.writer import Writer
 from kohakunode_utils.comfyui import comfyui_to_kirgraph
 from kohakunode_utils.comfyui_to_kir import comfyui_to_kir
 
 HERE = Path(__file__).parent
+writer = Writer()
 
 # ── Load ComfyUI workflow ──
 workflow_path = HERE / "example_workflow.json"
@@ -21,21 +26,29 @@ print(f"  {len(workflow['nodes'])} nodes, {len(workflow['links'])} links")
 print("=" * 60)
 
 # ── Convert to KirGraph (L1) ──
-print("\n" + "=" * 60)
-print("KirGraph (L1)")
-print("=" * 60)
 graph = comfyui_to_kirgraph(workflow)
-print(f"  {len(graph.nodes)} nodes, {len(graph.edges)} edges")
-for n in graph.nodes:
-    print(f"    {n.id:20s} type={n.type:30s} name={n.name}")
-
 kirgraph_json = graph.to_json(indent=2)
-print("\n--- .kirgraph JSON ---")
-print(kirgraph_json)
+(HERE / "converted.kirgraph").write_text(kirgraph_json, encoding="utf-8")
+print(f"\nL1: converted.kirgraph ({len(graph.nodes)} nodes, {len(graph.edges)} edges)")
+for n in graph.nodes:
+    print(f"  {n.id:20s} {n.type:30s} {n.name}")
 
-# ── Convert to L2 KIR text ──
-print("\n" + "=" * 60)
-print("L2 KIR text")
-print("=" * 60)
-kir_text = comfyui_to_kir(workflow)
-print(kir_text)
+# ── Compile to L2 KIR ──
+compiler = KirGraphCompiler()
+prog_l2 = compiler.compile(graph)
+kir_l2 = writer.write(prog_l2)
+(HERE / "converted_l2.kir").write_text(kir_l2, encoding="utf-8")
+print(f"\nL2: converted_l2.kir")
+print(kir_l2)
+
+# ── Compile to L3 KIR ──
+dc = DataflowCompiler()
+prog_l2b = dc.transform(prog_l2)
+strip = StripMetaPass()
+prog_l3 = strip.transform(prog_l2b)
+kir_l3 = writer.write(prog_l3)
+(HERE / "converted_l3.kir").write_text(kir_l3, encoding="utf-8")
+print(f"L3: converted_l3.kir")
+print(kir_l3)
+
+print(f"\nFiles saved to: {HERE}")

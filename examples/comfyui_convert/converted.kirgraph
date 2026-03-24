@@ -1,0 +1,394 @@
+{
+  "version": "0.1.0",
+  "nodes": [
+    {
+      "id": "comfy_1",
+      "type": "checkpointloadersimple",
+      "name": "CheckpointLoaderSimple",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "model",
+          "type": "model"
+        },
+        {
+          "port": "clip",
+          "type": "clip"
+        },
+        {
+          "port": "vae",
+          "type": "vae"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "widgets": [
+          "v1-5-pruned-emaonly.ckpt"
+        ],
+        "comfyui": {
+          "Node name for S&R": "CheckpointLoaderSimple"
+        }
+      },
+      "meta": {
+        "pos": [
+          100,
+          100
+        ],
+        "size": [
+          300,
+          100
+        ],
+        "mode": 0,
+        "order": 0
+      }
+    },
+    {
+      "id": "comfy_2",
+      "type": "cliptextencode",
+      "name": "CLIPTextEncode",
+      "data_inputs": [
+        {
+          "port": "clip",
+          "type": "clip"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "conditioning",
+          "type": "conditioning"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "widgets": [
+          "a beautiful landscape, mountains, sunset"
+        ],
+        "comfyui": {
+          "Node name for S&R": "CLIPTextEncode"
+        }
+      },
+      "meta": {
+        "pos": [
+          450,
+          50
+        ],
+        "size": [
+          300,
+          100
+        ],
+        "mode": 0,
+        "order": 1
+      }
+    },
+    {
+      "id": "comfy_3",
+      "type": "cliptextencode",
+      "name": "CLIPTextEncode",
+      "data_inputs": [
+        {
+          "port": "clip",
+          "type": "clip"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "conditioning",
+          "type": "conditioning"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "widgets": [
+          "blurry, low quality"
+        ],
+        "comfyui": {
+          "Node name for S&R": "CLIPTextEncode"
+        }
+      },
+      "meta": {
+        "pos": [
+          450,
+          200
+        ],
+        "size": [
+          300,
+          100
+        ],
+        "mode": 0,
+        "order": 2
+      }
+    },
+    {
+      "id": "comfy_4",
+      "type": "ksampler",
+      "name": "KSampler",
+      "data_inputs": [
+        {
+          "port": "model",
+          "type": "model"
+        },
+        {
+          "port": "positive",
+          "type": "conditioning"
+        },
+        {
+          "port": "negative",
+          "type": "conditioning"
+        },
+        {
+          "port": "latent_image",
+          "type": "latent"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "latent",
+          "type": "latent"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "widgets": [
+          42,
+          "fixed",
+          20,
+          7.5,
+          "euler",
+          "normal",
+          1.0
+        ],
+        "comfyui": {
+          "Node name for S&R": "KSampler"
+        }
+      },
+      "meta": {
+        "pos": [
+          800,
+          100
+        ],
+        "size": [
+          300,
+          200
+        ],
+        "mode": 0,
+        "order": 4
+      }
+    },
+    {
+      "id": "comfy_5",
+      "type": "emptylatentimage",
+      "name": "EmptyLatentImage",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "latent",
+          "type": "latent"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "widgets": [
+          512,
+          512,
+          1
+        ],
+        "comfyui": {
+          "Node name for S&R": "EmptyLatentImage"
+        }
+      },
+      "meta": {
+        "pos": [
+          450,
+          350
+        ],
+        "size": [
+          300,
+          100
+        ],
+        "mode": 0,
+        "order": 3
+      }
+    },
+    {
+      "id": "comfy_6",
+      "type": "vaedecode",
+      "name": "VAEDecode",
+      "data_inputs": [
+        {
+          "port": "samples",
+          "type": "latent"
+        },
+        {
+          "port": "vae",
+          "type": "vae"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "image",
+          "type": "image"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "widgets": [],
+        "comfyui": {
+          "Node name for S&R": "VAEDecode"
+        }
+      },
+      "meta": {
+        "pos": [
+          1150,
+          100
+        ],
+        "size": [
+          200,
+          100
+        ],
+        "mode": 0,
+        "order": 5
+      }
+    },
+    {
+      "id": "comfy_7",
+      "type": "saveimage",
+      "name": "SaveImage",
+      "data_inputs": [
+        {
+          "port": "images",
+          "type": "image"
+        }
+      ],
+      "data_outputs": [],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "properties": {
+        "widgets": [
+          "ComfyUI"
+        ],
+        "comfyui": {
+          "Node name for S&R": "SaveImage"
+        }
+      },
+      "meta": {
+        "pos": [
+          1400,
+          100
+        ],
+        "size": [
+          300,
+          300
+        ],
+        "mode": 0,
+        "order": 6
+      }
+    }
+  ],
+  "edges": [
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_1",
+        "port": "model"
+      },
+      "to": {
+        "node": "comfy_4",
+        "port": "model"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_1",
+        "port": "clip"
+      },
+      "to": {
+        "node": "comfy_2",
+        "port": "clip"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_2",
+        "port": "conditioning"
+      },
+      "to": {
+        "node": "comfy_4",
+        "port": "positive"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_1",
+        "port": "clip"
+      },
+      "to": {
+        "node": "comfy_3",
+        "port": "clip"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_1",
+        "port": "vae"
+      },
+      "to": {
+        "node": "comfy_6",
+        "port": "vae"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_3",
+        "port": "conditioning"
+      },
+      "to": {
+        "node": "comfy_4",
+        "port": "negative"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_4",
+        "port": "latent"
+      },
+      "to": {
+        "node": "comfy_6",
+        "port": "samples"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_5",
+        "port": "latent"
+      },
+      "to": {
+        "node": "comfy_4",
+        "port": "latent_image"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_6",
+        "port": "image"
+      },
+      "to": {
+        "node": "comfy_7",
+        "port": "images"
+      }
+    }
+  ]
+}

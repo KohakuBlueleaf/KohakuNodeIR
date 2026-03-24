@@ -1,0 +1,15 @@
+@dataflow:
+    @meta node_id="comfy_1" pos=(100, 100) size=[300, 100] mode=0 order=0
+    ()checkpointloadersimple(comfy_1_model, comfy_1_clip, comfy_1_vae)
+    @meta node_id="comfy_2" pos=(450, 50) size=[300, 100] mode=0 order=1
+    (comfy_1_clip)cliptextencode(comfy_2_conditioning)
+    @meta node_id="comfy_3" pos=(450, 200) size=[300, 100] mode=0 order=2
+    (comfy_1_clip)cliptextencode(comfy_3_conditioning)
+    @meta node_id="comfy_4" pos=(800, 100) size=[300, 200] mode=0 order=4
+    (comfy_1_model, comfy_2_conditioning, comfy_3_conditioning, comfy_5_latent)ksampler(comfy_4_latent)
+    @meta node_id="comfy_5" pos=(450, 350) size=[300, 100] mode=0 order=3
+    ()emptylatentimage(comfy_5_latent)
+    @meta node_id="comfy_6" pos=(1150, 100) size=[200, 100] mode=0 order=5
+    (comfy_4_latent, comfy_1_vae)vaedecode(comfy_6_image)
+    @meta node_id="comfy_7" pos=(1400, 100) size=[300, 300] mode=0 order=6
+    (comfy_6_image)saveimage()
