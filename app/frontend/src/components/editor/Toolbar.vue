@@ -7,7 +7,7 @@ import { useHistoryStore } from '../../stores/history.js';
 import { graphToKirgraph, kirgraphToGraph } from '../../compiler/kirgraph.js';
 import { compileGraph } from '../../compiler/graphToIr.js';
 import { autoLayout, graphStoreToLayoutFormat, applyLayoutToStore } from '../../layout/autoLayout.js';
-import { executeKirgraphStreaming } from '../../api/backend.js';
+import { executeKirStreaming } from '../../api/backend.js';
 import { detectAndParseAsync } from '../../parser/index.js';
 import { parserResultToGraph } from '../../utils/parserResultToGraph.js';
 
@@ -77,7 +77,9 @@ function runGraph() {
     return;
   }
 
-  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  // Compile graph to KIR text and execute that directly
+  // (avoids mismatch between preview variable names and execution variable names)
+  const { ir } = compileGraph(graph.nodeList, graph.connectionList);
   isRunning.value = true;
 
   // Ask the parent to open IR preview so results are visible
@@ -86,7 +88,7 @@ function runGraph() {
   const outputLines = [];
   const variables = {};
 
-  const { cancel, ws } = executeKirgraphStreaming(kirgraph, {
+  const { cancel, ws } = executeKirStreaming(ir, {
     onOutput(text) {
       outputLines.push(text.replace(/\n$/, ''));
     },
