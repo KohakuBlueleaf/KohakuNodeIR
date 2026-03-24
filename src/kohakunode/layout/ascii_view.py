@@ -221,23 +221,15 @@ def kir_to_graph(source: str) -> KirGraph:
                             last_ctrl = ns_last
 
                 case DataflowBlock():
-                    # @dataflow: block — transparent in ctrl flow.
-                    # Walk contents, create nodes, then chain them sequentially
-                    # for visualization (they execute in dependency order).
+                    # @dataflow: block — NO internal ctrl edges.
+                    # Only wire entry (last_ctrl → block) and exit (block → next).
+                    # Nodes inside are pure dataflow (data edges only).
                     df_nodes_before = len(nodes)
                     walk(stmt.body, None, True)
                     df_new = nodes[df_nodes_before:]
 
-                    if df_new:
-                        # Entry: last_ctrl → first node
-                        if last_ctrl:
-                            ctrl_edge(last_ctrl, "out", df_new[0].id, "in")
-
-                        # Chain within block (sequential for visualization)
-                        for i in range(len(df_new) - 1):
-                            ctrl_edge(df_new[i].id, "out", df_new[i + 1].id, "in")
-
-                        last_ctrl = df_new[-1].id
+                    # Don't create ctrl edges inside — just pass through
+                    # so the next ctrl-connected node can chain from last_ctrl
 
                 case _:
                     pass
