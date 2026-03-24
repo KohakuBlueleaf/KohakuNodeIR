@@ -15,20 +15,31 @@ import { graphToKirgraph } from './kirgraph.js'
 // ---------------------------------------------------------------------------
 
 /**
- * Shorten a node ID for use in variable names.
- * Takes the first 8 chars after the "node-" prefix, or the first 8 chars.
+ * Sanitize a node ID for use in variable names.
+ * Strips the 'node-' prefix and replaces non-alphanumeric chars with '_'.
  */
 function shortId(nodeId) {
-  const stripped = nodeId.replace(/^node-/, '')
-  return stripped.slice(0, 8).replace(/-/g, '_')
+  return nodeId.replace(/^node-/, '').replace(/[^a-zA-Z0-9_]/g, '_')
 }
 
 /**
  * Build a valid KIR variable name for a data output port.
+ * For value nodes, use the node name as the variable name.
  */
 function varName(nodeId, portName) {
   const clean = portName.replace(/[^a-zA-Z0-9_]/g, '_')
   return `v_${shortId(nodeId)}_${clean}`
+}
+
+/**
+ * Get the output variable name for a node's port, considering value nodes.
+ * Value nodes use their name as the variable (e.g., "counter" not "v_value_3_value").
+ */
+function outputVarName(node, portName) {
+  if (node.type === 'value' && node.name && node.name !== 'Node' && node.name !== 'value') {
+    return sanitizeIdent(node.name)
+  }
+  return varName(node.id, portName)
 }
 
 /**
@@ -179,7 +190,7 @@ function resolveInput(node, inputPort, idx) {
     if (!srcNode) return 'None'
     const srcPort = srcNode.dataPorts.outputs.find(p => p.id === edge.fromPortId)
     if (!srcPort) return 'None'
-    return varName(srcNode.id, srcPort.name)
+    return outputVarName(srcNode, srcPort.name)
   }
 
   // Not connected — use default value (note: false and 0 are valid defaults)
@@ -249,7 +260,7 @@ function emitValueNode(node, idx, pad) {
   const outPort = node.dataPorts.outputs[0]
   if (!outPort) return [`${pad}# value node with no output port`]
 
-  const vn = varName(node.id, outPort.name)
+  const vn = outputVarName(node, outPort.name)
 
   // Determine the value — from properties or a sensible default
   let val = 'None'
@@ -278,7 +289,7 @@ function emitFunctionNode(node, idx, pad) {
   const inputArgs = node.dataPorts.inputs.map(port => resolveInput(node, port, idx))
 
   // Build output variable names
-  const outputVars = node.dataPorts.outputs.map(port => varName(node.id, port.name))
+  const outputVars = node.dataPorts.outputs.map(port => outputVarName(node, port.name))
 
   // If no outputs, use empty parens
   const inputStr = inputArgs.join(', ')
@@ -749,7 +760,7 @@ function compileDataflow(nodeList, connectionList) {
       // Emit as assignment
       const outPort = node.dataPorts.outputs[0]
       if (outPort) {
-        const vn = varName(node.id, outPort.name)
+        const vn = outputVarName(node, outPort.name)
         let val = 'None'
         if (node.properties?.value !== undefined) {
           val = formatLiteral(node.properties.value, node.properties?.valueType)
@@ -760,7 +771,7 @@ function compileDataflow(nodeList, connectionList) {
       // Emit as function call
       const funcName = sanitizeIdent(node.type)
       const inputArgs = node.dataPorts.inputs.map(port => resolveInput(node, port, idx))
-      const outputVars = node.dataPorts.outputs.map(port => varName(node.id, port.name))
+      const outputVars = node.dataPorts.outputs.map(port => outputVarName(node, port.name))
       lines.push(`(${inputArgs.join(', ')})${funcName}(${outputVars.join(', ')})`)
     }
     lines.push('')
