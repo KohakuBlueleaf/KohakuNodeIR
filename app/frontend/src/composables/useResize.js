@@ -83,6 +83,9 @@ export function useResize(nodeId, elementRef, getCurrentZoom) {
 
     activeHandle = edge
 
+    // Push a single history snapshot before the resize begins
+    graphStore.beginResize()
+
     const zoom = getZoom()
     startMouseX = e.clientX / zoom
     startMouseY = e.clientY / zoom

@@ -1,6 +1,7 @@
 import { reactive, computed } from 'vue';
 import { defineStore } from 'pinia';
 import { snapToGrid, snapPoint } from '../utils/grid.js';
+import { useHistoryStore } from './history.js';
 
 // --- Constants ---
 const PORT_PADDING = 30; // px from edge before first ctrl port
@@ -34,6 +35,7 @@ export const useGraphStore = defineStore('graph', () => {
    * @returns {string} The assigned node id.
    */
   function addNode(nodeData) {
+    useHistoryStore().pushState();
     const id = nodeData.id ?? generateId('node');
     const snapped = snapPoint(nodeData.x ?? 0, nodeData.y ?? 0);
     const node = {
@@ -64,6 +66,7 @@ export const useGraphStore = defineStore('graph', () => {
    */
   function removeNode(id) {
     if (!nodes.has(id)) return;
+    useHistoryStore().pushState();
     // Remove every connection that touches this node
     for (const [connId, conn] of connections) {
       if (conn.fromNodeId === id || conn.toNodeId === id) {
@@ -129,6 +132,7 @@ export const useGraphStore = defineStore('graph', () => {
     if (!canConnect(fromNodeId, fromPortId, toNodeId, toPortId, portType)) {
       return null;
     }
+    useHistoryStore().pushState();
     const id = generateId('conn');
     const connection = { id, fromNodeId, fromPortId, toNodeId, toPortId, portType };
     connections.set(id, connection);
@@ -140,6 +144,7 @@ export const useGraphStore = defineStore('graph', () => {
    * @param {string} id
    */
   function removeConnection(id) {
+    useHistoryStore().pushState();
     connections.delete(id);
   }
 
@@ -308,6 +313,24 @@ export const useGraphStore = defineStore('graph', () => {
     return true;
   }
 
+  // ---- Drag / resize history helpers ----
+
+  /**
+   * Push a history snapshot before a drag begins.
+   * Call once on mousedown, not on every mousemove.
+   */
+  function beginMove() {
+    useHistoryStore().pushState();
+  }
+
+  /**
+   * Push a history snapshot before a resize begins.
+   * Call once on mousedown, not on every mousemove.
+   */
+  function beginResize() {
+    useHistoryStore().pushState();
+  }
+
   // ---- Serialization helpers (used by history store) ----
 
   /**
@@ -372,6 +395,8 @@ export const useGraphStore = defineStore('graph', () => {
     updateNodePosition,
     updateNodeSize,
     autoResizeHeight,
+    beginMove,
+    beginResize,
 
     // Connection methods
     addConnection,

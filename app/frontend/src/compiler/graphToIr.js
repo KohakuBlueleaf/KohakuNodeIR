@@ -72,6 +72,41 @@ function nsLabel(base) {
   return sanitizeIdent(base).toLowerCase()
 }
 
+/**
+ * Return a stable loop/merge label for a merge node.
+ */
+function mergeLabel(node) {
+  return nsLabel(`loop_${shortId(node.id)}`)
+}
+
+/**
+ * Determine whether a merge node is a loop merge (has a back-edge).
+ * A merge is a loop merge if at least one of its ctrl inputs originates
+ * from a node reachable by walking ctrl edges *forward* from the merge itself.
+ *
+ * We do a forward DFS from the merge node; if we encounter a node whose ctrl
+ * output reaches back to the merge, the merge is a loop header.
+ */
+function isLoopMerge(mergeNode, idx) {
+  const reachable = new Set()
+  const stack = [mergeNode.id]
+  while (stack.length > 0) {
+    const id = stack.pop()
+    if (reachable.has(id)) continue
+    reachable.add(id)
+    const outConns = idx.ctrlOutByNode.get(id) ?? []
+    for (const conn of outConns) {
+      if (!reachable.has(conn.toNodeId)) stack.push(conn.toNodeId)
+    }
+  }
+  // Check if any ctrl-input of the merge comes from a reachable node
+  const inConns = idx.ctrlInByNode.get(mergeNode.id) ?? []
+  for (const conn of inConns) {
+    if (reachable.has(conn.fromNodeId)) return true
+  }
+  return false
+}
+
 // ---------------------------------------------------------------------------
 // Adjacency / index builders
 // ---------------------------------------------------------------------------
@@ -279,28 +314,30 @@ function emitBranchNode(node, idx, pad, indent) {
 
   // Emit true namespace
   if (truePort) {
-    const trueChain = walkControlChain(node.id, truePort.id, idx)
+    const { chain: trueChain, loopJumpLabel: trueJump } = walkControlChain(node.id, truePort.id, idx)
     lines.push(`${pad}${trueNs}:`)
     if (trueChain.length > 0) {
       for (const chainNode of trueChain) {
         lines.push(...emitNode(chainNode, idx, indent + 1))
       }
-    } else {
+    } else if (!trueJump) {
       lines.push(`${pad}    # (empty branch)`)
     }
+    if (trueJump) lines.push(`${pad}    ()jump(\`${trueJump}\`)`)
   }
 
   // Emit false namespace
   if (falsePort) {
-    const falseChain = walkControlChain(node.id, falsePort.id, idx)
+    const { chain: falseChain, loopJumpLabel: falseJump } = walkControlChain(node.id, falsePort.id, idx)
     lines.push(`${pad}${falseNs}:`)
     if (falseChain.length > 0) {
       for (const chainNode of falseChain) {
         lines.push(...emitNode(chainNode, idx, indent + 1))
       }
-    } else {
+    } else if (!falseJump) {
       lines.push(`${pad}    # (empty branch)`)
     }
+    if (falseJump) lines.push(`${pad}    ()jump(\`${falseJump}\`)`)
   }
 
   return lines
@@ -335,15 +372,16 @@ function emitSwitchNode(node, idx, pad, indent) {
 
   // Emit each case namespace
   for (const c of cases) {
-    const chain = walkControlChain(node.id, c.ctrlOut.id, idx)
+    const { chain, loopJumpLabel } = walkControlChain(node.id, c.ctrlOut.id, idx)
     lines.push(`${pad}${c.caseNs}:`)
     if (chain.length > 0) {
       for (const chainNode of chain) {
         lines.push(...emitNode(chainNode, idx, indent + 1))
       }
-    } else {
+    } else if (!loopJumpLabel) {
       lines.push(`${pad}    # (empty case)`)
     }
+    if (loopJumpLabel) lines.push(`${pad}    ()jump(\`${loopJumpLabel}\`)`)
   }
 
   return lines
@@ -366,15 +404,16 @@ function emitParallelNode(node, idx, pad, indent) {
   lines.push(`${pad}()parallel(${nsArgs})`)
 
   for (const b of branches) {
-    const chain = walkControlChain(node.id, b.ctrlOut.id, idx)
+    const { chain, loopJumpLabel } = walkControlChain(node.id, b.ctrlOut.id, idx)
     lines.push(`${pad}${b.branchNs}:`)
     if (chain.length > 0) {
       for (const chainNode of chain) {
         lines.push(...emitNode(chainNode, idx, indent + 1))
       }
-    } else {
+    } else if (!loopJumpLabel) {
       lines.push(`${pad}    # (empty parallel branch)`)
     }
+    if (loopJumpLabel) lines.push(`${pad}    ()jump(\`${loopJumpLabel}\`)`)
   }
 
   return lines
@@ -386,9 +425,11 @@ function emitParallelNode(node, idx, pad, indent) {
 
 /**
  * Walk the control chain starting from a specific control output port.
- * Returns an ordered array of nodes to emit.
- * Stops at merge nodes (which have multiple ctrl inputs), or when there's
- * no next node.
+ * Returns { chain, loopJumpLabel } where:
+ *   chain         — ordered array of nodes to emit
+ *   loopJumpLabel — if the chain terminated at a loop-merge node, the merge's
+ *                   label string (so the caller can emit a `()jump(...)` line);
+ *                   null if termination was at a convergence merge or dead end.
  */
 function walkControlChain(fromNodeId, fromPortId, idx) {
   const chain = []
@@ -404,31 +445,30 @@ function walkControlChain(fromNodeId, fromPortId, idx) {
     const nextNode = idx.nodeMap.get(edge.toNodeId)
     if (!nextNode) break
 
-    // Avoid infinite loops
+    // Avoid infinite loops from visiting the same node twice
     if (visited.has(nextNode.id)) break
     visited.add(nextNode.id)
 
-    // If this node is a merge and has multiple ctrl inputs, it is a convergence
-    // point. Stop the chain here — the merge will be handled at a higher level.
+    // If this node is a merge, determine if it is a loop merge or convergence.
     if (nextNode.type === 'merge') {
-      // Don't include the merge in this sub-chain; it belongs to the parent scope
+      if (isLoopMerge(nextNode, idx)) {
+        // Loop back-edge: tell the caller to emit a jump to the loop label.
+        return { chain, loopJumpLabel: mergeLabel(nextNode) }
+      }
+      // Convergence merge — stop; the parent scope continues from here.
       break
     }
 
     chain.push(nextNode)
 
-    // Find the "out" control port to continue walking.
-    // For branch/switch/parallel, the sub-chains are emitted inside emitNode,
-    // so we need to find the continuation AFTER those sub-chains.
-    // For branch/switch/parallel nodes, there is no single "out" — they fan out.
-    // The continuation is handled by the merge node detection above.
+    // For branch/switch/parallel: sub-chains are emitted inside emitNode.
+    // After them, look for a merge node to continue from.
     if (nextNode.type === 'branch' || nextNode.type === 'switch' || nextNode.type === 'parallel') {
-      // These nodes handle their own sub-chains internally.
-      // After a branch/switch/parallel, we look for a merge node that
-      // gathers the control outputs. We need to find it and continue from there.
       const mergeNode = findMergeAfter(nextNode, idx)
       if (mergeNode) {
-        // Continue from the merge node's output
+        if (isLoopMerge(mergeNode, idx)) {
+          return { chain, loopJumpLabel: mergeLabel(mergeNode) }
+        }
         const mergeOutPort = mergeNode.controlPorts.outputs[0]
         if (mergeOutPort) {
           currentNodeId = mergeNode.id
@@ -436,7 +476,6 @@ function walkControlChain(fromNodeId, fromPortId, idx) {
           continue
         }
       }
-      // No merge found — end of this chain
       break
     }
 
@@ -448,7 +487,7 @@ function walkControlChain(fromNodeId, fromPortId, idx) {
     currentPortId = outPort.id
   }
 
-  return chain
+  return { chain, loopJumpLabel: null }
 }
 
 /**
@@ -586,10 +625,22 @@ function compileControlflow(nodeList, connectionList) {
       if (emitted.has(entry.id)) continue
       // Walk from this entry point
       const chain = walkFromEntry(entry, idx, emitted)
-      for (const node of chain) {
-        if (emitted.has(node.id)) continue
-        emitted.add(node.id)
-        lines.push(...emitNode(node, idx, 0))
+      for (const item of chain) {
+        // Sentinel: loop start — emit jump then label
+        if (item._sentinel === 'loop_start') {
+          lines.push(`()jump(\`${item.label}\`)`)
+          lines.push(`${item.label}:`)
+          continue
+        }
+        // Sentinel: loop merge node body — already labeled, skip re-emitting as node
+        if (item._sentinel === 'loop_merge') {
+          // The merge node itself has no statements to emit — the label was already emitted
+          emitted.add(item.node.id)
+          continue
+        }
+        if (emitted.has(item.id)) continue
+        emitted.add(item.id)
+        lines.push(...emitNode(item, idx, 0))
       }
       lines.push('')
     }
@@ -600,6 +651,9 @@ function compileControlflow(nodeList, connectionList) {
 
 /**
  * Walk from an entry node following control flow, collecting all nodes in order.
+ * Items in the result array are either node objects or special sentinel objects:
+ *   { _sentinel: 'loop_start', label }  — emit `()jump(\`label\`)` then `label:`
+ *   { _sentinel: 'loop_merge', node }   — the merge node itself (already labeled above)
  */
 function walkFromEntry(entryNode, idx, emitted) {
   const result = []
@@ -608,17 +662,28 @@ function walkFromEntry(entryNode, idx, emitted) {
   function walk(node) {
     if (!node || visited.has(node.id)) return
     visited.add(node.id)
-    result.push(node)
 
-    // For branch/switch/parallel: the sub-chains are emitted inside emitNode.
-    // We need to find the merge node and continue from there.
-    if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
-      const mergeNode = findMergeAfter(node, idx)
-      if (mergeNode) {
-        const mergeOut = mergeNode.controlPorts.outputs[0]
-        if (mergeOut) {
-          // Continue from merge output
-          const edgeKey = `${mergeNode.id}:${mergeOut.id}`
+    // Handle merge nodes encountered at the top level
+    if (node.type === 'merge') {
+      if (isLoopMerge(node, idx)) {
+        // Emit: ()jump(`label`) then label: then continue from merge output
+        const label = mergeLabel(node)
+        result.push({ _sentinel: 'loop_start', label })
+        result.push({ _sentinel: 'loop_merge', node })
+        const outPort = node.controlPorts.outputs[0]
+        if (outPort) {
+          const edgeKey = `${node.id}:${outPort.id}`
+          const edge = idx.ctrlOutEdges.get(edgeKey)
+          if (edge) {
+            const nextNode = idx.nodeMap.get(edge.toNodeId)
+            if (nextNode) walk(nextNode)
+          }
+        }
+      } else {
+        // Convergence merge — continue from its output without emitting a label
+        const outPort = node.controlPorts.outputs[0]
+        if (outPort) {
+          const edgeKey = `${node.id}:${outPort.id}`
           const edge = idx.ctrlOutEdges.get(edgeKey)
           if (edge) {
             const nextNode = idx.nodeMap.get(edge.toNodeId)
@@ -629,11 +694,19 @@ function walkFromEntry(entryNode, idx, emitted) {
       return
     }
 
-    // For merge nodes: just continue from their output
-    // (merge nodes encountered during a top-level walk mean they're
-    // convergence points that aren't part of a branch sub-chain)
+    result.push(node)
 
-    // Regular or merge node: follow the first control output
+    // For branch/switch/parallel: the sub-chains are emitted inside emitNode.
+    // We need to find the merge node and continue from there.
+    if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
+      const mergeNode = findMergeAfter(node, idx)
+      if (mergeNode) {
+        walk(mergeNode)
+      }
+      return
+    }
+
+    // Regular node: follow the first control output
     const outPort = node.controlPorts.outputs[0]
     if (!outPort) return
 
@@ -803,6 +876,32 @@ export function compileKirgraphToKir(kirgraph) {
 
   const kgIdx = { nodeMap, ctrlOutEdges, ctrlInEdges, ctrlInByNode, ctrlOutByNode, dataInEdges }
 
+  // ---- Loop merge detection (kirgraph) ------------------------------------
+
+  function kgMergeLabel(kgNode) {
+    const cleanId = kgNode.id.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()
+    return `loop_${cleanId}`
+  }
+
+  function kgIsLoopMerge(kgNode) {
+    // Forward reachability from the merge node using ctrl edges
+    const reachable = new Set()
+    const stack = [kgNode.id]
+    while (stack.length > 0) {
+      const id = stack.pop()
+      if (reachable.has(id)) continue
+      reachable.add(id)
+      for (const edge of (ctrlOutByNode.get(id) ?? [])) {
+        if (!reachable.has(edge.to.node)) stack.push(edge.to.node)
+      }
+    }
+    // A back-edge exists if any ctrl input of the merge comes from a reachable node
+    for (const edge of (ctrlInByNode.get(kgNode.id) ?? [])) {
+      if (reachable.has(edge.from.node)) return true
+    }
+    return false
+  }
+
   // ---- Variable naming -----------------------------------------------------
 
   // In kirgraph the node id is already a clean semantic id (e.g. "add1", "val_a").
@@ -906,21 +1005,23 @@ export function compileKirgraphToKir(kirgraph) {
 
     lines.push(`${pad}(${condExpr})branch(\`${trueNs}\`, \`${falseNs}\`)`)
 
-    const trueChain  = kgWalkControlChain(kgNode.id, truePortName,  kgIdx)
+    const { chain: trueChain, loopJumpLabel: trueJump } = kgWalkControlChain(kgNode.id, truePortName, kgIdx)
     lines.push(`${pad}${trueNs}:`)
     if (trueChain.length > 0) {
       for (const n of trueChain) lines.push(...kgEmitNode(n, indent + 1))
-    } else {
+    } else if (!trueJump) {
       lines.push(`${pad}    # (empty branch)`)
     }
+    if (trueJump) lines.push(`${pad}    ()jump(\`${trueJump}\`)`)
 
-    const falseChain = kgWalkControlChain(kgNode.id, falsePortName, kgIdx)
+    const { chain: falseChain, loopJumpLabel: falseJump } = kgWalkControlChain(kgNode.id, falsePortName, kgIdx)
     lines.push(`${pad}${falseNs}:`)
     if (falseChain.length > 0) {
       for (const n of falseChain) lines.push(...kgEmitNode(n, indent + 1))
-    } else {
+    } else if (!falseJump) {
       lines.push(`${pad}    # (empty branch)`)
     }
+    if (falseJump) lines.push(`${pad}    ()jump(\`${falseJump}\`)`)
 
     return lines
   }
@@ -941,13 +1042,14 @@ export function compileKirgraphToKir(kirgraph) {
     lines.push(`${pad}(${valExpr})switch(${caseArgs})`)
 
     for (const c of cases) {
-      const chain = kgWalkControlChain(kgNode.id, c.portName, kgIdx)
+      const { chain, loopJumpLabel } = kgWalkControlChain(kgNode.id, c.portName, kgIdx)
       lines.push(`${pad}${c.caseNs}:`)
       if (chain.length > 0) {
         for (const n of chain) lines.push(...kgEmitNode(n, indent + 1))
-      } else {
+      } else if (!loopJumpLabel) {
         lines.push(`${pad}    # (empty case)`)
       }
+      if (loopJumpLabel) lines.push(`${pad}    ()jump(\`${loopJumpLabel}\`)`)
     }
 
     return lines
@@ -964,13 +1066,14 @@ export function compileKirgraphToKir(kirgraph) {
     lines.push(`${pad}()parallel(${nsArgs})`)
 
     for (const b of branches) {
-      const chain = kgWalkControlChain(kgNode.id, b.portName, kgIdx)
+      const { chain, loopJumpLabel } = kgWalkControlChain(kgNode.id, b.portName, kgIdx)
       lines.push(`${pad}${b.ns}:`)
       if (chain.length > 0) {
         for (const n of chain) lines.push(...kgEmitNode(n, indent + 1))
-      } else {
+      } else if (!loopJumpLabel) {
         lines.push(`${pad}    # (empty parallel branch)`)
       }
+      if (loopJumpLabel) lines.push(`${pad}    ()jump(\`${loopJumpLabel}\`)`)
     }
 
     return lines
@@ -993,13 +1096,21 @@ export function compileKirgraphToKir(kirgraph) {
       if (!nextNode || visited.has(nextNode.id)) break
       visited.add(nextNode.id)
 
-      if (nextNode.type === 'merge') break
+      if (nextNode.type === 'merge') {
+        if (kgIsLoopMerge(nextNode)) {
+          return { chain, loopJumpLabel: kgMergeLabel(nextNode) }
+        }
+        break
+      }
 
       chain.push(nextNode)
 
       if (nextNode.type === 'branch' || nextNode.type === 'switch' || nextNode.type === 'parallel') {
         const mergeNode = kgFindMergeAfter(nextNode, kgIdx)
         if (mergeNode) {
+          if (kgIsLoopMerge(mergeNode)) {
+            return { chain, loopJumpLabel: kgMergeLabel(mergeNode) }
+          }
           const mergeOutName = (mergeNode.ctrl_outputs ?? [])[0]
           if (mergeOutName) {
             curNodeId   = mergeNode.id
@@ -1017,7 +1128,7 @@ export function compileKirgraphToKir(kirgraph) {
       curPortName = outPortName
     }
 
-    return chain
+    return { chain, loopJumpLabel: null }
   }
 
   function kgFindMergeAfter(branchingNode, kgIdx) {
@@ -1096,24 +1207,47 @@ export function compileKirgraphToKir(kirgraph) {
     for (const entry of entryNodes) {
       if (emitted.has(entry.id)) continue
 
-      // Walk from this entry collecting all nodes in ctrl order
+      // Walk from this entry collecting all nodes in ctrl order.
+      // Items may be node objects or sentinels:
+      //   { _sentinel: 'loop_start', label }  — emit jump + label
+      //   { _sentinel: 'loop_merge', node }   — skip (label already emitted)
       const visited2 = new Set()
       function walkEntry(node) {
         if (!node || visited2.has(node.id)) return []
         visited2.add(node.id)
-        const result = [node]
 
-        if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
-          const merge = kgFindMergeAfter(node, kgIdx)
-          if (merge) {
-            const mOut = (merge.ctrl_outputs ?? [])[0]
+        if (node.type === 'merge') {
+          if (kgIsLoopMerge(node)) {
+            const label = kgMergeLabel(node)
+            const result = [
+              { _sentinel: 'loop_start', label },
+              { _sentinel: 'loop_merge', node },
+            ]
+            const mOut = (node.ctrl_outputs ?? [])[0]
             if (mOut) {
-              const nextEdge = ctrlOutEdges.get(`${merge.id}:${mOut}`)
+              const nextEdge = ctrlOutEdges.get(`${node.id}:${mOut}`)
               if (nextEdge) {
                 const nextNode = nodeMap.get(nextEdge.toNodeId)
                 result.push(...walkEntry(nextNode))
               }
             }
+            return result
+          }
+          // Convergence merge — continue without emitting a label
+          const mOut = (node.ctrl_outputs ?? [])[0]
+          if (!mOut) return []
+          const nextEdge = ctrlOutEdges.get(`${node.id}:${mOut}`)
+          if (!nextEdge) return []
+          const nextNode = nodeMap.get(nextEdge.toNodeId)
+          return walkEntry(nextNode)
+        }
+
+        const result = [node]
+
+        if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
+          const merge = kgFindMergeAfter(node, kgIdx)
+          if (merge) {
+            result.push(...walkEntry(merge))
           }
           return result
         }
@@ -1128,10 +1262,19 @@ export function compileKirgraphToKir(kirgraph) {
       }
 
       const chain = walkEntry(entry)
-      for (const n of chain) {
-        if (emitted.has(n.id)) continue
-        emitted.add(n.id)
-        for (const l of kgEmitNode(n, 0)) lines.push(l)
+      for (const item of chain) {
+        if (item._sentinel === 'loop_start') {
+          lines.push(`()jump(\`${item.label}\`)`)
+          lines.push(`${item.label}:`)
+          continue
+        }
+        if (item._sentinel === 'loop_merge') {
+          emitted.add(item.node.id)
+          continue
+        }
+        if (emitted.has(item.id)) continue
+        emitted.add(item.id)
+        for (const l of kgEmitNode(item, 0)) lines.push(l)
         lines.push('')
       }
     }

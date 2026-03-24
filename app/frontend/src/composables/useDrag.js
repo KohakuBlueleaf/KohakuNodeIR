@@ -47,6 +47,9 @@ export function useDrag(nodeId, elementRef, getCurrentZoom) {
       ? [...selection]
       : [nodeId]
 
+    // Push a single history snapshot before the drag begins
+    graphStore.beginMove()
+
     // Snapshot starting positions
     startPositions = new Map()
     for (const id of movingIds) {

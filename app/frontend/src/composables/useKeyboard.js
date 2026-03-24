@@ -1,6 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useGraphStore } from '../stores/graph.js'
 import { useEditorStore } from '../stores/editor.js'
+import { useHistoryStore } from '../stores/history.js'
 
 /**
  * useKeyboard
@@ -16,6 +17,7 @@ import { useEditorStore } from '../stores/editor.js'
 export function useKeyboard({ onCancelOperation } = {}) {
   const graphStore = useGraphStore()
   const editorStore = useEditorStore()
+  const historyStore = useHistoryStore()
 
   // Exposed so the template / usePanZoom can check pan-mode state
   const spaceHeld = ref(false)
@@ -64,28 +66,28 @@ export function useKeyboard({ onCancelOperation } = {}) {
     // Ctrl+A — select all nodes
     if (ctrl && e.key === 'a') {
       e.preventDefault()
-      editorStore.setSelection(graphStore.nodes.map((n) => n.id))
+      editorStore.setSelection(graphStore.nodeList.map((n) => n.id))
       return
     }
 
     // Ctrl+Z — undo
     if (ctrl && !e.shiftKey && e.key === 'z') {
       e.preventDefault()
-      graphStore.undo?.()
+      historyStore.undo()
       return
     }
 
     // Ctrl+Shift+Z — redo
     if (ctrl && e.shiftKey && e.key === 'z') {
       e.preventDefault()
-      graphStore.redo?.()
+      historyStore.redo()
       return
     }
 
     // Ctrl+Y — redo (Windows convention)
     if (ctrl && e.key === 'y') {
       e.preventDefault()
-      graphStore.redo?.()
+      historyStore.redo()
       return
     }
   }
