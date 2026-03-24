@@ -43,9 +43,18 @@ def _node_id(comfy_id: int | str) -> str:
 def _sanitize_type(comfy_type: str) -> str:
     """Normalize a ComfyUI node type to a valid KirGraph type key.
 
-    Lowercase, replace spaces with underscores.
+    Lowercase, replace spaces with underscores, encode invalid chars
+    as _xHH_ (hex) so the original name is recoverable.
     """
-    return comfy_type.lower().replace(" ", "_")
+    result = []
+    for ch in comfy_type.lower():
+        if ch.isalnum() or ch == "_":
+            result.append(ch)
+        elif ch == " ":
+            result.append("_")
+        else:
+            result.append(f"_x{ord(ch):02x}_")
+    return "".join(result)
 
 
 def _sanitize_port_name(name: str) -> str:
@@ -254,9 +263,14 @@ def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
         if comfy_props:
             properties["comfyui"] = comfy_props
 
-        # Assign widget values as defaults to unconnected input ports.
-        # ComfyUI convention: widgets_values fills inputs that are NOT connected
-        # in the order they appear. Connected inputs are skipped.
+        # Widget values are actual functional inputs, not metadata.
+        # In ComfyUI, widgets_values contains values for ALL parameters that
+        # are set via UI widgets (not connected via wires).
+        #
+        # Strategy:
+        # 1. Unconnected input slots get their widget value as default
+        # 2. Remaining widget values become additional input ports (widget-only
+        #    params like seed, steps, cfg that aren't in the inputs array)
         if widgets:
             connected_input_indices: set[int] = set()
             for plk in parsed_links:
@@ -264,10 +278,10 @@ def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
                     connected_input_indices.add(plk["target_slot"])
 
             widget_idx = 0
+            # Fill unconnected input slots first
             for slot_idx, inp in enumerate(raw_inputs):
                 if slot_idx in connected_input_indices:
                     continue
-                # This input is unconnected, assign widget default
                 if widget_idx < len(widgets):
                     data_inputs[slot_idx] = KGPort(
                         port=data_inputs[slot_idx].port,
@@ -275,6 +289,13 @@ def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
                         default=widgets[widget_idx],
                     )
                     widget_idx += 1
+
+            # Add remaining widget values as additional input ports
+            while widget_idx < len(widgets):
+                val = widgets[widget_idx]
+                port_name = f"widget_{widget_idx}"
+                data_inputs.append(KGPort(port=port_name, type="any", default=val))
+                widget_idx += 1
 
         meta: dict[str, Any] = {"pos": pos, "size": size}
         # Preserve everything needed for ComfyUI roundtrip in meta
@@ -290,9 +311,7 @@ def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
             meta["color"] = cn["color"]
         if "bgcolor" in cn:
             meta["bgcolor"] = cn["bgcolor"]
-        if widgets is not None:
-            meta["widgets_values"] = widgets
-        # Store original input/output slot info for reverse conversion
+        # Store original slot info for reverse conversion (meta is for UI data)
         meta["comfyui_inputs"] = raw_inputs
         meta["comfyui_outputs"] = raw_outputs
 

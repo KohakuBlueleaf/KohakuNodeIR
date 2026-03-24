@@ -340,7 +340,9 @@ class TestKSamplerWorkflow:
         graph = comfyui_to_kirgraph(WORKFLOW_KSAMPLER)
         ks = next(n for n in graph.nodes if n.id == "comfy_4")
         input_ports = [p.port for p in ks.data_inputs]
-        assert input_ports == ["model", "positive", "negative", "latent_image"]
+        # 4 connected inputs + 7 widget inputs
+        assert input_ports[:4] == ["model", "positive", "negative", "latent_image"]
+        assert len(input_ports) == 11  # 4 + 7 widget params
 
     def test_checkpoint_outputs(self):
         graph = comfyui_to_kirgraph(WORKFLOW_KSAMPLER)
@@ -349,17 +351,11 @@ class TestKSamplerWorkflow:
         assert output_ports == ["model", "clip", "vae"]
 
     def test_ksampler_widget_values(self):
+        """Widget values are now stored as input port defaults, not properties."""
         graph = comfyui_to_kirgraph(WORKFLOW_KSAMPLER)
         ks = next(n for n in graph.nodes if n.id == "comfy_4")
-        assert ks.properties["widgets"] == [
-            42,
-            "fixed",
-            20,
-            7.5,
-            "euler",
-            "normal",
-            1.0,
-        ]
+        widget_defaults = [p.default for p in ks.data_inputs[4:]]
+        assert widget_defaults == [42, "fixed", 20, 7.5, "euler", "normal", 1.0]
 
     def test_compile_to_kir(self):
         """Converting to L2 KIR should not raise errors."""

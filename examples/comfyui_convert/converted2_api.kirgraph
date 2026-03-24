@@ -785,7 +785,7 @@
     },
     {
       "id": "comfy_82",
-      "type": "showtext|pysssss",
+      "type": "showtext_x7c_pysssss",
       "name": "ShowText|pysssss",
       "data_inputs": [
         {

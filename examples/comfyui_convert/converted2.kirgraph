@@ -43,7 +43,6 @@
         "mode": 0,
         "order": 19,
         "flags": {},
-        "widgets_values": [],
         "comfyui_inputs": [
           {
             "label": "pixels",
@@ -113,7 +112,6 @@
         "mode": 0,
         "order": 16,
         "flags": {},
-        "widgets_values": [],
         "comfyui_inputs": [
           {
             "label": "samples",
@@ -184,7 +182,6 @@
         "mode": 0,
         "order": 21,
         "flags": {},
-        "widgets_values": [],
         "comfyui_inputs": [
           {
             "label": "samples",
@@ -220,6 +217,16 @@
         {
           "port": "image",
           "type": "image"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "lanczos"
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": 1.5
         }
       ],
       "data_outputs": [
@@ -253,10 +260,6 @@
         "mode": 0,
         "order": 18,
         "flags": {},
-        "widgets_values": [
-          "lanczos",
-          1.5
-        ],
         "comfyui_inputs": [
           {
             "label": "image",
@@ -282,7 +285,13 @@
       "id": "comfy_29",
       "type": "primitivenode",
       "name": "PrimitiveNode",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
+        }
+      ],
       "data_outputs": [
         {
           "port": "string",
@@ -313,9 +322,6 @@
         "mode": 0,
         "order": 0,
         "flags": {},
-        "widgets_values": [
-          "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -334,12 +340,17 @@
     },
     {
       "id": "comfy_82",
-      "type": "showtext|pysssss",
+      "type": "showtext_x7c_pysssss",
       "name": "ShowText|pysssss",
       "data_inputs": [
         {
           "port": "text",
           "type": "string"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "1girl, \n\nneck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,\n\nA realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
         }
       ],
       "data_outputs": [
@@ -372,9 +383,6 @@
         "mode": 0,
         "order": 13,
         "flags": {},
-        "widgets_values": [
-          "1girl, \n\nneck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,\n\nA realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
-        ],
         "comfyui_inputs": [
           {
             "name": "text",
@@ -400,6 +408,11 @@
         {
           "port": "images",
           "type": "image"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "HiresFix/ComfyUI_HiresFix"
         }
       ],
       "data_outputs": [],
@@ -424,9 +437,6 @@
         "mode": 0,
         "order": 22,
         "flags": {},
-        "widgets_values": [
-          "HiresFix/ComfyUI_HiresFix"
-        ],
         "comfyui_inputs": [
           {
             "label": "images",
@@ -446,6 +456,11 @@
         {
           "port": "images",
           "type": "image"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "ComfyUI"
         }
       ],
       "data_outputs": [],
@@ -470,9 +485,6 @@
         "mode": 0,
         "order": 17,
         "flags": {},
-        "widgets_values": [
-          "ComfyUI"
-        ],
         "comfyui_inputs": [
           {
             "label": "images",
@@ -488,7 +500,18 @@
       "id": "comfy_18",
       "type": "primitivenode",
       "name": "PrimitiveNode",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": 923874509872640
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "increment"
+        }
+      ],
       "data_outputs": [
         {
           "port": "int",
@@ -520,10 +543,6 @@
         "mode": 0,
         "order": 1,
         "flags": {},
-        "widgets_values": [
-          923874509872640,
-          "increment"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -546,7 +565,18 @@
       "id": "comfy_73",
       "type": "primitiveint",
       "name": "PrimitiveInt",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": 1344
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "fixed"
+        }
+      ],
       "data_outputs": [
         {
           "port": "int",
@@ -578,10 +608,6 @@
         "mode": 0,
         "order": 2,
         "flags": {},
-        "widgets_values": [
-          1344,
-          "fixed"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -599,7 +625,18 @@
       "id": "comfy_74",
       "type": "primitiveint",
       "name": "PrimitiveInt",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": 768
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "fixed"
+        }
+      ],
       "data_outputs": [
         {
           "port": "int",
@@ -631,10 +668,6 @@
         "mode": 0,
         "order": 3,
         "flags": {},
-        "widgets_values": [
-          768,
-          "fixed"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -660,6 +693,11 @@
         {
           "port": "text",
           "type": "string"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
         }
       ],
       "data_outputs": [
@@ -692,9 +730,6 @@
         "mode": 0,
         "order": 11,
         "flags": {},
-        "widgets_values": [
-          "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
-        ],
         "comfyui_inputs": [
           {
             "label": "clip",
@@ -737,6 +772,11 @@
         {
           "port": "text",
           "type": "string"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "1girl,\n\noriginal,\n\nfujisaki hikari, (quasarcake:0.95), (welchino:0.9), (hazuki natsu, sho \\(sho lwlw\\), yuzuki gao:0.85), (naga u:0.85), (usashiro mani:0.92), (azumi kazuki:0.92), \n\ndragon girl, dragon wings, dragon tail, dragon horns, pointy ears, very long hair, scenery, solo, indoors, off shoulder, tail, light blue hair, silver hair, solo, sapphire, gray eyes, bedroom, no pants, black dress, multicolored hair, gradient hair,\n\nabsurdres, masterpiece, safe, sensitive"
         }
       ],
       "data_outputs": [
@@ -769,9 +809,6 @@
         "mode": 0,
         "order": 14,
         "flags": {},
-        "widgets_values": [
-          "1girl,\n\noriginal,\n\nfujisaki hikari, (quasarcake:0.95), (welchino:0.9), (hazuki natsu, sho \\(sho lwlw\\), yuzuki gao:0.85), (naga u:0.85), (usashiro mani:0.92), (azumi kazuki:0.92), \n\ndragon girl, dragon wings, dragon tail, dragon horns, pointy ears, very long hair, scenery, solo, indoors, off shoulder, tail, light blue hair, silver hair, solo, sapphire, gray eyes, bedroom, no pants, black dress, multicolored hair, gradient hair,\n\nabsurdres, masterpiece, safe, sensitive"
-        ],
         "comfyui_inputs": [
           {
             "label": "clip",
@@ -806,7 +843,13 @@
       "id": "comfy_88",
       "type": "vaeloader",
       "name": "VAELoader",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "flux2-vae.safetensors"
+        }
+      ],
       "data_outputs": [
         {
           "port": "vae",
@@ -837,9 +880,6 @@
         "mode": 0,
         "order": 4,
         "flags": {},
-        "widgets_values": [
-          "flux2-vae.safetensors"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -865,6 +905,21 @@
         {
           "port": "height",
           "type": "int"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": 1344
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": 896
+        },
+        {
+          "port": "widget_2",
+          "type": "any",
+          "default": 1
         }
       ],
       "data_outputs": [
@@ -899,11 +954,6 @@
         "mode": 0,
         "order": 10,
         "flags": {},
-        "widgets_values": [
-          1344,
-          896,
-          1
-        ],
         "comfyui_inputs": [
           {
             "name": "width",
@@ -938,7 +988,18 @@
       "id": "comfy_86",
       "type": "unetloader",
       "name": "UNETLoader",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "flux-2-klein-4b.safetensors"
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "default"
+        }
+      ],
       "data_outputs": [
         {
           "port": "model",
@@ -970,10 +1031,6 @@
         "mode": 0,
         "order": 5,
         "flags": {},
-        "widgets_values": [
-          "flux-2-klein-4b.safetensors",
-          "default"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -991,7 +1048,13 @@
       "id": "comfy_57",
       "type": "primitivenode",
       "name": "PrimitiveNode",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
+        }
+      ],
       "data_outputs": [
         {
           "port": "string",
@@ -1022,9 +1085,6 @@
         "mode": 0,
         "order": 6,
         "flags": {},
-        "widgets_values": [
-          "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -1045,7 +1105,23 @@
       "id": "comfy_87",
       "type": "cliploader",
       "name": "CLIPLoader",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "qwen_3_4b.safetensors"
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "flux2"
+        },
+        {
+          "port": "widget_2",
+          "type": "any",
+          "default": "default"
+        }
+      ],
       "data_outputs": [
         {
           "port": "clip",
@@ -1078,11 +1154,6 @@
         "mode": 0,
         "order": 7,
         "flags": {},
-        "widgets_values": [
-          "qwen_3_4b.safetensors",
-          "flux2",
-          "default"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -1120,6 +1191,41 @@
         {
           "port": "seed",
           "type": "int"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": 923874509872640
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "randomize"
+        },
+        {
+          "port": "widget_2",
+          "type": "any",
+          "default": 24
+        },
+        {
+          "port": "widget_3",
+          "type": "any",
+          "default": 1
+        },
+        {
+          "port": "widget_4",
+          "type": "any",
+          "default": "euler_ancestral"
+        },
+        {
+          "port": "widget_5",
+          "type": "any",
+          "default": "exponential"
+        },
+        {
+          "port": "widget_6",
+          "type": "any",
+          "default": 1
         }
       ],
       "data_outputs": [
@@ -1158,15 +1264,6 @@
         "mode": 0,
         "order": 15,
         "flags": {},
-        "widgets_values": [
-          923874509872640,
-          "randomize",
-          24,
-          1,
-          "euler_ancestral",
-          "exponential",
-          1
-        ],
         "comfyui_inputs": [
           {
             "label": "model",
@@ -1218,7 +1315,13 @@
       "id": "comfy_27",
       "type": "primitivenode",
       "name": "PrimitiveNode",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": ""
+        }
+      ],
       "data_outputs": [
         {
           "port": "string",
@@ -1249,9 +1352,6 @@
         "mode": 0,
         "order": 8,
         "flags": {},
-        "widgets_values": [
-          ""
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -1296,6 +1396,86 @@
         {
           "port": "seed",
           "type": "int"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": ""
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+        },
+        {
+          "port": "widget_2",
+          "type": "any",
+          "default": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
+        },
+        {
+          "port": "widget_3",
+          "type": "any",
+          "default": "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf"
+        },
+        {
+          "port": "widget_4",
+          "type": "any",
+          "default": "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>.\n\n<|quality|>, <|meta|>, <|rating|>"
+        },
+        {
+          "port": "widget_5",
+          "type": "any",
+          "default": 1024
+        },
+        {
+          "port": "widget_6",
+          "type": "any",
+          "default": 1024
+        },
+        {
+          "port": "widget_7",
+          "type": "any",
+          "default": 0.5
+        },
+        {
+          "port": "widget_8",
+          "type": "any",
+          "default": 0.95
+        },
+        {
+          "port": "widget_9",
+          "type": "any",
+          "default": 0.05
+        },
+        {
+          "port": "widget_10",
+          "type": "any",
+          "default": 64
+        },
+        {
+          "port": "widget_11",
+          "type": "any",
+          "default": "long"
+        },
+        {
+          "port": "widget_12",
+          "type": "any",
+          "default": "long"
+        },
+        {
+          "port": "widget_13",
+          "type": "any",
+          "default": 923874509872640
+        },
+        {
+          "port": "widget_14",
+          "type": "any",
+          "default": "fixed"
+        },
+        {
+          "port": "widget_15",
+          "type": "any",
+          "default": "cuda"
         }
       ],
       "data_outputs": [
@@ -1355,24 +1535,6 @@
         "mode": 0,
         "order": 12,
         "flags": {},
-        "widgets_values": [
-          "",
-          "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.",
-          "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses",
-          "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf",
-          "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>.\n\n<|quality|>, <|meta|>, <|rating|>",
-          1024,
-          1024,
-          0.5,
-          0.95,
-          0.05,
-          64,
-          "long",
-          "long",
-          923874509872640,
-          "fixed",
-          "cuda"
-        ],
         "comfyui_inputs": [
           {
             "name": "tags",
@@ -1455,7 +1617,13 @@
       "id": "comfy_28",
       "type": "primitivenode",
       "name": "PrimitiveNode",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+        }
+      ],
       "data_outputs": [
         {
           "port": "string",
@@ -1486,9 +1654,6 @@
         "mode": 0,
         "order": 9,
         "flags": {},
-        "widgets_values": [
-          "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -1529,6 +1694,41 @@
         {
           "port": "seed",
           "type": "int"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": 923874509872640
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "randomize"
+        },
+        {
+          "port": "widget_2",
+          "type": "any",
+          "default": 16
+        },
+        {
+          "port": "widget_3",
+          "type": "any",
+          "default": 5
+        },
+        {
+          "port": "widget_4",
+          "type": "any",
+          "default": "euler_ancestral"
+        },
+        {
+          "port": "widget_5",
+          "type": "any",
+          "default": "exponential"
+        },
+        {
+          "port": "widget_6",
+          "type": "any",
+          "default": 0.5500000000000002
         }
       ],
       "data_outputs": [
@@ -1567,15 +1767,6 @@
         "mode": 0,
         "order": 20,
         "flags": {},
-        "widgets_values": [
-          923874509872640,
-          "randomize",
-          16,
-          5,
-          "euler_ancestral",
-          "exponential",
-          0.5500000000000002
-        ],
         "comfyui_inputs": [
           {
             "label": "model",

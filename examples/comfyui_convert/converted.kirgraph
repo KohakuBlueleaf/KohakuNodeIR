@@ -5,7 +5,13 @@
       "id": "comfy_1",
       "type": "checkpointloadersimple",
       "name": "CheckpointLoaderSimple",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "v1-5-pruned-emaonly.ckpt"
+        }
+      ],
       "data_outputs": [
         {
           "port": "model",
@@ -44,9 +50,6 @@
         "mode": 0,
         "order": 0,
         "flags": {},
-        "widgets_values": [
-          "v1-5-pruned-emaonly.ckpt"
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -82,6 +85,11 @@
         {
           "port": "clip",
           "type": "clip"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "a beautiful landscape, mountains, sunset"
         }
       ],
       "data_outputs": [
@@ -114,9 +122,6 @@
         "mode": 0,
         "order": 1,
         "flags": {},
-        "widgets_values": [
-          "a beautiful landscape, mountains, sunset"
-        ],
         "comfyui_inputs": [
           {
             "name": "clip",
@@ -143,6 +148,11 @@
         {
           "port": "clip",
           "type": "clip"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "blurry, low quality"
         }
       ],
       "data_outputs": [
@@ -175,9 +185,6 @@
         "mode": 0,
         "order": 2,
         "flags": {},
-        "widgets_values": [
-          "blurry, low quality"
-        ],
         "comfyui_inputs": [
           {
             "name": "clip",
@@ -216,6 +223,41 @@
         {
           "port": "latent_image",
           "type": "latent"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": 42
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": "fixed"
+        },
+        {
+          "port": "widget_2",
+          "type": "any",
+          "default": 20
+        },
+        {
+          "port": "widget_3",
+          "type": "any",
+          "default": 7.5
+        },
+        {
+          "port": "widget_4",
+          "type": "any",
+          "default": "euler"
+        },
+        {
+          "port": "widget_5",
+          "type": "any",
+          "default": "normal"
+        },
+        {
+          "port": "widget_6",
+          "type": "any",
+          "default": 1.0
         }
       ],
       "data_outputs": [
@@ -254,15 +296,6 @@
         "mode": 0,
         "order": 4,
         "flags": {},
-        "widgets_values": [
-          42,
-          "fixed",
-          20,
-          7.5,
-          "euler",
-          "normal",
-          1.0
-        ],
         "comfyui_inputs": [
           {
             "name": "model",
@@ -300,7 +333,23 @@
       "id": "comfy_5",
       "type": "emptylatentimage",
       "name": "EmptyLatentImage",
-      "data_inputs": [],
+      "data_inputs": [
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": 512
+        },
+        {
+          "port": "widget_1",
+          "type": "any",
+          "default": 512
+        },
+        {
+          "port": "widget_2",
+          "type": "any",
+          "default": 1
+        }
+      ],
       "data_outputs": [
         {
           "port": "latent",
@@ -333,11 +382,6 @@
         "mode": 0,
         "order": 3,
         "flags": {},
-        "widgets_values": [
-          512,
-          512,
-          1
-        ],
         "comfyui_inputs": [],
         "comfyui_outputs": [
           {
@@ -392,7 +436,6 @@
         "mode": 0,
         "order": 5,
         "flags": {},
-        "widgets_values": [],
         "comfyui_inputs": [
           {
             "name": "samples",
@@ -424,6 +467,11 @@
         {
           "port": "images",
           "type": "image"
+        },
+        {
+          "port": "widget_0",
+          "type": "any",
+          "default": "ComfyUI"
         }
       ],
       "data_outputs": [],
@@ -451,9 +499,6 @@
         "mode": 0,
         "order": 6,
         "flags": {},
-        "widgets_values": [
-          "ComfyUI"
-        ],
         "comfyui_inputs": [
           {
             "name": "images",

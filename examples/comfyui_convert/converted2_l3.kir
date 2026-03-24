@@ -1,23 +1,43 @@
-()unetloader(comfy_86_model)
-()primitivenode(comfy_28_string)
-()primitivenode(comfy_27_string)
-()primitivenode(comfy_57_string)
-()vaeloader(comfy_88_vae)
-()primitiveint(comfy_73_int)
-()primitivenode(comfy_18_int)
-()primitiveint(comfy_74_int)
-()primitivenode(comfy_29_string)
-()cliploader(comfy_87_clip)
-(comfy_73_int, comfy_74_int)emptylatentimage(comfy_71_latent)
-(comfy_27_string, comfy_28_string, comfy_29_string, comfy_73_int, comfy_74_int, comfy_18_int)tipo(comfy_76_prompt, comfy_76_user_prompt, comfy_76_unformatted_prompt, comfy_76_unformatted_user_prompt)
-(comfy_87_clip, comfy_57_string)cliptextencode(comfy_7_conditioning)
-(comfy_87_clip, comfy_76_user_prompt)cliptextencode(comfy_6_conditioning)
-(comfy_76_prompt)showtext|pysssss(comfy_82_string)
-(comfy_86_model, comfy_6_conditioning, comfy_7_conditioning, comfy_71_latent, comfy_18_int)ksampler(comfy_3_latent)
+(768, "fixed")primitiveint(comfy_74_int)
+("low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark")primitivenode(comfy_57_string)
+("censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses")primitivenode(comfy_29_string)
+(1344, "fixed")primitiveint(comfy_73_int)
+(923874509872640, "increment")primitivenode(comfy_18_int)
+("qwen_3_4b.safetensors", "flux2", "default")cliploader(comfy_87_clip)
+("flux-2-klein-4b.safetensors", "default")unetloader(comfy_86_model)
+("flux2-vae.safetensors")vaeloader(comfy_88_vae)
+("")primitivenode(comfy_27_string)
+("A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.")primitivenode(comfy_28_string)
+(comfy_73_int, comfy_74_int, 1344, 896, 1)emptylatentimage(comfy_71_latent)
+(comfy_87_clip, comfy_57_string, "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark")cliptextencode(comfy_7_conditioning)
+(comfy_27_string, comfy_28_string, comfy_29_string, comfy_73_int, comfy_74_int, comfy_18_int, "", "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.", "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses", "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf", """<|special|>, 
+<|characters|>, <|copyrights|>, 
+<|artist|>, 
+
+<|general|>,
+
+<|extended|>.
+
+<|quality|>, <|meta|>, <|rating|>""", 1024, 1024, 0.5, 0.95, 0.05, 64, "long", "long", 923874509872640, "fixed", "cuda")tipo(comfy_76_prompt, comfy_76_user_prompt, comfy_76_unformatted_prompt, comfy_76_unformatted_user_prompt)
+(comfy_87_clip, comfy_76_user_prompt, """1girl,
+
+original,
+
+fujisaki hikari, (quasarcake:0.95), (welchino:0.9), (hazuki natsu, sho \\(sho lwlw\\), yuzuki gao:0.85), (naga u:0.85), (usashiro mani:0.92), (azumi kazuki:0.92), 
+
+dragon girl, dragon wings, dragon tail, dragon horns, pointy ears, very long hair, scenery, solo, indoors, off shoulder, tail, light blue hair, silver hair, solo, sapphire, gray eyes, bedroom, no pants, black dress, multicolored hair, gradient hair,
+
+absurdres, masterpiece, safe, sensitive""")cliptextencode(comfy_6_conditioning)
+(comfy_76_prompt, """1girl, 
+
+neck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,
+
+A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.""")showtext_x7c_pysssss(comfy_82_string)
+(comfy_86_model, comfy_6_conditioning, comfy_7_conditioning, comfy_71_latent, comfy_18_int, 923874509872640, "randomize", 24, 1, "euler_ancestral", "exponential", 1)ksampler(comfy_3_latent)
 (comfy_3_latent, comfy_88_vae)vaedecode(comfy_8_image)
-(comfy_8_image)imagescaleby(comfy_51_image)
+(comfy_8_image, "lanczos", 1.5)imagescaleby(comfy_51_image)
 (comfy_51_image, 0)vaeencode(comfy_52_latent)
-(comfy_86_model, comfy_6_conditioning, comfy_7_conditioning, comfy_52_latent, comfy_18_int)ksampler(comfy_41_latent)
+(comfy_86_model, comfy_6_conditioning, comfy_7_conditioning, comfy_52_latent, comfy_18_int, 923874509872640, "randomize", 16, 5, "euler_ancestral", "exponential", 0.5500000000000002)ksampler(comfy_41_latent)
 (comfy_41_latent, comfy_88_vae)vaedecode(comfy_42_image)
-(comfy_42_image)saveimage()
-(comfy_8_image)saveimage()
+(comfy_42_image, "HiresFix/ComfyUI_HiresFix")saveimage()
+(comfy_8_image, "ComfyUI")saveimage()
