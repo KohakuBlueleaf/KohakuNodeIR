@@ -1,6 +1,5 @@
 """Tests for kohakunode.analyzer.variables — VariableAnalyzer."""
 
-from __future__ import annotations
 
 import pytest
 

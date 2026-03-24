@@ -1,6 +1,5 @@
 """Tests for kohakunode.serializer.reader — read() and read_string()."""
 
-from __future__ import annotations
 
 import pathlib
 import tempfile

@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from typing import Callable
 
-from kohakunode.ast.nodes import Branch, Jump, Literal, Namespace, Parallel, Statement, Switch
+from kohakunode.ast.nodes import Branch, Identifier, Jump, Literal, Namespace, Parallel, Statement, Switch
 from kohakunode.engine.context import ExecutionContext
 from kohakunode.errors import KirRuntimeError
 
@@ -24,8 +22,6 @@ def execute_branch(node: Branch, context: ExecutionContext) -> None:
     The condition must already be stored as a bool in the variable store.
     Raises KirRuntimeError if the condition variable is not a bool.
     """
-    from kohakunode.ast.nodes import Identifier
-
     # Resolve condition value from the variable store.
     if isinstance(node.condition, Identifier):
         condition_value = context.variables.get(node.condition.name)
@@ -55,8 +51,6 @@ def execute_switch(node: Switch, context: ExecutionContext) -> None:
     against the resolved switch value. Falls through to default_label when present
     and no case matches. Raises KirRuntimeError when no match and no default exists.
     """
-    from kohakunode.ast.nodes import Identifier
-
     # Resolve switch value from the variable store.
     if isinstance(node.value, Identifier):
         switch_value = context.variables.get(node.value.name)

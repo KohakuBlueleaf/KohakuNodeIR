@@ -1,6 +1,5 @@
 """Tests for scoped @dataflow: blocks in KohakuNodeIR."""
 
-from __future__ import annotations
 
 from kohakunode.ast.nodes import Assignment, DataflowBlock, FuncCall, Jump
 from kohakunode.compiler.dataflow import DataflowCompiler

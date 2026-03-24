@@ -5,8 +5,6 @@ the graph as positioned nodes with SVG edges, supports pan/zoom via
 mouse drag and wheel, and embeds the kirgraph JSON inline.
 """
 
-from __future__ import annotations
-
 import json
 
 

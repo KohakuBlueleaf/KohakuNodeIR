@@ -13,11 +13,8 @@ Supports both control-flow-primary (Fischer-style: vertical=ctrl,
 horizontal=data) and data-flow-primary (left-to-right) layouts.
 """
 
-from __future__ import annotations
-
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from typing import Any
 
 from kohakunode.kirgraph.schema import KGNode, KirGraph
 

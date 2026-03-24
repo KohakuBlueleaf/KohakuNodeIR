@@ -8,11 +8,8 @@ The grid is *sparse* — nodes may sit anywhere; there is no requirement
 to pack them into a dense rectangle.
 """
 
-from __future__ import annotations
-
 import copy
 from collections import defaultdict
-from typing import Any
 
 from kohakunode.kirgraph.schema import KGEdge, KGNode, KirGraph
 from kohakunode.layout.auto_layout import (

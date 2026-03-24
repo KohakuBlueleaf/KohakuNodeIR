@@ -1,7 +1,5 @@
 """Convert KirGraph (.kirgraph) back to ComfyUI workflow JSON."""
 
-from __future__ import annotations
-
 from typing import Any
 
 from kohakunode.kirgraph.schema import KirGraph

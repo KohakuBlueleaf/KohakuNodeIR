@@ -3,8 +3,6 @@
 These are always available and cannot be deleted via the REST API.
 """
 
-from __future__ import annotations
-
 from kohakunode.engine.registry import Registry
 
 # Keep a set of built-in names so the server can distinguish user-defined nodes

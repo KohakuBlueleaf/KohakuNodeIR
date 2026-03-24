@@ -5,10 +5,7 @@ Entry points:
     parse_file(path)  -- convenience wrapper that reads a file then calls parse().
 """
 
-from __future__ import annotations
-
 import pathlib
-from typing import Optional
 
 import lark
 import lark.exceptions
@@ -40,7 +37,7 @@ class KirIndenter(lark.indenter.Indenter):
 # Lazy parser singleton
 # ---------------------------------------------------------------------------
 
-_parser: Optional[lark.Lark] = None
+_parser: lark.Lark | None = None
 
 
 def _get_parser() -> lark.Lark:
@@ -78,9 +75,9 @@ def parse(source: str) -> Program:
         tree = _get_parser().parse(source)
     except lark.exceptions.LarkError as exc:
         # Try to extract line / column information from the exception.
-        line: Optional[int] = None
-        column: Optional[int] = None
-        source_line: Optional[str] = None
+        line: int | None = None
+        column: int | None = None
+        source_line: str | None = None
 
         if isinstance(exc, lark.exceptions.UnexpectedInput):
             line = getattr(exc, "line", None)

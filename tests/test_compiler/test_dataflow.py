@@ -1,6 +1,5 @@
 """Tests for kohakunode.compiler.dataflow — DataflowCompiler."""
 
-from __future__ import annotations
 
 import pytest
 

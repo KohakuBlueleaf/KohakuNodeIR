@@ -9,8 +9,6 @@ that ``uvicorn main:app`` launched from any working directory always finds the
 same storage folder.
 """
 
-from __future__ import annotations
-
 import json
 import pathlib
 from typing import Any

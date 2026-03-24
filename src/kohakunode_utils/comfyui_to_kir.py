@@ -1,7 +1,5 @@
 """Convert ComfyUI workflow JSON directly to L2 KIR text."""
 
-from __future__ import annotations
-
 from kohakunode.kirgraph.compiler import KirGraphCompiler
 from kohakunode.serializer.writer import Writer
 from kohakunode_utils.comfyui import comfyui_to_kirgraph

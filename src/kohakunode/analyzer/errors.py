@@ -1,5 +1,3 @@
-from typing import Optional
-
 from kohakunode.errors import KirAnalysisError
 
 
@@ -9,8 +7,8 @@ class UndefinedVariableError(KirAnalysisError):
     def __init__(
         self,
         variable_name: str,
-        line: Optional[int] = None,
-        node_context: Optional[str] = None,
+        line: int | None = None,
+        node_context: str | None = None,
     ) -> None:
         self.variable_name = variable_name
         super().__init__(
@@ -26,8 +24,8 @@ class DuplicateLabelError(KirAnalysisError):
     def __init__(
         self,
         label_name: str,
-        first_line: Optional[int] = None,
-        duplicate_line: Optional[int] = None,
+        first_line: int | None = None,
+        duplicate_line: int | None = None,
     ) -> None:
         self.label_name = label_name
         self.first_line = first_line
@@ -44,7 +42,7 @@ class UndefinedLabelError(KirAnalysisError):
     def __init__(
         self,
         label_name: str,
-        referenced_from: Optional[str] = None,
+        referenced_from: str | None = None,
     ) -> None:
         self.label_name = label_name
         self.referenced_from = referenced_from
@@ -60,7 +58,7 @@ class UnreachableNamespaceWarning(KirAnalysisError):
     def __init__(
         self,
         label_name: str,
-        line: Optional[int] = None,
+        line: int | None = None,
     ) -> None:
         self.label_name = label_name
         super().__init__(
@@ -76,8 +74,8 @@ class InvalidBuiltinArgsError(KirAnalysisError):
         self,
         builtin_name: str,
         detail: str,
-        line: Optional[int] = None,
-        node_context: Optional[str] = None,
+        line: int | None = None,
+        node_context: str | None = None,
     ) -> None:
         self.builtin_name = builtin_name
         self.detail = detail
@@ -93,7 +91,7 @@ class WildcardInInputError(KirAnalysisError):
 
     def __init__(
         self,
-        line: Optional[int] = None,
+        line: int | None = None,
     ) -> None:
         super().__init__(
             "Wildcard '_' can only be used in output position",
@@ -107,8 +105,8 @@ class DuplicateSubgraphError(KirAnalysisError):
     def __init__(
         self,
         name: str,
-        first_line: Optional[int] = None,
-        duplicate_line: Optional[int] = None,
+        first_line: int | None = None,
+        duplicate_line: int | None = None,
     ) -> None:
         self.name = name
         self.first_line = first_line

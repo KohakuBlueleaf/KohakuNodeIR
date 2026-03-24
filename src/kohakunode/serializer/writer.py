@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any
 
 from kohakunode.ast.nodes import (
@@ -63,27 +61,29 @@ class Writer:
 
     def _write_statement(self, stmt: Statement, indent_level: int) -> list[str]:
         """Dispatch *stmt* to the appropriate writer; return list of lines."""
-        if isinstance(stmt, ModeDecl):
-            return [self._write_mode_decl(stmt)]
-        if isinstance(stmt, Assignment):
-            return self._write_assignment(stmt, indent_level)
-        if isinstance(stmt, Branch):
-            return self._write_branch(stmt, indent_level)
-        if isinstance(stmt, Switch):
-            return self._write_switch(stmt, indent_level)
-        if isinstance(stmt, Jump):
-            return self._write_jump(stmt, indent_level)
-        if isinstance(stmt, Parallel):
-            return self._write_parallel(stmt, indent_level)
-        if isinstance(stmt, FuncCall):
-            return self._write_func_call(stmt, indent_level)
-        if isinstance(stmt, Namespace):
-            return self._write_namespace(stmt, indent_level)
-        if isinstance(stmt, SubgraphDef):
-            return self._write_subgraph_def(stmt, indent_level)
-        if isinstance(stmt, DataflowBlock):
-            return self._write_dataflow_block(stmt, indent_level)
-        raise TypeError(f"Unknown statement type: {type(stmt)!r}")
+        match stmt:
+            case ModeDecl():
+                return [self._write_mode_decl(stmt)]
+            case Assignment():
+                return self._write_assignment(stmt, indent_level)
+            case Branch():
+                return self._write_branch(stmt, indent_level)
+            case Switch():
+                return self._write_switch(stmt, indent_level)
+            case Jump():
+                return self._write_jump(stmt, indent_level)
+            case Parallel():
+                return self._write_parallel(stmt, indent_level)
+            case FuncCall():
+                return self._write_func_call(stmt, indent_level)
+            case Namespace():
+                return self._write_namespace(stmt, indent_level)
+            case SubgraphDef():
+                return self._write_subgraph_def(stmt, indent_level)
+            case DataflowBlock():
+                return self._write_dataflow_block(stmt, indent_level)
+            case _:
+                raise TypeError(f"Unknown statement type: {type(stmt)!r}")
 
     # ------------------------------------------------------------------
     # Statement writers
@@ -222,15 +222,17 @@ class Writer:
 
     def _write_expression(self, expr: Expression) -> str:
         """Serialize any expression node to its .kir text form."""
-        if isinstance(expr, Literal):
-            return self._write_literal(expr)
-        if isinstance(expr, Identifier):
-            return expr.name
-        if isinstance(expr, LabelRef):
-            return f"`{expr.name}`"
-        if isinstance(expr, KeywordArg):
-            return f"{expr.name}={self._write_expression(expr.value)}"
-        raise TypeError(f"Unknown expression type: {type(expr)!r}")
+        match expr:
+            case Literal():
+                return self._write_literal(expr)
+            case Identifier():
+                return expr.name
+            case LabelRef():
+                return f"`{expr.name}`"
+            case KeywordArg():
+                return f"{expr.name}={self._write_expression(expr.value)}"
+            case _:
+                raise TypeError(f"Unknown expression type: {type(expr)!r}")
 
     def _write_literal(self, lit: Literal) -> str:
         """Return a Python-style literal string for *lit*."""

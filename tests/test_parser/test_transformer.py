@@ -1,6 +1,5 @@
 """Transformer tests: verify that parse() produces correct AST nodes."""
 
-from __future__ import annotations
 
 from kohakunode import parse
 from kohakunode.ast.nodes import (

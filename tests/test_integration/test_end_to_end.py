@@ -1,6 +1,5 @@
 """Integration tests — full pipeline: parse → validate → compile → execute."""
 
-from __future__ import annotations
 
 import pytest
 

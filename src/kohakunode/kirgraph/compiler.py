@@ -1,7 +1,5 @@
 """L1 -> L2 compiler: KirGraph (.kirgraph) -> KIR Program AST."""
 
-from __future__ import annotations
-
 from collections import defaultdict
 from typing import Any
 
@@ -135,22 +133,23 @@ class KirGraphCompiler:
         m = _meta(node)
         stmts: list[Statement] = []
 
-        if node.type == "value":
-            val = node.properties.get("value", 0)
-            out = node.data_outputs[0].port if node.data_outputs else "value"
-            stmts.append(Assignment(target=_var(node.id, out), value=_lit(val), metadata=[m]))
-        elif node.type == "merge":
-            pass
-        elif node.type == "branch":
-            stmts.extend(self._emit_branch(node, m))
-        elif node.type == "switch":
-            stmts.extend(self._emit_switch(node, m))
-        elif node.type == "parallel":
-            stmts.extend(self._emit_parallel(node, m))
-        else:
-            inputs = [self._input(node, p.port) for p in node.data_inputs]
-            outputs = [_var(node.id, p.port) for p in node.data_outputs]
-            stmts.append(FuncCall(inputs=inputs, func_name=node.type, outputs=outputs, metadata=[m]))
+        match node.type:
+            case "value":
+                val = node.properties.get("value", 0)
+                out = node.data_outputs[0].port if node.data_outputs else "value"
+                stmts.append(Assignment(target=_var(node.id, out), value=_lit(val), metadata=[m]))
+            case "merge":
+                pass
+            case "branch":
+                stmts.extend(self._emit_branch(node, m))
+            case "switch":
+                stmts.extend(self._emit_switch(node, m))
+            case "parallel":
+                stmts.extend(self._emit_parallel(node, m))
+            case _:
+                inputs = [self._input(node, p.port) for p in node.data_inputs]
+                outputs = [_var(node.id, p.port) for p in node.data_outputs]
+                stmts.append(FuncCall(inputs=inputs, func_name=node.type, outputs=outputs, metadata=[m]))
 
         # After emitting this ctrl node, also emit any dependent non-ctrl nodes
         # whose data inputs are now satisfied.

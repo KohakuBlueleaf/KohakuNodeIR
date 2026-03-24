@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-from typing import Optional
-
 from kohakunode.analyzer.errors import (
     DuplicateLabelError,
     DuplicateSubgraphError,
@@ -54,7 +50,7 @@ class ScopeAnalyzer:
         stmts: list[Statement],
         errors: list[KirAnalysisError],
     ) -> None:
-        seen: dict[str, Optional[int]] = {}
+        seen: dict[str, int | None] = {}
         for stmt in stmts:
             if isinstance(stmt, SubgraphDef):
                 if stmt.name in seen:
@@ -91,7 +87,7 @@ class ScopeAnalyzer:
             ancestor_namespaces = set()
 
         # --- collect namespace definitions at this scope level ----------
-        namespace_defs: dict[str, Optional[int]] = {}
+        namespace_defs: dict[str, int | None] = {}
         for stmt in stmts:
             if isinstance(stmt, Namespace):
                 if stmt.name in namespace_defs:

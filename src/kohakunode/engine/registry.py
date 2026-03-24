@@ -1,6 +1,6 @@
 import inspect
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from kohakunode.errors import KirRuntimeError
 
@@ -40,9 +40,9 @@ class Registry:
         self,
         name: str,
         func: Callable,
-        input_names: Optional[list[str]] = None,
-        output_names: Optional[list[str]] = None,
-        defaults: Optional[dict[str, Any]] = None,
+        input_names: list[str] | None = None,
+        output_names: list[str] | None = None,
+        defaults: dict[str, Any] | None = None,
     ) -> FunctionSpec:
         if name in self._funcs:
             raise KirRuntimeError(
@@ -95,8 +95,8 @@ class Registry:
 
     def register_decorator(
         self,
-        name: Optional[str] = None,
-        output_names: Optional[list[str]] = None,
+        name: str | None = None,
+        output_names: list[str] | None = None,
     ) -> Callable:
         def decorator(func: Callable) -> Callable:
             func_name = name if name is not None else func.__name__

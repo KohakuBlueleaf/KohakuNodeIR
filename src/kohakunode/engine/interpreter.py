@@ -119,47 +119,38 @@ class Interpreter:
 
     def _execute_statement(self, stmt: Statement) -> None:
         """Dispatch a single statement to the appropriate handler."""
-        if isinstance(stmt, Assignment):
-            value = self._evaluate_expression(stmt.value)
-            self.context.variables.set(stmt.target, value)
-
-        elif isinstance(stmt, FuncCall):
-            self._execute_func_call(stmt)
-
-        elif isinstance(stmt, Branch):
-            execute_branch(stmt, self.context)
-
-        elif isinstance(stmt, Switch):
-            execute_switch(stmt, self.context)
-
-        elif isinstance(stmt, Jump):
-            self._last_jump_containing_idx = execute_jump(stmt, self.context)
-
-        elif isinstance(stmt, Parallel):
-            execute_parallel(stmt, self.context, self._run_body)
-
-        elif isinstance(stmt, Namespace):
-            # Should never reach here — skipped in the main loop.
-            pass
-
-        elif isinstance(stmt, SubgraphDef):
-            # Already collected; nothing to do.
-            pass
-
-        elif isinstance(stmt, DataflowBlock):
-            # Should have been compiled away, but execute body sequentially
-            # as fallback.
-            self._run_body(stmt.body)
-
-        elif isinstance(stmt, ModeDecl):
-            # Informational only.
-            pass
-
-        else:
-            raise KirRuntimeError(
-                f"Unknown statement type: {type(stmt).__name__}",
-                line=stmt.line,
-            )
+        match stmt:
+            case Assignment():
+                value = self._evaluate_expression(stmt.value)
+                self.context.variables.set(stmt.target, value)
+            case FuncCall():
+                self._execute_func_call(stmt)
+            case Branch():
+                execute_branch(stmt, self.context)
+            case Switch():
+                execute_switch(stmt, self.context)
+            case Jump():
+                self._last_jump_containing_idx = execute_jump(stmt, self.context)
+            case Parallel():
+                execute_parallel(stmt, self.context, self._run_body)
+            case Namespace():
+                # Should never reach here — skipped in the main loop.
+                pass
+            case SubgraphDef():
+                # Already collected; nothing to do.
+                pass
+            case DataflowBlock():
+                # Should have been compiled away, but execute body sequentially
+                # as fallback.
+                self._run_body(stmt.body)
+            case ModeDecl():
+                # Informational only.
+                pass
+            case _:
+                raise KirRuntimeError(
+                    f"Unknown statement type: {type(stmt).__name__}",
+                    line=stmt.line,
+                )
 
     # ------------------------------------------------------------------
     # Expression evaluation

@@ -11,8 +11,6 @@ run(source, ...)  -- one-shot convenience function for source strings
 run_file(path, ...)  -- one-shot convenience function for source files
 """
 
-from __future__ import annotations
-
 import pathlib
 from typing import Any, Callable
 

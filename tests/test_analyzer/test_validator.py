@@ -1,6 +1,5 @@
 """Tests for kohakunode.analyzer.validator — validate() and validate_or_raise()."""
 
-from __future__ import annotations
 
 import pytest
 

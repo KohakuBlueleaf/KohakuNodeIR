@@ -1,6 +1,5 @@
 """Tests for kohakunode.ast.nodes — AST node construction and field access."""
 
-from __future__ import annotations
 
 import pytest
 

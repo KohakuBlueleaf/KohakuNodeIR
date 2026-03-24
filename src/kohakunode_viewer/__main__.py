@@ -8,8 +8,6 @@ Usage:
     python -m kohakunode_viewer input.kir --html output.html # generate self-contained HTML
 """
 
-from __future__ import annotations
-
 import argparse
 import http.server
 import json

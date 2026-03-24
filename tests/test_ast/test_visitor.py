@@ -1,6 +1,5 @@
 """Tests for kohakunode.ast.visitor — ASTVisitor and ASTTransformer."""
 
-from __future__ import annotations
 
 import pytest
 

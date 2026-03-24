@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-from typing import Optional
-
 from kohakunode.analyzer.errors import UndefinedVariableError, WildcardInInputError
 from kohakunode.ast.nodes import (
     Assignment,
@@ -157,7 +153,7 @@ class VariableAnalyzer:
         expr: Expression,
         defined: set[str],
         errors: list[KirAnalysisError],
-        line: Optional[int],
+        line: int | None,
     ) -> None:
         """Recursively inspect an expression used in input position."""
         if isinstance(expr, Wildcard):

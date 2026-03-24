@@ -1,6 +1,5 @@
 """Grammar-level tests: verify the Lark grammar can parse fixture files."""
 
-from __future__ import annotations
 
 import pathlib
 

@@ -4,8 +4,6 @@ Recovers a flat node-and-edge graph from a KIR AST by reading @meta
 annotations and inferring topology from variable references and control flow.
 """
 
-from __future__ import annotations
-
 import re
 from typing import Any
 
@@ -226,21 +224,22 @@ class KirGraphDecompiler:
         meta = _extract_meta(stmt)
         node_id = meta.get("node_id") if meta else None
 
-        if isinstance(stmt, Assignment):
-            return self._create_value_node(stmt, node_id, meta)
-        if isinstance(stmt, FuncCall):
-            return self._create_func_node(stmt, node_id, meta)
-        if isinstance(stmt, Branch):
-            return self._create_branch_node(stmt, node_id, meta)
-        if isinstance(stmt, Switch):
-            return self._create_switch_node(stmt, node_id, meta)
-        if isinstance(stmt, Parallel):
-            return self._create_parallel_node(stmt, node_id, meta)
-        if isinstance(stmt, Jump):
-            # Jump is a control primitive, not a node.
-            return None
-
-        return None
+        match stmt:
+            case Assignment():
+                return self._create_value_node(stmt, node_id, meta)
+            case FuncCall():
+                return self._create_func_node(stmt, node_id, meta)
+            case Branch():
+                return self._create_branch_node(stmt, node_id, meta)
+            case Switch():
+                return self._create_switch_node(stmt, node_id, meta)
+            case Parallel():
+                return self._create_parallel_node(stmt, node_id, meta)
+            case Jump():
+                # Jump is a control primitive, not a node.
+                return None
+            case _:
+                return None
 
     def _create_value_node(
         self,

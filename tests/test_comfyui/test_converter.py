@@ -1,6 +1,5 @@
 """Tests for the ComfyUI workflow -> KirGraph converter."""
 
-from __future__ import annotations
 
 from kohakunode.kirgraph.schema import KirGraph
 from kohakunode_utils.comfyui import comfyui_to_kirgraph

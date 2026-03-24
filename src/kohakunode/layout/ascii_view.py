@@ -9,7 +9,6 @@ Usage:
 
 import sys
 from pathlib import Path
-from typing import Any
 
 from kohakunode import parse
 from kohakunode.ast.nodes import (
@@ -49,119 +48,204 @@ def kir_to_graph(source: str) -> KirGraph:
         node_counter += 1
         return f"{prefix}_{node_counter}"
 
-    def walk(stmts: list[Statement], prev_ctrl_id: str | None, in_dataflow: bool) -> str | None:
-        """Walk statements, create nodes + edges. Returns last ctrl node id."""
-        last_ctrl = prev_ctrl_id
-        dataflow_node_ids: list[str] = []
+    # namespace_label → first node id inside that namespace
+    ns_first_node: dict[str, str | None] = {}
+    # jump targets for creating ctrl edges after full walk
+    jump_wires: list[tuple[str | None, str]] = []  # (from_ctrl_id, target_label)
+
+    def make_func_node(stmt: FuncCall, in_dataflow: bool) -> str:
+        """Create a FuncCall node, wire data edges, return node id."""
+        nid = _meta_id(stmt) or gen_id(stmt.func_name)
+        pos = _meta_pos(stmt)
+        d_in = []
+        for i, inp in enumerate(stmt.inputs):
+            pname = f"in_{i}"
+            if hasattr(inp, 'name') and hasattr(inp, 'value'):
+                pname = inp.name
+            d_in.append(KGPort(port=pname))
+        d_out = [KGPort(port=str(o)) for o in stmt.outputs if str(o) != "_"]
+        node = KGNode(
+            id=nid, type=stmt.func_name, name=stmt.func_name,
+            data_inputs=d_in, data_outputs=d_out,
+            ctrl_inputs=["in"], ctrl_outputs=["out"],
+            properties={}, meta={"pos": pos},
+        )
+        nodes.append(node)
+        # Data edges
+        for i, inp in enumerate(stmt.inputs):
+            var_name = None
+            if isinstance(inp, Identifier):
+                var_name = inp.name
+            elif hasattr(inp, 'value') and isinstance(inp.value, Identifier):
+                var_name = inp.value.name
+            if var_name and var_name in var_source:
+                src_nid, src_port = var_source[var_name]
+                edges.append(KGEdge(
+                    type="data", from_node=src_nid, from_port=src_port,
+                    to_node=nid, to_port=d_in[i].port if i < len(d_in) else f"in_{i}",
+                ))
+        # Register outputs
+        for o in stmt.outputs:
+            if str(o) != "_":
+                var_source[str(o)] = (nid, str(o))
+        return nid
+
+    def ctrl_edge(from_id: str, from_port: str, to_id: str, to_port: str) -> None:
+        edges.append(KGEdge(type="control", from_node=from_id, from_port=from_port, to_node=to_id, to_port=to_port))
+
+    def walk(stmts: list[Statement], prev_ctrl: str | None, in_dataflow: bool, ns_label: str | None = None) -> str | None:
+        """Walk statements. Returns last ctrl node id."""
+        last_ctrl = prev_ctrl
+        first_node_in_scope: str | None = None
 
         for stmt in stmts:
             match stmt:
                 case Assignment():
-                    nid = gen_id("value") if not stmt.metadata else _meta_id(stmt) or gen_id("value")
+                    nid = _meta_id(stmt) or gen_id("value")
                     pos = _meta_pos(stmt)
                     val = stmt.value.value if isinstance(stmt.value, Literal) else None
-                    node = KGNode(
+                    nodes.append(KGNode(
                         id=nid, type="value", name=stmt.target,
                         data_inputs=[], data_outputs=[KGPort(port="value")],
                         ctrl_inputs=[], ctrl_outputs=[],
                         properties={"value": val}, meta={"pos": pos},
-                    )
-                    nodes.append(node)
+                    ))
                     var_source[stmt.target] = (nid, "value")
-                    if in_dataflow:
-                        dataflow_node_ids.append(nid)
+                    if first_node_in_scope is None:
+                        first_node_in_scope = nid
 
                 case FuncCall():
-                    nid = _meta_id(stmt) or gen_id(stmt.func_name)
-                    pos = _meta_pos(stmt)
-                    # Data inputs
-                    d_in = []
-                    for i, inp in enumerate(stmt.inputs):
-                        port_name = inp.name if isinstance(inp, type(inp)) and hasattr(inp, 'name') and hasattr(inp, 'value') else f"in_{i}"
-                        if hasattr(inp, 'name') and hasattr(inp, 'value'):
-                            # KeywordArg
-                            port_name = inp.name
-                        d_in.append(KGPort(port=port_name if port_name != f"in_{i}" else f"in_{i}"))
-                    # Data outputs
-                    d_out = [KGPort(port=str(o)) for o in stmt.outputs if str(o) != "_"]
-                    node = KGNode(
-                        id=nid, type=stmt.func_name, name=stmt.func_name,
-                        data_inputs=d_in, data_outputs=d_out,
-                        ctrl_inputs=["in"], ctrl_outputs=["out"],
-                        properties={}, meta={"pos": pos},
-                    )
-                    nodes.append(node)
-
-                    # Data edges from inputs
-                    for i, inp in enumerate(stmt.inputs):
-                        var_name = None
-                        if isinstance(inp, Identifier):
-                            var_name = inp.name
-                        elif hasattr(inp, 'value') and isinstance(inp.value, Identifier):
-                            var_name = inp.value.name
-                        if var_name and var_name in var_source:
-                            src_nid, src_port = var_source[var_name]
-                            edges.append(KGEdge(
-                                type="data", from_node=src_nid, from_port=src_port,
-                                to_node=nid, to_port=d_in[i].port if i < len(d_in) else f"in_{i}",
-                            ))
-
-                    # Register outputs
-                    for o in stmt.outputs:
-                        if str(o) != "_":
-                            var_source[str(o)] = (nid, str(o))
-
-                    # Control edges
+                    nid = make_func_node(stmt, in_dataflow)
+                    if first_node_in_scope is None:
+                        first_node_in_scope = nid
                     if not in_dataflow:
                         if last_ctrl:
-                            edges.append(KGEdge(
-                                type="control", from_node=last_ctrl, from_port="out",
-                                to_node=nid, to_port="in",
-                            ))
+                            ctrl_edge(last_ctrl, "out", nid, "in")
                         last_ctrl = nid
-                    else:
-                        dataflow_node_ids.append(nid)
 
                 case Branch():
                     nid = _meta_id(stmt) or gen_id("branch")
                     pos = _meta_pos(stmt)
-                    node = KGNode(
+                    nodes.append(KGNode(
                         id=nid, type="branch", name="Branch",
                         data_inputs=[KGPort(port="condition", type="bool")],
                         data_outputs=[],
                         ctrl_inputs=["in"], ctrl_outputs=["true", "false"],
                         properties={}, meta={"pos": pos},
-                    )
-                    nodes.append(node)
-                    # Data edge for condition
+                    ))
                     if isinstance(stmt.condition, Identifier) and stmt.condition.name in var_source:
                         src_nid, src_port = var_source[stmt.condition.name]
                         edges.append(KGEdge(type="data", from_node=src_nid, from_port=src_port, to_node=nid, to_port="condition"))
                     if last_ctrl:
-                        edges.append(KGEdge(type="control", from_node=last_ctrl, from_port="out", to_node=nid, to_port="in"))
+                        ctrl_edge(last_ctrl, "out", nid, "in")
+                    if first_node_in_scope is None:
+                        first_node_in_scope = nid
+                    # Walk branch namespaces (look for them in sibling stmts)
+                    for s in stmts:
+                        if isinstance(s, Namespace):
+                            if s.name == stmt.true_label:
+                                inner = walk(s.body, None, False, s.name)
+                                if ns_first_node.get(s.name):
+                                    ctrl_edge(nid, "true", ns_first_node[s.name], "in")
+                            elif s.name == stmt.false_label:
+                                inner = walk(s.body, None, False, s.name)
+                                if ns_first_node.get(s.name):
+                                    ctrl_edge(nid, "false", ns_first_node[s.name], "in")
                     last_ctrl = None  # branches split
 
+                case Switch():
+                    nid = _meta_id(stmt) or gen_id("switch")
+                    pos = _meta_pos(stmt)
+                    cout = [label for _, label in stmt.cases]
+                    if stmt.default_label:
+                        cout.append(stmt.default_label)
+                    nodes.append(KGNode(
+                        id=nid, type="switch", name="Switch",
+                        data_inputs=[KGPort(port="value")],
+                        data_outputs=[],
+                        ctrl_inputs=["in"], ctrl_outputs=cout,
+                        properties={}, meta={"pos": pos},
+                    ))
+                    if isinstance(stmt.value, Identifier) and stmt.value.name in var_source:
+                        src_nid, src_port = var_source[stmt.value.name]
+                        edges.append(KGEdge(type="data", from_node=src_nid, from_port=src_port, to_node=nid, to_port="value"))
+                    if last_ctrl:
+                        ctrl_edge(last_ctrl, "out", nid, "in")
+                    if first_node_in_scope is None:
+                        first_node_in_scope = nid
+                    # Walk case namespaces
+                    for s in stmts:
+                        if isinstance(s, Namespace):
+                            for _, label in stmt.cases:
+                                if s.name == label:
+                                    walk(s.body, None, False, s.name)
+                                    if ns_first_node.get(s.name):
+                                        ctrl_edge(nid, label, ns_first_node[s.name], "in")
+                            if stmt.default_label and s.name == stmt.default_label:
+                                walk(s.body, None, False, s.name)
+                                if ns_first_node.get(s.name):
+                                    ctrl_edge(nid, stmt.default_label, ns_first_node[s.name], "in")
+                    last_ctrl = None
+
+                case Parallel():
+                    nid = _meta_id(stmt) or gen_id("parallel")
+                    pos = _meta_pos(stmt)
+                    nodes.append(KGNode(
+                        id=nid, type="parallel", name="Parallel",
+                        data_inputs=[], data_outputs=[],
+                        ctrl_inputs=["in"], ctrl_outputs=stmt.labels,
+                        properties={}, meta={"pos": pos},
+                    ))
+                    if last_ctrl:
+                        ctrl_edge(last_ctrl, "out", nid, "in")
+                    if first_node_in_scope is None:
+                        first_node_in_scope = nid
+                    for s in stmts:
+                        if isinstance(s, Namespace) and s.name in stmt.labels:
+                            walk(s.body, None, False, s.name)
+                            if ns_first_node.get(s.name):
+                                ctrl_edge(nid, s.name, ns_first_node[s.name], "in")
+                    last_ctrl = None
+
                 case Jump():
-                    # Jump is a wire, not a node — store for later
-                    pass  # handled by namespace walk
+                    # Jump = ctrl wire, not a node
+                    jump_wires.append((last_ctrl, stmt.target))
+                    last_ctrl = None
 
                 case Namespace():
-                    # Walk namespace body
-                    inner_last = walk(stmt.body, last_ctrl, in_dataflow)
-                    last_ctrl = None  # namespace doesn't chain to next
+                    # Only walk if not already handled by branch/switch/parallel
+                    if stmt.name not in ns_first_node:
+                        walk(stmt.body, last_ctrl, in_dataflow, stmt.name)
+                    last_ctrl = None
 
                 case DataflowBlock():
-                    # Walk dataflow body — ctrl from prev connects to roots, leaves connect to next
-                    inner_last = walk(stmt.body, None, True)
-                    # After dataflow block, ctrl continues
-                    # (simplified: just continue from last_ctrl)
+                    # @dataflow: is a transparent ctrl scope
+                    # Walk contents, wire ctrl from prev to first node inside,
+                    # and from last node inside to whatever comes after
+                    df_first = walk(stmt.body, None, True)
+                    # If we had a ctrl predecessor, connect to dataflow roots
+                    # (nodes inside with no data deps from inside the block)
+                    # Simplified: just continue ctrl chain
+                    # The key: after dataflow block, ctrl continues from last_ctrl
+                    pass
 
                 case _:
                     pass
 
+        # Record first node for namespace tracking
+        if ns_label and first_node_in_scope:
+            ns_first_node[ns_label] = first_node_in_scope
+
         return last_ctrl
 
     walk(prog.body, None, False)
+
+    # Wire jump targets
+    for from_id, target_label in jump_wires:
+        target_first = ns_first_node.get(target_label)
+        if target_first and from_id:
+            ctrl_edge(from_id, "out", target_first, "in")
+
     return KirGraph(nodes=nodes, edges=edges)
 
 

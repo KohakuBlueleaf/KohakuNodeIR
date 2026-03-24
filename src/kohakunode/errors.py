@@ -1,6 +1,3 @@
-from typing import Optional
-
-
 class KirError(Exception):
     """Base class for all KohakuNodeIR errors."""
 
@@ -13,9 +10,9 @@ class KirSyntaxError(KirError):
     def __init__(
         self,
         message: str,
-        line: Optional[int] = None,
-        column: Optional[int] = None,
-        source_line: Optional[str] = None,
+        line: int | None = None,
+        column: int | None = None,
+        source_line: str | None = None,
     ) -> None:
         self.message = message
         self.line = line
@@ -40,8 +37,8 @@ class KirAnalysisError(KirError):
     def __init__(
         self,
         message: str,
-        line: Optional[int] = None,
-        node_context: Optional[str] = None,
+        line: int | None = None,
+        node_context: str | None = None,
     ) -> None:
         self.message = message
         self.line = line
@@ -63,8 +60,8 @@ class KirRuntimeError(KirError):
     def __init__(
         self,
         message: str,
-        line: Optional[int] = None,
-        function_name: Optional[str] = None,
+        line: int | None = None,
+        function_name: str | None = None,
     ) -> None:
         self.message = message
         self.line = line

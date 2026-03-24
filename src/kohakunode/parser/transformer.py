@@ -1,7 +1,5 @@
 """Lark Transformer: converts Lark parse trees into KohakuNodeIR AST nodes."""
 
-from __future__ import annotations
-
 import ast as _ast_stdlib
 
 import lark

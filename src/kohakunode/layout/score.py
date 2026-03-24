@@ -10,10 +10,7 @@ ideal direction:
 Total score = sum of all edge costs.  Lower is better; 0 is perfect.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
-from typing import Any
 
 from kohakunode.kirgraph.schema import KGEdge, KGNode, KirGraph
 from kohakunode.layout.auto_layout import (

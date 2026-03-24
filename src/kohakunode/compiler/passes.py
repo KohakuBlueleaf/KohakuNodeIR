@@ -1,8 +1,5 @@
-from __future__ import annotations
-
 import abc
 import collections
-from typing import Optional
 
 from kohakunode.ast.nodes import (
     Assignment,
@@ -62,7 +59,7 @@ class IRPass(abc.ABC):
 class PassPipeline:
     """Chains multiple :class:`IRPass` instances together."""
 
-    def __init__(self, passes: Optional[list[IRPass]] = None) -> None:
+    def __init__(self, passes: list[IRPass] | None = None) -> None:
         self._passes: list[IRPass] = list(passes) if passes is not None else []
 
     def add(self, pass_: IRPass) -> None:

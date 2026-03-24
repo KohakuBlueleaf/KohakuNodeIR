@@ -1,7 +1,5 @@
 """Convenience wrapper for reading .kir files into a Program AST."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from kohakunode.ast.nodes import Program

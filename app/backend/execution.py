@@ -8,8 +8,6 @@ An optional *ws_callback* can be supplied to receive real-time display events
 over a WebSocket connection while execution is still in progress.
 """
 
-from __future__ import annotations
-
 import json
 from typing import Any, Callable
 

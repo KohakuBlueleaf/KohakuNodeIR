@@ -1,6 +1,5 @@
 """Integration tests — parse → write → parse (roundtrip AST equivalence)."""
 
-from __future__ import annotations
 
 import pytest
 

@@ -1,7 +1,5 @@
 """IR pass that strips @meta annotations from all statements (L2 → L3)."""
 
-from __future__ import annotations
-
 from kohakunode.ast.nodes import (
     Assignment,
     Branch,
@@ -40,53 +38,55 @@ class StripMetaPass(IRPass):
 
     def _strip_stmt(self, stmt: Statement) -> Statement:
         # Clear metadata on types that carry it
-        if isinstance(stmt, Assignment):
-            return Assignment(
-                target=stmt.target,
-                value=stmt.value,
-                metadata=None,
-                line=stmt.line,
-            )
-        if isinstance(stmt, FuncCall):
-            return FuncCall(
-                inputs=stmt.inputs,
-                func_name=stmt.func_name,
-                outputs=stmt.outputs,
-                metadata=None,
-                line=stmt.line,
-            )
-        if isinstance(stmt, Branch):
-            return Branch(
-                condition=stmt.condition,
-                true_label=stmt.true_label,
-                false_label=stmt.false_label,
-                metadata=None,
-                line=stmt.line,
-            )
-        if isinstance(stmt, Switch):
-            return Switch(
-                value=stmt.value,
-                cases=stmt.cases,
-                default_label=stmt.default_label,
-                metadata=None,
-                line=stmt.line,
-            )
-        if isinstance(stmt, Jump):
-            return Jump(target=stmt.target, metadata=None, line=stmt.line)
-        if isinstance(stmt, Parallel):
-            return Parallel(labels=stmt.labels, metadata=None, line=stmt.line)
-        if isinstance(stmt, Namespace):
-            return Namespace(
-                name=stmt.name,
-                body=self._strip_body(stmt.body),
-                line=stmt.line,
-            )
-        if isinstance(stmt, SubgraphDef):
-            return SubgraphDef(
-                name=stmt.name,
-                params=stmt.params,
-                outputs=stmt.outputs,
-                body=self._strip_body(stmt.body),
-                line=stmt.line,
-            )
-        return stmt
+        match stmt:
+            case Assignment():
+                return Assignment(
+                    target=stmt.target,
+                    value=stmt.value,
+                    metadata=None,
+                    line=stmt.line,
+                )
+            case FuncCall():
+                return FuncCall(
+                    inputs=stmt.inputs,
+                    func_name=stmt.func_name,
+                    outputs=stmt.outputs,
+                    metadata=None,
+                    line=stmt.line,
+                )
+            case Branch():
+                return Branch(
+                    condition=stmt.condition,
+                    true_label=stmt.true_label,
+                    false_label=stmt.false_label,
+                    metadata=None,
+                    line=stmt.line,
+                )
+            case Switch():
+                return Switch(
+                    value=stmt.value,
+                    cases=stmt.cases,
+                    default_label=stmt.default_label,
+                    metadata=None,
+                    line=stmt.line,
+                )
+            case Jump():
+                return Jump(target=stmt.target, metadata=None, line=stmt.line)
+            case Parallel():
+                return Parallel(labels=stmt.labels, metadata=None, line=stmt.line)
+            case Namespace():
+                return Namespace(
+                    name=stmt.name,
+                    body=self._strip_body(stmt.body),
+                    line=stmt.line,
+                )
+            case SubgraphDef():
+                return SubgraphDef(
+                    name=stmt.name,
+                    params=stmt.params,
+                    outputs=stmt.outputs,
+                    body=self._strip_body(stmt.body),
+                    line=stmt.line,
+                )
+            case _:
+                return stmt

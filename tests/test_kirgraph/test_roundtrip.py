@@ -1,6 +1,5 @@
 """Tests for the .kirgraph (L1) <-> .kir (L2) compiler/decompiler."""
 
-from __future__ import annotations
 
 import json
 
