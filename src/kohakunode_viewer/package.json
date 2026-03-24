@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "prebuild": "node scripts/prebuild.js",
+    "dev": "node scripts/prebuild.js && vite",
+    "build": "node scripts/prebuild.js && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

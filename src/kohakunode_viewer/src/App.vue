@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import ViewerCanvas from "./components/ViewerCanvas.vue";
 import FileDropZone from "./components/FileDropZone.vue";
 import { autoLayout } from "./layout/autoLayout.js";
+import { initPyodide, isPyodideReady } from "./parser/pyodideParser.js";
 
 // ── Graph state ───────────────────────────────────────────────────────────────
 const nodes = ref([]);
@@ -13,6 +14,17 @@ const loadedFilename = ref(null);
 const pasteDialogVisible = ref(false);
 const pasteText = ref("");
 const pasteError = ref("");
+const pyodideStatus = ref("Loading Python parser...");
+const pyodideLoaded = ref(false);
+
+// Init Pyodide in background
+onMounted(() => {
+  initPyodide((msg) => { pyodideStatus.value = msg; }).then((ok) => {
+    pyodideLoaded.value = ok;
+    if (ok) pyodideStatus.value = "Python parser ready";
+    else pyodideStatus.value = "JS parser (Python unavailable)";
+  });
+});
 
 // ── File loading ──────────────────────────────────────────────────────────────
 function onGraphLoaded({ nodes: n, edges: e, filename }) {
@@ -35,8 +47,8 @@ function openFilePicker() {
     if (!file) return;
     const text = await file.text();
     try {
-      const { detectAndParse } = await import("./parser/index.js");
-      const { nodes: n, edges: e } = detectAndParse(text, file.name);
+      const { detectAndParseAsync } = await import("./parser/index.js");
+      const { nodes: n, edges: e } = await detectAndParseAsync(text, file.name);
       onGraphLoaded({ nodes: n, edges: e, filename: file.name });
     } catch (err) {
       console.error("Failed to parse file:", err);
@@ -53,8 +65,8 @@ async function confirmPaste() {
     return;
   }
   try {
-    const { detectAndParse } = await import("./parser/index.js");
-    const { nodes: n, edges: e } = detectAndParse(text, "paste.kir");
+    const { detectAndParseAsync } = await import("./parser/index.js");
+    const { nodes: n, edges: e } = await detectAndParseAsync(text, "paste.kir");
     onGraphLoaded({ nodes: n, edges: e, filename: "pasted KIR" });
   } catch (err) {
     pasteError.value = `Parse error: ${err.message}`;

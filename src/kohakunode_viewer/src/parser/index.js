@@ -27,8 +27,9 @@
 import { loadKirgraph } from "./kirgraphLoader.js";
 import { parseKirLite } from "./kirLiteParser.js";
 import { loadComfyUI } from "./comfyLoader.js";
+import { initPyodide, parseKirWithPython, isPyodideReady } from "./pyodideParser.js";
 
-export { loadKirgraph, parseKirLite, loadComfyUI };
+export { loadKirgraph, parseKirLite, loadComfyUI, initPyodide, parseKirWithPython, isPyodideReady };
 
 /**
  * Detect the format of `content` (optionally aided by `filename`) and parse
@@ -82,6 +83,27 @@ export function detectAndParse(content, filename = null) {
 
   // Default: treat as KIR text
   return { ...parseKirLite(content), format: "kir" };
+}
+
+/**
+ * Async version — tries Pyodide (real Python parser) for .kir files,
+ * falls back to JS lite parser.
+ */
+export async function detectAndParseAsync(content, filename = null) {
+  const name = filename ? String(filename) : "";
+
+  // For .kir files, try Pyodide first
+  if (name.endsWith(".kir") || (!name.endsWith(".json") && !name.endsWith(".kirgraph") && !content.trimStart().startsWith("{"))) {
+    if (isPyodideReady()) {
+      const result = await parseKirWithPython(content);
+      if (result && result.nodes && result.nodes.length > 0) {
+        return { ...result, format: "kir-python" };
+      }
+    }
+  }
+
+  // Fall back to sync parser
+  return detectAndParse(content, filename);
 }
 
 // ---------------------------------------------------------------------------

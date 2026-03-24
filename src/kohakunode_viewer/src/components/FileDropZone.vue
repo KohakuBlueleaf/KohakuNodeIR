@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import { detectAndParse } from "../parser/index.js";
+import { detectAndParseAsync } from "../parser/index.js";
 
 const emit = defineEmits([
   /**
@@ -68,9 +68,9 @@ async function loadFile(file) {
   }
 }
 
-function loadText(filename, text) {
+async function loadText(filename, text) {
   try {
-    const { nodes, edges } = detectAndParse(text, filename);
+    const { nodes, edges } = await detectAndParseAsync(text, filename);
     emit("graph-loaded", { nodes, edges, filename });
   } catch (err) {
     console.error("[FileDropZone] Failed to parse content:", err);
