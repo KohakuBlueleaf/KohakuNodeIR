@@ -92,9 +92,11 @@ export function detectAndParse(content, filename = null) {
 export async function detectAndParseAsync(content, filename = null) {
   const name = filename ? String(filename) : "";
 
-  // For .kir files, try Pyodide first
+  // For .kir files, try Pyodide (waits for it if still loading)
   if (name.endsWith(".kir") || (!name.endsWith(".json") && !name.endsWith(".kirgraph") && !content.trimStart().startsWith("{"))) {
-    if (isPyodideReady()) {
+    // Wait for Pyodide to finish loading (up to 30s)
+    const ok = await initPyodide();
+    if (ok) {
       const result = await parseKirWithPython(content);
       if (result && result.nodes && result.nodes.length > 0) {
         return { ...result, format: "kir-python" };
