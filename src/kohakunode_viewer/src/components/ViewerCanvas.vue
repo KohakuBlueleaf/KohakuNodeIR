@@ -108,13 +108,15 @@ function getPortPosition(nodeId, portName) {
   const ctrlOutputs = node.ctrlOutputs || [];
   const hasCtrlIn = ctrlInputs.length > 0;
 
-  // ALWAYS auto-calculate height from port count (stored height may be wrong)
+  // MUST match ViewNode.autoHeight exactly
   const dataRows = Math.max(dataInputs.length, dataOutputs.length);
-  const nodeH = Math.max(
-    height || 0,
-    (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H +
-    (ctrlOutputs.length > 0 ? CTRL_ROW_H : 0) + 16
-  );
+  const calcH =
+    (hasCtrlIn ? CTRL_ROW_H : 0) +
+    HEADER_H +
+    dataRows * DATA_ROW_H +
+    (ctrlOutputs.length > 0 ? CTRL_ROW_H : 0) +
+    8;
+  const nodeH = Math.max(height || 0, calcH);
   const nodeW = width || 180;
 
   function dataRowY(index) {
