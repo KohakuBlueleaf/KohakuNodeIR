@@ -664,12 +664,25 @@ export function parseKirLite(kirText) {
         .map((o) => o.label);
 
     } else if (fnLower === "jump") {
-      // ()jump(`target`)
-      nodeType = "jump";
-      ctrlInputs = ["in"];
-      ctrlOutputs = outputItems
-        .filter((o) => o.kind === "label")
-        .map((o) => o.label);
+      // ()jump(`target`) → NOT a node, just a ctrl edge.
+      // Create a deferred edge from the previous node to the target namespace.
+      const frame = currentFrame();
+      const prevId = frame.prevNodeId;
+      for (const out of outputItems) {
+        if (out.kind === "label") {
+          if (prevId) {
+            // Edge from previous node's ctrl out to the target
+            const fromNode = nodeById[prevId];
+            const fromPort = fromNode ? (fromNode.ctrlOutputs[0] || "out") : "out";
+            jumpEdges.push({ fromNodeId: prevId, fromPort, label: out.label });
+          } else {
+            // No previous node — this is an entry jump. Store for later.
+            jumpEdges.push({ fromNodeId: null, fromPort: null, label: out.label });
+          }
+        }
+      }
+      // Don't create a node, don't update prevNodeId
+      return i + 1;
 
     } else if (fnLower === "parallel") {
       // ()parallel(`task_a`, `task_b`)
@@ -751,13 +764,7 @@ export function parseKirLite(kirText) {
       }
     }
 
-    if (fnLower === "jump") {
-      for (const out of outputItems) {
-        if (out.kind === "label") {
-          labelSources.push({ fromNodeId: nodeId, fromPort: out.label, label: out.label });
-        }
-      }
-    }
+    // jump is handled above (returns early, no node created)
 
     return i + 1;
   }
@@ -765,6 +772,10 @@ export function parseKirLite(kirText) {
   // Deferred label→namespace ctrl edges
   // Each: { fromNodeId, fromPort, label }
   const labelSources = [];
+
+  // Deferred jump edges (jump is not a node, just a wire)
+  // Each: { fromNodeId, fromPort, label }
+  const jumpEdges = [];
 
   // Map: namespace_label → first node id inside that namespace
   // Built during the parse via namespace tracking.
@@ -823,6 +834,97 @@ export function parseKirLite(kirText) {
         fromPort: varRef.port,
         toNode,
         toPort,
+      });
+    }
+  }
+
+  // Phase 4: wire jump edges (jump = ctrl wire, not a node)
+  // Track how many ctrl edges arrive at each namespace target
+  const nsIncomingCount = {}; // label → count
+  for (const { fromNodeId, label } of jumpEdges) {
+    nsIncomingCount[label] = (nsIncomingCount[label] || 0) + 1;
+  }
+  for (const { fromNodeId, label } of labelSources) {
+    nsIncomingCount[label] = (nsIncomingCount[label] || 0) + 1;
+  }
+
+  // For namespaces with 2+ incoming ctrl edges, synthesize a merge node
+  for (const [label, count] of Object.entries(nsIncomingCount)) {
+    if (count >= 2) {
+      const targetNodeId = namespaceFirstNode[label];
+      if (!targetNodeId) continue;
+      const targetNode = nodeById[targetNodeId];
+      if (!targetNode) continue;
+
+      const mergeId = `merge_${label}`;
+      const mergeInputs = [];
+      for (let mi = 0; mi < count; mi++) mergeInputs.push(`in_${mi}`);
+
+      const mergeNode = {
+        id: mergeId,
+        type: "merge",
+        name: "Merge",
+        x: targetNode.x - 100,
+        y: targetNode.y - 60,
+        width: 140,
+        height: 76,
+        dataInputs: [],
+        dataOutputs: [],
+        ctrlInputs: mergeInputs,
+        ctrlOutputs: ["out"],
+      };
+      nodes.push(mergeNode);
+      nodeById[mergeId] = mergeNode;
+
+      // Wire merge out → target node
+      edges.push({
+        type: "control",
+        fromNode: mergeId,
+        fromPort: "out",
+        toNode: targetNodeId,
+        toPort: targetNode.ctrlInputs[0] || "in",
+      });
+
+      // Rewire existing labelSource edges to go to merge inputs
+      let inputIdx = 0;
+      // Rewire branch/switch/parallel edges that target this namespace
+      for (let ei = edges.length - 1; ei >= 0; ei--) {
+        const e = edges[ei];
+        if (e.type === "control" && e.toNode === targetNodeId) {
+          // Redirect to merge
+          e.toNode = mergeId;
+          e.toPort = mergeInputs[inputIdx++] || `in_${inputIdx}`;
+        }
+      }
+
+      // Wire jump edges to merge inputs
+      for (const je of jumpEdges) {
+        if (je.label === label && je.fromNodeId) {
+          edges.push({
+            type: "control",
+            fromNode: je.fromNodeId,
+            fromPort: je.fromPort,
+            toNode: mergeId,
+            toPort: mergeInputs[inputIdx++] || `in_${inputIdx}`,
+          });
+        }
+      }
+    }
+  }
+
+  // Wire single-target jump edges (no merge needed)
+  for (const { fromNodeId, fromPort, label } of jumpEdges) {
+    if ((nsIncomingCount[label] || 0) < 2 && fromNodeId) {
+      const toNodeId = namespaceFirstNode[label];
+      if (!toNodeId) continue;
+      const toNode = nodeById[toNodeId];
+      if (!toNode) continue;
+      edges.push({
+        type: "control",
+        fromNode: fromNodeId,
+        fromPort: fromPort,
+        toNode: toNodeId,
+        toPort: toNode.ctrlInputs[0] || "in",
       });
     }
   }
