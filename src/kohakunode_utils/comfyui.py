@@ -136,8 +136,14 @@ def _convert_api_format(workflow: dict) -> KirGraph:
             data_outputs=data_outputs,
             ctrl_inputs=[],
             ctrl_outputs=[],
-            properties={"inputs_raw": inputs_data},
-            meta={"pos": [100 + col * 300, 100 + row * 200], "size": [250, 120]},
+            properties={},
+            meta={
+                "pos": [100 + col * 300, 100 + row * 200],
+                "size": [250, 120],
+                "comfyui_type": comfy_type,
+                "comfyui_id": nid,
+                "comfyui_api_inputs": inputs_data,
+            },
         ))
 
     # Second pass: create edges and infer output ports
@@ -271,11 +277,24 @@ def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
                     widget_idx += 1
 
         meta: dict[str, Any] = {"pos": pos, "size": size}
-        # Preserve mode and order for round-tripping
+        # Preserve everything needed for ComfyUI roundtrip in meta
+        meta["comfyui_type"] = comfy_type  # original casing
+        meta["comfyui_id"] = cn_id  # original numeric id
         if "mode" in cn:
             meta["mode"] = cn["mode"]
         if "order" in cn:
             meta["order"] = cn["order"]
+        if "flags" in cn:
+            meta["flags"] = cn["flags"]
+        if "color" in cn:
+            meta["color"] = cn["color"]
+        if "bgcolor" in cn:
+            meta["bgcolor"] = cn["bgcolor"]
+        if widgets is not None:
+            meta["widgets_values"] = widgets
+        # Store original input/output slot info for reverse conversion
+        meta["comfyui_inputs"] = raw_inputs
+        meta["comfyui_outputs"] = raw_outputs
 
         kg_nodes.append(
             KGNode(
