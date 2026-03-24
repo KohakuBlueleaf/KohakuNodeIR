@@ -35,6 +35,9 @@ export const useEditorStore = defineStore('editor', () => {
   // ---- Show/hide control ports ----
   const showCtrlPorts = ref(true);
 
+  // ---- Space-pan state (set by useKeyboard, read by usePanZoom/useSelection) ----
+  const isSpacePanActive = ref(false);
+
   // ---- Computed ----
   const hasSelection = computed(
     () => selectedNodeIds.size > 0 || selectedConnectionIds.size > 0
@@ -247,6 +250,25 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   /**
+   * Replace the current node selection with the given array of ids.
+   * Clears connection selection too (matches single-item behaviour).
+   * @param {string[]} ids
+   */
+  function setSelection(ids) {
+    selectedNodeIds.clear();
+    selectedConnectionIds.clear();
+    for (const id of ids) selectedNodeIds.add(id);
+  }
+
+  /**
+   * Activate or deactivate space-pan mode.
+   * @param {boolean} active
+   */
+  function setSpacePanActive(active) {
+    isSpacePanActive.value = !!active;
+  }
+
+  /**
    * Cancel an in-progress selection box without committing.
    */
   function cancelSelectionBox() {
@@ -350,6 +372,11 @@ export const useEditorStore = defineStore('editor', () => {
     toggleNodeSelection,
     deselectAll,
     deleteSelected,
+    setSelection,
+
+    // Space-pan
+    isSpacePanActive,
+    setSpacePanActive,
 
     // Box selection
     isSelecting,

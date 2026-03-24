@@ -91,7 +91,21 @@ export const useGraphStore = defineStore('graph', () => {
   }
 
   /**
+   * Compute the minimum height required to display all ports for a node.
+   * Matches the formula used by BaseNode.vue's minHeight CSS.
+   * @param {object} node
+   * @returns {number}
+   */
+  function computeMinHeight(node) {
+    const hasCtrlIn = node.controlPorts.inputs.length > 0;
+    const hasCtrlOut = node.controlPorts.outputs.length > 0;
+    const dataRows = Math.max(node.dataPorts.inputs.length, node.dataPorts.outputs.length);
+    return (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H + (hasCtrlOut ? CTRL_ROW_H : 0) + 8;
+  }
+
+  /**
    * Update a node's size, snapping each dimension to grid.
+   * Height is clamped to never go below the minimum needed to display all ports.
    * @param {string} id
    * @param {number} width
    * @param {number} height
@@ -99,8 +113,9 @@ export const useGraphStore = defineStore('graph', () => {
   function updateNodeSize(id, width, height) {
     const node = nodes.get(id);
     if (!node) return;
+    const minH = computeMinHeight(node);
     node.width = snapToGrid(width);
-    node.height = snapToGrid(height);
+    node.height = snapToGrid(Math.max(height, minH));
   }
 
   /**
@@ -109,12 +124,8 @@ export const useGraphStore = defineStore('graph', () => {
   function autoResizeHeight(id) {
     const node = nodes.get(id);
     if (!node) return;
-    const hasCtrlIn = node.controlPorts.inputs.length > 0;
-    const hasCtrlOut = node.controlPorts.outputs.length > 0;
-    const dataRows = Math.max(node.dataPorts.inputs.length, node.dataPorts.outputs.length);
-    const minH = (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H + (hasCtrlOut ? CTRL_ROW_H : 0) + 40;
-    const newH = snapToGrid(Math.max(minH, node.height));
-    node.height = newH;
+    const minH = computeMinHeight(node);
+    node.height = snapToGrid(Math.max(minH, node.height));
   }
 
   // ---- Connection Methods ----
@@ -243,12 +254,15 @@ export const useGraphStore = defineStore('graph', () => {
     }
 
     // Control outputs — bottom edge
-    // Use actual node height for ctrl output Y since node may be resized
+    // Use the effective height: max of stored height and the CSS minHeight
+    // so the wire anchor matches the visual bottom of the node even when the
+    // node has more data ports than the stored height accounts for.
     const ctrlOutIndex = controlPorts.outputs.findIndex(p => p.id === portId);
     if (ctrlOutIndex !== -1) {
+      const effectiveHeight = Math.max(height, computeMinHeight(node));
       return {
         x: x + evenSpacing(ctrlOutIndex, controlPorts.outputs.length, width),
-        y: y + height,
+        y: y + effectiveHeight,
       };
     }
 

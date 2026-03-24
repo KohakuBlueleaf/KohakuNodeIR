@@ -2,9 +2,11 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useGraphStore } from '../../stores/graph.js';
 import { useEditorStore } from '../../stores/editor.js';
+import { useHistoryStore } from '../../stores/history.js';
 import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
 import { GRID_SIZE, snapToGrid } from '../../utils/grid.js';
 import { kirgraphToGraph } from '../../compiler/kirgraph.js';
+import { detectAndParseAsync } from '../../parser/index.js';
 import WireLayer  from '../wire/WireLayer.vue';
 import DraftWire  from '../wire/DraftWire.vue';
 import NodeRenderer from '../nodes/NodeRenderer.vue';
@@ -23,6 +25,7 @@ const emit = defineEmits(['update:zoom']);
 // ── Store ──────────────────────────────────────────────────────────────────────
 const graph = useGraphStore();
 const editor = useEditorStore();
+const history = useHistoryStore();
 const registry = useNodeRegistryStore();
 
 // ── Refs ───────────────────────────────────────────────────────────────────────
@@ -167,12 +170,51 @@ const draftWire = computed(() => {
 });
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
+
+function isEditingText() {
+  const tag = document.activeElement?.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable;
+}
+
 function onKeyDown(e) {
   if (e.code === 'Space' && e.target === document.body) {
     e.preventDefault();
     spaceHeld.value = true;
+    return;
+  }
+
+  if (isEditingText()) return;
+
+  const ctrl = e.ctrlKey || e.metaKey;
+
+  // Delete / Backspace — delete selected nodes and connections
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    editor.deleteSelected();
+    return;
+  }
+
+  // Ctrl+Z — undo
+  if (ctrl && !e.shiftKey && e.key === 'z') {
+    e.preventDefault();
+    history.undo();
+    return;
+  }
+
+  // Ctrl+Shift+Z / Ctrl+Y — redo
+  if ((ctrl && e.shiftKey && e.key === 'z') || (ctrl && e.key === 'y')) {
+    e.preventDefault();
+    history.redo();
+    return;
+  }
+
+  // Ctrl+V — paste KIR text or graph JSON from clipboard
+  if (ctrl && e.key === 'v') {
+    e.preventDefault();
+    handlePaste();
+    return;
   }
 }
+
 function onKeyUp(e) {
   if (e.code === 'Space') {
     spaceHeld.value = false;
@@ -193,10 +235,11 @@ function onPointerDown(e) {
     beginPan(e.clientX, e.clientY);
     return;
   }
-  // Left mouse on empty canvas → pan (grab background to move)
+  // Left mouse on empty canvas → deselect all + pan (grab background to move)
   if (e.button === 0) {
     const isCanvas = e.target === containerRef.value || e.target.classList.contains('canvas-transform');
     if (isCanvas) {
+      editor.deselectAll();
       beginPan(e.clientX, e.clientY);
     }
   }
@@ -294,6 +337,109 @@ function loadFileContent(filename, content) {
     }
   }
   // TODO: .kir file loading via L2→L1 decompiler (backend call)
+}
+
+// ── Paste (Ctrl+V) ────────────────────────────────────────────────────────────
+
+/**
+ * Convert parser intermediate format into graph store nodes + connections.
+ * Mirrors the parserResultToGraph helper in Toolbar.vue.
+ */
+function parserResultToGraph(parserNodes, parserEdges) {
+  function makePortId(nodeId, portName, suffix) {
+    const safe = portName.replace(/[^a-zA-Z0-9_]/g, '_');
+    return `${nodeId}__${safe}__${suffix}`;
+  }
+
+  const NO_CTRL_TYPES = new Set(['value', 'load']);
+
+  const nodes = parserNodes.map((pn) => {
+    const dataInputs = (pn.dataInputs ?? []).map((p) => {
+      const port = { id: makePortId(pn.id, p.name, 'di'), name: p.name, dataType: p.type ?? 'any' };
+      if (p.default !== undefined) port.defaultValue = p.default;
+      return port;
+    });
+    const dataOutputs = (pn.dataOutputs ?? []).map((p) => ({
+      id: makePortId(pn.id, p.name, 'do'),
+      name: p.name,
+      dataType: p.type ?? 'any',
+    }));
+    let rawCtrlIn = pn.ctrlInputs ?? [];
+    let rawCtrlOut = pn.ctrlOutputs ?? [];
+    if (!NO_CTRL_TYPES.has(pn.type) && rawCtrlIn.length === 0 && rawCtrlOut.length === 0) {
+      rawCtrlIn = ['in'];
+      rawCtrlOut = ['out'];
+    }
+    const ctrlInputs = rawCtrlIn.map((name) => ({ id: makePortId(pn.id, name, 'ci'), name }));
+    const ctrlOutputs = rawCtrlOut.map((name) => ({ id: makePortId(pn.id, name, 'co'), name }));
+    return {
+      id: pn.id,
+      type: pn.type ?? 'function',
+      name: pn.name ?? pn.type ?? 'Node',
+      x: pn.x ?? 0,
+      y: pn.y ?? 0,
+      width: pn.width ?? 160,
+      height: pn.height ?? 120,
+      dataPorts: { inputs: dataInputs, outputs: dataOutputs },
+      controlPorts: { inputs: ctrlInputs, outputs: ctrlOutputs },
+      properties: {},
+    };
+  });
+
+  const portIdLookup = new Map();
+  for (const node of nodes) {
+    for (const p of node.dataPorts.inputs) portIdLookup.set(`${node.id}|${p.name}|di`, p.id);
+    for (const p of node.dataPorts.outputs) portIdLookup.set(`${node.id}|${p.name}|do`, p.id);
+    for (const p of node.controlPorts.inputs) portIdLookup.set(`${node.id}|${p.name}|ci`, p.id);
+    for (const p of node.controlPorts.outputs) portIdLookup.set(`${node.id}|${p.name}|co`, p.id);
+  }
+
+  const connections = (parserEdges ?? []).map((edge) => {
+    const isCtrl = edge.type === 'control';
+    const fromSuffix = isCtrl ? 'co' : 'do';
+    const toSuffix = isCtrl ? 'ci' : 'di';
+    const fromPortId =
+      portIdLookup.get(`${edge.fromNode}|${edge.fromPort}|${fromSuffix}`) ??
+      makePortId(edge.fromNode, edge.fromPort, fromSuffix);
+    const toPortId =
+      portIdLookup.get(`${edge.toNode}|${edge.toPort}|${toSuffix}`) ??
+      makePortId(edge.toNode, edge.toPort, toSuffix);
+    return {
+      fromNodeId: edge.fromNode,
+      fromPortId,
+      toNodeId: edge.toNode,
+      toPortId,
+      portType: isCtrl ? 'control' : 'data',
+    };
+  });
+
+  return { nodes, connections };
+}
+
+async function handlePaste() {
+  let text;
+  try {
+    text = await navigator.clipboard.readText();
+  } catch {
+    // Clipboard access denied — silently ignore
+    return;
+  }
+
+  if (!text || !text.trim()) return;
+
+  try {
+    const result = await detectAndParseAsync(text);
+    if (!result || !result.nodes || result.nodes.length === 0) return;
+
+    const { nodes, connections } = parserResultToGraph(result.nodes, result.edges);
+    graph.clear();
+    for (const node of nodes) graph.addNode(node);
+    for (const conn of connections) {
+      graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
+    }
+  } catch {
+    // Parse failed — clipboard content is not a supported graph format
+  }
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────

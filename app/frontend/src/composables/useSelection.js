@@ -105,7 +105,7 @@ export function useSelection(canvasRef, screenToCanvas) {
       if (e.shiftKey) {
         // Toggle this node in the selection
         editorStore.toggleNodeSelection(nodeId)
-      } else if (!editorStore.selectedNodeIds.includes(nodeId)) {
+      } else if (!editorStore.selectedNodeIds.has(nodeId)) {
         // Select only this node
         editorStore.setSelection([nodeId])
       }
@@ -143,7 +143,7 @@ export function useSelection(canvasRef, screenToCanvas) {
     selectionBox.value = normaliseRect(anchor.x, anchor.y, current.x, current.y)
 
     // Live-highlight nodes that fall inside the box
-    const ids = graphStore.nodes
+    const ids = Array.from(graphStore.nodes.values())
       .filter((n) => nodeIntersectsBox(n, selectionBox.value))
       .map((n) => n.id)
 
@@ -176,16 +176,13 @@ export function useSelection(canvasRef, screenToCanvas) {
       deleteSelected()
     } else if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
-      editorStore.setSelection(graphStore.nodes.map((n) => n.id))
+      editorStore.setSelection(Array.from(graphStore.nodes.keys()))
     }
   }
 
   function deleteSelected() {
-    const ids = editorStore.selectedNodeIds ?? []
-    for (const id of ids) {
-      graphStore.removeNode(id)
-    }
-    editorStore.setSelection([])
+    // Use the store's deleteSelected which handles both nodes and connections
+    editorStore.deleteSelected()
   }
 
   // ---------------------------------------------------------------------------
