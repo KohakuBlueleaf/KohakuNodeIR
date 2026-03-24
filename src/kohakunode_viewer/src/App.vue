@@ -1,9 +1,9 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import ViewerCanvas from "./components/ViewerCanvas.vue";
-import FileDropZone from "./components/FileDropZone.vue";
-import { autoLayout } from "./layout/autoLayout.js";
-import { initPyodide, isPyodideReady } from "./parser/pyodideParser.js";
+import { ref, computed, onMounted } from 'vue';
+import ViewerCanvas from './components/ViewerCanvas.vue';
+import FileDropZone from './components/FileDropZone.vue';
+import { autoLayout } from './layout/autoLayout.js';
+import { initPyodide } from './parser/pyodideParser.js';
 
 // ── Graph state ───────────────────────────────────────────────────────────────
 const nodes = ref([]);
@@ -12,17 +12,19 @@ const loadedFilename = ref(null);
 
 // ── Paste KIR dialog ──────────────────────────────────────────────────────────
 const pasteDialogVisible = ref(false);
-const pasteText = ref("");
-const pasteError = ref("");
-const pyodideStatus = ref("Loading Python parser...");
+const pasteText = ref('');
+const pasteError = ref('');
+const pyodideStatus = ref('Loading Python parser...');
 const pyodideLoaded = ref(false);
 
 // Init Pyodide in background
 onMounted(() => {
-  initPyodide((msg) => { pyodideStatus.value = msg; }).then((ok) => {
+  initPyodide((msg) => {
+    pyodideStatus.value = msg;
+  }).then((ok) => {
     pyodideLoaded.value = ok;
-    if (ok) pyodideStatus.value = "Python parser ready";
-    else pyodideStatus.value = "JS parser (Python unavailable)";
+    if (ok) pyodideStatus.value = 'Python parser ready';
+    else pyodideStatus.value = 'JS parser (Python unavailable)';
   });
 });
 
@@ -34,40 +36,40 @@ function onGraphLoaded({ nodes: n, edges: e, filename }) {
   edges.value = e;
   loadedFilename.value = filename ?? null;
   pasteDialogVisible.value = false;
-  pasteText.value = "";
-  pasteError.value = "";
+  pasteText.value = '';
+  pasteError.value = '';
 }
 
 function openFilePicker() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".kir,.kirgraph,.json";
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.kir,.kirgraph,.json';
   input.onchange = async () => {
     const file = input.files?.[0];
     if (!file) return;
     const text = await file.text();
     try {
-      const { detectAndParseAsync } = await import("./parser/index.js");
+      const { detectAndParseAsync } = await import('./parser/index.js');
       const { nodes: n, edges: e } = await detectAndParseAsync(text, file.name);
       onGraphLoaded({ nodes: n, edges: e, filename: file.name });
     } catch (err) {
-      console.error("Failed to parse file:", err);
+      console.error('Failed to parse file:', err);
     }
   };
   input.click();
 }
 
 async function confirmPaste() {
-  pasteError.value = "";
+  pasteError.value = '';
   const text = pasteText.value.trim();
   if (!text) {
-    pasteError.value = "Nothing to paste.";
+    pasteError.value = 'Nothing to paste.';
     return;
   }
   try {
-    const { detectAndParseAsync } = await import("./parser/index.js");
-    const { nodes: n, edges: e } = await detectAndParseAsync(text, "paste.kir");
-    onGraphLoaded({ nodes: n, edges: e, filename: "pasted KIR" });
+    const { detectAndParseAsync } = await import('./parser/index.js');
+    const { nodes: n, edges: e } = await detectAndParseAsync(text, 'paste.kir');
+    onGraphLoaded({ nodes: n, edges: e, filename: 'pasted KIR' });
   } catch (err) {
     pasteError.value = `Parse error: ${err.message}`;
   }
@@ -76,12 +78,8 @@ async function confirmPaste() {
 // ── Info bar ──────────────────────────────────────────────────────────────────
 const nodeCount = computed(() => nodes.value.length);
 const edgeCount = computed(() => edges.value.length);
-const dataEdgeCount = computed(
-  () => edges.value.filter((e) => e.type === "data").length
-);
-const ctrlEdgeCount = computed(
-  () => edges.value.filter((e) => e.type === "control").length
-);
+const dataEdgeCount = computed(() => edges.value.filter((e) => e.type === 'data').length);
+const ctrlEdgeCount = computed(() => edges.value.filter((e) => e.type === 'control').length);
 </script>
 
 <template>
@@ -130,7 +128,9 @@ const ctrlEdgeCount = computed(
         </template>
       </template>
       <template v-else>
-        <span class="info-bar__hint">Drop a .kir or .kirgraph file, or use Open File / Paste KIR</span>
+        <span class="info-bar__hint"
+          >Drop a .kir or .kirgraph file, or use Open File / Paste KIR</span
+        >
       </template>
     </footer>
 
@@ -147,7 +147,7 @@ const ctrlEdgeCount = computed(
         :rows="16"
         placeholder="Paste .kir or .kirgraph JSON here..."
         resize="none"
-        style="font-family: monospace; font-size: 12px;"
+        style="font-family: monospace; font-size: 12px"
       />
       <div v-if="pasteError" class="paste-error">{{ pasteError }}</div>
       <template #footer>
@@ -226,8 +226,12 @@ const ctrlEdgeCount = computed(
   letter-spacing: 0.06em;
 }
 
-.info-bar__label--data { color: #89b4fa; }
-.info-bar__label--ctrl { color: #fab387; }
+.info-bar__label--data {
+  color: #89b4fa;
+}
+.info-bar__label--ctrl {
+  color: #fab387;
+}
 
 .info-bar__value {
   color: #cdd6f4;

@@ -1,7 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import { dataWirePath, controlWirePath } from "../utils/bezier.js";
-import ViewNode from "./ViewNode.vue";
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { dataWirePath, controlWirePath } from '../utils/bezier.js';
+import ViewNode from './ViewNode.vue';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 const props = defineProps({
@@ -54,10 +54,7 @@ function onWheel(e) {
 
   const oldZoom = zoom.value;
   const delta = -e.deltaY * ZOOM_SPEED;
-  const newZoom = Math.min(
-    ZOOM_MAX,
-    Math.max(ZOOM_MIN, +(oldZoom + delta * oldZoom).toFixed(4))
-  );
+  const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(oldZoom + delta * oldZoom).toFixed(4)));
 
   // Zoom toward cursor: keep world point under cursor fixed
   panX.value = mx - ((mx - panX.value) / oldZoom) * newZoom;
@@ -70,7 +67,7 @@ const GRID_SIZE = 20;
 
 const transformStyle = computed(() => ({
   transform: `translate(${panX.value}px, ${panY.value}px) scale(${zoom.value})`,
-  transformOrigin: "0 0",
+  transformOrigin: '0 0',
 }));
 
 const gridStyle = computed(() => {
@@ -78,13 +75,13 @@ const gridStyle = computed(() => {
   const ox = ((panX.value % gridPx) + gridPx) % gridPx;
   const oy = ((panY.value % gridPx) + gridPx) % gridPx;
   return {
-    backgroundImage: "radial-gradient(circle, #2a2a3e 1px, transparent 1px)",
+    backgroundImage: 'radial-gradient(circle, #2a2a3e 1px, transparent 1px)',
     backgroundSize: `${gridPx}px ${gridPx}px`,
     backgroundPosition: `${ox}px ${oy}px`,
   };
 });
 
-const cursorStyle = computed(() => (isPanning.value ? "grabbing" : "grab"));
+const cursorStyle = computed(() => (isPanning.value ? 'grabbing' : 'grab'));
 
 // ── Port position (mirrors graph store logic, prop-driven) ────────────────────
 const PORT_PADDING = 30;
@@ -155,12 +152,12 @@ const wires = computed(() => {
     const to = getPortPosition(edge.toNode, edge.toPort);
     if (!from || !to) continue;
 
-    const isCtrl = edge.type === "control";
+    const isCtrl = edge.type === 'control';
     const d = isCtrl
       ? controlWirePath(from.x, from.y, to.x, to.y)
       : dataWirePath(from.x, from.y, to.x, to.y);
 
-    result.push({ id: `e${i}`, d, edgeType: isCtrl ? "control" : "data" });
+    result.push({ id: `e${i}`, d, edgeType: isCtrl ? 'control' : 'data' });
   }
   return result;
 });
@@ -170,8 +167,7 @@ function onPointerDown(e) {
   // Pan on left-click anywhere on the background / canvas-transform
   if (e.button === 0) {
     const isBackground =
-      e.target === containerRef.value ||
-      e.target.classList.contains("canvas-transform");
+      e.target === containerRef.value || e.target.classList.contains('canvas-transform');
     if (isBackground) {
       e.preventDefault();
       beginPan(e.clientX, e.clientY);
@@ -198,11 +194,11 @@ function onContextMenu(e) {
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(() => {
-  containerRef.value?.addEventListener("wheel", onWheel, { passive: false });
+  containerRef.value?.addEventListener('wheel', onWheel, { passive: false });
 });
 
 onBeforeUnmount(() => {
-  containerRef.value?.removeEventListener("wheel", onWheel);
+  containerRef.value?.removeEventListener('wheel', onWheel);
 });
 </script>
 
@@ -230,11 +226,7 @@ onBeforeUnmount(() => {
       </svg>
 
       <!-- Nodes -->
-      <ViewNode
-        v-for="node in props.nodes"
-        :key="node.id"
-        :node="node"
-      />
+      <ViewNode v-for="node in props.nodes" :key="node.id" :node="node" />
     </div>
 
     <!-- Empty state -->

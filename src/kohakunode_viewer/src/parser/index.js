@@ -24,10 +24,10 @@
  *   { nodes, edges, format: 'kir' | 'kirgraph' | 'comfyui' | 'unknown' }
  */
 
-import { loadKirgraph } from "./kirgraphLoader.js";
-import { parseKirLite } from "./kirLiteParser.js";
-import { loadComfyUI } from "./comfyLoader.js";
-import { initPyodide, parseKirWithPython, isPyodideReady } from "./pyodideParser.js";
+import { loadKirgraph } from './kirgraphLoader.js';
+import { parseKirLite } from './kirLiteParser.js';
+import { loadComfyUI } from './comfyLoader.js';
+import { initPyodide, parseKirWithPython, isPyodideReady } from './pyodideParser.js';
 
 export { loadKirgraph, parseKirLite, loadComfyUI, initPyodide, parseKirWithPython, isPyodideReady };
 
@@ -51,28 +51,28 @@ export { loadKirgraph, parseKirLite, loadComfyUI, initPyodide, parseKirWithPytho
  * @returns {{ nodes: object[], edges: object[], format: string }}
  */
 export function detectAndParse(content, filename = null) {
-  const name = filename ? String(filename) : "";
+  const name = filename ? String(filename) : '';
 
   // ---- Extension-based detection ----
 
-  if (name.endsWith(".kirgraph")) {
-    const json = parseJSON(content, ".kirgraph");
-    return { ...loadKirgraph(json), format: "kirgraph" };
+  if (name.endsWith('.kirgraph')) {
+    const json = parseJSON(content, '.kirgraph');
+    return { ...loadKirgraph(json), format: 'kirgraph' };
   }
 
-  if (name.endsWith(".kir")) {
-    return { ...parseKirLite(content), format: "kir" };
+  if (name.endsWith('.kir')) {
+    return { ...parseKirLite(content), format: 'kir' };
   }
 
-  if (name.endsWith(".json")) {
-    const json = parseJSON(content, ".json");
+  if (name.endsWith('.json')) {
+    const json = parseJSON(content, '.json');
     return detectJson(json);
   }
 
   // ---- Content sniffing (unknown or no extension) ----
 
   const trimmed = content.trimStart();
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
     try {
       const json = JSON.parse(content);
       return detectJson(json);
@@ -82,7 +82,7 @@ export function detectAndParse(content, filename = null) {
   }
 
   // Default: treat as KIR text
-  return { ...parseKirLite(content), format: "kir" };
+  return { ...parseKirLite(content), format: 'kir' };
 }
 
 /**
@@ -90,16 +90,19 @@ export function detectAndParse(content, filename = null) {
  * falls back to JS lite parser.
  */
 export async function detectAndParseAsync(content, filename = null) {
-  const name = filename ? String(filename) : "";
+  const name = filename ? String(filename) : '';
 
   // For .kir files, try Pyodide (waits for it if still loading)
-  if (name.endsWith(".kir") || (!name.endsWith(".json") && !name.endsWith(".kirgraph") && !content.trimStart().startsWith("{"))) {
+  if (
+    name.endsWith('.kir') ||
+    (!name.endsWith('.json') && !name.endsWith('.kirgraph') && !content.trimStart().startsWith('{'))
+  ) {
     // Wait for Pyodide to finish loading (up to 30s)
     const ok = await initPyodide();
     if (ok) {
       const result = await parseKirWithPython(content);
       if (result && result.nodes && result.nodes.length > 0) {
-        return { ...result, format: "kir-python" };
+        return { ...result, format: 'kir-python' };
       }
     }
   }
@@ -128,32 +131,28 @@ function parseJSON(content, context) {
  * Returns { nodes, edges, format }.
  */
 function detectJson(json) {
-  if (!json || typeof json !== "object" || Array.isArray(json)) {
-    return { nodes: [], edges: [], format: "unknown" };
+  if (!json || typeof json !== 'object' || Array.isArray(json)) {
+    return { nodes: [], edges: [], format: 'unknown' };
   }
 
   // kirgraph: must have version field AND both nodes and edges as arrays
-  if (
-    json.version !== undefined &&
-    Array.isArray(json.nodes) &&
-    Array.isArray(json.edges)
-  ) {
-    return { ...loadKirgraph(json), format: "kirgraph" };
+  if (json.version !== undefined && Array.isArray(json.nodes) && Array.isArray(json.edges)) {
+    return { ...loadKirgraph(json), format: 'kirgraph' };
   }
 
   // ComfyUI workflow: has nodes array + links key (links may be empty array)
-  if (Array.isArray(json.nodes) && "links" in json) {
-    return { ...loadComfyUI(json), format: "comfyui" };
+  if (Array.isArray(json.nodes) && 'links' in json) {
+    return { ...loadComfyUI(json), format: 'comfyui' };
   }
 
   // ComfyUI API format: values are objects with class_type
   if (Object.keys(json).length > 0) {
     const firstVal = Object.values(json)[0];
-    if (firstVal && typeof firstVal === "object" && "class_type" in firstVal) {
-      return { ...loadComfyUI(json), format: "comfyui" };
+    if (firstVal && typeof firstVal === 'object' && 'class_type' in firstVal) {
+      return { ...loadComfyUI(json), format: 'comfyui' };
     }
   }
 
   // Unknown JSON — return empty graph
-  return { nodes: [], edges: [], format: "unknown" };
+  return { nodes: [], edges: [], format: 'unknown' };
 }

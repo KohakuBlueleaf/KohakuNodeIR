@@ -23,12 +23,17 @@ function estimateSize(node) {
   const dataRows = Math.max(nIn, nOut);
   const w = Math.max(MIN_WIDTH, Math.max(nCtrlIn, nCtrlOut) * 60 + 60);
   let h;
-  if (node.type === "merge") {
+  if (node.type === 'merge') {
     h = (nCtrlIn > 0 ? CTRL_ROW_H : 0) + HEADER_H + (nCtrlOut > 0 ? CTRL_ROW_H : 0) + 8;
   } else {
-    h = Math.max(MIN_HEIGHT,
-      (nCtrlIn > 0 ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H +
-      (nCtrlOut > 0 ? CTRL_ROW_H : 0) + 8);
+    h = Math.max(
+      MIN_HEIGHT,
+      (nCtrlIn > 0 ? CTRL_ROW_H : 0) +
+        HEADER_H +
+        dataRows * DATA_ROW_H +
+        (nCtrlOut > 0 ? CTRL_ROW_H : 0) +
+        8
+    );
   }
   return { w, h };
 }
@@ -44,15 +49,19 @@ export function autoLayout(nodes, edges) {
     n.height = sizes[n.id].h;
   }
 
-  const needsIds = nodes.filter(n => !n.x && !n.y).map(n => n.id);
+  const needsIds = nodes.filter((n) => !n.x && !n.y).map((n) => n.id);
   if (needsIds.length === 0) return nodes;
   const needsSet = new Set(needsIds);
 
   // Build adjacency
-  const dataAdj = {}, dataRev = {}, ctrlAdj = {}, ctrlRev = {};
+  const dataAdj = {},
+    dataRev = {},
+    ctrlAdj = {},
+    ctrlRev = {};
   for (const e of edges) {
-    const f = e.fromNode, t = e.toNode;
-    if (e.type === "data") {
+    const f = e.fromNode,
+      t = e.toNode;
+    if (e.type === 'data') {
       if (!dataAdj[f]) dataAdj[f] = [];
       dataAdj[f].push(t);
       if (!dataRev[t]) dataRev[t] = [];
@@ -67,7 +76,9 @@ export function autoLayout(nodes, edges) {
 
   // Node order for back-edge detection (preserve graph order)
   const nodeRank = {};
-  needsIds.forEach((id, i) => { nodeRank[id] = i; });
+  needsIds.forEach((id, i) => {
+    nodeRank[id] = i;
+  });
 
   // Build node type map for merge rank fixup
   const nodeTypeMap = {};
@@ -77,7 +88,9 @@ export function autoLayout(nodes, edges) {
   const placed = new Set();
   const gridCells = new Set(); // "col,row" strings for collision check
 
-  function isOccupied(c, r) { return gridCells.has(`${c},${r}`); }
+  function isOccupied(c, r) {
+    return gridCells.has(`${c},${r}`);
+  }
   function place(id, c, r) {
     grid[id] = [c, r];
     placed.add(id);
@@ -88,25 +101,28 @@ export function autoLayout(nodes, edges) {
   // Collect all nodes in ctrl edges
   const ctrlNodes = new Set();
   for (const e of edges) {
-    if (e.type !== "data") {
+    if (e.type !== 'data') {
       if (needsSet.has(e.fromNode)) ctrlNodes.add(e.fromNode);
       if (needsSet.has(e.toNode)) ctrlNodes.add(e.toNode);
     }
   }
 
   // Find root: has ctrl outputs, no forward incoming ctrl
-  let ctrlRoots = needsIds.filter(id => {
+  let ctrlRoots = needsIds.filter((id) => {
     if (!ctrlNodes.has(id)) return false;
     if (!(ctrlAdj[id] || []).length) return false;
-    const incoming = (ctrlRev[id] || []).filter(s => needsSet.has(s));
-    const forwardIncoming = incoming.filter(s => (nodeRank[s] ?? 999) < (nodeRank[id] ?? 0));
+    const incoming = (ctrlRev[id] || []).filter((s) => needsSet.has(s));
+    const forwardIncoming = incoming.filter((s) => (nodeRank[s] ?? 999) < (nodeRank[id] ?? 0));
     return forwardIncoming.length === 0;
   });
 
   if (ctrlRoots.length === 0 && ctrlNodes.size > 0) {
     // All ctrl nodes in a cycle — pick first in graph order
     for (const id of needsIds) {
-      if (ctrlNodes.has(id)) { ctrlRoots = [id]; break; }
+      if (ctrlNodes.has(id)) {
+        ctrlRoots = [id];
+        break;
+      }
     }
   }
 
@@ -114,13 +130,13 @@ export function autoLayout(nodes, edges) {
     // No ctrl chain — find any root
     const allTo = new Set();
     for (const e of edges) allTo.add(e.toNode);
-    ctrlRoots = needsIds.filter(id => !allTo.has(id));
+    ctrlRoots = needsIds.filter((id) => !allTo.has(id));
   }
   if (ctrlRoots.length === 0) ctrlRoots = [needsIds[0]];
 
   // Fix ranks for merge nodes: place just before their successor
   for (const id of needsIds) {
-    if (nodeTypeMap[id] === "merge") {
+    if (nodeTypeMap[id] === 'merge') {
       for (const child of ctrlAdj[id] || []) {
         if (nodeRank[child] !== undefined) {
           nodeRank[id] = nodeRank[child] - 0.5;
@@ -165,10 +181,10 @@ export function autoLayout(nodes, edges) {
     changed = false;
     for (const nid of needsIds) {
       if (placed.has(nid)) continue;
-      const consumers = (dataAdj[nid] || []).filter(c => placed.has(c));
+      const consumers = (dataAdj[nid] || []).filter((c) => placed.has(c));
       if (consumers.length > 0) {
-        const positions = consumers.map(c => grid[c]);
-        const minCol = Math.min(...positions.map(p => p[0]));
+        const positions = consumers.map((c) => grid[c]);
+        const minCol = Math.min(...positions.map((p) => p[0]));
         const targetRow = positions[0][1];
         let col = minCol - 1;
         while (isOccupied(col, targetRow)) col--;
@@ -184,10 +200,10 @@ export function autoLayout(nodes, edges) {
     changed = false;
     for (const nid of needsIds) {
       if (placed.has(nid)) continue;
-      const sources = (dataRev[nid] || []).filter(s => placed.has(s));
+      const sources = (dataRev[nid] || []).filter((s) => placed.has(s));
       if (sources.length > 0) {
-        const positions = sources.map(s => grid[s]);
-        const maxCol = Math.max(...positions.map(p => p[0]));
+        const positions = sources.map((s) => grid[s]);
+        const maxCol = Math.max(...positions.map((p) => p[0]));
         const targetRow = positions[0][1];
         let col = maxCol + 1;
         while (isOccupied(col, targetRow)) col++;
@@ -198,7 +214,7 @@ export function autoLayout(nodes, edges) {
   }
 
   // ── Step 4: Remaining unconnected ──
-  const maxRow = Math.max(0, ...Object.values(grid).map(p => p[1])) + 1;
+  const maxRow = Math.max(0, ...Object.values(grid).map((p) => p[1])) + 1;
   let ri = 0;
   for (const nid of needsIds) {
     if (!placed.has(nid)) {
@@ -207,8 +223,8 @@ export function autoLayout(nodes, edges) {
   }
 
   // ── Step 5: Shift to positive + pixel coordinates ──
-  const minCol = Math.min(...Object.values(grid).map(p => p[0]));
-  const minRow = Math.min(...Object.values(grid).map(p => p[1]));
+  const minCol = Math.min(...Object.values(grid).map((p) => p[0]));
+  const minRow = Math.min(...Object.values(grid).map((p) => p[1]));
 
   // Column widths for pixel x
   const shifted = {};
@@ -216,7 +232,7 @@ export function autoLayout(nodes, edges) {
     shifted[id] = [c - minCol, r - minRow];
   }
 
-  const maxColVal = Math.max(0, ...Object.values(shifted).map(p => p[0]));
+  const maxColVal = Math.max(0, ...Object.values(shifted).map((p) => p[0]));
   const colWidths = {};
   for (const [id, [c]] of Object.entries(shifted)) {
     colWidths[c] = Math.max(colWidths[c] || MIN_WIDTH, sizes[id].w);

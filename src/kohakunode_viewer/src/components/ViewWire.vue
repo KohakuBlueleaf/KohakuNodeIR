@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue'
-import { dataWirePath, controlWirePath } from '../utils/bezier.js'
+import { computed } from 'vue';
+import { dataWirePath, controlWirePath } from '../utils/bezier.js';
 
 const props = defineProps({
   /**
@@ -31,28 +31,28 @@ const props = defineProps({
 
   /** Total canvas height (SVG height attribute) */
   canvasHeight: { type: Number, default: 4000 },
-})
+});
 
 const wires = computed(() => {
-  const result = []
+  const result = [];
   for (const edge of props.edges) {
-    const from = props.getPortPosition(edge.fromPortId, edge.fromNodeId, 'output')
-    const to   = props.getPortPosition(edge.toPortId,   edge.toNodeId,   'input')
-    if (!from || !to) continue
+    const from = props.getPortPosition(edge.fromPortId, edge.fromNodeId, 'output');
+    const to = props.getPortPosition(edge.toPortId, edge.toNodeId, 'input');
+    if (!from || !to) continue;
 
     const d =
       edge.portType === 'control'
         ? controlWirePath(from.x, from.y, to.x, to.y)
-        : dataWirePath(from.x, from.y, to.x, to.y)
+        : dataWirePath(from.x, from.y, to.x, to.y);
 
     result.push({
-      key:      `${edge.fromNodeId}:${edge.fromPortId}-->${edge.toNodeId}:${edge.toPortId}`,
+      key: `${edge.fromNodeId}:${edge.fromPortId}-->${edge.toNodeId}:${edge.toPortId}`,
       d,
       portType: edge.portType,
-    })
+    });
   }
-  return result
-})
+  return result;
+});
 </script>
 
 <template>

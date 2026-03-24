@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed } from 'vue';
 
 // ── Layout constants (mirror graph store / BaseNode) ──────────────────────────
 const CTRL_ROW_H = 18;
@@ -31,37 +31,39 @@ const props = defineProps({
 // ── Port accessors (handle both parser format and editor format) ──────────────
 const dataInputs = computed(() => props.node.dataInputs ?? props.node.dataPorts?.inputs ?? []);
 const dataOutputs = computed(() => props.node.dataOutputs ?? props.node.dataPorts?.outputs ?? []);
-const ctrlInputs = computed(() => props.node.ctrlInputs ?? props.node.controlPorts?.inputs?.map(p => p.name || p) ?? []);
-const ctrlOutputs = computed(() => props.node.ctrlOutputs ?? props.node.controlPorts?.outputs?.map(p => p.name || p) ?? []);
+const ctrlInputs = computed(
+  () => props.node.ctrlInputs ?? props.node.controlPorts?.inputs?.map((p) => p.name || p) ?? []
+);
+const ctrlOutputs = computed(
+  () => props.node.ctrlOutputs ?? props.node.controlPorts?.outputs?.map((p) => p.name || p) ?? []
+);
 const hasCtrlIn = computed(() => ctrlInputs.value.length > 0);
 const hasCtrlOut = computed(() => ctrlOutputs.value.length > 0);
-const dataRowCount = computed(() =>
-  Math.max(dataInputs.value.length, dataOutputs.value.length, 0)
-);
+const dataRowCount = computed(() => Math.max(dataInputs.value.length, dataOutputs.value.length, 0));
 
 // ── Type → header background color ───────────────────────────────────────────
 const HEADER_COLORS = {
-  branch: "#3d2f1e",
-  switch: "#2d2040",
-  parallel: "#1e3d2f",
-  value: "#1e3d1e",
-  merge: "#3d2f1e",
+  branch: '#3d2f1e',
+  switch: '#2d2040',
+  parallel: '#1e3d2f',
+  value: '#1e3d1e',
+  merge: '#3d2f1e',
 };
 
 // ── Type → badge color (mirrors BaseNode) ─────────────────────────────────────
 const BADGE_COLORS = {
-  branch: "#fab387",
-  merge: "#fab387",
-  switch: "#fab387",
-  parallel: "#fab387",
-  value: "#a6e3a1",
-  function: "#89b4fa",
-  namespace: "#cba6f7",
-  load: "#a6e3a1",
+  branch: '#fab387',
+  merge: '#fab387',
+  switch: '#fab387',
+  parallel: '#fab387',
+  value: '#a6e3a1',
+  function: '#89b4fa',
+  namespace: '#cba6f7',
+  load: '#a6e3a1',
 };
 
-const headerBg = computed(() => HEADER_COLORS[props.node.type] ?? "#313244");
-const badgeColor = computed(() => BADGE_COLORS[props.node.type] ?? "#89b4fa");
+const headerBg = computed(() => HEADER_COLORS[props.node.type] ?? '#313244');
+const badgeColor = computed(() => BADGE_COLORS[props.node.type] ?? '#89b4fa');
 
 // ── Node dimensions ───────────────────────────────────────────────────────────
 const nodeWidth = computed(() => props.node.width || 180);
@@ -109,7 +111,9 @@ function defaultDisplay(port) {
         :title="typeof port === 'string' ? port : port.name"
       >
         <div class="ctrl-diamond" />
-        <span class="ctrl-label ctrl-label--in">{{ typeof port === 'string' ? port : port.name }}</span>
+        <span class="ctrl-label ctrl-label--in">{{
+          typeof port === 'string' ? port : port.name
+        }}</span>
       </div>
     </div>
 
@@ -144,7 +148,8 @@ function defaultDisplay(port) {
           <span
             v-if="dataInputs[i - 1] && defaultDisplay(dataInputs[i - 1]) !== null"
             class="dp__default"
-          >= {{ defaultDisplay(dataInputs[i - 1]) }}</span>
+            >= {{ defaultDisplay(dataInputs[i - 1]) }}</span
+          >
           <span class="data-row__spacer" />
           <span v-if="dataOutputs[i - 1]" class="dp__label dp__label--out">
             {{ dataOutputs[i - 1].name }}
@@ -175,7 +180,9 @@ function defaultDisplay(port) {
         :style="{ left: ctrlPortLeft(i, ctrlOutputs.length) + 'px' }"
         :title="typeof port === 'string' ? port : port.name"
       >
-        <span class="ctrl-label ctrl-label--out">{{ typeof port === 'string' ? port : port.name }}</span>
+        <span class="ctrl-label ctrl-label--out">{{
+          typeof port === 'string' ? port : port.name
+        }}</span>
         <div class="ctrl-diamond" />
       </div>
     </div>

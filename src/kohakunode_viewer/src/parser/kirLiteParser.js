@@ -30,7 +30,7 @@ const GRID_ROW_SPACING = 180;
 const GRID_X0 = 100;
 const GRID_Y0 = 100;
 
-const CONTROL_BUILTINS = new Set(["branch", "switch", "jump", "parallel"]);
+const CONTROL_BUILTINS = new Set(['branch', 'switch', 'jump', 'parallel']);
 
 // ---------------------------------------------------------------------------
 // Tokeniser helpers
@@ -50,15 +50,12 @@ function tokeniseLines(src) {
   // newlines inside them don't confuse the line-by-line processing.
   // We only need the placeholder to prevent false comment matches.
   const protected_ = [];
-  const safeSrc = src.replace(
-    /"""[\s\S]*?"""|'''[\s\S]*?'''/g,
-    (m) => {
-      const idx = protected_.length;
-      protected_.push(m);
-      // Replace with a single-quoted sentinel that contains no special chars
-      return `"__TRIPLEQ_${idx}__"`;
-    }
-  );
+  const safeSrc = src.replace(/"""[\s\S]*?"""|'''[\s\S]*?'''/g, (m) => {
+    const idx = protected_.length;
+    protected_.push(m);
+    // Replace with a single-quoted sentinel that contains no special chars
+    return `"__TRIPLEQ_${idx}__"`;
+  });
 
   const rawLines = safeSrc.split(/\r?\n/);
   const result = [];
@@ -74,11 +71,11 @@ function tokeniseLines(src) {
     const indentMatch = line.match(/^([ \t]*)/);
     let indent = 0;
     for (const ch of indentMatch[1]) {
-      indent += ch === "\t" ? 4 : 1;
+      indent += ch === '\t' ? 4 : 1;
     }
 
     const text = line.trimEnd();
-    if (text.trim() === "") continue; // skip blank / comment-only lines
+    if (text.trim() === '') continue; // skip blank / comment-only lines
 
     result.push({ lineNo: i + 1, indent, text: text.trim() });
   }
@@ -96,13 +93,19 @@ function stripComment(line) {
   let inDouble = false;
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
-    if (ch === "\\" && (inSingle || inDouble)) {
+    if (ch === '\\' && (inSingle || inDouble)) {
       i++; // skip escaped char
       continue;
     }
-    if (ch === "'" && !inDouble) { inSingle = !inSingle; continue; }
-    if (ch === '"' && !inSingle) { inDouble = !inDouble; continue; }
-    if (ch === "#" && !inSingle && !inDouble) {
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      continue;
+    }
+    if (ch === '#' && !inSingle && !inDouble) {
       return line.slice(0, i);
     }
   }
@@ -123,12 +126,13 @@ function stripComment(line) {
  */
 function parseMeta(text) {
   // Strip leading @meta
-  const body = text.replace(/^\s*@meta\s*/, "");
+  const body = text.replace(/^\s*@meta\s*/, '');
   const result = {};
 
   // Regex: key=value where value is:
   //   "string" | 'string' | (x, y) | [a, b] | number | identifier
-  const pairRe = /(\w+)\s*=\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\([\d\s.,+-]+\)|\[[\d\s.,+-]+\]|[^\s,]+)/g;
+  const pairRe =
+    /(\w+)\s*=\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\([\d\s.,+-]+\)|\[[\d\s.,+-]+\]|[^\s,]+)/g;
   let m;
   while ((m = pairRe.exec(body)) !== null) {
     const key = m[1];
@@ -144,12 +148,18 @@ function parseMetaValue(raw) {
 
   // Tuple: (x, y)
   if (/^\(/.test(s)) {
-    const nums = s.replace(/[()]/g, "").split(",").map((v) => parseFloat(v.trim()));
+    const nums = s
+      .replace(/[()]/g, '')
+      .split(',')
+      .map((v) => parseFloat(v.trim()));
     return nums;
   }
   // List: [w, h]
   if (/^\[/.test(s)) {
-    const nums = s.replace(/[\[\]]/g, "").split(",").map((v) => parseFloat(v.trim()));
+    const nums = s
+      .replace(/[\[\]]/g, '')
+      .split(',')
+      .map((v) => parseFloat(v.trim()));
     return nums;
   }
   // Quoted string
@@ -163,12 +173,12 @@ function parseMetaValue(raw) {
     }
   }
   // Bool / None
-  if (s === "True") return true;
-  if (s === "False") return false;
-  if (s === "None") return null;
+  if (s === 'True') return true;
+  if (s === 'False') return false;
+  if (s === 'None') return null;
   // Number
   const n = Number(s);
-  if (!isNaN(n) && s !== "") return n;
+  if (!isNaN(n) && s !== '') return n;
   return s;
 }
 
@@ -189,19 +199,34 @@ function splitArgs(src) {
 
   for (let i = 0; i < src.length; i++) {
     const ch = src[i];
-    if (ch === "\\" && (inSingle || inDouble)) { i++; continue; }
-    if (ch === "'" && !inDouble) { inSingle = !inSingle; continue; }
-    if (ch === '"' && !inSingle) { inDouble = !inDouble; continue; }
+    if (ch === '\\' && (inSingle || inDouble)) {
+      i++;
+      continue;
+    }
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      continue;
+    }
     if (inSingle || inDouble) continue;
-    if (ch === "(" || ch === "[" || ch === "{") { depth++; continue; }
-    if (ch === ")" || ch === "]" || ch === "}") { depth--; continue; }
-    if (ch === "," && depth === 0) {
+    if (ch === '(' || ch === '[' || ch === '{') {
+      depth++;
+      continue;
+    }
+    if (ch === ')' || ch === ']' || ch === '}') {
+      depth--;
+      continue;
+    }
+    if (ch === ',' && depth === 0) {
       args.push(src.slice(start, i).trim());
       start = i + 1;
     }
   }
   const last = src.slice(start).trim();
-  if (last !== "") args.push(last);
+  if (last !== '') args.push(last);
   return args;
 }
 
@@ -212,12 +237,12 @@ function splitArgs(src) {
 function parseInputs(src) {
   const items = [];
   for (const tok of splitArgs(src)) {
-    if (tok === "") continue;
+    if (tok === '') continue;
     const kwMatch = tok.match(/^(\w+)\s*=\s*([\s\S]+)$/);
     if (kwMatch) {
-      items.push({ kind: "kw", name: kwMatch[1], value: kwMatch[2].trim() });
+      items.push({ kind: 'kw', name: kwMatch[1], value: kwMatch[2].trim() });
     } else {
-      items.push({ kind: "pos", value: tok });
+      items.push({ kind: 'pos', value: tok });
     }
   }
   return items;
@@ -232,20 +257,20 @@ function parseOutputs(src) {
   const items = [];
   for (const tok of splitArgs(src)) {
     const t = tok.trim();
-    if (t === "") continue;
-    if (t === "_") {
-      items.push({ kind: "wildcard" });
+    if (t === '') continue;
+    if (t === '_') {
+      items.push({ kind: 'wildcard' });
     } else if (/^`[a-zA-Z_]\w*`$/.test(t)) {
-      items.push({ kind: "label", label: t.slice(1, -1) });
+      items.push({ kind: 'label', label: t.slice(1, -1) });
     } else if (/^_\s*=>\s*`[a-zA-Z_]\w*`$/.test(t)) {
       const label = t.match(/`([a-zA-Z_]\w*)`/)[1];
-      items.push({ kind: "default", label });
+      items.push({ kind: 'default', label });
     } else {
       const caseMatch = t.match(/^(.+?)\s*=>\s*`([a-zA-Z_]\w*)`$/);
       if (caseMatch) {
-        items.push({ kind: "case", value: caseMatch[1].trim(), label: caseMatch[2] });
+        items.push({ kind: 'case', value: caseMatch[1].trim(), label: caseMatch[2] });
       } else {
-        items.push({ kind: "name", name: t });
+        items.push({ kind: 'name', name: t });
       }
     }
   }
@@ -258,7 +283,7 @@ function parseOutputs(src) {
  */
 function isLiteral(tok) {
   const t = tok.trim();
-  if (t === "True" || t === "False" || t === "None") return true;
+  if (t === 'True' || t === 'False' || t === 'None') return true;
   if (/^-?[\d.]/.test(t) && !isNaN(Number(t))) return true;
   if (/^["'`\[\{]/.test(t)) return true;
   return false;
@@ -292,7 +317,7 @@ function joinContinuations(lines) {
       }
     } else {
       // Continue existing logical line
-      buf += " " + text;
+      buf += ' ' + text;
       depth += countDepth(text);
       if (depth <= 0) {
         result.push({ indent: bufIndent, text: buf });
@@ -309,15 +334,25 @@ function joinContinuations(lines) {
 
 function countDepth(text) {
   let d = 0;
-  let inS = false, inD = false;
+  let inS = false,
+    inD = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
-    if (ch === "\\" && (inS || inD)) { i++; continue; }
-    if (ch === "'" && !inD) { inS = !inS; continue; }
-    if (ch === '"' && !inS) { inD = !inD; continue; }
+    if (ch === '\\' && (inS || inD)) {
+      i++;
+      continue;
+    }
+    if (ch === "'" && !inD) {
+      inS = !inS;
+      continue;
+    }
+    if (ch === '"' && !inS) {
+      inD = !inD;
+      continue;
+    }
     if (inS || inD) continue;
-    if (ch === "(" || ch === "[" || ch === "{") d++;
-    else if (ch === ")" || ch === "]" || ch === "}") d--;
+    if (ch === '(' || ch === '[' || ch === '{') d++;
+    else if (ch === ')' || ch === ']' || ch === '}') d--;
   }
   return d;
 }
@@ -338,24 +373,14 @@ export function parseKirLite(kirText) {
   const logicalLines = joinContinuations(rawLines);
 
   // ---- Shared state ----
-  const nodes = [];       // viewer nodes (appended as discovered)
-  const edges = [];       // viewer edges (appended as discovered)
+  const nodes = []; // viewer nodes (appended as discovered)
+  const edges = []; // viewer edges (appended as discovered)
 
   // Map: variable_name → { nodeId, port }   (data output variables)
   const varMap = {};
 
   // Map: nodeId → viewer node (for fast lookup when emitting edges)
   const nodeById = {};
-
-  // Pending @meta annotations (collected before a statement)
-  let pendingMeta = {};
-
-  // Control-flow sequencing: stack of { prevNodeId, inDataflow }
-  // We track the "previous sequential node" at each nesting level so
-  // we can draw control edges between adjacent statements.
-  const ctrlStack = [{ prevNodeId: null, inDataflow: false }];
-
-  function currentFrame() { return ctrlStack[ctrlStack.length - 1]; }
 
   // Auto-layout counter (used when @meta pos is absent)
   let autoIndex = 0;
@@ -386,11 +411,6 @@ export function parseKirLite(kirText) {
     return { width: 180, height: 120 };
   }
 
-  function addNode(node) {
-    nodes.push(node);
-    nodeById[node.id] = node;
-  }
-
   /**
    * Attempt to resolve an input token to a (nodeId, port) pair.
    * Uses the varMap built so far.
@@ -403,29 +423,13 @@ export function parseKirLite(kirText) {
     return null;
   }
 
-  /**
-   * Register data output variables for a node.
-   * Names: raw output token → must be identifiers (not _ / labels).
-   */
-  function registerOutputs(nodeId, outputItems) {
-    for (const item of outputItems) {
-      if (item.kind === "name" && item.name !== "_") {
-        varMap[item.name] = { nodeId, port: item.name };
-      }
-    }
-  }
-
-  /**
-   * Emit data edges for all positional/keyword inputs that resolve to
-   * known output variables.
-   */
   // Store unresolved data inputs for Phase 3 (forward references in @dataflow:)
   const deferredDataInputs = [];
 
   function emitDataEdges(nodeId, inputItems, dataInputPortNames) {
     inputItems.forEach((inp, idx) => {
       let toPort;
-      if (inp.kind === "kw") {
+      if (inp.kind === 'kw') {
         toPort = inp.name;
       } else {
         toPort = dataInputPortNames[idx] ?? `in_${idx}`;
@@ -434,7 +438,7 @@ export function parseKirLite(kirText) {
       const varRef = resolveVar(inp.value);
       if (varRef) {
         edges.push({
-          type: "data",
+          type: 'data',
           fromNode: varRef.nodeId,
           fromPort: varRef.port,
           toNode: nodeId,
@@ -447,328 +451,6 @@ export function parseKirLite(kirText) {
     });
   }
 
-  /**
-   * Emit a control edge from the previous sequential node to this one,
-   * unless we are inside a @dataflow: block.
-   */
-  function emitCtrlEdge(toNodeId) {
-    const frame = currentFrame();
-    if (frame.inDataflow) return;
-    if (!frame.prevNodeId) return;
-    const fromNode = nodeById[frame.prevNodeId];
-    const toNode = nodeById[toNodeId];
-    if (!fromNode || !toNode) return;
-
-    // Only emit if both nodes have ctrl ports
-    const fromPort = fromNode.ctrlOutputs[0];
-    const toPort = toNode.ctrlInputs[0];
-    if (!fromPort || !toPort) return;
-
-    edges.push({
-      type: "control",
-      fromNode: frame.prevNodeId,
-      fromPort,
-      toNode: toNodeId,
-      toPort,
-    });
-  }
-
-  /**
-   * Update the "previous sequential node" in the current scope.
-   */
-  function advanceCtrl(nodeId) {
-    const frame = currentFrame();
-    if (!frame.inDataflow) {
-      frame.prevNodeId = nodeId;
-    }
-  }
-
-  // ---- Line-by-line processing ----
-
-  // Build a list of (indent, text) but annotate namespace boundaries
-  // so we can push/pop the control stack.  We process in a single pass
-  // using an indent-stack to detect scope changes.
-
-  const indentStack = [0]; // current indent levels
-
-  function processLines(lines) {
-    let i = 0;
-    while (i < lines.length) {
-      const { indent, text } = lines[i];
-
-      // Detect dedent (return from nested scope)
-      while (indent < indentStack[indentStack.length - 1]) {
-        indentStack.pop();
-        if (ctrlStack.length > 1) ctrlStack.pop();
-      }
-
-      i = processLine(lines, i);
-    }
-  }
-
-  /**
-   * Process one logical line.  Returns the index of the next line to process.
-   */
-  function processLine(lines, i) {
-    const { indent, text } = lines[i];
-
-    // ---- @mode ----
-    if (/^@mode\b/.test(text)) {
-      return i + 1;
-    }
-
-    // ---- @meta ----
-    if (/^@meta\b/.test(text)) {
-      const meta = parseMeta(text);
-      // Merge into pending meta (multiple @meta lines can precede one statement)
-      Object.assign(pendingMeta, meta);
-      return i + 1;
-    }
-
-    // ---- @dataflow: (block header) ----
-    if (/^@dataflow\s*:/.test(text)) {
-      // The next lines at a deeper indent form the dataflow block.
-      // Push a dataflow frame onto the ctrl stack.
-      ctrlStack.push({ prevNodeId: null, inDataflow: true });
-      indentStack.push(indent + 1); // any deeper indent belongs to this block
-      return i + 1;
-    }
-
-    // ---- @def subgraph definition ----
-    // Treat like a namespace: push scope, ignore the header node itself.
-    if (/^@def\b/.test(text)) {
-      ctrlStack.push({ prevNodeId: null, inDataflow: false });
-      indentStack.push(indent + 1);
-      return i + 1;
-    }
-
-    // ---- Namespace label: "name:" ----
-    if (/^[a-zA-Z_]\w*\s*:$/.test(text)) {
-      const label = text.slice(0, -1).trim();
-      // Push a new control scope for this namespace
-      ctrlStack.push({ prevNodeId: null, inDataflow: currentFrame().inDataflow });
-      indentStack.push(indent + 1);
-      // The label itself becomes a namespace boundary node (no direct viz node needed)
-      // — control edges from branch/switch/parallel to namespace entries are
-      //   emitted when we process the branch statement itself.
-      return i + 1;
-    }
-
-    // ---- Assignment: var = expr ----
-    {
-      const assignMatch = text.match(/^([a-zA-Z_]\w*)\s*=\s*([\s\S]+)$/);
-      if (assignMatch) {
-        i = processAssignment(lines, i, assignMatch[1], assignMatch[2]);
-        return i;
-      }
-    }
-
-    // ---- FuncCall: (inputs)func_name(outputs) ----
-    {
-      const callMatch = text.match(
-        /^\(([^)]*(?:\([\s\S]*?\))?[^)]*)\)\s*([a-zA-Z_][\w.]*)\s*\(([\s\S]*)\)$/
-      );
-      if (callMatch) {
-        i = processCall(lines, i, callMatch[1], callMatch[2], callMatch[3]);
-        return i;
-      }
-    }
-
-    // Unrecognised line — skip
-    return i + 1;
-  }
-
-  /**
-   * Process an assignment statement: var = expr → Value node.
-   */
-  function processAssignment(lines, i, varName, rhs) {
-    const meta = pendingMeta;
-    pendingMeta = {};
-
-    const nodeId = meta.node_id ?? `val_${varName}`;
-    const { x, y } = resolvePos(meta);
-    const { width, height } = resolveSize(meta);
-
-    const node = {
-      id: nodeId,
-      type: "value",
-      name: varName,
-      x, y, width, height,
-      dataInputs: [],
-      dataOutputs: [{ name: "value", type: "any" }],
-      ctrlInputs: [],
-      ctrlOutputs: [],
-    };
-
-    addNode(node);
-
-    // Register the output variable — both the raw var name and the node_port form
-    varMap[varName] = { nodeId, port: "value" };
-    // Also register as node_id_value for variable naming convention
-    varMap[`${nodeId}_value`] = { nodeId, port: "value" };
-
-    emitCtrlEdge(nodeId);
-    advanceCtrl(nodeId);
-
-    return i + 1;
-  }
-
-  /**
-   * Process a call statement.
-   */
-  function processCall(lines, i, rawInputs, funcName, rawOutputs) {
-    const meta = pendingMeta;
-    pendingMeta = {};
-
-    const inputItems = parseInputs(rawInputs);
-    const outputItems = parseOutputs(rawOutputs);
-    const fnLower = funcName.toLowerCase();
-
-    // ---- Determine node type ----
-    let nodeType = funcName;
-    let nodeId;
-
-    if (meta.node_id) {
-      nodeId = meta.node_id;
-    } else {
-      // Generate a stable id from function name + sequential counter
-      nodeId = `${funcName.replace(/\./g, "_")}_${autoIndex}`;
-    }
-
-    const { x, y } = resolvePos(meta);
-    const { width, height } = resolveSize(meta);
-
-    // ---- Build port lists depending on node type ----
-    let dataInputs = [];
-    let dataOutputs = [];
-    let ctrlInputs = [];
-    let ctrlOutputs = [];
-
-    if (fnLower === "branch") {
-      // (cond)branch(`true_label`, `false_label`)
-      nodeType = "branch";
-      dataInputs = [{ name: "condition", type: "bool" }];
-      ctrlInputs = ["in"];
-      ctrlOutputs = outputItems
-        .filter((o) => o.kind === "label")
-        .map((o) => o.label);
-      if (ctrlOutputs.length === 0) ctrlOutputs = ["true", "false"];
-
-    } else if (fnLower === "switch") {
-      // (val)switch(0=>`case_a`, 1=>`case_b`, _=>`default`)
-      nodeType = "switch";
-      dataInputs = [{ name: "value", type: "any" }];
-      ctrlInputs = ["in"];
-      ctrlOutputs = outputItems
-        .filter((o) => o.kind === "case" || o.kind === "default")
-        .map((o) => o.label);
-
-    } else if (fnLower === "jump") {
-      // ()jump(`target`) → NOT a node, just a ctrl edge.
-      // Create a deferred edge from the previous node to the target namespace.
-      const frame = currentFrame();
-      const prevId = frame.prevNodeId;
-      for (const out of outputItems) {
-        if (out.kind === "label") {
-          if (prevId) {
-            // Edge from previous node's ctrl out to the target
-            const fromNode = nodeById[prevId];
-            const fromPort = fromNode ? (fromNode.ctrlOutputs[0] || "out") : "out";
-            jumpEdges.push({ fromNodeId: prevId, fromPort, label: out.label });
-          } else {
-            // No previous node — this is an entry jump. Store for later.
-            jumpEdges.push({ fromNodeId: null, fromPort: null, label: out.label });
-          }
-        }
-      }
-      // Don't create a node, don't update prevNodeId
-      return i + 1;
-
-    } else if (fnLower === "parallel") {
-      // ()parallel(`task_a`, `task_b`)
-      nodeType = "parallel";
-      ctrlInputs = ["in"];
-      ctrlOutputs = outputItems
-        .filter((o) => o.kind === "label")
-        .map((o) => o.label);
-
-    } else {
-      // Regular function call
-      nodeType = funcName;
-      ctrlInputs = ["in"];
-      ctrlOutputs = ["out"];
-
-      // Build data input ports from input items
-      inputItems.forEach((inp, idx) => {
-        const portName = inp.kind === "kw" ? inp.name : `in_${idx}`;
-        dataInputs.push({ name: portName, type: "any" });
-      });
-
-      // Build data output ports from output items (skip wildcards and labels)
-      outputItems.forEach((out, idx) => {
-        if (out.kind === "name") {
-          dataOutputs.push({ name: out.name, type: "any" });
-        } else if (out.kind === "wildcard") {
-          dataOutputs.push({ name: `_out_${idx}`, type: "any" });
-        }
-      });
-    }
-
-    const node = {
-      id: nodeId,
-      type: nodeType,
-      name: funcName,
-      x, y, width, height,
-      dataInputs,
-      dataOutputs,
-      ctrlInputs,
-      ctrlOutputs,
-    };
-
-    addNode(node);
-
-    // Register data output variables using the {nodeId}_{port} convention
-    registerOutputs(nodeId, outputItems);
-    for (const out of dataOutputs) {
-      const varName = `${nodeId}_${out.name}`;
-      varMap[varName] = { nodeId, port: out.name };
-      // Also register using the raw output name if it was an explicit identifier
-    }
-    // Register raw output names from the output items directly
-    for (const out of outputItems) {
-      if (out.kind === "name") {
-        // The output token itself is a variable name — register it pointing to this node
-        if (true) {
-          varMap[out.name] = { nodeId, port: out.name };
-        }
-      }
-    }
-
-    // Emit data edges for inputs
-    emitDataEdges(nodeId, inputItems, dataInputs.map((p) => p.name));
-
-    // Emit control edge from previous sequential node
-    emitCtrlEdge(nodeId);
-    advanceCtrl(nodeId);
-
-    // For branch/switch/parallel: emit ctrl edges to first node inside each
-    // namespace.  We cannot do this until we've processed the namespace bodies,
-    // so we store a deferred record — processed after the full parse.
-    if (fnLower === "branch" || fnLower === "switch" || fnLower === "parallel") {
-      // Store: after parsing, connect each ctrlOutput label → first node in that ns
-      // We handle this in a post-pass (labelEntries map).
-      for (const out of outputItems) {
-        if (out.kind === "label" || out.kind === "case" || out.kind === "default") {
-          labelSources.push({ fromNodeId: nodeId, fromPort: out.label, label: out.label });
-        }
-      }
-    }
-
-    // jump is handled above (returns early, no node created)
-
-    return i + 1;
-  }
-
   // Deferred label→namespace ctrl edges
   // Each: { fromNodeId, fromPort, label }
   const labelSources = [];
@@ -778,31 +460,12 @@ export function parseKirLite(kirText) {
   const jumpEdges = [];
 
   // Map: namespace_label → first node id inside that namespace
-  // Built during the parse via namespace tracking.
-  // We track this by watching the ctrl stack when we see the first addNode
-  // call inside a new namespace scope.
-  const namespaceFirstNode = {};    // label → nodeId
+  const namespaceFirstNode = {}; // label → nodeId
   let currentNamespaceLabel = null; // set when we push a namespace scope
 
-  // Patch processLine to track namespace first nodes
-  const origAddNode = addNode;
-  const trackedAddNode = (node) => {
-    origAddNode(node);
-    if (currentNamespaceLabel && !(currentNamespaceLabel in namespaceFirstNode)) {
-      namespaceFirstNode[currentNamespaceLabel] = node.id;
-    }
-  };
-
-  // Re-wire addNode to the tracking version
-  // (We re-implement the loop below using the tracking version.)
-
   // ---------------------------------------------------------------------------
-  // Full processing — we do a two-phase approach:
-  //   Phase 1: Build nodes, varMap, labelSources (single pass)
-  //   Phase 2: Wire deferred label ctrl edges
+  // Processing: Phase 1 builds nodes/varMap/labelSources in a single pass.
   // ---------------------------------------------------------------------------
-
-  // Re-run with tracking
   parsePhase1(logicalLines);
 
   // Phase 2: deferred label→namespace ctrl edges
@@ -816,7 +479,7 @@ export function parseKirLite(kirText) {
     if (!fromNode.ctrlOutputs.includes(fromPort)) continue;
     if (toNode.ctrlInputs.length === 0) continue;
     edges.push({
-      type: "control",
+      type: 'control',
       fromNode: fromNodeId,
       fromPort,
       toNode: toNodeId,
@@ -829,7 +492,7 @@ export function parseKirLite(kirText) {
     const varRef = resolveVar(varName);
     if (varRef) {
       edges.push({
-        type: "data",
+        type: 'data',
         fromNode: varRef.nodeId,
         fromPort: varRef.port,
         toNode,
@@ -841,10 +504,10 @@ export function parseKirLite(kirText) {
   // Phase 4: wire jump edges (jump = ctrl wire, not a node)
   // Track how many ctrl edges arrive at each namespace target
   const nsIncomingCount = {}; // label → count
-  for (const { fromNodeId, label } of jumpEdges) {
+  for (const { label } of jumpEdges) {
     nsIncomingCount[label] = (nsIncomingCount[label] || 0) + 1;
   }
-  for (const { fromNodeId, label } of labelSources) {
+  for (const { label } of labelSources) {
     nsIncomingCount[label] = (nsIncomingCount[label] || 0) + 1;
   }
 
@@ -862,8 +525,8 @@ export function parseKirLite(kirText) {
 
       const mergeNode = {
         id: mergeId,
-        type: "merge",
-        name: "Merge",
+        type: 'merge',
+        name: 'Merge',
         x: targetNode.x - 100,
         y: targetNode.y - 60,
         width: 140,
@@ -871,18 +534,18 @@ export function parseKirLite(kirText) {
         dataInputs: [],
         dataOutputs: [],
         ctrlInputs: mergeInputs,
-        ctrlOutputs: ["out"],
+        ctrlOutputs: ['out'],
       };
       nodes.push(mergeNode);
       nodeById[mergeId] = mergeNode;
 
       // Wire merge out → target node
       edges.push({
-        type: "control",
+        type: 'control',
         fromNode: mergeId,
-        fromPort: "out",
+        fromPort: 'out',
         toNode: targetNodeId,
-        toPort: targetNode.ctrlInputs[0] || "in",
+        toPort: targetNode.ctrlInputs[0] || 'in',
       });
 
       // Rewire existing labelSource edges to go to merge inputs
@@ -890,7 +553,7 @@ export function parseKirLite(kirText) {
       // Rewire branch/switch/parallel edges that target this namespace
       for (let ei = edges.length - 1; ei >= 0; ei--) {
         const e = edges[ei];
-        if (e.type === "control" && e.toNode === targetNodeId) {
+        if (e.type === 'control' && e.toNode === targetNodeId) {
           // Redirect to merge
           e.toNode = mergeId;
           e.toPort = mergeInputs[inputIdx++] || `in_${inputIdx}`;
@@ -901,7 +564,7 @@ export function parseKirLite(kirText) {
       for (const je of jumpEdges) {
         if (je.label === label && je.fromNodeId) {
           edges.push({
-            type: "control",
+            type: 'control',
             fromNode: je.fromNodeId,
             fromPort: je.fromPort,
             toNode: mergeId,
@@ -920,11 +583,11 @@ export function parseKirLite(kirText) {
       const toNode = nodeById[toNodeId];
       if (!toNode) continue;
       edges.push({
-        type: "control",
+        type: 'control',
         fromNode: fromNodeId,
         fromPort: fromPort,
         toNode: toNodeId,
-        toPort: toNode.ctrlInputs[0] || "in",
+        toPort: toNode.ctrlInputs[0] || 'in',
       });
     }
   }
@@ -942,9 +605,15 @@ export function parseKirLite(kirText) {
     // Control sequencing: per-scope "last node id"
     const prevNodeStack = [null]; // one per scope level
 
-    function currentScope() { return indentScopeStack[indentScopeStack.length - 1]; }
-    function getPrev() { return prevNodeStack[prevNodeStack.length - 1]; }
-    function setPrev(id) { prevNodeStack[prevNodeStack.length - 1] = id; }
+    function currentScope() {
+      return indentScopeStack[indentScopeStack.length - 1];
+    }
+    function getPrev() {
+      return prevNodeStack[prevNodeStack.length - 1];
+    }
+    function setPrev(id) {
+      prevNodeStack[prevNodeStack.length - 1] = id;
+    }
 
     function pushScope(label, inDataflow) {
       indentScopeStack.push({ label, inDataflow });
@@ -959,7 +628,9 @@ export function parseKirLite(kirText) {
 
     let nodeSeq = 0; // sequential counter for auto-generated ids
 
-    function nextSeq() { return nodeSeq++; }
+    function nextSeq() {
+      return nodeSeq++;
+    }
 
     function addNodeTracked(node) {
       nodes.push(node);
@@ -981,35 +652,20 @@ export function parseKirLite(kirText) {
       const fromPort = fromNode.ctrlOutputs[0];
       const toPort = toNode.ctrlInputs[0];
       if (!fromPort || !toPort) return;
-      edges.push({ type: "control", fromNode: prevId, fromPort, toNode: toNodeId, toPort });
+      edges.push({ type: 'control', fromNode: prevId, fromPort, toNode: toNodeId, toPort });
     }
 
     function doAdvanceCtrl(nodeId) {
       if (!currentScope().inDataflow) setPrev(nodeId);
     }
 
-    // Indent tracking
     const indentLevels = [0];
-    function syncIndent(indent) {
-      // Pop scopes until we're at or above current indent
-      while (
-        indentLevels.length > 1 &&
-        indent <= indentLevels[indentLevels.length - 1] &&
-        indent < indentLevels[indentLevels.length - 1]
-      ) {
-        indentLevels.pop();
-        popScope();
-      }
-    }
 
     for (let i = 0; i < logicalLines.length; i++) {
       const { indent, text } = logicalLines[i];
 
       // Sync dedents
-      while (
-        indentLevels.length > 1 &&
-        indent < indentLevels[indentLevels.length - 1]
-      ) {
+      while (indentLevels.length > 1 && indent < indentLevels[indentLevels.length - 1]) {
         indentLevels.pop();
         popScope();
       }
@@ -1061,16 +717,23 @@ export function parseKirLite(kirText) {
 
           const nodeId = meta.node_id ?? `val_${varName}_${nextSeq()}`;
           let { x, y } = resolvePos(meta);
-          if (!meta.pos) { const ap = autoPos(); x = ap.x; y = ap.y; }
+          if (!meta.pos) {
+            const ap = autoPos();
+            x = ap.x;
+            y = ap.y;
+          }
           const { width, height } = resolveSize(meta);
 
           const node = {
             id: nodeId,
-            type: "value",
+            type: 'value',
             name: varName,
-            x, y, width, height,
+            x,
+            y,
+            width,
+            height,
             dataInputs: [],
-            dataOutputs: [{ name: "value", type: "any" }],
+            dataOutputs: [{ name: 'value', type: 'any' }],
             ctrlInputs: [],
             ctrlOutputs: [],
           };
@@ -1078,8 +741,8 @@ export function parseKirLite(kirText) {
           addNodeTracked(node);
 
           // Register variable
-          varMap[varName] = { nodeId, port: "value" };
-          varMap[`${nodeId}_value`] = { nodeId, port: "value" };
+          varMap[varName] = { nodeId, port: 'value' };
+          varMap[`${nodeId}_value`] = { nodeId, port: 'value' };
 
           doEmitCtrlEdge(nodeId);
           doAdvanceCtrl(nodeId);
@@ -1101,9 +764,13 @@ export function parseKirLite(kirText) {
           const outputItems = parseOutputs(rawOutputs);
           const fnLower = funcName.toLowerCase();
 
-          const nodeId = meta.node_id ?? `${funcName.replace(/\./g, "_")}_${nextSeq()}`;
+          const nodeId = meta.node_id ?? `${funcName.replace(/\./g, '_')}_${nextSeq()}`;
           let { x, y } = resolvePos(meta);
-          if (!meta.pos) { const ap = autoPos(); x = ap.x; y = ap.y; }
+          if (!meta.pos) {
+            const ap = autoPos();
+            x = ap.x;
+            y = ap.y;
+          }
           const { width, height } = resolveSize(meta);
 
           let dataInputs = [];
@@ -1111,30 +778,26 @@ export function parseKirLite(kirText) {
           let ctrlInputs = [];
           let ctrlOutputs = [];
 
-          if (fnLower === "branch") {
-            dataInputs = [{ name: "condition", type: "bool" }];
-            ctrlInputs = ["in"];
+          if (fnLower === 'branch') {
+            dataInputs = [{ name: 'condition', type: 'bool' }];
+            ctrlInputs = ['in'];
+            ctrlOutputs = outputItems.filter((o) => o.kind === 'label').map((o) => o.label);
+            if (ctrlOutputs.length === 0) ctrlOutputs = ['true', 'false'];
+          } else if (fnLower === 'switch') {
+            dataInputs = [{ name: 'value', type: 'any' }];
+            ctrlInputs = ['in'];
             ctrlOutputs = outputItems
-              .filter((o) => o.kind === "label")
+              .filter((o) => o.kind === 'case' || o.kind === 'default')
               .map((o) => o.label);
-            if (ctrlOutputs.length === 0) ctrlOutputs = ["true", "false"];
-
-          } else if (fnLower === "switch") {
-            dataInputs = [{ name: "value", type: "any" }];
-            ctrlInputs = ["in"];
-            ctrlOutputs = outputItems
-              .filter((o) => o.kind === "case" || o.kind === "default")
-              .map((o) => o.label);
-
-          } else if (fnLower === "jump") {
+          } else if (fnLower === 'jump') {
             // jump is NOT a visible node — it's a ctrl wire.
             // Store a deferred edge from the current scope's last node to the target.
             const prevId = getPrev();
             for (const out of outputItems) {
-              if (out.kind === "label") {
+              if (out.kind === 'label') {
                 if (prevId) {
                   const fromNode = nodeById[prevId];
-                  const fromPort = fromNode ? (fromNode.ctrlOutputs[0] || "out") : "out";
+                  const fromPort = fromNode ? fromNode.ctrlOutputs[0] || 'out' : 'out';
                   jumpEdges.push({ fromNodeId: prevId, fromPort, label: out.label });
                 } else {
                   jumpEdges.push({ fromNodeId: null, fromPort: null, label: out.label });
@@ -1144,40 +807,44 @@ export function parseKirLite(kirText) {
             // Don't create a node, don't advance ctrl
             pendingMetaLocal = {};
             continue;
-
-          } else if (fnLower === "parallel") {
-            ctrlInputs = ["in"];
-            ctrlOutputs = outputItems
-              .filter((o) => o.kind === "label")
-              .map((o) => o.label);
-
+          } else if (fnLower === 'parallel') {
+            ctrlInputs = ['in'];
+            ctrlOutputs = outputItems.filter((o) => o.kind === 'label').map((o) => o.label);
           } else {
-            ctrlInputs = ["in"];
-            ctrlOutputs = ["out"];
+            ctrlInputs = ['in'];
+            ctrlOutputs = ['out'];
 
             inputItems.forEach((inp, idx) => {
-              const portName = inp.kind === "kw" ? inp.name : `in_${idx}`;
-              dataInputs.push({ name: portName, type: "any" });
+              const portName = inp.kind === 'kw' ? inp.name : `in_${idx}`;
+              dataInputs.push({ name: portName, type: 'any' });
             });
 
             outputItems.forEach((out, idx) => {
-              if (out.kind === "name") {
-                dataOutputs.push({ name: out.name, type: "any" });
-              } else if (out.kind === "wildcard") {
-                dataOutputs.push({ name: `_out_${idx}`, type: "any" });
+              if (out.kind === 'name') {
+                dataOutputs.push({ name: out.name, type: 'any' });
+              } else if (out.kind === 'wildcard') {
+                dataOutputs.push({ name: `_out_${idx}`, type: 'any' });
               }
             });
           }
 
           const node = {
             id: nodeId,
-            type: fnLower === "branch" ? "branch"
-                : fnLower === "switch" ? "switch"
-                : fnLower === "jump" ? "jump"
-                : fnLower === "parallel" ? "parallel"
-                : funcName,
+            type:
+              fnLower === 'branch'
+                ? 'branch'
+                : fnLower === 'switch'
+                  ? 'switch'
+                  : fnLower === 'jump'
+                    ? 'jump'
+                    : fnLower === 'parallel'
+                      ? 'parallel'
+                      : funcName,
             name: funcName,
-            x, y, width, height,
+            x,
+            y,
+            width,
+            height,
             dataInputs,
             dataOutputs,
             ctrlInputs,
@@ -1188,23 +855,22 @@ export function parseKirLite(kirText) {
 
           // Register raw output names as data variables
           for (const out of outputItems) {
-            if (out.kind === "name") {
-              if (true) {
-                varMap[out.name] = { nodeId, port: out.name };
-              }
+            if (out.kind === 'name') {
+              varMap[out.name] = { nodeId, port: out.name };
               // Also {nodeId}_{portName} form
               varMap[`${nodeId}_${out.name}`] = { nodeId, port: out.name };
             }
           }
           for (const out of dataOutputs) {
-            const canonical = `${nodeId}_${out.name}`;
-            if (true) {
-              varMap[canonical] = { nodeId, port: out.name };
-            }
+            varMap[`${nodeId}_${out.name}`] = { nodeId, port: out.name };
           }
 
           // Emit data edges
-          emitDataEdges(nodeId, inputItems, dataInputs.map((p) => p.name));
+          emitDataEdges(
+            nodeId,
+            inputItems,
+            dataInputs.map((p) => p.name)
+          );
 
           // Emit sequential ctrl edge
           doEmitCtrlEdge(nodeId);
@@ -1212,7 +878,7 @@ export function parseKirLite(kirText) {
 
           // Register deferred label ctrl edges
           for (const out of outputItems) {
-            if (out.kind === "label" || out.kind === "case" || out.kind === "default") {
+            if (out.kind === 'label' || out.kind === 'case' || out.kind === 'default') {
               labelSources.push({ fromNodeId: nodeId, fromPort: out.label, label: out.label });
             }
           }
@@ -1238,22 +904,35 @@ export function parseKirLite(kirText) {
  */
 function extractCall(text) {
   const t = text.trim();
-  if (!t.startsWith("(")) return null;
+  if (!t.startsWith('(')) return null;
 
   // Find matching ) for the first (
   let depth = 0;
-  let inS = false, inD = false;
+  let inS = false,
+    inD = false;
   let closeIdx = -1;
   for (let i = 0; i < t.length; i++) {
     const ch = t[i];
-    if (ch === "\\" && (inS || inD)) { i++; continue; }
-    if (ch === "'" && !inD) { inS = !inS; continue; }
-    if (ch === '"' && !inS) { inD = !inD; continue; }
+    if (ch === '\\' && (inS || inD)) {
+      i++;
+      continue;
+    }
+    if (ch === "'" && !inD) {
+      inS = !inS;
+      continue;
+    }
+    if (ch === '"' && !inS) {
+      inD = !inD;
+      continue;
+    }
     if (inS || inD) continue;
-    if (ch === "(") depth++;
-    else if (ch === ")") {
+    if (ch === '(') depth++;
+    else if (ch === ')') {
       depth--;
-      if (depth === 0) { closeIdx = i; break; }
+      if (depth === 0) {
+        closeIdx = i;
+        break;
+      }
     }
   }
   if (closeIdx < 0) return null;

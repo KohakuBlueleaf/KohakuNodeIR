@@ -1,13 +1,13 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { detectAndParseAsync } from "../parser/index.js";
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { detectAndParseAsync } from '../parser/index.js';
 
 const emit = defineEmits([
   /**
    * Emitted when a file or pasted text is successfully parsed.
    * Payload: { nodes, edges, filename? }
    */
-  "graph-loaded",
+  'graph-loaded',
 ]);
 
 // ── Drag-over overlay visibility ──────────────────────────────────────────────
@@ -23,7 +23,7 @@ function onDragEnter(e) {
 
 function onDragOver(e) {
   e.preventDefault();
-  e.dataTransfer.dropEffect = "copy";
+  e.dataTransfer.dropEffect = 'copy';
 }
 
 function onDragLeave() {
@@ -46,9 +46,9 @@ async function onDrop(e) {
   }
 
   // Fallback: plain text dragged in (e.g. from a text editor)
-  const text = e.dataTransfer?.getData("text/plain");
+  const text = e.dataTransfer?.getData('text/plain');
   if (text) {
-    loadText("drop.kir", text);
+    loadText('drop.kir', text);
   }
 }
 
@@ -56,7 +56,7 @@ async function onDrop(e) {
 async function loadFile(file) {
   const name = file.name;
   const lower = name.toLowerCase();
-  if (!lower.endsWith(".kir") && !lower.endsWith(".kirgraph") && !lower.endsWith(".json")) {
+  if (!lower.endsWith('.kir') && !lower.endsWith('.kirgraph') && !lower.endsWith('.json')) {
     console.warn(`[FileDropZone] Unsupported file type: ${name}`);
     return;
   }
@@ -64,16 +64,16 @@ async function loadFile(file) {
     const text = await file.text();
     loadText(name, text);
   } catch (err) {
-    console.error("[FileDropZone] Failed to read file:", err);
+    console.error('[FileDropZone] Failed to read file:', err);
   }
 }
 
 async function loadText(filename, text) {
   try {
     const { nodes, edges } = await detectAndParseAsync(text, filename);
-    emit("graph-loaded", { nodes, edges, filename });
+    emit('graph-loaded', { nodes, edges, filename });
   } catch (err) {
-    console.error("[FileDropZone] Failed to parse content:", err);
+    console.error('[FileDropZone] Failed to parse content:', err);
   }
 }
 
@@ -83,36 +83,34 @@ async function onPaste(e) {
   const active = document.activeElement;
   if (
     active &&
-    (active.tagName === "INPUT" ||
-      active.tagName === "TEXTAREA" ||
-      active.isContentEditable)
+    (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
   ) {
     return;
   }
 
-  const text = e.clipboardData?.getData("text/plain");
+  const text = e.clipboardData?.getData('text/plain');
   if (!text) return;
   e.preventDefault();
-  loadText("paste.kir", text.trim());
+  loadText('paste.kir', text.trim());
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(() => {
   // Attach drop listeners to the whole document so the drop zone is truly
   // full-screen even when hovering over child components.
-  document.addEventListener("dragenter", onDragEnter);
-  document.addEventListener("dragover", onDragOver);
-  document.addEventListener("dragleave", onDragLeave);
-  document.addEventListener("drop", onDrop);
-  document.addEventListener("paste", onPaste);
+  document.addEventListener('dragenter', onDragEnter);
+  document.addEventListener('dragover', onDragOver);
+  document.addEventListener('dragleave', onDragLeave);
+  document.addEventListener('drop', onDrop);
+  document.addEventListener('paste', onPaste);
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener("dragenter", onDragEnter);
-  document.removeEventListener("dragover", onDragOver);
-  document.removeEventListener("dragleave", onDragLeave);
-  document.removeEventListener("drop", onDrop);
-  document.removeEventListener("paste", onPaste);
+  document.removeEventListener('dragenter', onDragEnter);
+  document.removeEventListener('dragover', onDragOver);
+  document.removeEventListener('dragleave', onDragLeave);
+  document.removeEventListener('drop', onDrop);
+  document.removeEventListener('paste', onPaste);
 });
 </script>
 
@@ -163,8 +161,12 @@ onBeforeUnmount(() => {
 }
 
 @keyframes bounce {
-  from { transform: translateY(0); }
-  to   { transform: translateY(-8px); }
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-8px);
+  }
 }
 
 .drop-title {

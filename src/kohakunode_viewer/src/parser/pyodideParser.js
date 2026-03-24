@@ -10,7 +10,7 @@
  *   const { nodes, edges } = await parseKirWithPython(kirText)
  */
 
-const PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/v0.27.1/full/pyodide.js";
+const PYODIDE_CDN = 'https://cdn.jsdelivr.net/pyodide/v0.27.1/full/pyodide.js';
 
 let pyodide = null;
 let ready = false;
@@ -25,29 +25,29 @@ export async function initPyodide(onProgress) {
 
   loading = (async () => {
     try {
-      onProgress?.("Loading Pyodide runtime...");
+      onProgress?.('Loading Pyodide runtime...');
 
       // Load Pyodide script
       if (!window.loadPyodide) {
         await new Promise((resolve, reject) => {
-          const s = document.createElement("script");
+          const s = document.createElement('script');
           s.src = PYODIDE_CDN;
           s.onload = resolve;
-          s.onerror = () => reject(new Error("Failed to load Pyodide CDN"));
+          s.onerror = () => reject(new Error('Failed to load Pyodide CDN'));
           document.head.appendChild(s);
         });
       }
 
       pyodide = await window.loadPyodide();
-      onProgress?.("Installing lark parser...");
+      onProgress?.('Installing lark parser...');
 
-      await pyodide.loadPackage("micropip");
+      await pyodide.loadPackage('micropip');
       await pyodide.runPythonAsync(`
 import micropip
 await micropip.install("lark")
 `);
 
-      onProgress?.("Loading kohakunode...");
+      onProgress?.('Loading kohakunode...');
 
       // Fetch the file manifest and mount all Python files
       await mountKohakunode();
@@ -59,10 +59,10 @@ print(f"[Pyodide] kohakunode loaded, version={kohakunode.__version__}")
 `);
 
       ready = true;
-      onProgress?.("Ready");
+      onProgress?.('Ready');
       return true;
     } catch (err) {
-      console.error("[pyodideParser] Init failed:", err);
+      console.error('[pyodideParser] Init failed:', err);
       onProgress?.(`Error: ${err.message}`);
       return false;
     }
@@ -76,14 +76,14 @@ print(f"[Pyodide] kohakunode loaded, version={kohakunode.__version__}")
  */
 async function mountKohakunode() {
   // Fetch the manifest (list of files to mount)
-  const manifestRes = await fetch("/pylib/manifest.json");
+  const manifestRes = await fetch('/pylib/manifest.json');
   if (!manifestRes.ok) {
-    throw new Error("Could not fetch /pylib/manifest.json — run prebuild first");
+    throw new Error('Could not fetch /pylib/manifest.json — run prebuild first');
   }
   const manifest = await manifestRes.json();
 
   // Find site-packages path
-  const sitePackages = pyodide.runPython("import site; site.getsitepackages()[0]");
+  const sitePackages = pyodide.runPython('import site; site.getsitepackages()[0]');
   console.log(`[pyodideParser] site-packages: ${sitePackages}`);
 
   // Create directories and write files
@@ -97,14 +97,18 @@ async function mountKohakunode() {
     const content = await res.text();
 
     // Ensure parent directories exist
-    const parts = relPath.split("/");
+    const parts = relPath.split('/');
     let dir = sitePackages;
     for (let i = 0; i < parts.length - 1; i++) {
-      dir += "/" + parts[i];
-      try { pyodide.FS.mkdir(dir); } catch { /* exists */ }
+      dir += '/' + parts[i];
+      try {
+        pyodide.FS.mkdir(dir);
+      } catch {
+        /* exists */
+      }
     }
 
-    const fullPath = dir + "/" + parts[parts.length - 1];
+    const fullPath = dir + '/' + parts[parts.length - 1];
     pyodide.FS.writeFile(fullPath, content);
   }
 
@@ -122,7 +126,7 @@ export async function parseKirWithPython(kirText) {
 
   try {
     // Use globals to pass data (avoids string escaping issues)
-    pyodide.globals.set("_kir_input", kirText);
+    pyodide.globals.set('_kir_input', kirText);
 
     const resultJson = await pyodide.runPythonAsync(`
 import json
@@ -159,7 +163,7 @@ json.dumps(_result)
 
     return JSON.parse(resultJson);
   } catch (err) {
-    console.error("[pyodideParser] Parse error:", err);
+    console.error('[pyodideParser] Parse error:', err);
     return null;
   }
 }
