@@ -1,0 +1,1214 @@
+{
+  "version": "0.1.0",
+  "nodes": [
+    {
+      "id": "comfy_3",
+      "type": "ksampler",
+      "name": "KSampler",
+      "data_inputs": [
+        {
+          "port": "seed",
+          "type": "any",
+          "default": 923874509872640
+        },
+        {
+          "port": "steps",
+          "type": "any",
+          "default": 24
+        },
+        {
+          "port": "cfg",
+          "type": "any",
+          "default": 1
+        },
+        {
+          "port": "sampler_name",
+          "type": "any",
+          "default": "euler_ancestral"
+        },
+        {
+          "port": "scheduler",
+          "type": "any",
+          "default": "exponential"
+        },
+        {
+          "port": "denoise",
+          "type": "any",
+          "default": 1
+        },
+        {
+          "port": "model",
+          "type": "any"
+        },
+        {
+          "port": "positive",
+          "type": "any"
+        },
+        {
+          "port": "negative",
+          "type": "any"
+        },
+        {
+          "port": "latent_image",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          100
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "KSampler",
+        "comfyui_id": "3",
+        "comfyui_api_inputs": {
+          "seed": 923874509872640,
+          "steps": 24,
+          "cfg": 1,
+          "sampler_name": "euler_ancestral",
+          "scheduler": "exponential",
+          "denoise": 1,
+          "model": [
+            "86",
+            0
+          ],
+          "positive": [
+            "6",
+            0
+          ],
+          "negative": [
+            "7",
+            0
+          ],
+          "latent_image": [
+            "71",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_6",
+      "type": "cliptextencode",
+      "name": "CLIPTextEncode",
+      "data_inputs": [
+        {
+          "port": "text",
+          "type": "any"
+        },
+        {
+          "port": "clip",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          400,
+          100
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "CLIPTextEncode",
+        "comfyui_id": "6",
+        "comfyui_api_inputs": {
+          "text": [
+            "76",
+            1
+          ],
+          "clip": [
+            "87",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_7",
+      "type": "cliptextencode",
+      "name": "CLIPTextEncode",
+      "data_inputs": [
+        {
+          "port": "text",
+          "type": "any",
+          "default": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
+        },
+        {
+          "port": "clip",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          700,
+          100
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "CLIPTextEncode",
+        "comfyui_id": "7",
+        "comfyui_api_inputs": {
+          "text": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark",
+          "clip": [
+            "87",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_8",
+      "type": "vaedecode",
+      "name": "VAEDecode",
+      "data_inputs": [
+        {
+          "port": "samples",
+          "type": "any"
+        },
+        {
+          "port": "vae",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          1000,
+          100
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "VAEDecode",
+        "comfyui_id": "8",
+        "comfyui_api_inputs": {
+          "samples": [
+            "3",
+            0
+          ],
+          "vae": [
+            "88",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_41",
+      "type": "ksampler",
+      "name": "KSampler",
+      "data_inputs": [
+        {
+          "port": "seed",
+          "type": "any",
+          "default": 923874509872640
+        },
+        {
+          "port": "steps",
+          "type": "any",
+          "default": 16
+        },
+        {
+          "port": "cfg",
+          "type": "any",
+          "default": 5
+        },
+        {
+          "port": "sampler_name",
+          "type": "any",
+          "default": "euler_ancestral"
+        },
+        {
+          "port": "scheduler",
+          "type": "any",
+          "default": "exponential"
+        },
+        {
+          "port": "denoise",
+          "type": "any",
+          "default": 0.5500000000000002
+        },
+        {
+          "port": "model",
+          "type": "any"
+        },
+        {
+          "port": "positive",
+          "type": "any"
+        },
+        {
+          "port": "negative",
+          "type": "any"
+        },
+        {
+          "port": "latent_image",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          300
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "KSampler",
+        "comfyui_id": "41",
+        "comfyui_api_inputs": {
+          "seed": 923874509872640,
+          "steps": 16,
+          "cfg": 5,
+          "sampler_name": "euler_ancestral",
+          "scheduler": "exponential",
+          "denoise": 0.5500000000000002,
+          "model": [
+            "86",
+            0
+          ],
+          "positive": [
+            "6",
+            0
+          ],
+          "negative": [
+            "7",
+            0
+          ],
+          "latent_image": [
+            "52",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_42",
+      "type": "vaedecode",
+      "name": "VAEDecode",
+      "data_inputs": [
+        {
+          "port": "samples",
+          "type": "any"
+        },
+        {
+          "port": "vae",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          400,
+          300
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "VAEDecode",
+        "comfyui_id": "42",
+        "comfyui_api_inputs": {
+          "samples": [
+            "41",
+            0
+          ],
+          "vae": [
+            "88",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_45",
+      "type": "saveimage",
+      "name": "SaveImage",
+      "data_inputs": [
+        {
+          "port": "filename_prefix",
+          "type": "any",
+          "default": "ComfyUI"
+        },
+        {
+          "port": "images",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          700,
+          300
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "SaveImage",
+        "comfyui_id": "45",
+        "comfyui_api_inputs": {
+          "filename_prefix": "ComfyUI",
+          "images": [
+            "8",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_46",
+      "type": "saveimage",
+      "name": "SaveImage",
+      "data_inputs": [
+        {
+          "port": "filename_prefix",
+          "type": "any",
+          "default": "HiresFix/ComfyUI_HiresFix"
+        },
+        {
+          "port": "images",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          1000,
+          300
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "SaveImage",
+        "comfyui_id": "46",
+        "comfyui_api_inputs": {
+          "filename_prefix": "HiresFix/ComfyUI_HiresFix",
+          "images": [
+            "42",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_51",
+      "type": "imagescaleby",
+      "name": "ImageScaleBy",
+      "data_inputs": [
+        {
+          "port": "upscale_method",
+          "type": "any",
+          "default": "lanczos"
+        },
+        {
+          "port": "scale_by",
+          "type": "any",
+          "default": 1.5
+        },
+        {
+          "port": "image",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          500
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "ImageScaleBy",
+        "comfyui_id": "51",
+        "comfyui_api_inputs": {
+          "upscale_method": "lanczos",
+          "scale_by": 1.5,
+          "image": [
+            "8",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_52",
+      "type": "vaeencode",
+      "name": "VAEEncode",
+      "data_inputs": [
+        {
+          "port": "pixels",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          400,
+          500
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "VAEEncode",
+        "comfyui_id": "52",
+        "comfyui_api_inputs": {
+          "pixels": [
+            "51",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_71",
+      "type": "emptylatentimage",
+      "name": "EmptyLatentImage",
+      "data_inputs": [
+        {
+          "port": "width",
+          "type": "any"
+        },
+        {
+          "port": "height",
+          "type": "any"
+        },
+        {
+          "port": "batch_size",
+          "type": "any",
+          "default": 1
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          700,
+          500
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "EmptyLatentImage",
+        "comfyui_id": "71",
+        "comfyui_api_inputs": {
+          "width": [
+            "73",
+            0
+          ],
+          "height": [
+            "74",
+            0
+          ],
+          "batch_size": 1
+        }
+      }
+    },
+    {
+      "id": "comfy_73",
+      "type": "primitiveint",
+      "name": "PrimitiveInt",
+      "data_inputs": [
+        {
+          "port": "value",
+          "type": "any",
+          "default": 1344
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          1000,
+          500
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "PrimitiveInt",
+        "comfyui_id": "73",
+        "comfyui_api_inputs": {
+          "value": 1344
+        }
+      }
+    },
+    {
+      "id": "comfy_74",
+      "type": "primitiveint",
+      "name": "PrimitiveInt",
+      "data_inputs": [
+        {
+          "port": "value",
+          "type": "any",
+          "default": 768
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          700
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "PrimitiveInt",
+        "comfyui_id": "74",
+        "comfyui_api_inputs": {
+          "value": 768
+        }
+      }
+    },
+    {
+      "id": "comfy_76",
+      "type": "tipo",
+      "name": "TIPO",
+      "data_inputs": [
+        {
+          "port": "tags",
+          "type": "any",
+          "default": ""
+        },
+        {
+          "port": "nl_prompt",
+          "type": "any",
+          "default": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+        },
+        {
+          "port": "ban_tags",
+          "type": "any",
+          "default": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
+        },
+        {
+          "port": "tipo_model",
+          "type": "any",
+          "default": "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf"
+        },
+        {
+          "port": "format",
+          "type": "any",
+          "default": "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>.\n\n<|quality|>, <|meta|>, <|rating|>"
+        },
+        {
+          "port": "width",
+          "type": "any"
+        },
+        {
+          "port": "height",
+          "type": "any"
+        },
+        {
+          "port": "temperature",
+          "type": "any",
+          "default": 0.5
+        },
+        {
+          "port": "top_p",
+          "type": "any",
+          "default": 0.95
+        },
+        {
+          "port": "min_p",
+          "type": "any",
+          "default": 0.05
+        },
+        {
+          "port": "top_k",
+          "type": "any",
+          "default": 64
+        },
+        {
+          "port": "tag_length",
+          "type": "any",
+          "default": "long"
+        },
+        {
+          "port": "nl_length",
+          "type": "any",
+          "default": "long"
+        },
+        {
+          "port": "seed",
+          "type": "any",
+          "default": 923874509872640
+        },
+        {
+          "port": "device",
+          "type": "any",
+          "default": "cuda"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        },
+        {
+          "port": "output_1",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          400,
+          700
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "TIPO",
+        "comfyui_id": "76",
+        "comfyui_api_inputs": {
+          "tags": "",
+          "nl_prompt": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.",
+          "ban_tags": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses",
+          "tipo_model": "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf",
+          "format": "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>.\n\n<|quality|>, <|meta|>, <|rating|>",
+          "width": [
+            "73",
+            0
+          ],
+          "height": [
+            "74",
+            0
+          ],
+          "temperature": 0.5,
+          "top_p": 0.95,
+          "min_p": 0.05,
+          "top_k": 64,
+          "tag_length": "long",
+          "nl_length": "long",
+          "seed": 923874509872640,
+          "device": "cuda"
+        }
+      }
+    },
+    {
+      "id": "comfy_82",
+      "type": "showtext|pysssss",
+      "name": "ShowText|pysssss",
+      "data_inputs": [
+        {
+          "port": "text_0",
+          "type": "any",
+          "default": "1girl, \n\nneck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,\n\nA realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+        },
+        {
+          "port": "text",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          700,
+          700
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "ShowText|pysssss",
+        "comfyui_id": "82",
+        "comfyui_api_inputs": {
+          "text_0": "1girl, \n\nneck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,\n\nA realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.",
+          "text": [
+            "76",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "comfy_86",
+      "type": "unetloader",
+      "name": "UNETLoader",
+      "data_inputs": [
+        {
+          "port": "unet_name",
+          "type": "any",
+          "default": "flux-2-klein-4b.safetensors"
+        },
+        {
+          "port": "weight_dtype",
+          "type": "any",
+          "default": "default"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          1000,
+          700
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "UNETLoader",
+        "comfyui_id": "86",
+        "comfyui_api_inputs": {
+          "unet_name": "flux-2-klein-4b.safetensors",
+          "weight_dtype": "default"
+        }
+      }
+    },
+    {
+      "id": "comfy_87",
+      "type": "cliploader",
+      "name": "CLIPLoader",
+      "data_inputs": [
+        {
+          "port": "clip_name",
+          "type": "any",
+          "default": "qwen_3_4b.safetensors"
+        },
+        {
+          "port": "type",
+          "type": "any",
+          "default": "flux2"
+        },
+        {
+          "port": "device",
+          "type": "any",
+          "default": "default"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          900
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "CLIPLoader",
+        "comfyui_id": "87",
+        "comfyui_api_inputs": {
+          "clip_name": "qwen_3_4b.safetensors",
+          "type": "flux2",
+          "device": "default"
+        }
+      }
+    },
+    {
+      "id": "comfy_88",
+      "type": "vaeloader",
+      "name": "VAELoader",
+      "data_inputs": [
+        {
+          "port": "vae_name",
+          "type": "any",
+          "default": "flux2-vae.safetensors"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "output_0",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          400,
+          900
+        ],
+        "size": [
+          250,
+          120
+        ],
+        "comfyui_type": "VAELoader",
+        "comfyui_id": "88",
+        "comfyui_api_inputs": {
+          "vae_name": "flux2-vae.safetensors"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_86",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_3",
+        "port": "model"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_6",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_3",
+        "port": "positive"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_7",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_3",
+        "port": "negative"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_71",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_3",
+        "port": "latent_image"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_76",
+        "port": "output_1"
+      },
+      "to": {
+        "node": "comfy_6",
+        "port": "text"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_87",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_6",
+        "port": "clip"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_87",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_7",
+        "port": "clip"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_3",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_8",
+        "port": "samples"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_88",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_8",
+        "port": "vae"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_86",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_41",
+        "port": "model"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_6",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_41",
+        "port": "positive"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_7",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_41",
+        "port": "negative"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_52",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_41",
+        "port": "latent_image"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_41",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_42",
+        "port": "samples"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_88",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_42",
+        "port": "vae"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_8",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_45",
+        "port": "images"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_42",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_46",
+        "port": "images"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_8",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_51",
+        "port": "image"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_51",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_52",
+        "port": "pixels"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_73",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_71",
+        "port": "width"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_74",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_71",
+        "port": "height"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_73",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_76",
+        "port": "width"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_74",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_76",
+        "port": "height"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "comfy_76",
+        "port": "output_0"
+      },
+      "to": {
+        "node": "comfy_82",
+        "port": "text"
+      }
+    }
+  ]
+}

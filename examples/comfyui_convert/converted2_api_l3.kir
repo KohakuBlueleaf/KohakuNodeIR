@@ -1,0 +1,30 @@
+(1344)primitiveint(comfy_73_output_0)
+("qwen_3_4b.safetensors", "flux2", "default")cliploader(comfy_87_output_0)
+("flux2-vae.safetensors")vaeloader(comfy_88_output_0)
+(768)primitiveint(comfy_74_output_0)
+("flux-2-klein-4b.safetensors", "default")unetloader(comfy_86_output_0)
+("low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark", comfy_87_output_0)cliptextencode(comfy_7_output_0)
+("", "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.", "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses", "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf", "<|special|>, 
+<|characters|>, <|copyrights|>, 
+<|artist|>, 
+
+<|general|>,
+
+<|extended|>.
+
+<|quality|>, <|meta|>, <|rating|>", comfy_73_output_0, comfy_74_output_0, 0.5, 0.95, 0.05, 64, "long", "long", 923874509872640, "cuda")tipo(comfy_76_output_0, comfy_76_output_1)
+(comfy_73_output_0, comfy_74_output_0, 1)emptylatentimage(comfy_71_output_0)
+(comfy_76_output_1, comfy_87_output_0)cliptextencode(comfy_6_output_0)
+(923874509872640, 24, 1, "euler_ancestral", "exponential", 1, comfy_86_output_0, comfy_6_output_0, comfy_7_output_0, comfy_71_output_0)ksampler(comfy_3_output_0)
+(comfy_3_output_0, comfy_88_output_0)vaedecode(comfy_8_output_0)
+("lanczos", 1.5, comfy_8_output_0)imagescaleby(comfy_51_output_0)
+(comfy_51_output_0)vaeencode(comfy_52_output_0)
+(923874509872640, 16, 5, "euler_ancestral", "exponential", 0.5500000000000002, comfy_86_output_0, comfy_6_output_0, comfy_7_output_0, comfy_52_output_0)ksampler(comfy_41_output_0)
+(comfy_41_output_0, comfy_88_output_0)vaedecode(comfy_42_output_0)
+("ComfyUI", comfy_8_output_0)saveimage()
+("HiresFix/ComfyUI_HiresFix", comfy_42_output_0)saveimage()
+("1girl, 
+
+neck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,
+
+A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.", comfy_76_output_0)showtext|pysssss()

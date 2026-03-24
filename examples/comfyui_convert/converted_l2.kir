@@ -1,15 +1,15 @@
 @dataflow:
-    @meta node_id="comfy_1" pos=(100, 100) size=[300, 100] mode=0 order=0
+    @meta node_id="comfy_1" pos=(100, 100) size=[300, 100] comfyui_type="CheckpointLoaderSimple" comfyui_id=1 mode=0 order=0 flags={} widgets_values=["v1-5-pruned-emaonly.ckpt"] comfyui_inputs=[] comfyui_outputs=[{"name": "MODEL", "type": "MODEL", "links": [1]}, {"name": "CLIP", "type": "CLIP", "links": [2, 4]}, {"name": "VAE", "type": "VAE", "links": [5]}]
     ()checkpointloadersimple(comfy_1_model, comfy_1_clip, comfy_1_vae)
-    @meta node_id="comfy_2" pos=(450, 50) size=[300, 100] mode=0 order=1
+    @meta node_id="comfy_2" pos=(450, 50) size=[300, 100] comfyui_type="CLIPTextEncode" comfyui_id=2 mode=0 order=1 flags={} widgets_values=["a beautiful landscape, mountains, sunset"] comfyui_inputs=[{"name": "clip", "type": "CLIP", "link": 2}] comfyui_outputs=[{"name": "CONDITIONING", "type": "CONDITIONING", "links": [3]}]
     (comfy_1_clip)cliptextencode(comfy_2_conditioning)
-    @meta node_id="comfy_3" pos=(450, 200) size=[300, 100] mode=0 order=2
+    @meta node_id="comfy_3" pos=(450, 200) size=[300, 100] comfyui_type="CLIPTextEncode" comfyui_id=3 mode=0 order=2 flags={} widgets_values=["blurry, low quality"] comfyui_inputs=[{"name": "clip", "type": "CLIP", "link": 4}] comfyui_outputs=[{"name": "CONDITIONING", "type": "CONDITIONING", "links": [6]}]
     (comfy_1_clip)cliptextencode(comfy_3_conditioning)
-    @meta node_id="comfy_4" pos=(800, 100) size=[300, 200] mode=0 order=4
+    @meta node_id="comfy_4" pos=(800, 100) size=[300, 200] comfyui_type="KSampler" comfyui_id=4 mode=0 order=4 flags={} widgets_values=[42, "fixed", 20, 7.5, "euler", "normal", 1.0] comfyui_inputs=[{"name": "model", "type": "MODEL", "link": 1}, {"name": "positive", "type": "CONDITIONING", "link": 3}, {"name": "negative", "type": "CONDITIONING", "link": 6}, {"name": "latent_image", "type": "LATENT", "link": 8}] comfyui_outputs=[{"name": "LATENT", "type": "LATENT", "links": [7]}]
     (comfy_1_model, comfy_2_conditioning, comfy_3_conditioning, comfy_5_latent)ksampler(comfy_4_latent)
-    @meta node_id="comfy_5" pos=(450, 350) size=[300, 100] mode=0 order=3
+    @meta node_id="comfy_5" pos=(450, 350) size=[300, 100] comfyui_type="EmptyLatentImage" comfyui_id=5 mode=0 order=3 flags={} widgets_values=[512, 512, 1] comfyui_inputs=[] comfyui_outputs=[{"name": "LATENT", "type": "LATENT", "links": [8]}]
     ()emptylatentimage(comfy_5_latent)
-    @meta node_id="comfy_6" pos=(1150, 100) size=[200, 100] mode=0 order=5
+    @meta node_id="comfy_6" pos=(1150, 100) size=[200, 100] comfyui_type="VAEDecode" comfyui_id=6 mode=0 order=5 flags={} widgets_values=[] comfyui_inputs=[{"name": "samples", "type": "LATENT", "link": 7}, {"name": "vae", "type": "VAE", "link": 5}] comfyui_outputs=[{"name": "IMAGE", "type": "IMAGE", "links": [9]}]
     (comfy_4_latent, comfy_1_vae)vaedecode(comfy_6_image)
-    @meta node_id="comfy_7" pos=(1400, 100) size=[300, 300] mode=0 order=6
+    @meta node_id="comfy_7" pos=(1400, 100) size=[300, 300] comfyui_type="SaveImage" comfyui_id=7 mode=0 order=6 flags={} widgets_values=["ComfyUI"] comfyui_inputs=[{"name": "images", "type": "IMAGE", "link": 9}] comfyui_outputs=[]
     (comfy_6_image)saveimage()
