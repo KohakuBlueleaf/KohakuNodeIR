@@ -59,7 +59,7 @@ def _total_score(
     edges: list[KGEdge],
 ) -> float:
     """Sum of all edge costs for the current grid assignment."""
-    return sum(score_edge(e, grid, sizes) for e in edges)
+    return sum(score_edge(e, grid) for e in edges)
 
 
 def _apply_grid_to_graph(

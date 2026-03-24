@@ -1127,10 +1127,23 @@ export function parseKirLite(kirText) {
               .map((o) => o.label);
 
           } else if (fnLower === "jump") {
-            ctrlInputs = ["in"];
-            ctrlOutputs = outputItems
-              .filter((o) => o.kind === "label")
-              .map((o) => o.label);
+            // jump is NOT a visible node — it's a ctrl wire.
+            // Store a deferred edge from the current scope's last node to the target.
+            const prevId = getPrev();
+            for (const out of outputItems) {
+              if (out.kind === "label") {
+                if (prevId) {
+                  const fromNode = nodeById[prevId];
+                  const fromPort = fromNode ? (fromNode.ctrlOutputs[0] || "out") : "out";
+                  jumpEdges.push({ fromNodeId: prevId, fromPort, label: out.label });
+                } else {
+                  jumpEdges.push({ fromNodeId: null, fromPort: null, label: out.label });
+                }
+              }
+            }
+            // Don't create a node, don't advance ctrl
+            pendingMetaLocal = {};
+            continue;
 
           } else if (fnLower === "parallel") {
             ctrlInputs = ["in"];
