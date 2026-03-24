@@ -386,15 +386,34 @@ This means `@dataflow:` blocks can appear:
 - Inside namespace bodies (for data nodes whose inputs are produced inside a loop or branch)
 - At the top level after a control chain (for data nodes dependent on control-chain outputs)
 
+#### Control-flow edges and `@dataflow:` blocks
+
+Nodes inside a `@dataflow:` block have **no control edges between each other** — their ordering is determined purely by data dependencies and topological sort. However, the block as a whole has **boundary control edges** in the surrounding graph:
+
+- **Entry boundary edge**: a ctrl edge from the last control-connected node before the block to the first node inside the block.
+- **Exit boundary edge**: the last node inside the block continues the ctrl chain — the next control-connected node after the block receives a ctrl edge from it.
+
+This boundary wiring is applied by `kir_to_graph` in `layout/ascii_view.py` when extracting a `KirGraph` from a `.kir` file, and is the correct interpretation for display and layout purposes. It means that a `@dataflow:` block appears as a logical segment in the control chain, even though its internal ordering is data-driven.
+
 ### 5.4 Branch/Switch/Merge/Parallel
 
-- **Branch**: Emit `(cond)branch(`true_label`, `false_label`)`. Each ctrl output becomes a namespace containing the downstream control chain.
-- **Switch**: Emit `(val)switch(case_val=>`label`, ...)`. Each ctrl output becomes a namespace.
+- **Branch**: Emit `(cond)branch(\`true_label\`, \`false_label\`)`. Each ctrl output becomes a namespace containing the downstream control chain.
+- **Switch**: Emit `(val)switch(case_val=>\`label\`, ...)`. Each ctrl output becomes a namespace.
 - **Merge (post-branch)**: Code naturally converges after the namespace blocks end — no explicit statement needed.
-- **Merge (loop entry)**: A merge node with an unconnected `entry` ctrl input marks the loop entry point. The compiler emits `()jump(`ns_{merge_id}`)` followed by a `ns_{merge_id}:` namespace containing the loop body. The backward edge (from branch `true` back to the merge) becomes `()jump(`ns_{merge_id}`)` inside the branch namespace.
-- **Parallel**: Emit `()parallel(`label1`, `label2`, ...)` with a namespace per ctrl output.
+- **Merge (loop entry)**: A merge node with an unconnected `entry` ctrl input marks the loop entry point. The compiler emits `()jump(\`ns_{merge_id}\`)` followed by a `ns_{merge_id}:` namespace containing the loop body. The backward edge (from branch `true` back to the merge) becomes `()jump(\`ns_{merge_id}\`)` inside the branch namespace.
+- **Parallel**: Emit `()parallel(\`label1\`, \`label2\`, ...)` with a namespace per ctrl output.
 
 The `@meta` for a merge node is attached to the `jump` statement that precedes the namespace, not to the namespace definition itself. This allows the decompiler to recover the merge node's position.
+
+#### Merge node synthesis (graph extraction from KIR)
+
+When extracting a `KirGraph` from a `.kir` source file (via `kir_to_graph`), the compiler does not emit explicit merge nodes in the text. Instead, merge nodes are **synthesized** in a post-processing step: after all control edges are resolved (including jump targets), any node that has two or more incoming ctrl edges gets a synthetic merge node inserted:
+
+1. A new merge node is created with `in_0, in_1, ...` ctrl inputs (one per incoming edge) and a single `out` ctrl output.
+2. All original edges pointing at the target are rewired to point at the respective `in_N` ports of the merge node.
+3. A new ctrl edge is added from the merge node's `out` to the original target.
+
+This synthesis accurately reflects the semantics of a loop entry point in the `.kirgraph` format, where the initial forward flow and the back-edge from the loop body both converge.
 
 ### 5.5 @meta Annotations
 
@@ -407,7 +426,40 @@ This enables full L2 → L1 decompilation from annotated KIR text.
 
 ---
 
-## 6. L2 → L1 Decompilation Rules
+## 6. Viewing and Layout
+
+### 6.1 Graph Extraction from KIR Source
+
+The `kir_to_graph(source: str) -> KirGraph` function in `kohakunode.layout.ascii_view` extracts a `KirGraph` directly from `.kir` text without requiring the `{node_id}_{port}` naming convention. It tracks all variable definitions and usages at the AST level to wire data edges, and applies the boundary ctrl-edge rules for `@dataflow:` blocks and the merge-node synthesis described in Section 5.
+
+This allows any `.kir` program — including hand-written files — to be visualized as a graph.
+
+### 6.2 Auto-Layout
+
+`auto_layout(graph: KirGraph) -> KirGraph` in `kohakunode.layout.auto_layout` positions nodes that lack `meta.pos` using a Fischer-style BFS algorithm. See `docs/architecture.md` Section 7.2 for the full algorithm description.
+
+### 6.3 KIR Viewer
+
+The static viewer at `src/kohakunode_viewer/` accepts `.kirgraph`, `.kir`, and ComfyUI workflow JSON via file drop, file picker, or paste. For `.kir` files, it runs the real `kir_to_graph` + `auto_layout` pipeline inside Pyodide (WASM Python) with automatic fallback to a JS lite parser.
+
+The viewer has no server dependency and can be built once and served from any static host.
+
+### 6.4 Standalone HTML Export
+
+`kohakunode_viewer.html_export.generate_html(kirgraph_json: str) -> str` produces a self-contained HTML file that visualises the graph with no external dependencies. The graph JSON is embedded inline; pan and zoom are implemented in vanilla JS.
+
+```python
+from kohakunode_viewer.html_export import generate_html
+from kohakunode.kirgraph.schema import KirGraph
+
+graph = KirGraph.from_file("my_graph.kirgraph")
+with open("viewer.html", "w") as f:
+    f.write(generate_html(graph.to_json()))
+```
+
+---
+
+## 7. L2 → L1 Decompilation Rules
 
 Decompilation is a two-pass process implemented by `KirGraphDecompiler`.
 

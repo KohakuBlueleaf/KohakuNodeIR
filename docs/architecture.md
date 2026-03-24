@@ -4,46 +4,31 @@
 
 ## 1. Overview
 
-KohakuNodeIR is a full-stack visual programming system. Users build programs by connecting nodes in a browser-based editor. The editor compiles the graph to KIR text, which a Python backend parses, validates, compiles, and executes.
+KohakuNodeIR is a portable IR language and toolchain for node-based visual programming. The core is a Python library — any UI that emits `.kir` can run on any conforming backend.
+
+**Core packages:**
+
+- **`kohakunode`** — IR engine: parser, compiler, executor, layout system
+- **`kohakunode_viewer`** — static browser viewer (Vue 3 + Pyodide, no server needed)
+- **`kohakunode_utils`** — ComfyUI workflow import/export
 
 ```
   ┌──────────────────────────────────────────────────────────────┐
-  │                    Browser (Vue 3 + Pinia)                   │
-  │                                                              │
-  │  Node Palette ──► Node Editor Canvas ──► IR Preview Panel   │
-  │        │                │                        │           │
-  │  NodeRegistry     graph store             graphToIr.js       │
-  │  (fetched from    (nodes + edges)         kirgraph.js        │
-  │   backend)                                                   │
-  │                         │                                    │
-  │              Save .kirgraph / Compile KIR                    │
-  └─────────────────────────┼────────────────────────────────────┘
-                            │ HTTP REST + WebSocket
-  ┌─────────────────────────▼────────────────────────────────────┐
-  │               Backend (FastAPI, Python 3.10+)                │
-  │                                                              │
-  │  POST /api/execute            POST /api/execute/kirgraph     │
-  │  POST /api/compile            POST /api/decompile            │
-  │  POST /api/nodes/register     GET /api/nodes                 │
-  │  DELETE /api/nodes/{type}                                    │
-  │  WS /api/ws/execute           WS /api/ws/execute/kirgraph    │
-  │                                                              │
-  │            ExecutionSession (captures output)                │
-  │                      │                                       │
-  │                   Executor                                   │
-  │          parse → validate → compile → interpret              │
-  └──────────────────────────────────────────────────────────────┘
-                            │
-  ┌─────────────────────────▼────────────────────────────────────┐
-  │              kohakunode Python engine                        │
+  │              kohakunode — Python IR engine                   │
   │                                                              │
   │  Parser  →  AST  →  Validator  →  DataflowCompiler          │
   │                                         │                    │
+  │  KirGraphCompiler  ←→  KirGraphDecompiler                   │
+  │  (L1→L2)                (L2→L1)         │                    │
   │                                    Interpreter               │
   │                                         │                    │
   │                                    Registry (functions)      │
+  │                                                              │
+  │  Layout: auto_layout / score / optimizer / ascii_view        │
   └──────────────────────────────────────────────────────────────┘
 ```
+
+The `app/` directory contains an **example** full-stack application (Vue 3 node editor + FastAPI execution server) demonstrating how to build on top of the core. It is not part of the core toolchain.
 
 ---
 
@@ -184,6 +169,11 @@ src/kohakunode/
   serializer/
     reader.py          read() / read_string() — parse + deserialize
     writer.py          Writer — AST → KIR text
+  layout/
+    ascii_view.py      kir_to_graph() — extract KirGraph from .kir AST
+    auto_layout.py     auto_layout() — Fischer-style BFS placement
+    score.py           score_layout() — wire-bending quality metric
+    optimizer.py       optimize_layout() — local-search improvement
 ```
 
 ### 3.2 Execution Pipeline
@@ -261,191 +251,11 @@ Topological sort uses `DependencyGraphBuilder` which maps each statement's outpu
 
 ---
 
-## 4. Frontend
-
-Located at `app/frontend/`. Vue 3 SPA built with Vite.
-
-### 4.1 Technology Stack
-
-| Concern | Library |
-|---------|---------|
-| UI framework | Vue 3 (Composition API) |
-| State management | Pinia |
-| Component library | Element Plus |
-| CSS utility | UnoCSS |
-| Build tool | Vite 6 |
-| HTTP client | Axios |
-| Auto-imports | unplugin-auto-import, unplugin-vue-components |
-
-Dev server: port `5174`. Vite proxies `/api/*` to the backend at `http://localhost:48888`.
-
-### 4.2 Source Layout
-
-```
-app/frontend/src/
-  main.js                  App bootstrap
-  App.vue                  Root component
-  compiler/
-    graphToIr.js           Graph → KIR text (control-flow + dataflow modes)
-    kirgraph.js            Graph → .kirgraph JSON / .kirgraph → Graph
-  components/
-    editor/
-      NodeEditor.vue       Main editor shell (toolbar, panels, canvas)
-      EditorCanvas.vue     SVG/HTML canvas, pan/zoom, event routing
-      SelectionBox.vue     Rubber-band selection rectangle
-    nodes/
-      NodeRenderer.vue     Picks the right node component by type
-      BaseNode.vue         Common node chrome (header, port rows, resize)
-      FunctionNode.vue     Generic function call node
-      BranchNode.vue       Branch (2 ctrl outputs)
-      SwitchNode.vue       Switch (N ctrl outputs)
-      MergeNode.vue        Merge / loop-entry node
-      ParallelNode.vue     Parallel node
-      ValueNode.vue        Literal value node (inline editor)
-    panels/
-      NodePalette.vue      Left panel: node type browser + drag-to-create
-      PropertyPanel.vue    Right panel: selected node property editor
-      NodeDefEditor.vue    Dialog: create / edit user-defined node code
-      IrPreview.vue        Bottom panel: live KIR text preview
-    ports/
-      ControlPort.vue      Control port dot (top/bottom edge)
-      DataPort.vue         Data port dot (left/right edge)
-    wire/
-      WireLayer.vue        SVG layer rendering all committed wires
-      DraftWire.vue        SVG path for in-progress wire draw
-  stores/
-    graph.js               useGraphStore — nodes Map, connections Map
-    editor.js              useEditorStore — pan/zoom, selection, draft wire, mode
-    history.js             useHistoryStore — undo/redo snapshots
-    nodeRegistry.js        useNodeRegistryStore — fetched node type catalog
-  composables/
-    useDrag.js             Node drag behavior
-    useWireDraw.js         Wire draw behavior
-    usePanZoom.js          Canvas pan + zoom
-    useSelection.js        Box-select behavior
-    useResize.js           Node resize handles
-    useKeyboard.js         Keyboard shortcuts (Delete, Ctrl+Z, etc.)
-  utils/
-    bezier.js              Cubic Bezier wire path math
-    grid.js                Grid snap helpers
-  styles/
-    global.css             Base styles, CSS custom properties
-```
-
-### 4.3 State Management (Pinia)
-
-**`useGraphStore`** is the authoritative graph model:
-- `nodes: Map<id, NodeData>` — reactive Map of all nodes
-- `connections: Map<id, ConnectionData>` — reactive Map of all edges
-- `addNode / removeNode / updateNodePosition / updateNodeSize` — mutations
-- `addConnection / removeConnection` — edge mutations with validity check
-- `getPortPosition(nodeId, portId)` — computes canvas-space port coordinates
-- `serialize() / deserialize(snapshot)` — used by history store for undo/redo
-
-**`useEditorStore`** holds transient UI state:
-- `panX / panY / zoom` — canvas viewport transform
-- `selectedNodeIds / selectedConnectionIds` — current selection
-- `draftWire` — in-progress wire being drawn
-- `mode` — `'controlflow'` or `'dataflow'` (affects IR compilation)
-- `showCtrlPorts` — toggle control port visibility
-
-### 4.4 Graph Compilers (JavaScript)
-
-Two compilation paths exist in the frontend:
-
-**Direct path** (`graphToIr.js`): Converts the in-memory graph store directly to KIR text. Handles both `controlflow` mode (walk control chains, emit namespaces) and `dataflow` mode (emit `@mode dataflow` header, emit all nodes unordered). This is used for the live IR preview and direct execution.
-
-**KirGraph path** (`kirgraph.js`): Converts the graph store to a `.kirgraph` JSON object, which can then be sent to the Python backend's `KirGraphCompiler` for an authoritative L1→L2 compilation. Also handles the reverse: loading a `.kirgraph` file reconstructs the graph store.
-
-### 4.5 Node Layout Model
-
-Each node has:
-- `dataPorts.inputs` — left edge, one row per port (fixed `DATA_ROW_H = 28px` per row)
-- `dataPorts.outputs` — right edge, same row heights
-- `controlPorts.inputs` — top edge, evenly spaced horizontally
-- `controlPorts.outputs` — bottom edge, evenly spaced horizontally
-
-Port positions are computed by `getPortPosition()` in `useGraphStore` and used by `WireLayer` to route wires.
-
----
-
-## 5. Backend
-
-Located at `app/backend/`. FastAPI application.
-
-### 5.1 Files
-
-```
-app/backend/
-  main.py          FastAPI app, all routes, WebSocket handler
-  builtin_nodes.py Register standard library node types
-  execution.py     ExecutionSession — runs KIR, captures output
-  node_store.py    NodeStore — persist user node definitions to disk
-  node_defs/       Auto-created directory; one JSON file per user node
-```
-
-### 5.2 Startup Sequence
-
-1. Create global `Registry` and `NodeStore`
-2. `register_builtins(registry)` — populate math, comparison, string, file, convert nodes
-3. `node_store.register_all(registry)` — load saved user node definitions from `node_defs/*.json` and re-register them (uses `exec()` to compile the `node_func` Python code)
-4. FastAPI app starts, CORS middleware allows all origins
-
-### 5.3 Request Flow: REST Execute
-
-```
-POST /api/execute  {kir_source: "..."}
-        │
-        ▼
-ExecutionSession(registry)
-  ├── Override print/display to capture output into self.outputs list
-  └── Executor(registry, validate=True).execute_source(kir_source)
-        ├── parse(kir_source) → Program AST
-        ├── validate_or_raise(program) → raises on errors
-        ├── DataflowCompiler().transform(program) → sequential Program
-        └── Interpreter(registry).run(program) → VariableStore
-        │
-        ▼
-{"success": true, "variables": {...}, "output": [{type, value}, ...]}
-```
-
-### 5.4 Request Flow: WebSocket Execute
-
-```
-WS /api/ws/execute
-  Client sends: {"type": "execute", "kir_source": "..."}
-  Server sends (in order):
-    {"type": "started"}
-    {"type": "output", "value": "..."}   (one per captured print/display)
-    {"type": "variable", "name": "...", "value": ...}  (one per variable)
-    {"type": "completed", "variables": {...}}
-  On error:
-    {"type": "error", "message": "..."}
-```
-
-Execution runs in a thread pool (`loop.run_in_executor`) to avoid blocking the event loop.
-
-### 5.5 User-Defined Node Code
-
-User nodes are Python functions named `node_func`. They are stored as JSON in `node_defs/{type}.json` with a `code` field. On registration, the code is `exec()`-compiled and the resulting `node_func` callable is registered in the `Registry`.
-
-```json
-{
-  "name": "My Squarer",
-  "type": "my_squarer",
-  "inputs": [{ "name": "value", "type": "float" }],
-  "outputs": [{ "name": "result", "type": "float" }],
-  "code": "def node_func(value):\n    return value * value"
-}
-```
-
----
-
-## 6. Control Flow and Dataflow Coexistence
+## 4. Control Flow and Dataflow Coexistence
 
 A key design feature is that control flow and dataflow are not competing paradigms — they compose inside the same file.
 
-### 6.1 How They Coexist
+### 4.1 How They Coexist
 
 Control-connected nodes are emitted in control-wire order by `KirGraphCompiler`. Nodes with no control wires are wrapped in `@dataflow:` blocks placed at the point where their data dependencies are satisfied.
 
@@ -480,7 +290,7 @@ ns_loop:
     (message)print()
 ```
 
-### 6.2 `@dataflow:` Block Semantics
+### 4.2 `@dataflow:` Block Semantics
 
 - The block is a scope containing statements whose execution order is determined by data dependencies (topological sort).
 - The `DataflowCompiler` expands each block: topologically sorts its statements and inlines them into the parent body.
@@ -488,23 +298,166 @@ ns_loop:
 - Blocks can appear at the top level, inside namespaces (loop bodies, branches), and inside `@def` bodies.
 - A statement `(total, x)add(total)` where the output re-uses an input name is not a cycle — the output variable is excluded from its own dependency inputs.
 
-### 6.3 Dependent Data Nodes
+#### Control-flow edge treatment of `@dataflow:` blocks
+
+Nodes inside a `@dataflow:` block have **no internal control edges** — the ordering within the block is purely data-driven. However, the block as a whole participates in the surrounding control chain via **boundary control edges**:
+
+- **Entry boundary**: a ctrl edge from the last control-connected node before the block to the first node inside the block.
+- **Exit boundary**: the last node inside the block becomes the `last_ctrl` for the enclosing scope, so the next control-connected node after the block receives a ctrl edge from it.
+
+This means that in a `KirGraph` extracted from `.kir` source (e.g., by `kir_to_graph` in `layout/ascii_view.py`), a `@dataflow:` block appears as a chain segment within the overall control flow, even though the ordering of statements inside the block is determined by data dependencies rather than ctrl wires. The boundary edges allow layout algorithms and graph viewers to position the block correctly relative to the surrounding control flow.
+
+### 4.3 Dependent Data Nodes
 
 Nodes that have no control edges but whose data inputs come from control-connected nodes are called "dependent data nodes". The `KirGraphCompiler` places them in `@dataflow:` blocks immediately after the control node that produces their inputs, inside the same scope.
 
+### 4.4 Merge Node Synthesis
+
+When multiple control edges converge on the same target node — for example at a loop entry point where the initial forward flow and the back-edge both arrive — a **merge node** is automatically synthesized. The merge node collects all incoming ctrl edges and emits a single ctrl output to the target. This synthesis happens:
+
+- During L1 → L2 compilation (`KirGraphCompiler`): a merge node in the `.kirgraph` is compiled to `()jump(\`ns_{id}\`)` + `ns_{id}:` namespace.
+- During graph extraction from `.kir` source (`kir_to_graph`): after walking all statements, any node with two or more incoming ctrl edges gets a synthetic merge node inserted with N `in_i` ports, and all original edges are rewired through it.
+
 ---
 
-## 7. Round-Tripping (L1 ↔ L2)
+## 5. Layout System
+
+Located at `src/kohakunode/layout/`. All components operate on `KirGraph` objects and require no running UI or server.
+
+### 5.1 Graph Extraction from KIR (`ascii_view.py`)
+
+`kir_to_graph(source: str) -> KirGraph` parses a `.kir` source string and builds a `KirGraph` by walking the AST directly. Unlike the decompiler, it does not require the `{node_id}_{port}` variable naming convention — it tracks all variable definitions and usages to wire data edges.
+
+Key behaviors:
+
+- **Control flow**: `FuncCall` nodes are connected by ctrl edges in statement order. `Branch`/`Switch`/`Parallel` nodes walk their child namespaces and pass the correct port name (`"true"`, `"false"`, etc.) to the recursive walk.
+- **`@dataflow:` boundary edges**: The block is walked with `in_dataflow=True` (no internal ctrl edges), but entry and exit boundary ctrl edges connect it to the surrounding control chain (see Section 4.2).
+- **`Jump` statements**: Recorded as deferred wires; after the full walk, each jump is resolved to the first node inside the target namespace.
+- **Merge node synthesis**: After all wires are resolved, any node with 2+ incoming ctrl edges gets a synthetic merge node (see Section 6.4).
+- **Literal defaults**: For `FuncCall` inputs that are `Literal` values (not variable references), the value is stored as `KGPort.default` rather than creating a data edge.
+- **`@meta` annotations**: If the statement has `@meta node_id=...`, that id is used directly rather than generating a new one; `@meta pos=(x, y)` is stored in the node's `meta` field.
+
+The module also exposes `print_graph()`, `print_ascii_layout()`, and `print_edge_analysis()` for terminal inspection, and a `__main__` entry point:
+
+```bash
+python -m kohakunode.layout.ascii_view path/to/file.kir
+python -m kohakunode.layout.ascii_view path/to/file.kirgraph
+```
+
+### 5.2 Automatic Layout (`auto_layout.py`)
+
+`auto_layout(graph: KirGraph) -> KirGraph` assigns pixel positions and sizes to all nodes that lack them (nodes with `pos=[0,0]` or no `pos` key). Already-positioned nodes are left untouched.
+
+Algorithm (Fischer-style):
+
+1. **Ctrl root detection**: find nodes with ctrl outputs but no forward-incoming ctrl edges (cycles/back-edges are detected by comparing node rank order).
+2. **BFS ctrl chain** downward from root at column 0: each step increments the row counter. Back-edges are skipped. Remaining ctrl nodes unreachable from the initial BFS (e.g., after a `@dataflow:` gap) are handled by a second pass.
+3. **Data sources left**: BFS backward through data edges, placing each source one column to the left of its consumer at the same row.
+4. **Data consumers right**: BFS forward through data edges, placing each consumer one column to the right of its sources.
+5. **Unconnected nodes**: appended below the placed graph.
+6. **Pixel conversion**: column widths are derived from estimated node sizes; rows use a fixed `MIN_HEIGHT + V_SPACING` step.
+
+Node sizes are estimated from port counts (`estimate_node_size()`); merge nodes use a compact height formula.
+
+### 5.3 Layout Scoring (`score.py`)
+
+`score_layout(graph: KirGraph) -> LayoutScore` measures layout quality. Lower is better; 0 is perfect.
+
+Scoring rules:
+
+| Edge type | Ideal direction | Backward penalty |
+|---|---|---|
+| Control | Same column (col_diff=0), 1 row down | 3× on both axes |
+| Data | Same row (row_diff=0), 1 column right | 3× on col, 2× on row |
+
+Additional penalties:
+- **Edge crossings**: counted per adjacent column-pair using linear row interpolation for multi-column spans. 2.0 per crossing.
+- **Node overlaps**: 10.0 per pair of nodes sharing the same grid cell.
+
+`score_edge()` and `_count_crossings()` are exposed for use by the optimizer.
+
+### 5.4 Layout Optimizer (`optimizer.py`)
+
+`optimize_layout(graph: KirGraph, max_iterations=100) -> KirGraph` starts from the `auto_layout` result and applies greedy local search:
+
+- **Strategy A** — swap two nodes within the same column (exchange their rows).
+- **Strategy B** — move a node one column left or right.
+- **Strategy C** — move a node one row up or down.
+
+Each candidate move is accepted immediately if it strictly reduces the total score. The loop terminates when no strategy produces an improvement or `max_iterations` is exhausted.
+
+---
+
+## 6. KIR Viewer (`src/kohakunode_viewer/`)
+
+A static Vue 3 SPA that renders `.kir`, `.kirgraph`, and ComfyUI workflow JSON in the browser with no server required. Dev server runs on port 5175.
+
+### 6.1 Input formats
+
+| Format | Detection | Parser |
+|---|---|---|
+| `.kirgraph` | File extension or `version`+`nodes`+`edges` JSON shape | `kirgraphLoader.js` |
+| `.kir` | File extension or non-JSON content | Pyodide (real Python) or `kirLiteParser.js` fallback |
+| ComfyUI workflow | `nodes`+`links` JSON shape | `comfyLoader.js` |
+| ComfyUI API | `class_type` values in JSON | `comfyLoader.js` |
+
+### 6.2 Pyodide KIR parser
+
+For `.kir` input, the viewer loads [Pyodide](https://pyodide.org/) v0.27.1 from CDN, installs `lark` via `micropip`, then mounts the `kohakunode` Python source from `/pylib/` (fetched from the static server using a file manifest at `/pylib/manifest.json`).
+
+Once loaded, the real `kir_to_graph` + `auto_layout` pipeline runs in WASM. This gives exact parity with the Python engine for all `.kir` features including control flow, `@dataflow:` blocks, and `@meta` annotations.
+
+**Prebuild step**: before building or serving the viewer, copy the `kohakunode` Python source tree to `public/pylib/kohakunode/` and generate `public/pylib/manifest.json`. Without this step, Pyodide cannot mount the package and the viewer falls back to the JS lite parser.
+
+### 6.3 Self-contained HTML export (`html_export.py`)
+
+```python
+from kohakunode_viewer.html_export import generate_html
+from kohakunode.kirgraph.schema import KirGraph
+
+graph = KirGraph.from_file("my_graph.kirgraph")
+html = generate_html(graph.to_json())
+open("viewer.html", "w").write(html)
+```
+
+`generate_html(kirgraph_json: str) -> str` embeds the graph JSON inline and produces a fully self-contained HTML file — no external CDN, no Pyodide, no build step. It renders nodes as positioned `<div>` elements with SVG bezier-curve edges, and supports pan (drag), zoom (Ctrl+wheel or pinch), and scroll. The colour scheme matches the Vue viewer (Catppuccin Mocha palette).
+
+---
+
+## 7. ComfyUI Utilities (`src/kohakunode_utils/`)
+
+Installable as a separate package (`kohakunode_utils`). Provides import and export between ComfyUI workflow JSON and KirGraph.
+
+### 7.1 Import: ComfyUI → KirGraph
+
+`comfyui_to_kirgraph(workflow: dict) -> KirGraph` handles both formats:
+
+- **Workflow format** (LiteGraph JSON): `nodes`/`links` arrays. Slot indices are resolved to port names. Widget values fill unconnected input slot defaults; remaining widget values become extra `widget_N` input ports.
+- **API format** (prompt JSON): `class_type` + `inputs` dicts. Connection references `[node_id, slot]` become data edges; scalar values become port defaults. Output ports are inferred from which slots other nodes reference.
+
+Node IDs are prefixed with `comfy_` to ensure uniqueness. Original ComfyUI metadata (type casing, slot info, widget values, flags, colors) is preserved in each node's `meta` dict for lossless round-trips.
+
+### 7.2 Export: KirGraph → ComfyUI
+
+`kirgraph_to_comfyui(graph: KirGraph) -> dict` reconstructs the ComfyUI workflow from `meta` fields written during import. If a node was not originally imported from ComfyUI (no `comfyui_type` in meta), the KirGraph port info is used directly. Only data edges are converted to links; control edges have no ComfyUI equivalent.
+
+### 7.3 Direct conversion
+
+`comfyui_to_kir(workflow: dict) -> str` chains import → `KirGraphCompiler` → `Writer` to produce L2 KIR text directly from a ComfyUI workflow dict.
+
+---
+
+## 8. Round-Tripping (L1 ↔ L2)
 
 The system can reconstruct a `.kirgraph` from a `.kir` L2 file, enabling save/load of visual graphs via the text IR.
 
-### 7.1 Forward (L1 → L2)
+### 8.1 Forward (L1 → L2)
 
 `KirGraphCompiler` emits `@meta node_id="<id>" pos=(x, y)` before every statement. This records:
 - Which graph node this statement corresponds to
 - The visual position of that node in the canvas
 
-### 7.2 Reverse (L2 → L1)
+### 8.2 Reverse (L2 → L1)
 
 `KirGraphDecompiler` performs two passes:
 
@@ -513,3 +466,14 @@ The system can reconstruct a `.kirgraph` from a `.kir` L2 file, enabling save/lo
 2. **Edge creation pass**: Walk all statements again. For each input identifier that matches `{node_id}_{port}` of a known node, create a data edge. Control edges are reconstructed from the namespace/branch/switch/parallel topology.
 
 Variable naming convention `{node_id}_{port_name}` (e.g., `add1_result`) is what makes decompilation reliable. The decompiler splits variable names on this pattern to recover the original node/port identities.
+
+---
+
+## Appendix: Example Full-Stack App (`app/`)
+
+The `app/` directory contains an **example** application showing how to build a full node editor + execution server on top of the core `kohakunode` library. It is **not** part of the core toolchain.
+
+- **`app/frontend/`** — Vue 3 node editor (Vite, Pinia, Element Plus, UnoCSS). Compiles graphs to `.kirgraph` JSON or KIR text, communicates with the backend via REST/WebSocket.
+- **`app/backend/`** — FastAPI server. Exposes endpoints for executing KIR programs, compiling/decompiling between L1↔L2, and managing user-defined node types.
+
+See `app/` source and `docs/api.md` for details.
