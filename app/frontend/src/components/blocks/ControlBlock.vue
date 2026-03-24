@@ -9,6 +9,7 @@ import BlockStack    from './BlockStack.vue';
 import { useBlockDrag, draggingNodeId, dropTarget } from '../../composables/useBlockDrag.js';
 import { useGraphStore } from '../../stores/graph.js';
 import { useHistoryStore } from '../../stores/history.js';
+import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
 
 const props = defineProps({
   block: {
@@ -20,6 +21,7 @@ const props = defineProps({
 // ── Stores ─────────────────────────────────────────────────────────────────────
 const graph = useGraphStore();
 const history = useHistoryStore();
+const registry = useNodeRegistryStore();
 
 // ── Drag ──────────────────────────────────────────────────────────────────────
 const { onPointerDown } = useBlockDrag(props.block.nodeId);
@@ -71,6 +73,115 @@ function deleteBlock() {
     }
   }
   graph.nodes.delete(nodeId);
+}
+
+// ── Arm palette drag-and-drop ─────────────────────────────────────────────────
+
+/**
+ * Find the last node in an arm's ctrl chain starting from `armPortId`.
+ * Returns the nodeId of the last block in the chain, or null if the arm is empty.
+ */
+function findArmTailNodeId(armPortId) {
+  // Find the connection leaving this arm port
+  let conn = null;
+  for (const c of graph.connections.values()) {
+    if (c.portType === 'control' && c.fromPortId === armPortId) {
+      conn = c;
+      break;
+    }
+  }
+  if (!conn) return null; // arm is empty
+
+  // Walk the chain until we find a node with no ctrl output connection
+  let currentId = conn.toNodeId;
+  const visited = new Set();
+  while (currentId) {
+    if (visited.has(currentId)) break;
+    visited.add(currentId);
+    const node = graph.nodes.get(currentId);
+    if (!node) break;
+    // Find what comes after this node on its first ctrl output
+    const outPort = node.controlPorts.outputs[0];
+    if (!outPort) break;
+    let nextConn = null;
+    for (const c of graph.connections.values()) {
+      if (c.portType === 'control' && c.fromNodeId === currentId && c.fromPortId === outPort.id) {
+        nextConn = c;
+        break;
+      }
+    }
+    if (!nextConn) break; // currentId is the tail
+    currentId = nextConn.toNodeId;
+  }
+  return currentId;
+}
+
+/**
+ * Wire a newly created node into an arm's ctrl chain without pushing extra
+ * history entries (caller already pushed, or addNode already pushed).
+ * Uses graph.connections.set directly to bypass addConnection's pushState.
+ *
+ * @param {string} newNodeId    - node just created
+ * @param {string} armPortId    - ctrl output port of the C-block for this arm
+ * @param {string} cBlockNodeId - the C-block (branch/switch/parallel) node id
+ */
+function wireNodeIntoArm(newNodeId, armPortId, cBlockNodeId) {
+  const newNode = graph.nodes.get(newNodeId);
+  if (!newNode) return;
+
+  const newNodeIn = newNode.controlPorts.inputs[0];
+  if (!newNodeIn) return; // node has no ctrl input — cannot wire into chain
+
+  const tailId = findArmTailNodeId(armPortId);
+
+  function makeConn(fromNodeId, fromPortId, toNodeId, toPortId) {
+    const id = `conn-arm-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    graph.connections.set(id, { id, fromNodeId, fromPortId, toNodeId, toPortId, portType: 'control' });
+  }
+
+  if (!tailId) {
+    // Arm is empty: connect C-block's arm port → new node's ctrl input
+    makeConn(cBlockNodeId, armPortId, newNodeId, newNodeIn.id);
+  } else {
+    // Arm has existing blocks: append after the tail
+    const tailNode = graph.nodes.get(tailId);
+    if (!tailNode) return;
+    const tailOut = tailNode.controlPorts.outputs[0];
+    if (!tailOut) return;
+
+    // Remove any existing connection from tail's output (should be empty at tail, but be safe)
+    for (const [cid, c] of graph.connections) {
+      if (c.portType === 'control' && c.fromNodeId === tailId && c.fromPortId === tailOut.id) {
+        graph.connections.delete(cid);
+        break;
+      }
+    }
+    makeConn(tailId, tailOut.id, newNodeId, newNodeIn.id);
+  }
+}
+
+function onArmDragOver(e) {
+  if (!e.dataTransfer.types.includes('application/x-block-type')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'copy';
+}
+
+function onArmDrop(e, armPortId) {
+  e.preventDefault();
+  e.stopPropagation();
+  const typeName = e.dataTransfer.getData('application/x-block-type');
+  if (!typeName || !armPortId) return;
+
+  try {
+    // graph.addNode() pushes history internally before adding, which captures
+    // the pre-drop state as the undo checkpoint.
+    const nodeData = registry.createNodeData(typeName, 0, 0);
+    const newNodeId = graph.addNode(nodeData);
+    wireNodeIntoArm(newNodeId, armPortId, props.block.nodeId);
+  } catch (err) {
+    console.warn('[ControlBlock] arm drop failed:', err.message);
+  }
 }
 
 // ── Drop indicator ────────────────────────────────────────────────────────────
@@ -155,8 +266,14 @@ function arms(block) {
           <span class="arm-label-text">{{ arm.label }}</span>
         </div>
 
-        <!-- Arm body: indented BlockStack -->
-        <div class="ctrl-arm-body">
+        <!-- Arm body: indented BlockStack — accepts palette drops -->
+        <div
+          class="ctrl-arm-body"
+          :data-arm-port-id="arm.portId"
+          :data-arm-c-block-id="block.nodeId"
+          @dragover="onArmDragOver"
+          @drop="onArmDrop($event, arm.portId)"
+        >
           <BlockStack :blocks="arm.blocks" />
         </div>
       </div>
