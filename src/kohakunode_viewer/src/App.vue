@@ -33,7 +33,7 @@ function openFilePicker() {
     const text = await file.text();
     try {
       const { detectAndParse } = await import("./parser/index.js");
-      const { nodes: n, edges: e } = detectAndParse(file.name, text);
+      const { nodes: n, edges: e } = detectAndParse(text, file.name);
       onGraphLoaded({ nodes: n, edges: e, filename: file.name });
     } catch (err) {
       console.error("Failed to parse file:", err);
@@ -51,7 +51,7 @@ async function confirmPaste() {
   }
   try {
     const { detectAndParse } = await import("./parser/index.js");
-    const { nodes: n, edges: e } = detectAndParse("paste.kir", text);
+    const { nodes: n, edges: e } = detectAndParse(text, "paste.kir");
     onGraphLoaded({ nodes: n, edges: e, filename: "pasted KIR" });
   } catch (err) {
     pasteError.value = `Parse error: ${err.message}`;
@@ -62,10 +62,10 @@ async function confirmPaste() {
 const nodeCount = computed(() => nodes.value.length);
 const edgeCount = computed(() => edges.value.length);
 const dataEdgeCount = computed(
-  () => edges.value.filter((e) => e.portType === "data").length
+  () => edges.value.filter((e) => e.type === "data").length
 );
 const ctrlEdgeCount = computed(
-  () => edges.value.filter((e) => e.portType === "control").length
+  () => edges.value.filter((e) => e.type === "control").length
 );
 </script>
 

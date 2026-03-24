@@ -28,11 +28,11 @@ const props = defineProps({
   connectedPortIds: { type: Object, default: () => new Set() },
 });
 
-// ── Port accessors ────────────────────────────────────────────────────────────
-const dataInputs = computed(() => props.node.dataPorts?.inputs ?? []);
-const dataOutputs = computed(() => props.node.dataPorts?.outputs ?? []);
-const ctrlInputs = computed(() => props.node.controlPorts?.inputs ?? []);
-const ctrlOutputs = computed(() => props.node.controlPorts?.outputs ?? []);
+// ── Port accessors (handle both parser format and editor format) ──────────────
+const dataInputs = computed(() => props.node.dataInputs ?? props.node.dataPorts?.inputs ?? []);
+const dataOutputs = computed(() => props.node.dataOutputs ?? props.node.dataPorts?.outputs ?? []);
+const ctrlInputs = computed(() => props.node.ctrlInputs ?? props.node.controlPorts?.inputs?.map(p => p.name || p) ?? []);
+const ctrlOutputs = computed(() => props.node.ctrlOutputs ?? props.node.controlPorts?.outputs?.map(p => p.name || p) ?? []);
 const hasCtrlIn = computed(() => ctrlInputs.value.length > 0);
 const hasCtrlOut = computed(() => ctrlOutputs.value.length > 0);
 const dataRowCount = computed(() =>
@@ -90,9 +90,10 @@ function ctrlPortLeft(index, count) {
 
 // ── Default value display helper ──────────────────────────────────────────────
 function defaultDisplay(port) {
-  if (port.defaultValue === undefined || port.defaultValue === null) return null;
-  if (props.connectedPortIds.has(port.id)) return null;
-  return String(port.defaultValue);
+  const def = port.defaultValue ?? port.default;
+  if (def === undefined || def === null) return null;
+  if (props.connectedPortIds.has(port.name || port.id)) return null;
+  return String(def);
 }
 </script>
 
@@ -102,13 +103,13 @@ function defaultDisplay(port) {
     <div v-if="hasCtrlIn" class="ctrl-row ctrl-row--top">
       <div
         v-for="(port, i) in ctrlInputs"
-        :key="port.id"
+        :key="typeof port === 'string' ? port : port.name || i"
         class="ctrl-port ctrl-port--in"
         :style="{ left: ctrlPortLeft(i, ctrlInputs.length) + 'px' }"
-        :title="port.name"
+        :title="typeof port === 'string' ? port : port.name"
       >
         <div class="ctrl-diamond" />
-        <span class="ctrl-label ctrl-label--in">{{ port.name }}</span>
+        <span class="ctrl-label ctrl-label--in">{{ typeof port === 'string' ? port : port.name }}</span>
       </div>
     </div>
 
@@ -126,7 +127,7 @@ function defaultDisplay(port) {
         <div
           v-if="dataInputs[i - 1]"
           class="dp dp--in"
-          :data-port-id="dataInputs[i - 1].id"
+          :data-port-id="dataInputs[i - 1].name"
           :data-node-id="node.id"
           data-port-type="data"
           data-port-dir="input"
@@ -154,7 +155,7 @@ function defaultDisplay(port) {
         <div
           v-if="dataOutputs[i - 1]"
           class="dp dp--out"
-          :data-port-id="dataOutputs[i - 1].id"
+          :data-port-id="dataOutputs[i - 1].name"
           :data-node-id="node.id"
           data-port-type="data"
           data-port-dir="output"
@@ -169,12 +170,12 @@ function defaultDisplay(port) {
     <div v-if="hasCtrlOut" class="ctrl-row ctrl-row--bot">
       <div
         v-for="(port, i) in ctrlOutputs"
-        :key="port.id"
+        :key="typeof port === 'string' ? port : port.name || i"
         class="ctrl-port ctrl-port--out"
         :style="{ left: ctrlPortLeft(i, ctrlOutputs.length) + 'px' }"
-        :title="port.name"
+        :title="typeof port === 'string' ? port : port.name"
       >
-        <span class="ctrl-label ctrl-label--out">{{ port.name }}</span>
+        <span class="ctrl-label ctrl-label--out">{{ typeof port === 'string' ? port : port.name }}</span>
         <div class="ctrl-diamond" />
       </div>
     </div>

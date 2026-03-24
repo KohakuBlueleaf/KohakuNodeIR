@@ -419,12 +419,11 @@ export function parseKirLite(kirText) {
    * Emit data edges for all positional/keyword inputs that resolve to
    * known output variables.
    */
+  // Store unresolved data inputs for Phase 3 (forward references in @dataflow:)
+  const deferredDataInputs = [];
+
   function emitDataEdges(nodeId, inputItems, dataInputPortNames) {
     inputItems.forEach((inp, idx) => {
-      const varRef = resolveVar(inp.value);
-      if (!varRef) return;
-
-      // Determine the target port name
       let toPort;
       if (inp.kind === "kw") {
         toPort = inp.name;
@@ -432,13 +431,19 @@ export function parseKirLite(kirText) {
         toPort = dataInputPortNames[idx] ?? `in_${idx}`;
       }
 
-      edges.push({
-        type: "data",
-        fromNode: varRef.nodeId,
-        fromPort: varRef.port,
-        toNode: nodeId,
-        toPort,
-      });
+      const varRef = resolveVar(inp.value);
+      if (varRef) {
+        edges.push({
+          type: "data",
+          fromNode: varRef.nodeId,
+          fromPort: varRef.port,
+          toNode: nodeId,
+          toPort,
+        });
+      } else {
+        // Forward reference — defer to Phase 3
+        deferredDataInputs.push({ varName: inp.value, toNode: nodeId, toPort });
+      }
     });
   }
 
@@ -806,6 +811,20 @@ export function parseKirLite(kirText) {
       toNode: toNodeId,
       toPort: toNode.ctrlInputs[0],
     });
+  }
+
+  // Phase 3: resolve deferred data edges (forward references in @dataflow:)
+  for (const { varName, toNode, toPort } of deferredDataInputs) {
+    const varRef = resolveVar(varName);
+    if (varRef) {
+      edges.push({
+        type: "data",
+        fromNode: varRef.nodeId,
+        fromPort: varRef.port,
+        toNode,
+        toPort,
+      });
+    }
   }
 
   return { nodes, edges };

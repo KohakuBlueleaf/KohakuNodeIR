@@ -70,7 +70,7 @@ async function loadFile(file) {
 
 function loadText(filename, text) {
   try {
-    const { nodes, edges } = detectAndParse(filename, text);
+    const { nodes, edges } = detectAndParse(text, filename);
     emit("graph-loaded", { nodes, edges, filename });
   } catch (err) {
     console.error("[FileDropZone] Failed to parse content:", err);

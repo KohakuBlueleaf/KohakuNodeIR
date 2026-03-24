@@ -97,37 +97,47 @@ function evenSpacing(index, count, span) {
   return PORT_PADDING + index * ((span - PORT_PADDING * 2) / (count - 1));
 }
 
-function getPortPosition(nodeId, portId) {
+function getPortPosition(nodeId, portName) {
   const node = props.nodes.find((n) => n.id === nodeId);
   if (!node) return null;
 
-  const { x, y, width, height, dataPorts, controlPorts } = node;
-  const hasCtrlIn = controlPorts.inputs.length > 0;
+  const { x, y, width, height } = node;
+  const dataInputs = node.dataInputs || [];
+  const dataOutputs = node.dataOutputs || [];
+  const ctrlInputs = node.ctrlInputs || [];
+  const ctrlOutputs = node.ctrlOutputs || [];
+  const hasCtrlIn = ctrlInputs.length > 0;
+
+  // Auto-calculate height if missing/zero
+  const dataRows = Math.max(dataInputs.length, dataOutputs.length);
+  const nodeH = height || (
+    (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H +
+    (ctrlOutputs.length > 0 ? CTRL_ROW_H : 0) + 16
+  );
+  const nodeW = width || 180;
 
   function dataRowY(index) {
     return (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + index * DATA_ROW_H + DATA_ROW_H / 2;
   }
 
-  const dataInIndex = dataPorts.inputs.findIndex((p) => p.id === portId);
+  // Data inputs — match by port name
+  const dataInIndex = dataInputs.findIndex((p) => p.name === portName);
   if (dataInIndex !== -1) return { x, y: y + dataRowY(dataInIndex) };
 
-  const dataOutIndex = dataPorts.outputs.findIndex((p) => p.id === portId);
-  if (dataOutIndex !== -1) return { x: x + width, y: y + dataRowY(dataOutIndex) };
+  // Data outputs
+  const dataOutIndex = dataOutputs.findIndex((p) => p.name === portName);
+  if (dataOutIndex !== -1) return { x: x + nodeW, y: y + dataRowY(dataOutIndex) };
 
-  const ctrlInIndex = controlPorts.inputs.findIndex((p) => p.id === portId);
+  // Control inputs
+  const ctrlInIndex = ctrlInputs.indexOf(portName);
   if (ctrlInIndex !== -1) {
-    return {
-      x: x + evenSpacing(ctrlInIndex, controlPorts.inputs.length, width),
-      y,
-    };
+    return { x: x + evenSpacing(ctrlInIndex, ctrlInputs.length, nodeW), y };
   }
 
-  const ctrlOutIndex = controlPorts.outputs.findIndex((p) => p.id === portId);
+  // Control outputs
+  const ctrlOutIndex = ctrlOutputs.indexOf(portName);
   if (ctrlOutIndex !== -1) {
-    return {
-      x: x + evenSpacing(ctrlOutIndex, controlPorts.outputs.length, width),
-      y: y + height,
-    };
+    return { x: x + evenSpacing(ctrlOutIndex, ctrlOutputs.length, nodeW), y: y + nodeH };
   }
 
   return null;
@@ -136,17 +146,18 @@ function getPortPosition(nodeId, portId) {
 // ── Wire descriptors ──────────────────────────────────────────────────────────
 const wires = computed(() => {
   const result = [];
-  for (const edge of props.edges) {
-    const from = getPortPosition(edge.fromNodeId, edge.fromPortId);
-    const to = getPortPosition(edge.toNodeId, edge.toPortId);
+  for (let i = 0; i < props.edges.length; i++) {
+    const edge = props.edges[i];
+    const from = getPortPosition(edge.fromNode, edge.fromPort);
+    const to = getPortPosition(edge.toNode, edge.toPort);
     if (!from || !to) continue;
 
-    const d =
-      edge.portType === "control"
-        ? controlWirePath(from.x, from.y, to.x, to.y)
-        : dataWirePath(from.x, from.y, to.x, to.y);
+    const isCtrl = edge.type === "control";
+    const d = isCtrl
+      ? controlWirePath(from.x, from.y, to.x, to.y)
+      : dataWirePath(from.x, from.y, to.x, to.y);
 
-    result.push({ id: edge.id, d, portType: edge.portType });
+    result.push({ id: `e${i}`, d, edgeType: isCtrl ? "control" : "data" });
   }
   return result;
 });
@@ -210,7 +221,7 @@ onBeforeUnmount(() => {
           v-for="wire in wires"
           :key="wire.id"
           :d="wire.d"
-          :class="['wire', wire.portType === 'control' ? 'wire-control' : 'wire-data']"
+          :class="['wire', wire.edgeType === 'control' ? 'wire-control' : 'wire-data']"
           fill="none"
         />
       </svg>
