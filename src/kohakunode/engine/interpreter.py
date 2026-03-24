@@ -29,6 +29,9 @@ from kohakunode.engine.context import ExecutionContext
 from kohakunode.engine.registry import Registry
 from kohakunode.errors import KirRuntimeError
 
+# Statement types that are skipped during sequential execution.
+_SKIP_TYPES = (Namespace, SubgraphDef, ModeDecl)
+
 
 class Interpreter:
     """Core interpreter that walks and executes a KohakuNodeIR AST."""
@@ -45,12 +48,10 @@ class Interpreter:
 
     def run(self, program: Program) -> None:
         """Execute a full KohakuNodeIR program."""
-        # Collect subgraph definitions before execution begins.
         for stmt in program.body:
             if isinstance(stmt, SubgraphDef):
                 self.subgraphs[stmt.name] = stmt
 
-        # Push the program body as the initial frame and start the loop.
         self.context.push_frame(program.body)
         self._run_loop()
 
@@ -63,55 +64,33 @@ class Interpreter:
         while self.context.has_frames:
             stmt = self.context.current_statement
 
-            # Frame exhausted — pop it and let the parent frame resume.
             if stmt is None:
                 self.context.pop_frame()
                 continue
 
-            # Namespace blocks are skipped during sequential execution.
-            if isinstance(stmt, Namespace):
+            if isinstance(stmt, _SKIP_TYPES):
                 self.context.advance()
                 continue
 
-            # SubgraphDef blocks are already collected — skip them.
-            if isinstance(stmt, SubgraphDef):
-                self.context.advance()
-                continue
+            self._step(stmt)
 
-            # ModeDecl is informational only — skip.
-            if isinstance(stmt, ModeDecl):
-                self.context.advance()
-                continue
+    # ------------------------------------------------------------------
+    # Single-statement execution step (shared by loop and run_body)
+    # ------------------------------------------------------------------
 
-            # Capture the current frame *before* executing.  Builtins like
-            # branch/switch/jump push new frames, which would make
-            # context.current_frame point to the NEW frame.  We must advance
-            # the frame that actually contains the statement we just ran.
-            executing_frame = self.context.current_frame
-            depth_before = len(self.context._frame_stack)  # noqa: SLF001
+    def _step(self, stmt: Statement) -> None:
+        """Execute one statement and advance the correct frame."""
+        executing_frame = self.context.current_frame
+        depth_before = len(self.context._frame_stack)  # noqa: SLF001
 
-            self._execute_statement(stmt)
+        self._execute_statement(stmt)
 
-            depth_after = len(self.context._frame_stack)  # noqa: SLF001
-
-            if isinstance(stmt, Jump):
-                # execute_jump pops intermediate frames and returns the index
-                # of the frame that contains the target namespace.
-                # - Sibling jump (target in the same frame as the jump):
-                #   advance the frame so we don't re-execute the jump.
-                # - Child-to-parent jump (target in an ancestor frame):
-                #   intermediate frames were already popped by execute_jump;
-                #   the ancestor frame's position is already correct.
-                jump_frame_idx = depth_before - 1
-                containing_idx = self._last_jump_containing_idx
-                if containing_idx == jump_frame_idx:
-                    executing_frame.position += 1
-            else:
-                # Advance in the frame that owned this statement.  For
-                # branch/switch this is the parent frame (not the newly
-                # pushed one), so execution resumes correctly when the
-                # child frame is later popped.
+        if isinstance(stmt, Jump):
+            jump_frame_idx = depth_before - 1
+            if self._last_jump_containing_idx == jump_frame_idx:
                 executing_frame.position += 1
+        else:
+            executing_frame.position += 1
 
     # ------------------------------------------------------------------
     # Statement dispatch
@@ -134,17 +113,12 @@ class Interpreter:
             case Parallel():
                 execute_parallel(stmt, self.context, self._run_body)
             case Namespace():
-                # Should never reach here — skipped in the main loop.
                 pass
             case SubgraphDef():
-                # Already collected; nothing to do.
                 pass
             case DataflowBlock():
-                # Should have been compiled away, but execute body sequentially
-                # as fallback.
                 self._run_body(stmt.body)
             case ModeDecl():
-                # Informational only.
                 pass
             case _:
                 raise KirRuntimeError(
@@ -165,8 +139,6 @@ class Interpreter:
             return expr.value
 
         if isinstance(expr, KeywordArg):
-            # KeywordArg should be handled by _evaluate_inputs, but if
-            # encountered here, evaluate just the value part.
             return self._evaluate_expression(expr.value)
 
         raise KirRuntimeError(
@@ -198,28 +170,17 @@ class Interpreter:
 
     def _execute_func_call(self, node: FuncCall) -> None:
         """Execute a FuncCall statement."""
-        # Check if the call targets a user-defined subgraph.
         if node.func_name in self.subgraphs:
             subgraph = self.subgraphs[node.func_name]
             results = self._execute_subgraph(subgraph, node.inputs)
-            # Normalise: single-element list → bare value, multi → tuple.
-            # This mirrors how regular Python functions return values.
-            if len(results) == 1:
-                result: Any = results[0]
-            else:
-                result = tuple(results)
+            result: Any = results[0] if len(results) == 1 else tuple(results)
             self._assign_outputs(node.outputs, result, node.func_name, node.line)
             return
 
-        # Otherwise resolve from the registry.
         spec = self.registry.lookup(node.func_name)
         positional, keywords = self._evaluate_inputs(node.inputs)
 
-        # Build the full keyword argument dict by mapping positional args
-        # to the spec's declared input names, then overlaying explicit
-        # keyword arguments.
         call_kwargs: dict[str, Any] = {}
-
         for idx, value in enumerate(positional):
             if idx < len(spec.input_names):
                 call_kwargs[spec.input_names[idx]] = value
@@ -234,14 +195,11 @@ class Interpreter:
 
         call_kwargs.update(keywords)
 
-        # Fill in defaults for any parameters not provided.
         for param_name in spec.input_names:
-            if param_name not in call_kwargs:
-                if param_name in spec.defaults:
-                    call_kwargs[param_name] = spec.defaults[param_name]
+            if param_name not in call_kwargs and param_name in spec.defaults:
+                call_kwargs[param_name] = spec.defaults[param_name]
 
         result = spec.func(**call_kwargs)
-
         self._assign_outputs(node.outputs, result, node.func_name, node.line)
 
     def _assign_outputs(
@@ -253,7 +211,6 @@ class Interpreter:
     ) -> None:
         """Assign a function's return value(s) to the declared output targets."""
         if not output_targets:
-            # No outputs declared — discard the result.
             return
 
         if len(output_targets) == 1:
@@ -262,7 +219,6 @@ class Interpreter:
                 self.context.variables.set(target, result)  # type: ignore[arg-type]
             return
 
-        # Multiple outputs — result must be a tuple or list.
         if isinstance(result, (tuple, list)):
             if len(result) != len(output_targets):
                 raise KirRuntimeError(
@@ -292,15 +248,9 @@ class Interpreter:
     def _execute_subgraph(
         self, subgraph: SubgraphDef, inputs: list[Expression]
     ) -> list[Any]:
-        """Call a user-defined subgraph like a function.
-
-        1. Bind input arguments to the subgraph's parameters.
-        2. Execute the subgraph body to completion.
-        3. Collect and return output variable values.
-        """
+        """Call a user-defined subgraph like a function."""
         positional, keywords = self._evaluate_inputs(inputs)
 
-        # Bind positional args to parameter names.
         for idx, param in enumerate(subgraph.params):
             if idx < len(positional):
                 self.context.variables.set(param.name, positional[idx])
@@ -316,14 +266,11 @@ class Interpreter:
                     function_name=subgraph.name,
                 )
 
-        # Bind any remaining keyword arguments that weren't consumed above.
         for key, value in keywords.items():
             self.context.variables.set(key, value)
 
-        # Execute the body synchronously.
         self._run_body(subgraph.body)
 
-        # Collect output values.
         results: list[Any] = []
         for output_name in subgraph.outputs:
             if self.context.variables.has(output_name):
@@ -342,12 +289,7 @@ class Interpreter:
     # ------------------------------------------------------------------
 
     def _run_body(self, statements: list[Statement]) -> None:
-        """Push a frame and run until that frame (and any it spawns) completes.
-
-        This is the synchronous execution primitive used by ``execute_parallel``
-        and ``_execute_subgraph``.  It pushes a new frame, records the target
-        depth, and runs the loop until the stack shrinks back.
-        """
+        """Push a frame and run until that frame (and any it spawns) completes."""
         target_depth = len(self.context._frame_stack)  # noqa: SLF001
         self.context.push_frame(statements)
         while (
@@ -360,29 +302,8 @@ class Interpreter:
                 self.context.pop_frame()
                 continue
 
-            if isinstance(stmt, Namespace):
+            if isinstance(stmt, _SKIP_TYPES):
                 self.context.advance()
                 continue
 
-            if isinstance(stmt, SubgraphDef):
-                self.context.advance()
-                continue
-
-            if isinstance(stmt, ModeDecl):
-                self.context.advance()
-                continue
-
-            executing_frame = self.context.current_frame
-            depth_before = len(self.context._frame_stack)  # noqa: SLF001
-
-            self._execute_statement(stmt)
-
-            depth_after = len(self.context._frame_stack)  # noqa: SLF001
-
-            if isinstance(stmt, Jump):
-                jump_frame_idx = depth_before - 1
-                containing_idx = self._last_jump_containing_idx
-                if containing_idx == jump_frame_idx:
-                    executing_frame.position += 1
-            else:
-                executing_frame.position += 1
+            self._step(stmt)

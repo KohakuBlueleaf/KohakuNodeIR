@@ -24,7 +24,7 @@ class KGPort:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> 'KGPort':
+    def from_dict(cls, d: dict[str, Any]) -> "KGPort":
         return cls(
             port=d["port"],
             type=d.get("type", "any"),
@@ -50,7 +50,7 @@ class KGEdge:
         }
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> 'KGEdge':
+    def from_dict(cls, d: dict[str, Any]) -> "KGEdge":
         return cls(
             type=d["type"],
             from_node=d["from"]["node"],
@@ -91,7 +91,7 @@ class KGNode:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> 'KGNode':
+    def from_dict(cls, d: dict[str, Any]) -> "KGNode":
         return cls(
             id=d["id"],
             type=d["type"],
@@ -121,7 +121,7 @@ class KirGraph:
         }
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> 'KirGraph':
+    def from_dict(cls, d: dict[str, Any]) -> "KirGraph":
         return cls(
             version=d.get("version", "0.1.0"),
             nodes=[KGNode.from_dict(n) for n in d.get("nodes", [])],
@@ -135,6 +135,6 @@ class KirGraph:
         return json.dumps(self.to_dict(), **defaults)
 
     @classmethod
-    def from_json(cls, text: str) -> 'KirGraph':
+    def from_json(cls, text: str) -> "KirGraph":
         """Deserialize from a JSON string."""
         return cls.from_dict(json.loads(text))

@@ -12,7 +12,8 @@ run_file(path, ...)  -- one-shot convenience function for source files
 """
 
 import pathlib
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from kohakunode.analyzer.validator import validate_or_raise
 from kohakunode.ast.nodes import Program

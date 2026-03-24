@@ -11,7 +11,6 @@ Usage:
 import argparse
 import http.server
 import json
-import os
 import pathlib
 import sys
 import threading
@@ -191,8 +190,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="python -m kohakunode_viewer",
         description=(
-            "Convert .kir or ComfyUI JSON to .kirgraph, "
-            "or launch the graph viewer."
+            "Convert .kir or ComfyUI JSON to .kirgraph, " "or launch the graph viewer."
         ),
     )
     p.add_argument(
@@ -206,8 +204,7 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="OUTPUT",
         default=None,
         help=(
-            "Output .kirgraph file path. "
-            "Defaults to INPUT with .kirgraph extension."
+            "Output .kirgraph file path. " "Defaults to INPUT with .kirgraph extension."
         ),
     )
     p.add_argument(

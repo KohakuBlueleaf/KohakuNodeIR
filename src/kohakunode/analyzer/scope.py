@@ -156,14 +156,18 @@ class ScopeAnalyzer:
         refs: list[tuple[str, str]] = []
 
         if isinstance(stmt, Branch):
-            context = f"branch (line {stmt.line})" if stmt.line is not None else "branch"
+            context = (
+                f"branch (line {stmt.line})" if stmt.line is not None else "branch"
+            )
             if stmt.true_label:
                 refs.append((stmt.true_label, context))
             if stmt.false_label:
                 refs.append((stmt.false_label, context))
 
         elif isinstance(stmt, Switch):
-            context = f"switch (line {stmt.line})" if stmt.line is not None else "switch"
+            context = (
+                f"switch (line {stmt.line})" if stmt.line is not None else "switch"
+            )
             for _expr, case_label in stmt.cases:
                 if case_label:
                     refs.append((case_label, context))

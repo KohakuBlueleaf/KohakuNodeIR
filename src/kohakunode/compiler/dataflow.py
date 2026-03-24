@@ -97,9 +97,7 @@ class DataflowCompiler(IRPass):
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _expand_dataflow_blocks(
-        self, stmts: list[Statement]
-    ) -> list[Statement]:
+    def _expand_dataflow_blocks(self, stmts: list[Statement]) -> list[Statement]:
         """Replace :class:`DataflowBlock` nodes with their sorted contents.
 
         Returns the *same list object* when no DataflowBlock is found

@@ -1,6 +1,15 @@
-from typing import Callable
+from collections.abc import Callable
 
-from kohakunode.ast.nodes import Branch, Identifier, Jump, Literal, Namespace, Parallel, Statement, Switch
+from kohakunode.ast.nodes import (
+    Branch,
+    Identifier,
+    Jump,
+    Literal,
+    Namespace,
+    Parallel,
+    Statement,
+    Switch,
+)
 from kohakunode.engine.context import ExecutionContext
 from kohakunode.errors import KirRuntimeError
 
