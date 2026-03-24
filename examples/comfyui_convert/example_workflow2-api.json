@@ -1,0 +1,282 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 923874509872640,
+      "steps": 24,
+      "cfg": 1,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "exponential",
+      "denoise": 1,
+      "model": [
+        "86",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "71",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": [
+        "76",
+        1
+      ],
+      "clip": [
+        "87",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive CLIP"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark",
+      "clip": [
+        "87",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative CLIP"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "88",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "41": {
+    "inputs": {
+      "seed": 923874509872640,
+      "steps": 16,
+      "cfg": 5,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "exponential",
+      "denoise": 0.5500000000000002,
+      "model": [
+        "86",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "42": {
+    "inputs": {
+      "samples": [
+        "41",
+        0
+      ],
+      "vae": [
+        "88",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "45": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "TIPO Generated Prompt"
+    }
+  },
+  "46": {
+    "inputs": {
+      "filename_prefix": "HiresFix/ComfyUI_HiresFix",
+      "images": [
+        "42",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Hires Fix"
+    }
+  },
+  "51": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "scale_by": 1.5,
+      "image": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": {
+      "title": "Upscale Image By"
+    }
+  },
+  "52": {
+    "inputs": {
+      "pixels": [
+        "51",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "71": {
+    "inputs": {
+      "width": [
+        "73",
+        0
+      ],
+      "height": [
+        "74",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "73": {
+    "inputs": {
+      "value": 1344
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Width"
+    }
+  },
+  "74": {
+    "inputs": {
+      "value": 768
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Height"
+    }
+  },
+  "76": {
+    "inputs": {
+      "tags": "",
+      "nl_prompt": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.",
+      "ban_tags": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses",
+      "tipo_model": "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf",
+      "format": "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>.\n\n<|quality|>, <|meta|>, <|rating|>",
+      "width": [
+        "73",
+        0
+      ],
+      "height": [
+        "74",
+        0
+      ],
+      "temperature": 0.5,
+      "top_p": 0.95,
+      "min_p": 0.05,
+      "top_k": 64,
+      "tag_length": "long",
+      "nl_length": "long",
+      "seed": 923874509872640,
+      "device": "cuda"
+    },
+    "class_type": "TIPO",
+    "_meta": {
+      "title": "TIPO"
+    }
+  },
+  "82": {
+    "inputs": {
+      "text_0": "1girl, \n\nneck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,\n\nA realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.",
+      "text": [
+        "76",
+        0
+      ]
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "Show Text 🐍"
+    }
+  },
+  "86": {
+    "inputs": {
+      "unet_name": "flux-2-klein-4b.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "87": {
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "88": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  }
+}

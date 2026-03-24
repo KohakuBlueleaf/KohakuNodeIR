@@ -84,12 +84,106 @@ def _parse_link(link: Any) -> dict[str, Any]:
     raise ValueError(f"Unsupported link format: {type(link)}")
 
 
+def _is_api_format(workflow: dict) -> bool:
+    """Detect ComfyUI API format (node IDs as keys, class_type fields)."""
+    if "nodes" in workflow:
+        return False
+    for v in workflow.values():
+        if isinstance(v, dict) and "class_type" in v:
+            return True
+    return False
+
+
+def _convert_api_format(workflow: dict) -> KirGraph:
+    """Convert ComfyUI API format to KirGraph.
+
+    API format: { "node_id": { "class_type": "...", "inputs": { "param": value_or_[node_id, slot] } } }
+    """
+    kg_nodes: list[KGNode] = []
+    kg_edges: list[KGEdge] = []
+
+    # First pass: create nodes
+    node_ids = sorted(workflow.keys(), key=lambda k: int(k) if k.isdigit() else k)
+    for i, nid in enumerate(node_ids):
+        node_data = workflow[nid]
+        comfy_type = node_data.get("class_type", "unknown")
+        inputs_data = node_data.get("inputs", {})
+
+        data_inputs: list[KGPort] = []
+        data_outputs: list[KGPort] = []
+
+        # Inputs: values are either literals (defaults) or [node_id, slot] (connections)
+        for port_name, value in inputs_data.items():
+            safe_name = _sanitize_port_name(port_name)
+            if isinstance(value, list) and len(value) == 2:
+                # Connection reference [source_node_id, output_slot]
+                data_inputs.append(KGPort(port=safe_name, type="any"))
+                # We'll create the edge below
+            else:
+                # Literal default value
+                data_inputs.append(KGPort(port=safe_name, type="any", default=value))
+
+        # API format doesn't list outputs explicitly — infer from connections
+        # We'll add output ports when we see connections referencing them
+
+        col = i % 4
+        row = i // 4
+        kg_nodes.append(KGNode(
+            id=_node_id(nid),
+            type=_sanitize_type(comfy_type),
+            name=comfy_type,
+            data_inputs=data_inputs,
+            data_outputs=data_outputs,
+            ctrl_inputs=[],
+            ctrl_outputs=[],
+            properties={"inputs_raw": inputs_data},
+            meta={"pos": [100 + col * 300, 100 + row * 200], "size": [250, 120]},
+        ))
+
+    # Second pass: create edges and infer output ports
+    output_ports_seen: dict[str, set[str]] = {}  # node_id -> set of port names
+    for nid in node_ids:
+        inputs_data = workflow[nid].get("inputs", {})
+        for port_name, value in inputs_data.items():
+            if isinstance(value, list) and len(value) == 2:
+                src_nid = str(value[0])
+                src_slot = int(value[1])
+                src_kg_id = _node_id(src_nid)
+                dst_kg_id = _node_id(nid)
+
+                out_port_name = f"output_{src_slot}"
+                # Track output ports
+                if src_kg_id not in output_ports_seen:
+                    output_ports_seen[src_kg_id] = set()
+                output_ports_seen[src_kg_id].add(out_port_name)
+
+                kg_edges.append(KGEdge(
+                    type="data",
+                    from_node=src_kg_id,
+                    from_port=out_port_name,
+                    to_node=dst_kg_id,
+                    to_port=_sanitize_port_name(port_name),
+                ))
+
+    # Add inferred output ports to nodes
+    node_map = {n.id: n for n in kg_nodes}
+    for kg_id, port_names in output_ports_seen.items():
+        node = node_map.get(kg_id)
+        if node:
+            for pname in sorted(port_names):
+                if not any(p.port == pname for p in node.data_outputs):
+                    node.data_outputs.append(KGPort(port=pname, type="any"))
+
+    return KirGraph(version="0.1.0", nodes=kg_nodes, edges=kg_edges)
+
+
 def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
     """Convert a ComfyUI workflow dict to a KirGraph.
 
+    Supports both workflow format (nodes/links arrays) and API format
+    (node IDs as keys with class_type and inputs).
+
     ComfyUI is pure dataflow -- all nodes get no ctrl ports.
-    Each ComfyUI node becomes a KGNode with data ports only.
-    Each ComfyUI link becomes a KGEdge of type "data".
 
     Args:
         workflow: Parsed ComfyUI workflow JSON dict
@@ -97,6 +191,9 @@ def comfyui_to_kirgraph(workflow: dict) -> KirGraph:
     Returns:
         KirGraph object
     """
+    if _is_api_format(workflow):
+        return _convert_api_format(workflow)
+
     comfy_nodes = workflow.get("nodes", [])
     comfy_links = workflow.get("links", [])
 

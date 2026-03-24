@@ -1,0 +1,2339 @@
+{
+  "id": "00ac00fc-9cdb-4d75-bb34-886c9eb40143",
+  "revision": 0,
+  "last_node_id": 88,
+  "last_link_id": 187,
+  "nodes": [
+    {
+      "id": 52,
+      "type": "VAEEncode",
+      "pos": [
+        1150,
+        570
+      ],
+      "size": [
+        140,
+        50
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "pixels",
+          "name": "pixels",
+          "type": "IMAGE",
+          "link": 82
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            83
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEEncode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "VAEDecode",
+      "pos": [
+        1610,
+        100
+      ],
+      "size": [
+        140,
+        50
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "samples",
+          "name": "samples",
+          "type": "LATENT",
+          "link": 84
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": 180
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            75,
+            97
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 42,
+      "type": "VAEDecode",
+      "pos": [
+        1610,
+        450
+      ],
+      "size": [
+        140,
+        50
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "samples",
+          "name": "samples",
+          "type": "LATENT",
+          "link": 71
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": 181
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            76
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 51,
+      "type": "ImageScaleBy",
+      "pos": [
+        1080,
+        450
+      ],
+      "size": [
+        210,
+        82
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 97
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            82
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageScaleBy"
+      },
+      "widgets_values": [
+        "lanczos",
+        1.5
+      ]
+    },
+    {
+      "id": 29,
+      "type": "PrimitiveNode",
+      "pos": [
+        370,
+        1050
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "widget": {
+            "name": "ban_tags"
+          },
+          "slot_index": 0,
+          "links": [
+            118
+          ]
+        }
+      ],
+      "title": "Ban Tags",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
+      ]
+    },
+    {
+      "id": 82,
+      "type": "ShowText|pysssss",
+      "pos": [
+        1070,
+        760
+      ],
+      "size": [
+        740,
+        440
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 150
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "shape": 6,
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ShowText|pysssss"
+      },
+      "widgets_values": [
+        "1girl, \n\nneck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,\n\nA realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+      ]
+    },
+    {
+      "id": 46,
+      "type": "SaveImage",
+      "pos": [
+        900,
+        1240
+      ],
+      "size": [
+        860,
+        650
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 76
+        }
+      ],
+      "outputs": [],
+      "title": "Hires Fix",
+      "properties": {},
+      "widgets_values": [
+        "HiresFix/ComfyUI_HiresFix"
+      ]
+    },
+    {
+      "id": 45,
+      "type": "SaveImage",
+      "pos": [
+        40,
+        1240
+      ],
+      "size": [
+        850,
+        650
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 75
+        }
+      ],
+      "outputs": [],
+      "title": "TIPO Generated Prompt",
+      "properties": {},
+      "widgets_values": [
+        "ComfyUI"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "PrimitiveNode",
+      "pos": [
+        40,
+        490
+      ],
+      "size": [
+        380,
+        82
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "slot_index": 0,
+          "links": [
+            24,
+            69,
+            131
+          ]
+        }
+      ],
+      "title": "Seed",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        923874509872640,
+        "increment"
+      ]
+    },
+    {
+      "id": 73,
+      "type": "PrimitiveInt",
+      "pos": [
+        40,
+        100
+      ],
+      "size": [
+        380,
+        82
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            121,
+            133
+          ]
+        }
+      ],
+      "title": "Width",
+      "properties": {
+        "Node name for S&R": "PrimitiveInt"
+      },
+      "widgets_values": [
+        1344,
+        "fixed"
+      ]
+    },
+    {
+      "id": 74,
+      "type": "PrimitiveInt",
+      "pos": [
+        40,
+        220
+      ],
+      "size": [
+        380,
+        82
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            122,
+            132
+          ]
+        }
+      ],
+      "title": "Height",
+      "properties": {
+        "Node name for S&R": "PrimitiveInt"
+      },
+      "widgets_values": [
+        768,
+        "fixed"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "CLIPTextEncode",
+      "pos": [
+        1057.4132939453125,
+        215.0066986694336
+      ],
+      "size": [
+        210,
+        88
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "clip",
+          "name": "clip",
+          "type": "CLIP",
+          "link": 178
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": 86
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            67,
+            175
+          ]
+        }
+      ],
+      "title": "Negative CLIP",
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        1067.0934268798826,
+        79.02666635894775
+      ],
+      "size": [
+        210,
+        88
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "clip",
+          "name": "clip",
+          "type": "CLIP",
+          "link": 179
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": 187
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            79,
+            174
+          ]
+        }
+      ],
+      "title": "Positive CLIP",
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "1girl,\n\noriginal,\n\nfujisaki hikari, (quasarcake:0.95), (welchino:0.9), (hazuki natsu, sho \\(sho lwlw\\), yuzuki gao:0.85), (naga u:0.85), (usashiro mani:0.92), (azumi kazuki:0.92), \n\ndragon girl, dragon wings, dragon tail, dragon horns, pointy ears, very long hair, scenery, solo, indoors, off shoulder, tail, light blue hair, silver hair, solo, sapphire, gray eyes, bedroom, no pants, black dress, multicolored hair, gradient hair,\n\nabsurdres, masterpiece, safe, sensitive"
+      ]
+    },
+    {
+      "id": 88,
+      "type": "VAELoader",
+      "pos": [
+        432.3593869227051,
+        373.195163850493
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            180,
+            181
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "flux2-vae.safetensors"
+      ]
+    },
+    {
+      "id": 71,
+      "type": "EmptyLatentImage",
+      "pos": [
+        40,
+        340
+      ],
+      "size": [
+        380,
+        110
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 133
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 132
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            107
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        1344,
+        896,
+        1
+      ]
+    },
+    {
+      "id": 86,
+      "type": "UNETLoader",
+      "pos": [
+        493.66605605112306,
+        80.37520446938942
+      ],
+      "size": [
+        270,
+        82
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            176,
+            177
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "flux-2-klein-4b.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 57,
+      "type": "PrimitiveNode",
+      "pos": [
+        40,
+        610
+      ],
+      "size": [
+        380,
+        140
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "slot_index": 0,
+          "links": [
+            86
+          ]
+        }
+      ],
+      "title": "Negative Prompt",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
+      ]
+    },
+    {
+      "id": 87,
+      "type": "CLIPLoader",
+      "pos": [
+        496.89278056894534,
+        219.12186067361307
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            178,
+            179
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen_3_4b.safetensors",
+        "flux2",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "KSampler",
+      "pos": [
+        1300,
+        100
+      ],
+      "size": [
+        300,
+        262
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 176
+        },
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 174
+        },
+        {
+          "label": "negative",
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 175
+        },
+        {
+          "label": "latent_image",
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 107
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            84
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        923874509872640,
+        "randomize",
+        24,
+        1,
+        "euler_ancestral",
+        "exponential",
+        1
+      ]
+    },
+    {
+      "id": 27,
+      "type": "PrimitiveNode",
+      "pos": [
+        40,
+        790
+      ],
+      "size": [
+        660,
+        220
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "widget": {
+            "name": "tags"
+          },
+          "slot_index": 0,
+          "links": [
+            116
+          ]
+        }
+      ],
+      "title": "Tags Input",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 76,
+      "type": "TIPO",
+      "pos": [
+        710,
+        450
+      ],
+      "size": [
+        350,
+        750
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "tags",
+          "type": "STRING",
+          "widget": {
+            "name": "tags"
+          },
+          "link": 116
+        },
+        {
+          "name": "nl_prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "nl_prompt"
+          },
+          "link": 117
+        },
+        {
+          "name": "ban_tags",
+          "type": "STRING",
+          "widget": {
+            "name": "ban_tags"
+          },
+          "link": 118
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 121
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 122
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 131
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            150
+          ]
+        },
+        {
+          "name": "user_prompt",
+          "type": "STRING",
+          "links": [
+            187
+          ]
+        },
+        {
+          "name": "unformatted_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "unformatted_user_prompt",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TIPO"
+      },
+      "widgets_values": [
+        "",
+        "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality.",
+        "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses",
+        "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf",
+        "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>.\n\n<|quality|>, <|meta|>, <|rating|>",
+        1024,
+        1024,
+        0.5,
+        0.95,
+        0.05,
+        64,
+        "long",
+        "long",
+        923874509872640,
+        "fixed",
+        "cuda"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "PrimitiveNode",
+      "pos": [
+        40,
+        1050
+      ],
+      "size": [
+        320,
+        150
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "widget": {
+            "name": "nl_prompt"
+          },
+          "slot_index": 0,
+          "links": [
+            117
+          ]
+        }
+      ],
+      "title": "NL input",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+      ]
+    },
+    {
+      "id": 41,
+      "type": "KSampler",
+      "pos": [
+        1300,
+        450
+      ],
+      "size": [
+        300,
+        262
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 177
+        },
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 79
+        },
+        {
+          "label": "negative",
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 67
+        },
+        {
+          "label": "latent_image",
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 83
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 69
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            71
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        923874509872640,
+        "randomize",
+        16,
+        5,
+        "euler_ancestral",
+        "exponential",
+        0.5500000000000002
+      ]
+    }
+  ],
+  "links": [
+    [
+      24,
+      18,
+      0,
+      3,
+      4,
+      "INT"
+    ],
+    [
+      67,
+      7,
+      0,
+      41,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      69,
+      18,
+      0,
+      41,
+      4,
+      "INT"
+    ],
+    [
+      71,
+      41,
+      0,
+      42,
+      0,
+      "LATENT"
+    ],
+    [
+      75,
+      8,
+      0,
+      45,
+      0,
+      "IMAGE"
+    ],
+    [
+      76,
+      42,
+      0,
+      46,
+      0,
+      "IMAGE"
+    ],
+    [
+      79,
+      6,
+      0,
+      41,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      82,
+      51,
+      0,
+      52,
+      0,
+      "IMAGE"
+    ],
+    [
+      83,
+      52,
+      0,
+      41,
+      3,
+      "LATENT"
+    ],
+    [
+      84,
+      3,
+      0,
+      8,
+      0,
+      "LATENT"
+    ],
+    [
+      86,
+      57,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      97,
+      8,
+      0,
+      51,
+      0,
+      "IMAGE"
+    ],
+    [
+      107,
+      71,
+      0,
+      3,
+      3,
+      "LATENT"
+    ],
+    [
+      116,
+      27,
+      0,
+      76,
+      0,
+      "STRING"
+    ],
+    [
+      117,
+      28,
+      0,
+      76,
+      1,
+      "STRING"
+    ],
+    [
+      118,
+      29,
+      0,
+      76,
+      2,
+      "STRING"
+    ],
+    [
+      121,
+      73,
+      0,
+      76,
+      3,
+      "INT"
+    ],
+    [
+      122,
+      74,
+      0,
+      76,
+      4,
+      "INT"
+    ],
+    [
+      131,
+      18,
+      0,
+      76,
+      5,
+      "INT"
+    ],
+    [
+      132,
+      74,
+      0,
+      71,
+      1,
+      "INT"
+    ],
+    [
+      133,
+      73,
+      0,
+      71,
+      0,
+      "INT"
+    ],
+    [
+      150,
+      76,
+      0,
+      82,
+      0,
+      "STRING"
+    ],
+    [
+      174,
+      6,
+      0,
+      3,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      175,
+      7,
+      0,
+      3,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      176,
+      86,
+      0,
+      3,
+      0,
+      "MODEL"
+    ],
+    [
+      177,
+      86,
+      0,
+      41,
+      0,
+      "MODEL"
+    ],
+    [
+      178,
+      87,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      179,
+      87,
+      0,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      180,
+      88,
+      0,
+      8,
+      1,
+      "VAE"
+    ],
+    [
+      181,
+      88,
+      0,
+      42,
+      1,
+      "VAE"
+    ],
+    [
+      187,
+      76,
+      1,
+      6,
+      1,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7513148009015777,
+      "offset": [
+        90.88055399526372,
+        87.73145358114772
+      ]
+    },
+    "frontendVersion": "1.43.3",
+    "groupNodes": {
+      "TIPO": {
+        "nodes": [
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 20,
+              "1": 760
+            },
+            "size": {
+              "0": 660,
+              "1": 180
+            },
+            "flags": {},
+            "order": 5,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "tags"
+                }
+              }
+            ],
+            "title": "Tags Input",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 0
+          },
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 20,
+              "1": 980
+            },
+            "size": {
+              "0": 310,
+              "1": 140
+            },
+            "flags": {},
+            "order": 6,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "nl_prompt"
+                }
+              }
+            ],
+            "title": "NL input",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 1
+          },
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 350,
+              "1": 980
+            },
+            "size": {
+              "0": 330,
+              "1": 140
+            },
+            "flags": {},
+            "order": 7,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "ban_tags"
+                }
+              }
+            ],
+            "title": "Ban Tags",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 2
+          },
+          {
+            "id": -1,
+            "type": "TIPO",
+            "pos": {
+              "0": 690,
+              "1": 760
+            },
+            "size": {
+              "0": 340,
+              "1": 360
+            },
+            "flags": {},
+            "order": 10,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "tags",
+                "type": "STRING",
+                "link": null,
+                "widget": {
+                  "name": "tags"
+                }
+              },
+              {
+                "name": "nl_prompt",
+                "type": "STRING",
+                "link": null,
+                "widget": {
+                  "name": "nl_prompt"
+                }
+              },
+              {
+                "name": "ban_tags",
+                "type": "STRING",
+                "link": null,
+                "widget": {
+                  "name": "ban_tags"
+                }
+              },
+              {
+                "name": "width",
+                "type": "INT",
+                "link": null,
+                "widget": {
+                  "name": "width"
+                }
+              },
+              {
+                "name": "height",
+                "type": "INT",
+                "link": null,
+                "widget": {
+                  "name": "height"
+                }
+              },
+              {
+                "name": "seed",
+                "type": "INT",
+                "link": null,
+                "widget": {
+                  "name": "seed"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "name": "prompt",
+                "type": "STRING",
+                "links": [],
+                "slot_index": 0
+              },
+              {
+                "name": "user_prompt",
+                "type": "STRING",
+                "links": [],
+                "slot_index": 1
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "TIPO"
+            },
+            "widgets_values": [
+              "1girl,\n\numamusume, copano rickey \\(umamusume\\),\n\nmola mola, (ciloranko:0.9), (ninjin nouka:1.1), (maccha \\(mochancc\\):0.9), (ningen mame:1.1), ask \\(askzy\\), \n\nsolo, outdoors, squatting, tracen school uniform, panties, street,\n\nmasterpiece, newest, absurdres, sensitive, nsfw",
+              "A dragon girl",
+              "text, censor, speech, say, illustrations, doll, hat, background, single horn, blurry",
+              "KBlueLeaf/TIPO-500M | TIPO-500M_epoch5-F16.gguf",
+              "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>\n\n<|quality|>, <|meta|>, <|rating|>",
+              896,
+              1216,
+              0.5,
+              0.9500000000000001,
+              0.1,
+              80,
+              "long",
+              230,
+              "randomize"
+            ],
+            "index": 3
+          },
+          {
+            "id": -1,
+            "type": "ShowText|pysssss",
+            "pos": {
+              "0": 1050,
+              "1": 760
+            },
+            "size": [
+              680,
+              360
+            ],
+            "flags": {},
+            "order": 11,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "text",
+                "type": "STRING",
+                "link": null,
+                "widget": {
+                  "name": "text"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "links": [],
+                "shape": 6,
+                "slot_index": 0
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "ShowText|pysssss"
+            },
+            "widgets_values": [
+              [
+                "1girl, \n(daring tact \\(umamusume\\):1.1), umamusume, \nmisu kasumi, ogipote, ciloranko, (ninjin nouka:1.1), (ningen mame:1.1), ask \\(askzy\\), kita \\(kitairoha\\), amano kokoko, maccha \\(mochancc\\), \n\nsolo, armpits, navel, outdoors, tail, open clothes, hair ornament, arm up, bikini under clothes, brown hair, jacket, looking at viewer, long sleeves, blue sky, swimsuit, day, medium breasts, long hair, breasts, sky, breasts apart, horse tail, stomach, black bikini, blue eyes, horse girl, ahoge, animal ears, horse ears, white shirt, shirt, parted lips, open mouth, groin, cloud, blush, cowboy shot,\n\nA horse girl named daring tact from umamusume with long brown hair and big green eyes is posing in a revealing outfit against the backdrop of a blue sky with clouds. The girl has a slender body with wide hips and a flat tummy. Her arms are raised above her head and she looks down at the viewer with a seductive expression. Daring tact has a horse tail behind her back and horse ears on her head.\n\nmasterpiece, newest, absurdres, sensitive, nsfw"
+              ],
+              "1girl, \ncopano rickey \\(umamusume\\), umamusume, \nmola mola, (ciloranko:0.9), (ninjin nouka:1.1), (maccha \\(mochancc\\):0.9), (ningen mame:1.1), ask \\(askzy\\), \n\nsolo, outdoors, squatting, tracen school uniform, panties, street, multicolored hair, medium breasts, breast, tail, school uniform, skirt, horse girl, black footwear, open mouth, fang, loafers, streaked hair, long sleeves, long hair, road sign, purple eyes, bowtie, ahoge, blush, ear covers, sailor collar, shoes, purple shirt, bow, purple bowtie, sign, animal ears, horse ears, shirt, brown hair, looking at viewer, white panties, underwear, horse tail, white sailor collar,\n\nA dragon girl with long brown hair and horns on her head. she is wearing a blue and purple outfit with a red bowtie and black boots. the girl appears to be posing for the photo, with her arms stretched out to the sides and a determined expression on her face. the overall mood of the image is dark and mysterious\n\nmasterpiece, newest, absurdres, sensitive, nsfw"
+            ],
+            "index": 4
+          }
+        ],
+        "links": [
+          [
+            0,
+            0,
+            3,
+            0,
+            27,
+            "STRING"
+          ],
+          [
+            1,
+            0,
+            3,
+            1,
+            28,
+            "STRING"
+          ],
+          [
+            2,
+            0,
+            3,
+            2,
+            29,
+            "STRING"
+          ],
+          [
+            null,
+            0,
+            3,
+            3,
+            25,
+            "INT"
+          ],
+          [
+            null,
+            0,
+            3,
+            4,
+            26,
+            "INT"
+          ],
+          [
+            null,
+            0,
+            3,
+            5,
+            18,
+            "INT"
+          ],
+          [
+            3,
+            0,
+            4,
+            0,
+            38,
+            "STRING"
+          ]
+        ],
+        "external": [
+          [
+            4,
+            0,
+            "STRING"
+          ]
+        ]
+      },
+      "Text-to-Image": {
+        "nodes": [
+          {
+            "id": -1,
+            "type": "CLIPTextEncode",
+            "pos": {
+              "0": 510,
+              "1": 160
+            },
+            "size": {
+              "0": 210,
+              "1": 54
+            },
+            "flags": {},
+            "order": 10,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "clip",
+                "type": "CLIP",
+                "link": null
+              },
+              {
+                "name": "text",
+                "type": "STRING",
+                "link": null,
+                "widget": {
+                  "name": "text"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "links": [],
+                "slot_index": 0
+              }
+            ],
+            "title": "Negative CLIP",
+            "properties": {
+              "Node name for S&R": "CLIPTextEncode"
+            },
+            "widgets_values": [
+              "low quality, worst quality, text, signature, jpeg artifacts, bad anatomy, old, early, copyright name, watermark, artist name, signature, weibo username, multiple views, doll, character doll, blurry background, looking at viewer"
+            ],
+            "index": 0
+          },
+          {
+            "id": -1,
+            "type": "CLIPTextEncode",
+            "pos": {
+              "0": 510,
+              "1": 70
+            },
+            "size": {
+              "0": 210,
+              "1": 54
+            },
+            "flags": {},
+            "order": 12,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "clip",
+                "type": "CLIP",
+                "link": null
+              },
+              {
+                "name": "text",
+                "type": "STRING",
+                "link": null,
+                "widget": {
+                  "name": "text"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "links": [],
+                "slot_index": 0
+              }
+            ],
+            "title": "Positive CLIP",
+            "properties": {
+              "Node name for S&R": "CLIPTextEncode"
+            },
+            "widgets_values": [
+              "1girl,\nogipote, (misu kasumi:0.9), (fuzichoco:0.9), ciloranko, (ninjin nouka:1.1), (ningen mame:1.1),\n\nsolo,\n\nmasterpiece, newest, absurdres, sensitive"
+            ],
+            "index": 1
+          },
+          {
+            "id": -1,
+            "type": "KSampler",
+            "pos": {
+              "0": 730,
+              "1": 70
+            },
+            "size": {
+              "0": 300,
+              "1": 234
+            },
+            "flags": {},
+            "order": 13,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              },
+              {
+                "name": "seed",
+                "type": "INT",
+                "link": null,
+                "widget": {
+                  "name": "seed"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [],
+                "slot_index": 0
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "KSampler"
+            },
+            "widgets_values": [
+              526690111812256,
+              "fixed",
+              32,
+              7,
+              "dpmpp_2m_sde_gpu",
+              "exponential",
+              1
+            ],
+            "index": 2
+          },
+          {
+            "id": -1,
+            "type": "VAEDecode",
+            "pos": {
+              "0": 1040,
+              "1": 70
+            },
+            "size": {
+              "0": 140,
+              "1": 50
+            },
+            "flags": {},
+            "order": 14,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "samples",
+                "type": "LATENT",
+                "link": null
+              },
+              {
+                "name": "vae",
+                "type": "VAE",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": [],
+                "slot_index": 0
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "VAEDecode"
+            },
+            "index": 3
+          }
+        ],
+        "links": [
+          [
+            null,
+            1,
+            0,
+            0,
+            4,
+            "CLIP"
+          ],
+          [
+            null,
+            0,
+            0,
+            1,
+            57,
+            "STRING"
+          ],
+          [
+            null,
+            1,
+            1,
+            0,
+            4,
+            "CLIP"
+          ],
+          [
+            null,
+            0,
+            1,
+            1,
+            48,
+            "STRING"
+          ],
+          [
+            null,
+            0,
+            2,
+            0,
+            4,
+            "MODEL"
+          ],
+          [
+            1,
+            0,
+            2,
+            1,
+            6,
+            "CONDITIONING"
+          ],
+          [
+            0,
+            0,
+            2,
+            2,
+            7,
+            "CONDITIONING"
+          ],
+          [
+            null,
+            0,
+            2,
+            3,
+            5,
+            "LATENT"
+          ],
+          [
+            null,
+            0,
+            2,
+            4,
+            18,
+            "INT"
+          ],
+          [
+            2,
+            0,
+            3,
+            0,
+            3,
+            "LATENT"
+          ],
+          [
+            null,
+            2,
+            3,
+            1,
+            4,
+            "VAE"
+          ]
+        ],
+        "external": [
+          [
+            0,
+            0,
+            "CONDITIONING"
+          ],
+          [
+            1,
+            0,
+            "CONDITIONING"
+          ],
+          [
+            3,
+            0,
+            "IMAGE"
+          ]
+        ]
+      },
+      "Inputs": {
+        "nodes": [
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 50,
+              "1": 90
+            },
+            "size": {
+              "0": 270,
+              "1": 82
+            },
+            "flags": {},
+            "order": 5,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "width"
+                }
+              }
+            ],
+            "title": "Width",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 0
+          },
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 50,
+              "1": 210
+            },
+            "size": {
+              "0": 270,
+              "1": 82
+            },
+            "flags": {},
+            "order": 6,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "height"
+                }
+              }
+            ],
+            "title": "Height",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 1
+          },
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 50,
+              "1": 450
+            },
+            "size": {
+              "0": 270,
+              "1": 82
+            },
+            "flags": {},
+            "order": 7,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "seed"
+                }
+              }
+            ],
+            "title": "Seed",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 2
+          },
+          {
+            "id": -1,
+            "type": "EmptyLatentImage",
+            "pos": {
+              "0": 50,
+              "1": 330
+            },
+            "size": {
+              "0": 270,
+              "1": 80
+            },
+            "flags": {},
+            "order": 9,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "width",
+                "type": "INT",
+                "link": null,
+                "widget": {
+                  "name": "width"
+                }
+              },
+              {
+                "name": "height",
+                "type": "INT",
+                "link": null,
+                "widget": {
+                  "name": "height"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [],
+                "slot_index": 0
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "EmptyLatentImage"
+            },
+            "widgets_values": [
+              896,
+              1216,
+              2
+            ],
+            "index": 3
+          }
+        ],
+        "links": [
+          [
+            0,
+            0,
+            3,
+            0,
+            25,
+            "INT"
+          ],
+          [
+            1,
+            0,
+            3,
+            1,
+            26,
+            "INT"
+          ]
+        ],
+        "external": [
+          [
+            0,
+            0,
+            "INT"
+          ],
+          [
+            1,
+            0,
+            "INT"
+          ],
+          [
+            2,
+            0,
+            "INT"
+          ],
+          [
+            3,
+            0,
+            "LATENT"
+          ]
+        ]
+      },
+      "Image Size": {
+        "nodes": [
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 40,
+              "1": 90
+            },
+            "size": {
+              "0": 270,
+              "1": 82
+            },
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "width"
+                }
+              }
+            ],
+            "title": "Width",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 0
+          },
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 40,
+              "1": 210
+            },
+            "size": {
+              "0": 270,
+              "1": 82
+            },
+            "flags": {},
+            "order": 7,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "height"
+                }
+              }
+            ],
+            "title": "Height",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 1
+          }
+        ],
+        "links": [],
+        "external": [
+          [
+            0,
+            0,
+            "INT"
+          ],
+          [
+            1,
+            0,
+            "INT"
+          ]
+        ]
+      },
+      "Latents": {
+        "nodes": [
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 40,
+              "1": 90
+            },
+            "size": {
+              "0": 270,
+              "1": 82
+            },
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "width"
+                }
+              }
+            ],
+            "title": "Width",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 0
+          },
+          {
+            "id": -1,
+            "type": "PrimitiveNode",
+            "pos": {
+              "0": 40,
+              "1": 210
+            },
+            "size": {
+              "0": 270,
+              "1": 82
+            },
+            "flags": {},
+            "order": 7,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [],
+                "slot_index": 0,
+                "widget": {
+                  "name": "height"
+                }
+              }
+            ],
+            "title": "Height",
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "index": 1
+          },
+          {
+            "id": -1,
+            "type": "EmptyLatentImage",
+            "pos": {
+              "0": 40,
+              "1": 330
+            },
+            "size": {
+              "0": 270,
+              "1": 80
+            },
+            "flags": {},
+            "order": 9,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "width",
+                "type": "INT",
+                "link": null,
+                "widget": {
+                  "name": "width"
+                }
+              },
+              {
+                "name": "height",
+                "type": "INT",
+                "link": null,
+                "widget": {
+                  "name": "height"
+                }
+              }
+            ],
+            "outputs": [
+              {
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [],
+                "slot_index": 0
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "EmptyLatentImage"
+            },
+            "widgets_values": [
+              1344,
+              768,
+              1
+            ],
+            "index": 2
+          }
+        ],
+        "links": [
+          [
+            0,
+            0,
+            2,
+            0,
+            25,
+            "INT"
+          ],
+          [
+            1,
+            0,
+            2,
+            1,
+            26,
+            "INT"
+          ]
+        ],
+        "external": [
+          [
+            0,
+            0,
+            "INT"
+          ],
+          [
+            1,
+            0,
+            "INT"
+          ],
+          [
+            2,
+            0,
+            "LATENT"
+          ]
+        ]
+      }
+    },
+    "workflowRendererVersion": "LG"
+  },
+  "version": 0.4
+}
