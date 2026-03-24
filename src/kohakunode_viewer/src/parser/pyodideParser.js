@@ -82,6 +82,10 @@ async function mountKohakunode() {
   }
   const manifest = await manifestRes.json();
 
+  // Find site-packages path
+  const sitePackages = pyodide.runPython("import site; site.getsitepackages()[0]");
+  console.log(`[pyodideParser] site-packages: ${sitePackages}`);
+
   // Create directories and write files
   for (const relPath of manifest.files) {
     const url = `/pylib/${relPath}`;
@@ -94,7 +98,7 @@ async function mountKohakunode() {
 
     // Ensure parent directories exist
     const parts = relPath.split("/");
-    let dir = "/lib/python3.12/site-packages";
+    let dir = sitePackages;
     for (let i = 0; i < parts.length - 1; i++) {
       dir += "/" + parts[i];
       try { pyodide.FS.mkdir(dir); } catch { /* exists */ }

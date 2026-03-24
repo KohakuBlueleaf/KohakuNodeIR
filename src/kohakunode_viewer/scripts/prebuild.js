@@ -1,35 +1,39 @@
 /**
- * Copy kohakunode Python source + grammar to public/pylib/ for Pyodide.
- * Also generates a manifest.json listing all files.
+ * Copy kohakunode Python source + grammar to public/pylib/kohakunode/
+ * Also generates manifest.json listing all files relative to pylib/.
  */
-import { cpSync, mkdirSync, readdirSync, statSync, writeFileSync } from "fs";
-import { join, relative } from "path";
+import { cpSync, mkdirSync, readdirSync, statSync, writeFileSync, rmSync } from "fs";
+import { join } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const SRC = join(__dirname, "..", "..", "kohakunode");
-const DEST = join(__dirname, "..", "public", "pylib", "kohakunode");
-const MANIFEST = join(__dirname, "..", "public", "pylib", "manifest.json");
+const PYLIB = join(__dirname, "..", "public", "pylib");
+const DEST = join(PYLIB, "kohakunode");
+const MANIFEST = join(PYLIB, "manifest.json");
 
 const files = [];
 
-function copyDir(src, dest, relBase) {
+function copyDir(src, dest, relPrefix) {
   mkdirSync(dest, { recursive: true });
   for (const entry of readdirSync(src)) {
+    if (entry === "__pycache__") continue;
     const srcPath = join(src, entry);
     const destPath = join(dest, entry);
-    const relPath = relBase ? `${relBase}/${entry}` : entry;
+    const relPath = `${relPrefix}${entry}`;
     if (statSync(srcPath).isDirectory()) {
-      copyDir(srcPath, destPath, `kohakunode/${relPath}`);
+      copyDir(srcPath, destPath, `${relPath}/`);
     } else if (entry.endsWith(".py") || entry.endsWith(".lark")) {
       cpSync(srcPath, destPath);
-      files.push(`kohakunode/${relPath}`);
+      files.push(relPath);
     }
   }
 }
 
-mkdirSync(join(__dirname, "..", "public", "pylib"), { recursive: true });
-copyDir(SRC, DEST, "");
+// Clean and rebuild
+rmSync(DEST, { recursive: true, force: true });
+mkdirSync(PYLIB, { recursive: true });
+copyDir(SRC, DEST, "kohakunode/");
 
 writeFileSync(MANIFEST, JSON.stringify({ files }, null, 2));
 console.log(`[prebuild] Copied ${files.length} files to public/pylib/`);
