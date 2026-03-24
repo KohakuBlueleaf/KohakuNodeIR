@@ -146,13 +146,13 @@ export function useWireDraw(canvasRef, screenToCanvas) {
       const destPort = { portId, nodeId, portType, portDir }
 
       if (isCompatible(sourcePort, destPort)) {
-        graphStore.addConnection({
-          fromNodeId: sourcePort.nodeId,
-          fromPortId: sourcePort.portId,
-          toNodeId: destPort.nodeId,
-          toPortId: destPort.portId,
-          portType: sourcePort.portType,
-        })
+        graphStore.addConnection(
+          sourcePort.nodeId,
+          sourcePort.portId,
+          destPort.nodeId,
+          destPort.portId,
+          sourcePort.portType,
+        )
       }
     }
 

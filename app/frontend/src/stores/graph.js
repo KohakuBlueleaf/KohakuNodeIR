@@ -155,6 +155,7 @@ export const useGraphStore = defineStore('graph', () => {
    * @param {string} id
    */
   function removeConnection(id) {
+    if (!connections.has(id)) return;
     useHistoryStore().pushState();
     connections.delete(id);
   }

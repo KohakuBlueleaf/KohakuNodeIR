@@ -1,6 +1,7 @@
 import { ref, reactive, computed } from 'vue';
 import { defineStore } from 'pinia';
 import { useGraphStore } from './graph.js';
+import { useHistoryStore } from './history.js';
 
 const ZOOM_MIN = 0.1;
 const ZOOM_MAX = 3.0;
@@ -179,15 +180,26 @@ export const useEditorStore = defineStore('editor', () => {
    */
   function deleteSelected() {
     const graph = useGraphStore();
+    if (selectedConnectionIds.size === 0 && selectedNodeIds.size === 0) return;
+
+    // Push ONE history snapshot before the entire batch
+    useHistoryStore().pushState();
 
     // Delete selected connections first (removing a node already removes its connections)
     for (const connId of selectedConnectionIds) {
-      graph.removeConnection(connId);
+      graph.connections.delete(connId);
     }
     selectedConnectionIds.clear();
 
+    // Delete selected nodes and their associated connections
     for (const nodeId of selectedNodeIds) {
-      graph.removeNode(nodeId);
+      // Remove every connection that touches this node
+      for (const [connId, conn] of graph.connections) {
+        if (conn.fromNodeId === nodeId || conn.toNodeId === nodeId) {
+          graph.connections.delete(connId);
+        }
+      }
+      graph.nodes.delete(nodeId);
     }
     selectedNodeIds.clear();
   }

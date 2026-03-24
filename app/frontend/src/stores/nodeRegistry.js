@@ -110,6 +110,7 @@ const BUILT_IN_DEFINITIONS = [
       inputs: [],
       outputs: [],
     },
+    properties: { value: 0, valueType: 'int' },
   },
   // ── Store / Load (remote data connections) ──
   {
@@ -457,6 +458,7 @@ export const useNodeRegistryStore = defineStore('nodeRegistry', () => {
         outputs: _clonePorts(def.controlPorts.outputs),
       },
       properties: {
+        ...(def.properties ? { ...def.properties } : {}),
         ...(def.code !== undefined ? { code: def.code } : {}),
       },
       ...overrides,

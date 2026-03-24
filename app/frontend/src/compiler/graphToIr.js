@@ -35,20 +35,12 @@ function varName(nodeId, portName) {
  * Get the output variable name for a node's port, considering value nodes.
  * Value nodes use their name as the variable (e.g., "counter" not "v_value_3_value").
  *
- * For all other nodes, use the port name directly when it is a meaningful
- * identifier (not an auto-generated "out" / "_out_N" / "in_N" pattern).
- * This preserves variable names when round-tripping KIR through import/export,
- * because the parser stores the original KIR variable names as port names.
+ * All other nodes always include a node identifier prefix to avoid collisions
+ * when multiple nodes have the same port name.
  */
 function outputVarName(node, portName) {
   if (node.type === 'value' && node.name && node.name !== 'Node' && node.name !== 'value') {
     return sanitizeIdent(node.name)
-  }
-  // If the port name is a meaningful user-visible identifier, use it directly.
-  // Auto-generated names from the parser are: "out", "_out_N", "in_N", "value".
-  const autoGenPattern = /^(out|value|_out_\d+|in_\d+)$/
-  if (portName && !autoGenPattern.test(portName)) {
-    return sanitizeIdent(portName)
   }
   return varName(node.id, portName)
 }

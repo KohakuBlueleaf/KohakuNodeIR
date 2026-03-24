@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useGraphStore } from '../../stores/graph.js';
 import { useEditorStore } from '../../stores/editor.js';
 import { useHistoryStore } from '../../stores/history.js';
@@ -28,6 +28,9 @@ const graph = useGraphStore();
 const editor = useEditorStore();
 const history = useHistoryStore();
 const registry = useNodeRegistryStore();
+
+// ── Sync zoom prop → editor store so other components read the correct value ──
+watch(() => props.zoom, (z) => { editor.zoom = z; }, { immediate: true });
 
 // ── Refs ───────────────────────────────────────────────────────────────────────
 const containerRef = ref(null);
@@ -87,6 +90,7 @@ function onWheel(e) {
   panY.value = my - ((my - panY.value) / oldZoom) * newZoom;
 
   emit('update:zoom', newZoom);
+  editor.zoom = newZoom;
 }
 
 // ── Transform style ───────────────────────────────────────────────────────────
@@ -146,8 +150,44 @@ function updateSelection(clientX, clientY) {
   selectionBox.value.y2 = clientY - rect.top;
 }
 
-function endSelection() {
+function endSelection(additive = false) {
+  if (!isSelecting.value) return;
+
+  // Convert screen-space selection box to canvas-space and find overlapping nodes
+  const { x1, y1, x2, y2 } = selectionBox.value;
+  const c1 = screenToCanvasCoord(x1, y1);
+  const c2 = screenToCanvasCoord(x2, y2);
+  const minX = Math.min(c1.x, c2.x);
+  const maxX = Math.max(c1.x, c2.x);
+  const minY = Math.min(c1.y, c2.y);
+  const maxY = Math.max(c1.y, c2.y);
+
+  if (!additive) {
+    editor.deselectAll();
+  }
+
+  for (const node of graph.nodes.values()) {
+    const nodeRight = node.x + node.width;
+    const nodeBottom = node.y + (node.height ?? 120);
+    const overlaps =
+      node.x < maxX && nodeRight > minX &&
+      node.y < maxY && nodeBottom > minY;
+    if (overlaps) {
+      editor.selectedNodeIds.add(node.id);
+    }
+  }
+
   isSelecting.value = false;
+}
+
+/**
+ * Convert container-relative screen coords to canvas-space coords.
+ */
+function screenToCanvasCoord(cx, cy) {
+  return {
+    x: (cx - panX.value) / props.zoom,
+    y: (cy - panY.value) / props.zoom,
+  };
 }
 
 // ── Draft wire — derived from editor store ───────────────────────────────────
@@ -156,16 +196,12 @@ const draftWire = computed(() => {
   if (!dw) return null;
   const fromPos = graph.getPortPosition(dw.fromNodeId, dw.fromPortId);
   if (!fromPos) return null;
-  // Convert canvas coords to screen coords for the SVG overlay
-  const fromScreen = {
-    x: fromPos.x * props.zoom + panX.value,
-    y: fromPos.y * props.zoom + panY.value,
-  };
+  // Both from and to are in canvas-space; convert to container-relative for the SVG overlay
   return {
-    fromX: fromScreen.x,
-    fromY: fromScreen.y,
-    toX: dw.mouseX,
-    toY: dw.mouseY,
+    fromX: fromPos.x * props.zoom + panX.value,
+    fromY: fromPos.y * props.zoom + panY.value,
+    toX: dw.mouseX * props.zoom + panX.value,
+    toY: dw.mouseY * props.zoom + panY.value,
     portType: dw.portType,
   };
 });
@@ -208,10 +244,29 @@ function onKeyDown(e) {
     return;
   }
 
+  // Ctrl+A — select all nodes
+  if (ctrl && e.key === 'a') {
+    e.preventDefault();
+    editor.setSelection(graph.nodeList.map(n => n.id));
+    return;
+  }
+
   // Ctrl+V — paste KIR text or graph JSON from clipboard
   if (ctrl && e.key === 'v') {
     e.preventDefault();
     handlePaste();
+    return;
+  }
+
+  // Escape — cancel draft wire + deselect all
+  if (e.key === 'Escape') {
+    if (editor.isDrawingWire) {
+      editor.cancelDraftWire();
+    }
+    if (isSelecting.value) {
+      isSelecting.value = false;
+    }
+    editor.deselectAll();
     return;
   }
 }
@@ -236,12 +291,14 @@ function onPointerDown(e) {
     beginPan(e.clientX, e.clientY);
     return;
   }
-  // Left mouse on empty canvas → deselect all + pan (grab background to move)
+  // Left mouse on empty canvas → rubber-band selection
   if (e.button === 0) {
     const isCanvas = e.target === containerRef.value || e.target.classList.contains('canvas-transform');
     if (isCanvas) {
-      editor.deselectAll();
-      beginPan(e.clientX, e.clientY);
+      if (!e.shiftKey) {
+        editor.deselectAll();
+      }
+      beginSelection(e.clientX, e.clientY);
     }
   }
 }
@@ -251,10 +308,16 @@ function onPointerMove(e) {
     continuePan(e.clientX, e.clientY);
     return;
   }
-  // Update draft wire endpoint (screen coords)
+  // Update draft wire endpoint (canvas coords)
   if (editor.isDrawingWire) {
     const rect = containerRef.value.getBoundingClientRect();
-    editor.updateDraftWire(e.clientX - rect.left, e.clientY - rect.top);
+    const containerX = e.clientX - rect.left;
+    const containerY = e.clientY - rect.top;
+    // Convert container-relative to canvas-space
+    editor.updateDraftWire(
+      (containerX - panX.value) / props.zoom,
+      (containerY - panY.value) / props.zoom,
+    );
   }
   updateSelection(e.clientX, e.clientY);
 }
@@ -283,7 +346,7 @@ function onPointerUp(e) {
     }
   }
   if (isSelecting.value) {
-    endSelection();
+    endSelection(e.shiftKey);
   }
 }
 
