@@ -248,8 +248,13 @@ class Writer:
             text = repr(float(value))
             return text
         if kind == "str":
-            # Use double-quote style.
-            escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+            s = str(value)
+            if "\n" in s:
+                # Multi-line: use triple quotes
+                escaped = s.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
+                return f'"""{escaped}"""'
+            # Single-line: use double quotes
+            escaped = s.replace("\\", "\\\\").replace('"', '\\"')
             return f'"{escaped}"'
         if kind == "list":
             items = ", ".join(self._write_expression(item) for item in value)
