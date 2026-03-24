@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any, List, Optional
+from typing import Any
 
 from kohakunode.ast.nodes import (
     Assignment,
@@ -24,7 +22,7 @@ from kohakunode.ast.nodes import (
 )
 
 
-def _iter_child_nodes(node: Any) -> List[Any]:
+def _iter_child_nodes(node: Any) -> list[Any]:
     """Return all immediate ASTNode children of *node*.
 
     Inspection order:
@@ -38,7 +36,7 @@ def _iter_child_nodes(node: Any) -> List[Any]:
     has a ``__dict__`` and is not a primitive (str/int/float/bool/bytes) is
     treated as a potential node.  Lists are flattened one level deep.
     """
-    children: List[Any] = []
+    children: list[Any] = []
     obj_dict = getattr(node, "__dict__", {})
     for value in obj_dict.values():
         if _is_ast_node(value):
