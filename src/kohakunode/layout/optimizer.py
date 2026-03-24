@@ -20,7 +20,13 @@ from kohakunode.layout.auto_layout import (
     auto_layout,
     estimate_node_size,
 )
-from kohakunode.layout.score import score_edge
+from kohakunode.layout.score import (
+    CROSSING_PENALTY,
+    OVERLAP_PENALTY,
+    _count_crossings,
+    _count_overlaps,
+    score_edge,
+)
 
 
 def _grid_from_graph(
@@ -58,8 +64,11 @@ def _total_score(
     sizes: dict[str, tuple[float, float]],
     edges: list[KGEdge],
 ) -> float:
-    """Sum of all edge costs for the current grid assignment."""
-    return sum(score_edge(e, grid) for e in edges)
+    """Sum of all edge costs plus crossing and overlap penalties."""
+    edge_cost = sum(score_edge(e, grid) for e in edges)
+    crossing_cost = _count_crossings(grid, edges) * CROSSING_PENALTY
+    overlap_cost = _count_overlaps(grid) * OVERLAP_PENALTY
+    return edge_cost + crossing_cost + overlap_cost
 
 
 def _apply_grid_to_graph(
