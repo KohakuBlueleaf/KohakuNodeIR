@@ -738,7 +738,7 @@ export function parseKirLite(kirText) {
     for (const out of outputItems) {
       if (out.kind === "name") {
         // The output token itself is a variable name — register it pointing to this node
-        if (!varMap[out.name]) {
+        if (true) {
           varMap[out.name] = { nodeId, port: out.name };
         }
       }
@@ -1189,7 +1189,7 @@ export function parseKirLite(kirText) {
           // Register raw output names as data variables
           for (const out of outputItems) {
             if (out.kind === "name") {
-              if (!varMap[out.name]) {
+              if (true) {
                 varMap[out.name] = { nodeId, port: out.name };
               }
               // Also {nodeId}_{portName} form
@@ -1198,7 +1198,7 @@ export function parseKirLite(kirText) {
           }
           for (const out of dataOutputs) {
             const canonical = `${nodeId}_${out.name}`;
-            if (!varMap[canonical]) {
+            if (true) {
               varMap[canonical] = { nodeId, port: out.name };
             }
           }
