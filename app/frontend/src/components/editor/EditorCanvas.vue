@@ -344,6 +344,16 @@ function loadFileContent(filename, content) {
 
 // parserResultToGraph imported from ../../utils/parserResultToGraph.js
 
+/**
+ * Strip HTML tags from clipboard text.
+ * VS Code and browsers put rich HTML on the clipboard alongside plain text;
+ * navigator.clipboard.readText() usually returns plain text, but as a safety
+ * net we strip any stray tags/entities.
+ */
+function stripHtml(s) {
+  return s.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"');
+}
+
 async function handlePaste() {
   let text;
   try {
@@ -354,6 +364,7 @@ async function handlePaste() {
   }
 
   if (!text || !text.trim()) return;
+  text = stripHtml(text);
 
   try {
     const result = await detectAndParseAsync(text);
