@@ -64,7 +64,9 @@ function portIsConnected(portId) {
 function showEditor(port) {
   // Show inline editor if port has a known type and is not connected
   const editableTypes = ['int', 'float', 'str', 'string', 'bool']
-  return editableTypes.includes(port.dataType) && !portIsConnected(port.id)
+  if (portIsConnected(port.id)) return false
+  // Show if explicit editable type OR if port has a default value
+  return editableTypes.includes(port.dataType) || port.defaultValue !== undefined
 }
 function onPortValueChange(port, e) {
   let val = e.target.value

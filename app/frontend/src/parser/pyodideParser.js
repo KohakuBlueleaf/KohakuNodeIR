@@ -171,3 +171,108 @@ json.dumps(_result)
 export function isPyodideReady() {
   return ready;
 }
+
+/**
+ * Parse KIR text using Python and return a plain-JS AST object.
+ * Returns null on failure.
+ *
+ * The returned object mirrors the Python dataclass structure:
+ *   { type: 'Program', body: [...statements], mode: string|null }
+ *
+ * Each statement has a `type` field matching the Python class name
+ * (FuncCall, Assignment, Branch, Switch, Parallel, Jump, Namespace,
+ *  DataflowBlock, SubgraphDef, ModeDecl) plus type-specific fields.
+ *
+ * @param {string} kirText
+ * @returns {Promise<object|null>}
+ */
+export async function parseKirToAst(kirText) {
+  if (!ready) {
+    const ok = await initPyodide();
+    if (!ok) return null;
+  }
+
+  try {
+    pyodide.globals.set('_kir_ast_input', kirText);
+
+    const resultJson = await pyodide.runPythonAsync(`
+import json
+from kohakunode import parse
+
+def _serialize_expr(expr):
+    if expr is None:
+        return None
+    t = type(expr).__name__
+    if t == 'Identifier':
+        return {'type': 'Identifier', 'name': expr.name}
+    if t == 'Literal':
+        return {'type': 'Literal', 'value': expr.value, 'literal_type': expr.literal_type}
+    if t == 'KeywordArg':
+        return {'type': 'KeywordArg', 'name': expr.name, 'value': _serialize_expr(expr.value)}
+    if t == 'LabelRef':
+        return {'type': 'LabelRef', 'name': expr.name}
+    if t == 'Wildcard':
+        return {'type': 'Wildcard'}
+    return {'type': t, 'repr': repr(expr)}
+
+def _serialize_output(out):
+    if out is None:
+        return '_'
+    if isinstance(out, str):
+        return out
+    t = type(out).__name__
+    if t == 'Wildcard':
+        return '_'
+    return str(out)
+
+def _serialize_stmt(stmt):
+    t = type(stmt).__name__
+    base = {'type': t, 'line': stmt.line}
+    if t == 'FuncCall':
+        base['func_name'] = stmt.func_name
+        base['inputs'] = [_serialize_expr(i) for i in stmt.inputs]
+        base['outputs'] = [_serialize_output(o) for o in stmt.outputs]
+    elif t == 'Assignment':
+        base['target'] = stmt.target
+        base['value'] = _serialize_expr(stmt.value)
+    elif t == 'Branch':
+        base['condition'] = _serialize_expr(stmt.condition)
+        base['true_label'] = stmt.true_label
+        base['false_label'] = stmt.false_label
+    elif t == 'Switch':
+        base['value'] = _serialize_expr(stmt.value)
+        base['cases'] = [[_serialize_expr(e), lbl] for e, lbl in stmt.cases]
+        base['default_label'] = stmt.default_label
+    elif t == 'Jump':
+        base['target'] = stmt.target
+    elif t == 'Parallel':
+        base['labels'] = list(stmt.labels)
+    elif t == 'Namespace':
+        base['name'] = stmt.name
+        base['body'] = [_serialize_stmt(s) for s in stmt.body]
+    elif t == 'DataflowBlock':
+        base['body'] = [_serialize_stmt(s) for s in stmt.body]
+    elif t == 'SubgraphDef':
+        base['name'] = stmt.name
+        base['params'] = [{'name': p.name, 'default': _serialize_expr(p.default)} for p in stmt.params]
+        base['outputs'] = list(stmt.outputs)
+        base['body'] = [_serialize_stmt(s) for s in stmt.body]
+    elif t == 'ModeDecl':
+        base['mode'] = stmt.mode
+    return base
+
+_prog = parse(_kir_ast_input)
+_ast_result = {
+    'type': 'Program',
+    'mode': _prog.mode,
+    'body': [_serialize_stmt(s) for s in _prog.body],
+}
+json.dumps(_ast_result)
+`);
+
+    return JSON.parse(resultJson);
+  } catch (err) {
+    console.error('[pyodideParser] parseKirToAst error:', err);
+    return null;
+  }
+}

@@ -3,6 +3,7 @@ import { useGraphStore } from '../stores/graph.js'
 import { useEditorStore } from '../stores/editor.js'
 import { useHistoryStore } from '../stores/history.js'
 import { detectAndParseAsync } from '../parser/index.js'
+import { parserResultToGraph } from '../utils/parserResultToGraph.js'
 
 /**
  * useKeyboard
@@ -124,81 +125,7 @@ export function useKeyboard({ onCancelOperation } = {}) {
   // Paste (Ctrl+V) — import KIR text or graph JSON from clipboard
   // ---------------------------------------------------------------------------
 
-  /**
-   * Convert parser intermediate format into graph store nodes + connections.
-   * Mirrors the parserResultToGraph helper in Toolbar.vue.
-   */
-  function parserResultToGraph(parserNodes, parserEdges) {
-    function makePortId(nodeId, portName, suffix) {
-      const safe = portName.replace(/[^a-zA-Z0-9_]/g, '_')
-      return `${nodeId}__${safe}__${suffix}`
-    }
-
-    const NO_CTRL_TYPES = new Set(['value', 'load'])
-
-    const nodes = parserNodes.map((pn) => {
-      const dataInputs = (pn.dataInputs ?? []).map((p) => {
-        const port = { id: makePortId(pn.id, p.name, 'di'), name: p.name, dataType: p.type ?? 'any' }
-        if (p.default !== undefined) port.defaultValue = p.default
-        return port
-      })
-      const dataOutputs = (pn.dataOutputs ?? []).map((p) => ({
-        id: makePortId(pn.id, p.name, 'do'),
-        name: p.name,
-        dataType: p.type ?? 'any',
-      }))
-      let rawCtrlIn = pn.ctrlInputs ?? []
-      let rawCtrlOut = pn.ctrlOutputs ?? []
-      if (!NO_CTRL_TYPES.has(pn.type) && rawCtrlIn.length === 0 && rawCtrlOut.length === 0) {
-        rawCtrlIn = ['in']
-        rawCtrlOut = ['out']
-      }
-      const ctrlInputs = rawCtrlIn.map((name) => ({ id: makePortId(pn.id, name, 'ci'), name }))
-      const ctrlOutputs = rawCtrlOut.map((name) => ({ id: makePortId(pn.id, name, 'co'), name }))
-      return {
-        id: pn.id,
-        type: pn.type ?? 'function',
-        name: pn.name ?? pn.type ?? 'Node',
-        x: pn.x ?? 0,
-        y: pn.y ?? 0,
-        width: pn.width ?? 160,
-        height: pn.height ?? 120,
-        dataPorts: { inputs: dataInputs, outputs: dataOutputs },
-        controlPorts: { inputs: ctrlInputs, outputs: ctrlOutputs },
-        properties: {},
-      }
-    })
-
-    const portIdLookup = new Map()
-    for (const node of nodes) {
-      for (const p of node.dataPorts.inputs) portIdLookup.set(`${node.id}|${p.name}|di`, p.id)
-      for (const p of node.dataPorts.outputs) portIdLookup.set(`${node.id}|${p.name}|do`, p.id)
-      for (const p of node.controlPorts.inputs) portIdLookup.set(`${node.id}|${p.name}|ci`, p.id)
-      for (const p of node.controlPorts.outputs) portIdLookup.set(`${node.id}|${p.name}|co`, p.id)
-    }
-
-    const connections = (parserEdges ?? []).map((edge) => {
-      const isCtrl = edge.type === 'control'
-      const fromSuffix = isCtrl ? 'co' : 'do'
-      const toSuffix = isCtrl ? 'ci' : 'di'
-      const fromPortId =
-        portIdLookup.get(`${edge.fromNode}|${edge.fromPort}|${fromSuffix}`) ??
-        makePortId(edge.fromNode, edge.fromPort, fromSuffix)
-      const toPortId =
-        portIdLookup.get(`${edge.toNode}|${edge.toPort}|${toSuffix}`) ??
-        makePortId(edge.toNode, edge.toPort, toSuffix)
-      return {
-        fromNodeId: edge.fromNode,
-        fromPortId,
-        toNodeId: edge.toNode,
-        toPortId,
-        portType: isCtrl ? 'control' : 'data',
-      }
-    })
-
-    return { nodes, connections }
-  }
-
+  // parserResultToGraph imported from ../utils/parserResultToGraph.js
   async function handlePaste() {
     let text
     try {

@@ -1,349 +1,368 @@
-import { computed } from 'vue';
+import { ref, watch } from 'vue';
+import { compileGraph } from '../../compiler/graphToIr.js';
+import { parseKirToAst, isPyodideReady, initPyodide } from '../../parser/pyodideParser.js';
 
-// ---- Constants ----
-// Node types that have control flow (ctrl inputs + outputs)
-const CONTROL_FLOW_TYPES = new Set(['branch', 'merge', 'switch', 'parallel']);
-// Node types that are purely data (no ctrl ports by nature)
-const DATA_ONLY_TYPES = new Set(['value', 'load']);
-// Node types that are C-block shaped (wrap arms)
-const C_BLOCK_TYPES = new Set(['branch', 'switch', 'parallel']);
-// Loop-like types (single-body wrap)
-const LOOP_TYPES = new Set([]); // reserved for future loop node
+// ---------------------------------------------------------------------------
+// AST → Block tree walker
+// ---------------------------------------------------------------------------
 
 /**
- * Determine block render type from a graph node.
- * @param {object} node
- * @returns {'hat'|'statement'|'branch'|'switch'|'parallel'|'loop'|'value'|'reporter'}
+ * Serialize a KIR AST expression node to a display-friendly object.
+ * These become { kind, text } for ReporterBlock to render.
+ *
+ * @param {object|null} expr  - serialized AST expression from Python
+ * @returns {{ kind: string, text: string }}
  */
-function blockTypeOf(node) {
-  if (C_BLOCK_TYPES.has(node.type)) return node.type; // 'branch'|'switch'|'parallel'
-  if (LOOP_TYPES.has(node.type)) return 'loop';
-  if (DATA_ONLY_TYPES.has(node.type)) return 'value';
-  // Nodes with ctrl ports but no ctrl inputs = chain roots → hat blocks
-  const hasCtrlIn = node.controlPorts.inputs.length > 0;
-  const hasCtrlOut = node.controlPorts.outputs.length > 0;
-  if (!hasCtrlIn && hasCtrlOut) return 'hat';
-  if (!hasCtrlIn && !hasCtrlOut) return 'reporter'; // pure data
-  return 'statement';
-}
-
-/**
- * Build a lookup map: portId → connection (for fast traversal).
- * @param {object[]} connectionList
- * @returns {{ byFromPort: Map, byToPort: Map }}
- */
-function buildConnectionIndex(connectionList) {
-  const byFromPort = new Map(); // fromPortId → conn
-  const byToPort = new Map();   // toPortId → conn
-  for (const conn of connectionList) {
-    byFromPort.set(conn.fromPortId, conn);
-    byToPort.set(conn.toPortId, conn);
+function serializeExpr(expr) {
+  if (!expr) return { kind: 'empty', text: '' };
+  switch (expr.type) {
+    case 'Identifier':
+      return { kind: 'var', text: expr.name ?? '' };
+    case 'Literal':
+      return { kind: 'literal', text: String(expr.value ?? '') };
+    case 'KeywordArg':
+      return { kind: 'kwarg', text: `${expr.name}=${serializeExpr(expr.value).text}` };
+    case 'LabelRef':
+      return { kind: 'label', text: expr.name ?? '' };
+    case 'Wildcard':
+      return { kind: 'wildcard', text: '_' };
+    default:
+      return { kind: 'unknown', text: JSON.stringify(expr) };
   }
-  return { byFromPort, byToPort };
 }
 
 /**
- * Find all control chain roots: nodes that have ctrl output(s) but no ctrl input
- * connected to any other node's ctrl output.
+ * Serialize a KIR output target (str | Wildcard) to a string.
+ * @param {string|object} out
+ * @returns {string}
+ */
+function serializeOutput(out) {
+  if (!out) return '_';
+  if (typeof out === 'string') return out;
+  if (out.type === 'Wildcard') return '_';
+  return String(out);
+}
+
+/**
+ * Walk a list of AST statements and return an array of block objects.
+ * Namespaces referenced by a Branch/Switch are inlined as arms rather than
+ * independent blocks, so we first index namespaces by name.
  *
- * A node is a root if none of its ctrl input ports has an incoming ctrl connection.
- *
- * @param {object[]} nodeList
- * @param {{ byToPort: Map }} idx
+ * @param {object[]} stmts
  * @returns {object[]}
  */
-function findCtrlRoots(nodeList, idx) {
-  return nodeList.filter((node) => {
-    const hasCtrlOut = node.controlPorts.outputs.length > 0;
-    if (!hasCtrlOut) return false;
-    // Has no incoming ctrl connection on any ctrl input port
-    const hasIncomingCtrl = node.controlPorts.inputs.some((p) => idx.byToPort.has(p.id));
-    return !hasIncomingCtrl;
-  });
-}
+function walkStatements(stmts) {
+  if (!stmts || !stmts.length) return [];
 
-/**
- * Given a node and its ctrl output port, follow the ctrl chain and collect the
- * sequence of Block objects. Stops when there is no further ctrl connection or
- * when we hit a merge node.
- *
- * @param {string} startNodeId      - node to start from
- * @param {string|null} startPortId - ctrl output port to follow (null = first output)
- * @param {Map} nodesMap
- * @param {object} idx
- * @param {Set} visited             - guard against cycles
- * @returns {Block[]}
- */
-function walkCtrlChain(startNodeId, startPortId, nodesMap, idx, visited) {
+  // Build a map of namespace name → namespace node for arm look-ups
+  const nsMap = new Map();
+  for (const stmt of stmts) {
+    if (stmt.type === 'Namespace') nsMap.set(stmt.name, stmt);
+  }
+
+  // Track which namespaces are used as branch/switch arms so we can skip
+  // rendering them as standalone blocks
+  const consumedNs = new Set();
+
+  // First pass: find all label refs used in Branch / Switch / Parallel
+  for (const stmt of stmts) {
+    if (stmt.type === 'Branch') {
+      if (stmt.true_label) consumedNs.add(stmt.true_label);
+      if (stmt.false_label) consumedNs.add(stmt.false_label);
+    } else if (stmt.type === 'Switch') {
+      for (const [, label] of stmt.cases ?? []) consumedNs.add(label);
+      if (stmt.default_label) consumedNs.add(stmt.default_label);
+    } else if (stmt.type === 'Parallel') {
+      for (const label of stmt.labels ?? []) consumedNs.add(label);
+    }
+  }
+
   const blocks = [];
-  let currentId = startNodeId;
-  let currentPortId = startPortId;
 
-  while (currentId) {
-    if (visited.has(currentId)) break;
-    visited.add(currentId);
+  for (const stmt of stmts) {
+    // Skip namespaces that are already embedded in a control block arm
+    if (stmt.type === 'Namespace' && consumedNs.has(stmt.name)) continue;
 
-    const node = nodesMap.get(currentId);
-    if (!node) break;
-
-    const block = buildBlock(node, nodesMap, idx, visited);
-    blocks.push(block);
-
-    // Find the "main" (first or only) ctrl output to follow
-    const ctrlOuts = node.controlPorts.outputs;
-    if (ctrlOuts.length === 0) break;
-
-    // For C-blocks (branch/switch/parallel) the arms were already recursed;
-    // there is no single "next" output to follow linearly—arms diverge.
-    // We stop the chain here; arms are embedded inside the block.
-    if (C_BLOCK_TYPES.has(node.type) || LOOP_TYPES.has(node.type)) break;
-
-    // For merge nodes we also stop (they are targets, not sources)
-    if (node.type === 'merge') break;
-
-    // Follow first ctrl output
-    const outPort = currentPortId
-      ? ctrlOuts.find((p) => p.id === currentPortId) ?? ctrlOuts[0]
-      : ctrlOuts[0];
-    const conn = idx.byFromPort.get(outPort.id);
-    if (!conn || conn.portType !== 'control') break;
-
-    currentId = conn.toNodeId;
-    currentPortId = null; // reset—follow first output of next node
+    const block = stmtToBlock(stmt, nsMap);
+    if (block) blocks.push(block);
   }
 
   return blocks;
 }
 
 /**
- * Resolve inline data inputs for a node:
- * For each data input port, find what's connected or fall back to defaultValue.
+ * Convert a single AST statement to a block descriptor.
  *
- * @param {object} node
- * @param {Map} nodesMap
- * @param {object} idx
- * @returns {InputSlot[]}
+ * @param {object} stmt
+ * @param {Map<string,object>} nsMap  - sibling namespace map for arm look-up
+ * @returns {object|null}
  */
-function resolveInputSlots(node, nodesMap, idx) {
-  return node.dataPorts.inputs.map((port) => {
-    const conn = idx.byToPort.get(port.id);
-    if (conn && conn.portType === 'data') {
-      const srcNode = nodesMap.get(conn.fromNodeId);
-      if (srcNode) {
-        return {
-          portId: port.id,
-          portName: port.name,
-          dataType: port.dataType ?? 'any',
-          connected: true,
-          sourceNodeId: conn.fromNodeId,
-          sourcePortId: conn.fromPortId,
-          sourceNodeType: srcNode.type,
-          sourceNodeName: srcNode.name,
-          // Inline literal value if the source is a value node
-          literalValue:
-            DATA_ONLY_TYPES.has(srcNode.type)
-              ? (srcNode.properties?.value ?? srcNode.dataPorts.outputs[0]?.defaultValue ?? null)
-              : null,
-        };
+function stmtToBlock(stmt, nsMap) {
+  switch (stmt.type) {
+    case 'FuncCall':
+      return {
+        type: 'statement',
+        key: `fc-${stmt.line ?? Math.random()}`,
+        funcName: stmt.func_name ?? '?',
+        inputs: (stmt.inputs ?? []).map(serializeExpr),
+        outputs: (stmt.outputs ?? []).map(serializeOutput),
+      };
+
+    case 'Assignment':
+      return {
+        type: 'assignment',
+        key: `assign-${stmt.line ?? Math.random()}`,
+        target: stmt.target ?? '_',
+        value: serializeExpr(stmt.value),
+      };
+
+    case 'Branch': {
+      const trueNs = nsMap.get(stmt.true_label);
+      const falseNs = nsMap.get(stmt.false_label);
+      return {
+        type: 'branch',
+        key: `branch-${stmt.line ?? Math.random()}`,
+        condition: serializeExpr(stmt.condition),
+        arms: [
+          {
+            label: stmt.true_label ?? 'true',
+            blocks: trueNs ? walkStatements(trueNs.body) : [],
+          },
+          {
+            label: stmt.false_label ?? 'false',
+            blocks: falseNs ? walkStatements(falseNs.body) : [],
+          },
+        ],
+      };
+    }
+
+    case 'Switch': {
+      const arms = (stmt.cases ?? []).map(([expr, label]) => ({
+        label: label ?? '?',
+        caseExpr: serializeExpr(expr),
+        blocks: (nsMap.get(label) ? walkStatements(nsMap.get(label).body) : []),
+      }));
+      if (stmt.default_label) {
+        const defNs = nsMap.get(stmt.default_label);
+        arms.push({
+          label: stmt.default_label,
+          caseExpr: { kind: 'label', text: 'default' },
+          blocks: defNs ? walkStatements(defNs.body) : [],
+        });
       }
+      return {
+        type: 'switch',
+        key: `switch-${stmt.line ?? Math.random()}`,
+        value: serializeExpr(stmt.value),
+        arms,
+      };
     }
-    return {
-      portId: port.id,
-      portName: port.name,
-      dataType: port.dataType ?? 'any',
-      connected: false,
-      sourceNodeId: null,
-      sourcePortId: null,
-      sourceNodeType: null,
-      sourceNodeName: null,
-      literalValue: port.defaultValue ?? null,
-    };
-  });
-}
 
-/**
- * Resolve output labels for a node's data output ports.
- * @param {object} node
- * @returns {string[]}
- */
-function resolveOutputLabels(node) {
-  return node.dataPorts.outputs.map((p) => p.name);
-}
+    case 'Parallel': {
+      const arms = (stmt.labels ?? []).map((label) => ({
+        label,
+        blocks: (nsMap.get(label) ? walkStatements(nsMap.get(label).body) : []),
+      }));
+      return {
+        type: 'parallel',
+        key: `par-${stmt.line ?? Math.random()}`,
+        arms,
+      };
+    }
 
-/**
- * Build a single Block object for a node, recursing into arms for C-blocks.
- *
- * @param {object} node
- * @param {Map} nodesMap
- * @param {object} idx
- * @param {Set} visited
- * @returns {Block}
- */
-function buildBlock(node, nodesMap, idx, visited) {
-  const type = blockTypeOf(node);
-  const inputs = resolveInputSlots(node, nodesMap, idx);
-  const outputs = resolveOutputLabels(node);
+    case 'Namespace':
+      // Standalone namespace (not consumed as a branch arm)
+      return {
+        type: 'namespace',
+        key: `ns-${stmt.name}-${stmt.line ?? Math.random()}`,
+        label: stmt.name ?? '',
+        blocks: walkStatements(stmt.body ?? []),
+      };
 
-  const block = {
-    nodeId: node.id,
-    type,
-    node,
-    inputs,
-    outputs,
-  };
+    case 'DataflowBlock':
+      return {
+        type: 'dataflow',
+        key: `df-${stmt.line ?? Math.random()}`,
+        blocks: walkStatements(stmt.body ?? []),
+      };
 
-  // Recurse into arms for C-blocks
-  if (node.type === 'branch') {
-    // Two arms: true / false
-    const truePort = node.controlPorts.outputs.find((p) => p.name === 'true') ?? node.controlPorts.outputs[0];
-    const falsePort = node.controlPorts.outputs.find((p) => p.name === 'false') ?? node.controlPorts.outputs[1];
+    case 'Jump':
+      return {
+        type: 'jump',
+        key: `jump-${stmt.line ?? Math.random()}`,
+        target: stmt.target ?? '',
+      };
 
-    block.arms = [
-      {
-        label: 'true',
-        portId: truePort?.id ?? null,
-        blocks: truePort ? walkArmChain(truePort.id, nodesMap, idx, new Set(visited)) : [],
-      },
-      {
-        label: 'false',
-        portId: falsePort?.id ?? null,
-        blocks: falsePort ? walkArmChain(falsePort.id, nodesMap, idx, new Set(visited)) : [],
-      },
-    ];
-  } else if (node.type === 'switch') {
-    // N arms, one per ctrl output
-    block.arms = node.controlPorts.outputs.map((port) => ({
-      label: port.name,
-      portId: port.id,
-      blocks: walkArmChain(port.id, nodesMap, idx, new Set(visited)),
-    }));
-  } else if (node.type === 'parallel') {
-    // N arms, one per ctrl output
-    block.arms = node.controlPorts.outputs.map((port) => ({
-      label: port.name,
-      portId: port.id,
-      blocks: walkArmChain(port.id, nodesMap, idx, new Set(visited)),
-    }));
-  } else if (LOOP_TYPES.has(node.type)) {
-    // Loop body: follow the first ctrl output
-    const bodyPort = node.controlPorts.outputs[0];
-    block.body = bodyPort ? walkArmChain(bodyPort.id, nodesMap, idx, new Set(visited)) : [];
+    case 'SubgraphDef':
+      return {
+        type: 'subgraph',
+        key: `def-${stmt.name}-${stmt.line ?? Math.random()}`,
+        name: stmt.name ?? '',
+        params: (stmt.params ?? []).map((p) => p.name ?? ''),
+        outputs: stmt.outputs ?? [],
+        blocks: walkStatements(stmt.body ?? []),
+      };
+
+    case 'ModeDecl':
+      return {
+        type: 'mode',
+        key: `mode-${stmt.line ?? Math.random()}`,
+        mode: stmt.mode ?? '',
+      };
+
+    default:
+      return null;
   }
-
-  return block;
 }
 
 /**
- * Walk a ctrl arm starting from a given ctrl OUTPUT port id.
- * Finds the connection leaving that port, then walks the chain.
+ * Convert a parsed AST program (plain JS object from Pyodide JSON) to a
+ * block tree ready for rendering.
  *
- * @param {string} fromPortId
- * @param {Map} nodesMap
- * @param {object} idx
- * @param {Set} visited
- * @returns {Block[]}
+ * @param {object} program  - { type: 'Program', body: [...], mode: ... }
+ * @returns {{ stacks: object[] }}
  */
-function walkArmChain(fromPortId, nodesMap, idx, visited) {
-  const conn = idx.byFromPort.get(fromPortId);
-  if (!conn || conn.portType !== 'control') return [];
-  return walkCtrlChain(conn.toNodeId, null, nodesMap, idx, visited);
-}
+function astToBlockTree(program) {
+  if (!program || !program.body) return { stacks: [] };
 
-/**
- * Build block stacks for all purely-data nodes (no ctrl ports at all).
- * These become standalone reporter stacks.
- *
- * @param {object[]} nodeList
- * @param {Set} visitedNodeIds  - nodes already placed in ctrl chains
- * @param {Map} nodesMap
- * @param {object} idx
- * @returns {BlockStack[]}
- */
-function buildDataStacks(nodeList, visitedNodeIds, nodesMap, idx) {
-  const stacks = [];
-  for (const node of nodeList) {
-    if (visitedNodeIds.has(node.id)) continue;
-    if (node.controlPorts.inputs.length === 0 && node.controlPorts.outputs.length === 0) {
-      const block = buildBlock(node, nodesMap, idx, new Set());
-      stacks.push({ rootNodeId: node.id, blocks: [block], isDataOnly: true });
-      visitedNodeIds.add(node.id);
+  const allBlocks = walkStatements(program.body);
+
+  // Split top-level blocks into stacks.
+  // SubgraphDefs each get their own stack (separate column).
+  // Everything else goes in one primary stack.
+  const mainBlocks = [];
+  const extraStacks = [];
+
+  for (const block of allBlocks) {
+    if (block.type === 'subgraph') {
+      extraStacks.push({ key: block.key, blocks: [block] });
+    } else {
+      mainBlocks.push(block);
     }
   }
-  return stacks;
-}
 
-/**
- * Build block stacks for nodes that have ctrl ports but were not reachable
- * from any root (disconnected mid-chain fragments).
- *
- * @param {object[]} nodeList
- * @param {Set} visitedNodeIds
- * @param {Map} nodesMap
- * @param {object} idx
- * @returns {BlockStack[]}
- */
-function buildOrphanStacks(nodeList, visitedNodeIds, nodesMap, idx) {
   const stacks = [];
-  for (const node of nodeList) {
-    if (visitedNodeIds.has(node.id)) continue;
-    const block = buildBlock(node, nodesMap, idx, new Set([node.id]));
-    stacks.push({ rootNodeId: node.id, blocks: [block], isOrphan: true });
-    visitedNodeIds.add(node.id);
-  }
-  return stacks;
+  if (mainBlocks.length) stacks.push({ key: 'main', blocks: mainBlocks });
+  stacks.push(...extraStacks);
+
+  return { stacks };
 }
 
-// ---- Public composable ----
+// ---------------------------------------------------------------------------
+// Public composable
+// ---------------------------------------------------------------------------
 
 /**
- * Reactive composable that derives a block tree from the graph store.
+ * Reactive composable that derives a block tree from the KIR AST.
+ *
+ * The pipeline is:
+ *   graph store → compileGraph() → KIR text → parseKirToAst() → AST → block tree
+ *
+ * The block tree is stored in a plain ref and is updated asynchronously
+ * whenever the graph changes. While Pyodide is loading, the tree shows a
+ * loading placeholder. If Pyodide fails entirely, a fallback KIR-text stack
+ * is shown instead.
  *
  * @param {import('pinia').Store} graphStore
- * @returns {{ blockTree: import('vue').ComputedRef }}
+ * @returns {{ blockTree: import('vue').Ref, kirText: import('vue').Ref, pyodideStatus: import('vue').Ref }}
  */
 export function useBlockTree(graphStore) {
-  const blockTree = computed(() => {
+  const blockTree = ref({ stacks: [] });
+  const kirText = ref('');
+  // 'idle' | 'loading' | 'ready' | 'error' | 'fallback'
+  const pyodideStatus = ref('idle');
+
+  // Debounce timer handle
+  let rebuildTimer = null;
+
+  async function rebuild() {
     const nodeList = graphStore.nodeList;
     const connectionList = graphStore.connectionList;
 
     if (!nodeList.length) {
-      return { stacks: [] };
+      blockTree.value = { stacks: [] };
+      kirText.value = '';
+      return;
     }
 
-    // Build fast-lookup index
-    const idx = buildConnectionIndex(connectionList);
+    // Step 1: compile graph → KIR text (synchronous)
+    // compileGraph returns { ir: string, errors: string[] }
+    let kir = '';
+    try {
+      const result = compileGraph(nodeList, connectionList);
+      kir = result.ir ?? '';
+      if (result.errors?.length) {
+        console.warn('[blockTree] compile warnings:', result.errors);
+      }
+    } catch (err) {
+      console.warn('[blockTree] compileGraph failed:', err);
+      kir = `# compile error: ${err.message}`;
+    }
+    kirText.value = kir;
 
-    // Build node map for O(1) lookups
-    const nodesMap = new Map(nodeList.map((n) => [n.id, n]));
+    // Step 2: parse KIR → AST (asynchronous, requires Pyodide)
+    if (!isPyodideReady()) {
+      pyodideStatus.value = 'loading';
+      // Show fallback KIR text stack while waiting
+      blockTree.value = makeFallbackTree(kir);
+      // Start Pyodide loading (no-op if already in progress) then re-run
+      // rebuild automatically once Pyodide is ready.
+      initPyodide().then((ok) => {
+        if (ok) rebuild();
+      });
+      return;
+    }
 
-    // Track which nodes have been placed
-    const visitedNodeIds = new Set();
+    pyodideStatus.value = 'loading';
+    try {
+      const ast = await parseKirToAst(kir);
+      if (!ast) {
+        pyodideStatus.value = 'fallback';
+        blockTree.value = makeFallbackTree(kir);
+        return;
+      }
+      pyodideStatus.value = 'ready';
+      blockTree.value = astToBlockTree(ast);
+    } catch (err) {
+      console.warn('[blockTree] parseKirToAst failed:', err);
+      pyodideStatus.value = 'error';
+      blockTree.value = makeFallbackTree(kir);
+    }
+  }
 
-    // 1. Find ctrl chain roots and build their stacks
-    const roots = findCtrlRoots(nodeList, idx);
-    const ctrlStacks = roots.map((rootNode) => {
-      const visited = new Set();
-      const blocks = walkCtrlChain(rootNode.id, null, nodesMap, idx, visited);
-      // Mark all visited nodes
-      for (const id of visited) visitedNodeIds.add(id);
-      return {
-        rootNodeId: rootNode.id,
-        blocks,
-        isDataOnly: false,
-        isOrphan: false,
-      };
-    });
+  /**
+   * Build a minimal block tree that just shows the raw KIR text when Pyodide
+   * is not available. Each non-empty line becomes its own statement block.
+   *
+   * @param {string} kir
+   * @returns {{ stacks: object[] }}
+   */
+  function makeFallbackTree(kir) {
+    const lines = kir.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
+    if (!lines.length) return { stacks: [] };
+    const blocks = lines.map((line, i) => ({
+      type: 'kir-line',
+      key: `kir-${i}`,
+      text: line,
+    }));
+    return { stacks: [{ key: 'kir-fallback', blocks }] };
+  }
 
-    // 2. Pure data nodes (value, load, etc.) that weren't consumed inline
-    const dataStacks = buildDataStacks(nodeList, visitedNodeIds, nodesMap, idx);
+  // Debounced re-build: avoid thrashing on rapid graph edits
+  function scheduleRebuild() {
+    if (rebuildTimer) clearTimeout(rebuildTimer);
+    rebuildTimer = setTimeout(() => {
+      rebuildTimer = null;
+      rebuild();
+    }, 80);
+  }
 
-    // 3. Leftover nodes (disconnected ctrl fragments)
-    const orphanStacks = buildOrphanStacks(nodeList, visitedNodeIds, nodesMap, idx);
+  // Watch graph store for changes
+  watch(
+    () => [graphStore.nodeList, graphStore.connectionList],
+    () => scheduleRebuild(),
+    { deep: true, immediate: true },
+  );
 
-    return {
-      stacks: [...ctrlStacks, ...dataStacks, ...orphanStacks],
-    };
-  });
-
-  return { blockTree };
+  return { blockTree, kirText, pyodideStatus };
 }

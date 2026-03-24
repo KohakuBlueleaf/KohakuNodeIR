@@ -1,11 +1,12 @@
 <script setup>
-// HatBlock.vue — entry-point block with rounded top and bump on bottom.
-// Used as the first block in a control chain that has no incoming ctrl edge.
-// Supports right-click delete.
+// HatBlock.vue — entry-point hat block for standalone Namespace AST nodes.
+// Renders: { type: 'namespace', key, label, blocks }
+// Block mode is read-only.
 
-import { ref } from 'vue';
-import { useGraphStore } from '../../stores/graph.js';
-import { useHistoryStore } from '../../stores/history.js';
+import { defineAsyncComponent } from 'vue';
+
+// Async import to break potential circular dependency if namespaces nest
+const BlockStack = defineAsyncComponent(() => import('./BlockStack.vue'));
 
 const props = defineProps({
   block: {
@@ -13,45 +14,10 @@ const props = defineProps({
     required: true,
   },
 });
-
-// ── Stores ─────────────────────────────────────────────────────────────────────
-const graph = useGraphStore();
-const history = useHistoryStore();
-
-// ── Context menu ──────────────────────────────────────────────────────────────
-const contextMenu = ref(null);
-
-function onContextMenu(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  contextMenu.value = { x: e.clientX, y: e.clientY };
-  window.addEventListener('pointerdown', dismissContextMenu, { once: true });
-}
-
-function dismissContextMenu() {
-  contextMenu.value = null;
-}
-
-function deleteBlock() {
-  contextMenu.value = null;
-  const nodeId = props.block.nodeId;
-  history.pushState();
-  // Remove all connections touching this node directly
-  for (const [connId, conn] of graph.connections) {
-    if (conn.fromNodeId === nodeId || conn.toNodeId === nodeId) {
-      graph.connections.delete(connId);
-    }
-  }
-  graph.nodes.delete(nodeId);
-}
 </script>
 
 <template>
-  <div
-    class="hat-block"
-    :data-block-node-id="block.nodeId"
-    @contextmenu="onContextMenu"
-  >
+  <div class="hat-block">
     <!-- Hat curve at top -->
     <div class="hat-top">
       <svg class="hat-curve" viewBox="0 0 200 20" preserveAspectRatio="none">
@@ -59,49 +25,33 @@ function deleteBlock() {
       </svg>
       <div class="hat-header">
         <span class="hat-icon">&#x2605;</span>
-        <span class="hat-label">{{ block.node.name }}</span>
-        <span class="hat-type-badge">{{ block.node.type }}</span>
+        <span class="hat-label">{{ block.label }}</span>
+        <span class="hat-type-badge">namespace</span>
       </div>
     </div>
 
-    <!-- Data output badges (hat block may expose data outputs) -->
-    <div v-if="block.outputs.length" class="hat-outputs">
-      <span v-for="out in block.outputs" :key="out" class="hat-output-tag">
-        {{ out }}
-      </span>
+    <!-- Namespace body blocks (indented) -->
+    <div v-if="block.blocks && block.blocks.length" class="hat-body">
+      <BlockStack :blocks="block.blocks" />
     </div>
 
     <!-- Bottom bump connector -->
     <div class="block-bump-bottom" />
   </div>
-
-  <!-- Context menu -->
-  <Teleport to="body">
-    <div
-      v-if="contextMenu"
-      class="context-menu"
-      :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
-      @pointerdown.stop
-    >
-      <button class="context-menu-item context-menu-item--danger" @click="deleteBlock">
-        <span class="context-menu-icon">&#x2715;</span>
-        Delete block
-      </button>
-    </div>
-  </Teleport>
 </template>
 
 <style scoped>
 .hat-block {
   position: relative;
   min-width: 200px;
-  background: #cba6f7;
+  background: color-mix(in srgb, #cba6f7 12%, #1e1e2e);
   border-radius: 12px 12px 4px 4px;
   border: 1.5px solid #b4befe;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   font-size: 12px;
-  color: #1e1e2e;
+  color: #cdd6f4;
   user-select: none;
+  padding-bottom: 10px;
 }
 
 /* Hat-shaped top — SVG arc overlay */
@@ -109,6 +59,7 @@ function deleteBlock() {
   position: relative;
   border-radius: 12px 12px 0 0;
   overflow: hidden;
+  background: #cba6f7;
 }
 
 .hat-curve {
@@ -132,6 +83,7 @@ function deleteBlock() {
 .hat-icon {
   font-size: 10px;
   opacity: 0.7;
+  color: #1e1e2e;
 }
 
 .hat-label {
@@ -139,6 +91,7 @@ function deleteBlock() {
   font-size: 13px;
   font-weight: 700;
   color: #1e1e2e;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 .hat-type-badge {
@@ -152,20 +105,9 @@ function deleteBlock() {
   color: #1e1e2e;
 }
 
-.hat-outputs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 0 10px 8px;
-}
-
-.hat-output-tag {
-  font-size: 10px;
-  background: rgba(30, 30, 46, 0.2);
-  border-radius: 3px;
-  padding: 1px 6px;
-  color: #1e1e2e;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+/* Namespace body blocks */
+.hat-body {
+  padding: 8px 8px 0 10px;
 }
 
 /* Bottom bump */
@@ -176,7 +118,7 @@ function deleteBlock() {
   transform: translateX(-50%);
   width: 20px;
   height: 8px;
-  background: #cba6f7;
+  background: color-mix(in srgb, #cba6f7 12%, #1e1e2e);
   border-radius: 0 0 6px 6px;
   border: 1.5px solid #b4befe;
   border-top: none;

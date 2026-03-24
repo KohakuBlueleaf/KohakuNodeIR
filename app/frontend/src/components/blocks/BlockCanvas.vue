@@ -7,6 +7,7 @@ import { useGraphStore } from '../../stores/graph.js';
 import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
 import { GRID_SIZE }     from '../../utils/grid.js';
 import { useBlockTree }  from './blockTree.js';
+import { initPyodide }   from '../../parser/pyodideParser.js';
 import BlockStack        from './BlockStack.vue';
 import BlockPalette      from './BlockPalette.vue';
 import { draggingNodeId, ghostPos } from '../../composables/useBlockDrag.js';
@@ -23,7 +24,11 @@ const emit = defineEmits(['update:zoom']);
 // ── Stores ─────────────────────────────────────────────────────────────────────
 const graph = useGraphStore();
 const registry = useNodeRegistryStore();
-const { blockTree } = useBlockTree(graph);
+const { blockTree, pyodideStatus } = useBlockTree(graph);
+
+// ── Pyodide init: kick off loading in the background ──────────────────────────
+const pyodideProgress = ref('');
+initPyodide((msg) => { pyodideProgress.value = msg; });
 
 // ── Refs ───────────────────────────────────────────────────────────────────────
 const containerRef = ref(null);
@@ -229,13 +234,13 @@ onBeforeUnmount(() => {
 
         <!-- Empty state -->
         <div v-if="!blockTree.stacks.length" class="blocks-empty">
-          <span class="blocks-empty-label">Drag a block from the palette to get started.</span>
+          <span class="blocks-empty-label">No graph to display as blocks yet.</span>
         </div>
 
         <!-- Block stacks -->
         <div
           v-for="(stack, i) in blockTree.stacks"
-          :key="stack.rootNodeId"
+          :key="stack.key ?? i"
           class="stack-wrapper"
           :style="stackStyle(i)"
         >
@@ -246,6 +251,34 @@ onBeforeUnmount(() => {
 
       <!-- Drag-over highlight border -->
       <div v-if="isDragOver" class="drag-over-overlay" />
+    </div>
+
+    <!-- ── Pyodide status badge ── -->
+    <div
+      v-if="pyodideStatus !== 'ready'"
+      class="pyodide-badge"
+      :class="`pyodide-badge--${pyodideStatus}`"
+    >
+      <span v-if="pyodideStatus === 'loading'" class="pyodide-spinner" />
+      <span class="pyodide-badge-text">
+        <template v-if="pyodideStatus === 'loading'">
+          {{ pyodideProgress || 'Loading parser...' }}
+        </template>
+        <template v-else-if="pyodideStatus === 'fallback'">
+          Parser unavailable — showing KIR source
+        </template>
+        <template v-else-if="pyodideStatus === 'error'">
+          Parse error — showing KIR source
+        </template>
+        <template v-else>
+          Block view (read-only)
+        </template>
+      </span>
+    </div>
+
+    <!-- Read-only banner when parser is ready -->
+    <div v-else class="readonly-badge">
+      Block view — read-only
     </div>
 
     <!-- ── Block drag ghost ── -->
@@ -319,6 +352,74 @@ onBeforeUnmount(() => {
   border-radius: 4px;
   pointer-events: none;
   box-shadow: inset 0 0 20px rgba(137, 180, 250, 0.08);
+}
+
+/* ── Pyodide status badge ── */
+.pyodide-badge {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1e1e2e;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: #a6adc8;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.pyodide-badge--loading {
+  border-color: #fab387;
+  color: #fab387;
+}
+
+.pyodide-badge--fallback,
+.pyodide-badge--error {
+  border-color: #f38ba8;
+  color: #f38ba8;
+}
+
+.pyodide-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pyodide-badge-text {
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Read-only badge (shown when Pyodide is ready) ── */
+.readonly-badge {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 100;
+  background: #1e1e2e;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: #45475a;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 </style>
 
