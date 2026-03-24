@@ -18,6 +18,7 @@ from kohakunode.ast.nodes import (
     FuncCall,
     Identifier,
     Jump,
+    KeywordArg,
     Literal,
     Namespace,
     Parallel,
@@ -50,8 +51,12 @@ def kir_to_graph(source: str) -> KirGraph:
 
     # namespace_label → first node id inside that namespace
     ns_first_node: dict[str, str | None] = {}
-    # jump targets for creating ctrl edges after full walk
-    jump_wires: list[tuple[str | None, str]] = []  # (from_ctrl_id, target_label)
+    # jump targets: (from_ctrl_id, from_port, target_label)
+    jump_wires: list[tuple[str | None, str, str]] = []
+    # Deferred ctrl edges: (from_nid, from_port) awaiting next node
+    deferred_ctrl_out: list[tuple[str, str]] = []
+    # Track namespaces already walked by Branch/Switch handlers
+    walked_ns: set[str] = set()
 
     def make_func_node(stmt: FuncCall, in_dataflow: bool) -> str:
         """Create a FuncCall node, wire data edges, return node id."""
@@ -60,9 +65,14 @@ def kir_to_graph(source: str) -> KirGraph:
         d_in = []
         for i, inp in enumerate(stmt.inputs):
             pname = f"in_{i}"
-            if hasattr(inp, 'name') and hasattr(inp, 'value'):
+            default = None
+            if isinstance(inp, KeywordArg):
                 pname = inp.name
-            d_in.append(KGPort(port=pname))
+                if isinstance(inp.value, Literal):
+                    default = inp.value.value
+            elif isinstance(inp, Literal):
+                default = inp.value
+            d_in.append(KGPort(port=pname, default=default))
         d_out = [KGPort(port=str(o)) for o in stmt.outputs if str(o) != "_"]
         node = KGNode(
             id=nid, type=stmt.func_name, name=stmt.func_name,
@@ -93,10 +103,30 @@ def kir_to_graph(source: str) -> KirGraph:
     def ctrl_edge(from_id: str, from_port: str, to_id: str, to_port: str) -> None:
         edges.append(KGEdge(type="control", from_node=from_id, from_port=from_port, to_node=to_id, to_port=to_port))
 
-    def walk(stmts: list[Statement], prev_ctrl: str | None, in_dataflow: bool, ns_label: str | None = None) -> str | None:
-        """Walk statements. Returns last ctrl node id."""
+    def wire_deferred(to_nid: str) -> None:
+        """Wire all deferred ctrl edges to a target node."""
+        for f_nid, f_port in deferred_ctrl_out:
+            ctrl_edge(f_nid, f_port, to_nid, "in")
+        deferred_ctrl_out.clear()
+
+    def walk(stmts: list[Statement], prev_ctrl: str | None, in_dataflow: bool,
+             ns_label: str | None = None, ctrl_out_port: str = "out") -> str | None:
+        """Walk statements. Returns last ctrl node id.
+
+        ctrl_out_port: port name to use for the first ctrl edge FROM prev_ctrl.
+        This lets Branch pass "true"/"false" so edges use the correct port name.
+        """
         last_ctrl = prev_ctrl
         first_node_in_scope: str | None = None
+        used_initial_port = False  # Track if we've used ctrl_out_port
+
+        def get_from_port() -> str:
+            """Get the correct from_port for a ctrl edge from last_ctrl."""
+            nonlocal used_initial_port
+            if not used_initial_port and last_ctrl == prev_ctrl:
+                used_initial_port = True
+                return ctrl_out_port
+            return "out"
 
         for stmt in stmts:
             match stmt:
@@ -120,7 +150,8 @@ def kir_to_graph(source: str) -> KirGraph:
                         first_node_in_scope = nid
                     if not in_dataflow:
                         if last_ctrl:
-                            ctrl_edge(last_ctrl, "out", nid, "in")
+                            ctrl_edge(last_ctrl, get_from_port(), nid, "in")
+                        wire_deferred(nid)
                         last_ctrl = nid
 
                 case Branch():
@@ -137,23 +168,28 @@ def kir_to_graph(source: str) -> KirGraph:
                         src_nid, src_port = var_source[stmt.condition.name]
                         edges.append(KGEdge(type="data", from_node=src_nid, from_port=src_port, to_node=nid, to_port="condition"))
                     if last_ctrl:
-                        ctrl_edge(last_ctrl, "out", nid, "in")
+                        ctrl_edge(last_ctrl, get_from_port(), nid, "in")
+                    wire_deferred(nid)
                     if first_node_in_scope is None:
                         first_node_in_scope = nid
-                    # Walk branch namespaces (look for them in sibling stmts)
+
+                    # Walk branch namespaces with correct port names
                     for s in stmts:
                         if isinstance(s, Namespace):
                             if s.name == stmt.true_label:
-                                inner = walk(s.body, None, False, s.name)
-                                if ns_first_node.get(s.name):
-                                    ctrl_edge(nid, "true", ns_first_node[s.name], "in")
+                                walked_ns.add(s.name)
+                                walk(s.body, nid, False, s.name, ctrl_out_port="true")
+                                # Empty namespace → defer edge to next node
+                                if not s.body:
+                                    deferred_ctrl_out.append((nid, "true"))
                             elif s.name == stmt.false_label:
-                                inner = walk(s.body, None, False, s.name)
-                                if ns_first_node.get(s.name):
-                                    ctrl_edge(nid, "false", ns_first_node[s.name], "in")
-                    # After branch, code continues — keep branch as last_ctrl
-                    # so post-branch statements connect from it
-                    last_ctrl = nid
+                                walked_ns.add(s.name)
+                                walk(s.body, nid, False, s.name, ctrl_out_port="false")
+                                if not s.body:
+                                    deferred_ctrl_out.append((nid, "false"))
+
+                    # Branch has no generic "out" — continuation from deferred edges
+                    last_ctrl = None
 
                 case Switch():
                     nid = _meta_id(stmt) or gen_id("switch")
@@ -172,22 +208,27 @@ def kir_to_graph(source: str) -> KirGraph:
                         src_nid, src_port = var_source[stmt.value.name]
                         edges.append(KGEdge(type="data", from_node=src_nid, from_port=src_port, to_node=nid, to_port="value"))
                     if last_ctrl:
-                        ctrl_edge(last_ctrl, "out", nid, "in")
+                        ctrl_edge(last_ctrl, get_from_port(), nid, "in")
+                    wire_deferred(nid)
                     if first_node_in_scope is None:
                         first_node_in_scope = nid
-                    # Walk case namespaces
+
+                    # Walk case namespaces with correct port names
                     for s in stmts:
                         if isinstance(s, Namespace):
                             for _, label in stmt.cases:
                                 if s.name == label:
-                                    walk(s.body, None, False, s.name)
-                                    if ns_first_node.get(s.name):
-                                        ctrl_edge(nid, label, ns_first_node[s.name], "in")
+                                    walked_ns.add(s.name)
+                                    walk(s.body, nid, False, s.name, ctrl_out_port=label)
+                                    if not s.body:
+                                        deferred_ctrl_out.append((nid, label))
                             if stmt.default_label and s.name == stmt.default_label:
-                                walk(s.body, None, False, s.name)
-                                if ns_first_node.get(s.name):
-                                    ctrl_edge(nid, stmt.default_label, ns_first_node[s.name], "in")
-                    last_ctrl = nid
+                                walked_ns.add(s.name)
+                                walk(s.body, nid, False, s.name, ctrl_out_port=stmt.default_label)
+                                if not s.body:
+                                    deferred_ctrl_out.append((nid, stmt.default_label))
+
+                    last_ctrl = None
 
                 case Parallel():
                     nid = _meta_id(stmt) or gen_id("parallel")
@@ -199,37 +240,50 @@ def kir_to_graph(source: str) -> KirGraph:
                         properties={}, meta={"pos": pos},
                     ))
                     if last_ctrl:
-                        ctrl_edge(last_ctrl, "out", nid, "in")
+                        ctrl_edge(last_ctrl, get_from_port(), nid, "in")
+                    wire_deferred(nid)
                     if first_node_in_scope is None:
                         first_node_in_scope = nid
                     for s in stmts:
                         if isinstance(s, Namespace) and s.name in stmt.labels:
-                            walk(s.body, None, False, s.name)
-                            if ns_first_node.get(s.name):
-                                ctrl_edge(nid, s.name, ns_first_node[s.name], "in")
+                            walked_ns.add(s.name)
+                            walk(s.body, nid, False, s.name, ctrl_out_port=s.name)
                     last_ctrl = nid
 
                 case Jump():
                     # Jump = ctrl wire, not a node
-                    jump_wires.append((last_ctrl, stmt.target))
+                    port = get_from_port()
+                    jump_wires.append((last_ctrl, port, stmt.target))
                     last_ctrl = None
 
                 case Namespace():
-                    if stmt.name not in ns_first_node:
+                    if stmt.name not in ns_first_node and stmt.name not in walked_ns:
+                        walked_ns.add(stmt.name)
                         ns_last = walk(stmt.body, last_ctrl, in_dataflow, stmt.name)
                         if ns_last:
                             last_ctrl = ns_last
 
                 case DataflowBlock():
-                    # @dataflow: block — NO internal ctrl edges.
-                    # Only wire entry (last_ctrl → block) and exit (block → next).
-                    # Nodes inside are pure dataflow (data edges only).
+                    # @dataflow: block — NO internal ctrl edges,
+                    # but boundary ctrl edges for entry/exit.
                     df_nodes_before = len(nodes)
                     walk(stmt.body, None, True)
                     df_new = nodes[df_nodes_before:]
 
-                    # Don't create ctrl edges inside — just pass through
-                    # so the next ctrl-connected node can chain from last_ctrl
+                    if df_new:
+                        first_df = df_new[0].id
+                        last_df = df_new[-1].id
+
+                        # Entry boundary: last_ctrl → first node
+                        if last_ctrl:
+                            ctrl_edge(last_ctrl, get_from_port(), first_df, "in")
+                        # Wire deferred edges to first node too
+                        wire_deferred(first_df)
+
+                        # Exit boundary: continue ctrl chain from last node
+                        last_ctrl = last_df
+                        if first_node_in_scope is None:
+                            first_node_in_scope = first_df
 
                 case _:
                     pass
@@ -243,10 +297,41 @@ def kir_to_graph(source: str) -> KirGraph:
     walk(prog.body, None, False)
 
     # Wire jump targets
-    for from_id, target_label in jump_wires:
+    for from_id, from_port, target_label in jump_wires:
         target_first = ns_first_node.get(target_label)
         if target_first and from_id:
-            ctrl_edge(from_id, "out", target_first, "in")
+            ctrl_edge(from_id, from_port, target_first, "in")
+
+    # Synthesize merge nodes where 2+ ctrl edges converge on one node
+    incoming_ctrl: dict[str, list[int]] = {}
+    for i, e in enumerate(edges):
+        if e.type == "control":
+            incoming_ctrl.setdefault(e.to_node, []).append(i)
+
+    for target_nid, edge_indices in incoming_ctrl.items():
+        if len(edge_indices) < 2:
+            continue
+        merge_nid = gen_id("merge")
+        n_inputs = len(edge_indices)
+        merge_inputs = [f"in_{i}" for i in range(n_inputs)]
+        nodes.append(KGNode(
+            id=merge_nid, type="merge", name="Merge",
+            data_inputs=[], data_outputs=[],
+            ctrl_inputs=merge_inputs, ctrl_outputs=["out"],
+            properties={}, meta={"pos": [0, 0]},
+        ))
+        # Rewire: source → merge instead of source → target
+        for i, ei in enumerate(edge_indices):
+            old = edges[ei]
+            edges[ei] = KGEdge(
+                type="control", from_node=old.from_node, from_port=old.from_port,
+                to_node=merge_nid, to_port=merge_inputs[i],
+            )
+        # Add merge → target edge
+        edges.append(KGEdge(
+            type="control", from_node=merge_nid, from_port="out",
+            to_node=target_nid, to_port="in",
+        ))
 
     return KirGraph(nodes=nodes, edges=edges)
 

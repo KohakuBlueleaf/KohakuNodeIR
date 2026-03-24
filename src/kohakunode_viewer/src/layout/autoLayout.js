@@ -22,9 +22,14 @@ function estimateSize(node) {
   const nCtrlOut = (node.ctrlOutputs || []).length;
   const dataRows = Math.max(nIn, nOut);
   const w = Math.max(MIN_WIDTH, Math.max(nCtrlIn, nCtrlOut) * 60 + 60);
-  const h = Math.max(MIN_HEIGHT,
-    (nCtrlIn > 0 ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H +
-    (nCtrlOut > 0 ? CTRL_ROW_H : 0) + 8);
+  let h;
+  if (node.type === "merge") {
+    h = (nCtrlIn > 0 ? CTRL_ROW_H : 0) + HEADER_H + (nCtrlOut > 0 ? CTRL_ROW_H : 0) + 8;
+  } else {
+    h = Math.max(MIN_HEIGHT,
+      (nCtrlIn > 0 ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H +
+      (nCtrlOut > 0 ? CTRL_ROW_H : 0) + 8);
+  }
   return { w, h };
 }
 
@@ -60,6 +65,14 @@ export function autoLayout(nodes, edges) {
     }
   }
 
+  // Node order for back-edge detection (preserve graph order)
+  const nodeRank = {};
+  needsIds.forEach((id, i) => { nodeRank[id] = i; });
+
+  // Build node type map for merge rank fixup
+  const nodeTypeMap = {};
+  for (const n of nodes) nodeTypeMap[n.id] = n.type;
+
   const grid = {}; // id → [col, row]
   const placed = new Set();
   const gridCells = new Set(); // "col,row" strings for collision check
@@ -72,10 +85,31 @@ export function autoLayout(nodes, edges) {
   }
 
   // ── Step 1: Ctrl root at (0,0), ctrl chain downward ──
-  let ctrlRoots = needsIds.filter(id =>
-    (ctrlAdj[id] || []).length > 0 &&
-    !(ctrlRev[id] || []).some(s => needsSet.has(s))
-  );
+  // Collect all nodes in ctrl edges
+  const ctrlNodes = new Set();
+  for (const e of edges) {
+    if (e.type !== "data") {
+      if (needsSet.has(e.fromNode)) ctrlNodes.add(e.fromNode);
+      if (needsSet.has(e.toNode)) ctrlNodes.add(e.toNode);
+    }
+  }
+
+  // Find root: has ctrl outputs, no forward incoming ctrl
+  let ctrlRoots = needsIds.filter(id => {
+    if (!ctrlNodes.has(id)) return false;
+    if (!(ctrlAdj[id] || []).length) return false;
+    const incoming = (ctrlRev[id] || []).filter(s => needsSet.has(s));
+    const forwardIncoming = incoming.filter(s => (nodeRank[s] ?? 999) < (nodeRank[id] ?? 0));
+    return forwardIncoming.length === 0;
+  });
+
+  if (ctrlRoots.length === 0 && ctrlNodes.size > 0) {
+    // All ctrl nodes in a cycle — pick first in graph order
+    for (const id of needsIds) {
+      if (ctrlNodes.has(id)) { ctrlRoots = [id]; break; }
+    }
+  }
+
   if (ctrlRoots.length === 0) {
     // No ctrl chain — find any root
     const allTo = new Set();
@@ -84,22 +118,44 @@ export function autoLayout(nodes, edges) {
   }
   if (ctrlRoots.length === 0) ctrlRoots = [needsIds[0]];
 
-  let ctrlRow = 0;
-  const ctrlQueue = [];
-  for (const r of ctrlRoots) {
-    if (!placed.has(r)) {
-      place(r, 0, ctrlRow++);
-      ctrlQueue.push(r);
+  // Fix ranks for merge nodes: place just before their successor
+  for (const id of needsIds) {
+    if (nodeTypeMap[id] === "merge") {
+      for (const child of ctrlAdj[id] || []) {
+        if (nodeRank[child] !== undefined) {
+          nodeRank[id] = nodeRank[child] - 0.5;
+          break;
+        }
+      }
     }
   }
-  let qi = 0;
-  while (qi < ctrlQueue.length) {
-    const nid = ctrlQueue[qi++];
-    for (const child of ctrlAdj[nid] || []) {
-      if (needsSet.has(child) && !placed.has(child)) {
-        place(child, 0, ctrlRow++);
-        ctrlQueue.push(child);
+
+  let ctrlRow = 0;
+
+  function bfsCtrl(start) {
+    if (placed.has(start)) return;
+    place(start, 0, ctrlRow++);
+    const q = [start];
+    let qi = 0;
+    while (qi < q.length) {
+      const nid = q[qi++];
+      for (const child of ctrlAdj[nid] || []) {
+        if (needsSet.has(child) && !placed.has(child)) {
+          if ((nodeRank[child] ?? 999) < (nodeRank[nid] ?? 0)) continue;
+          place(child, 0, ctrlRow++);
+          q.push(child);
+        }
       }
+    }
+  }
+
+  // Start from first ctrl root
+  if (ctrlRoots.length > 0) bfsCtrl(ctrlRoots[0]);
+
+  // Place remaining ctrl nodes not reached by initial BFS
+  for (const id of needsIds) {
+    if (ctrlNodes.has(id) && !placed.has(id)) {
+      bfsCtrl(id);
     }
   }
 

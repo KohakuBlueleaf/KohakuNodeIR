@@ -141,7 +141,7 @@ _result = {
         "y": n.meta.get("pos", [0, 0])[1],
         "width": n.meta.get("size", [180, 100])[0],
         "height": n.meta.get("size", [180, 100])[1],
-        "dataInputs": [{"name": p.port, "type": p.type} for p in n.data_inputs],
+        "dataInputs": [{"name": p.port, "type": p.type, **({"default": p.default} if p.default is not None else {})} for p in n.data_inputs],
         "dataOutputs": [{"name": p.port, "type": p.type} for p in n.data_outputs],
         "ctrlInputs": n.ctrl_inputs,
         "ctrlOutputs": n.ctrl_outputs,

@@ -9,7 +9,6 @@ Strategy:
 """
 
 from collections import defaultdict, deque
-from dataclasses import dataclass
 
 from kohakunode.kirgraph.schema import KGNode, KirGraph
 
@@ -27,10 +26,13 @@ def estimate_node_size(node: KGNode) -> tuple[float, float]:
     n_ci = len(node.ctrl_inputs)
     n_co = len(node.ctrl_outputs)
     w = max(MIN_WIDTH, max(n_ci, n_co) * 60 + 60)
-    h = max(MIN_HEIGHT,
-            (CTRL_ROW_H if n_ci > 0 else 0) + HEADER_H +
-            n_data * DATA_ROW_H +
-            (CTRL_ROW_H if n_co > 0 else 0) + 8)
+    if node.type == "merge":
+        h = (CTRL_ROW_H if n_ci > 0 else 0) + HEADER_H + (CTRL_ROW_H if n_co > 0 else 0) + 8
+    else:
+        h = max(MIN_HEIGHT,
+                (CTRL_ROW_H if n_ci > 0 else 0) + HEADER_H +
+                n_data * DATA_ROW_H +
+                (CTRL_ROW_H if n_co > 0 else 0) + 8)
     return (w, h)
 
 
@@ -44,6 +46,10 @@ def auto_layout(graph: KirGraph) -> KirGraph:
         return graph
 
     needs_ids = set(n.id for n in needs_layout)
+
+    # Preserve graph node order for tiebreaking
+    node_order = [n.id for n in graph.nodes if n.id in needs_ids]
+    node_rank: dict[str, float] = {nid: float(i) for i, nid in enumerate(node_order)}
 
     # Build adjacency
     data_adj: dict[str, list[str]] = defaultdict(list)
@@ -60,14 +66,49 @@ def auto_layout(graph: KirGraph) -> KirGraph:
             ctrl_adj[f].append(t)
             ctrl_rev[t].append(f)
 
+    # Fix ranks for merge nodes: place just before their successor
+    node_map = {n.id: n for n in graph.nodes}
+    for nid in node_order:
+        if node_map[nid].type == "merge":
+            for child in ctrl_adj.get(nid, []):
+                if child in node_rank:
+                    node_rank[nid] = node_rank[child] - 0.5
+                    break
+
     # Grid: node_id → (col, row) — negative indices allowed
     grid: dict[str, tuple[int, int]] = {}
     placed: set[str] = set()
 
     # ── Step 1: Find ctrl root and layout ctrl chain at col=0 ──
+    # Collect all nodes participating in ctrl edges
+    ctrl_nodes = set()
+    for edge in graph.edges:
+        if edge.type != "data":
+            if edge.from_node in needs_ids:
+                ctrl_nodes.add(edge.from_node)
+            if edge.to_node in needs_ids:
+                ctrl_nodes.add(edge.to_node)
+
     # Ctrl root = node with ctrl outputs but no ctrl inputs (in needs set)
-    ctrl_roots = [nid for nid in needs_ids
-                  if ctrl_adj.get(nid) and not any(s in needs_ids for s in ctrl_rev.get(nid, []))]
+    # Ignore back-edges (where target comes BEFORE source in node order)
+    ctrl_roots = []
+    for nid in node_order:
+        if nid not in ctrl_nodes:
+            continue
+        if not ctrl_adj.get(nid):
+            continue
+        # Check if all incoming ctrl edges are back-edges
+        incoming = [s for s in ctrl_rev.get(nid, []) if s in needs_ids]
+        forward_incoming = [s for s in incoming if node_rank.get(s, 999) < node_rank.get(nid, 0)]
+        if not forward_incoming:
+            ctrl_roots.append(nid)
+
+    if not ctrl_roots and ctrl_nodes:
+        # All ctrl nodes are in a cycle — pick first in graph order
+        for nid in node_order:
+            if nid in ctrl_nodes:
+                ctrl_roots = [nid]
+                break
 
     if not ctrl_roots:
         # No ctrl chain — find any root (no incoming edges at all)
@@ -76,26 +117,43 @@ def auto_layout(graph: KirGraph) -> KirGraph:
             all_rev.add(edge.to_node)
         ctrl_roots = [nid for nid in needs_ids if nid not in all_rev]
     if not ctrl_roots:
-        ctrl_roots = [list(needs_ids)[0]]
+        ctrl_roots = [node_order[0]] if node_order else []
 
     # BFS ctrl chain downward from root at (0, 0)
+    # Use only the first root for initial BFS to avoid interleaving.
+    # Remaining ctrl nodes are picked up by the second pass below.
     ctrl_row = 0
     ctrl_queue = deque()
-    for r in ctrl_roots:
-        if r not in placed:
-            grid[r] = (0, ctrl_row)
-            placed.add(r)
-            ctrl_queue.append(r)
-            ctrl_row += 1
 
-    while ctrl_queue:
-        nid = ctrl_queue.popleft()
-        for child in ctrl_adj.get(nid, []):
-            if child in needs_ids and child not in placed:
-                grid[child] = (0, ctrl_row)
-                placed.add(child)
-                ctrl_queue.append(child)
-                ctrl_row += 1
+    def bfs_ctrl(start: str) -> None:
+        nonlocal ctrl_row
+        if start in placed:
+            return
+        grid[start] = (0, ctrl_row)
+        placed.add(start)
+        ctrl_queue.append(start)
+        ctrl_row += 1
+        while ctrl_queue:
+            nid = ctrl_queue.popleft()
+            for child in ctrl_adj.get(nid, []):
+                if child in needs_ids and child not in placed:
+                    # Skip back-edges (child appears before parent in node order)
+                    if node_rank.get(child, 999) < node_rank.get(nid, 0):
+                        continue
+                    grid[child] = (0, ctrl_row)
+                    placed.add(child)
+                    ctrl_queue.append(child)
+                    ctrl_row += 1
+
+    # Start from first ctrl root
+    if ctrl_roots:
+        bfs_ctrl(ctrl_roots[0])
+
+    # Place remaining ctrl nodes not reached by initial BFS
+    # (e.g., nodes after a @dataflow: block gap, or separate ctrl chains)
+    for nid in node_order:
+        if nid in ctrl_nodes and nid not in placed and nid in needs_ids:
+            bfs_ctrl(nid)
 
     # ── Step 2: Place data sources LEFT of their consumers ──
     # BFS from placed nodes, going backward through data edges
