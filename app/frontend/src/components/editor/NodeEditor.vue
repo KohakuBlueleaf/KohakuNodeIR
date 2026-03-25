@@ -20,6 +20,13 @@ const props = defineProps({
 
 const emit = defineEmits(['update:zoom', 'update:irOpen']);
 
+// ── IR Preview position: 'bottom' | 'right' ──
+const irPosition = ref('bottom');
+
+function toggleIrPosition() {
+  irPosition.value = irPosition.value === 'bottom' ? 'right' : 'bottom';
+}
+
 // ── NodeDefEditor dialog ───────────────────────────────────────────────────────
 const nodeDefEditorOpen = ref(false);
 const nodeDefEditorTarget = ref(null);
@@ -31,7 +38,7 @@ function openNodeDefEditor(def) {
 </script>
 
 <template>
-  <div class="editor-root">
+  <div class="editor-root" :class="{ 'ir-right': irOpen && irPosition === 'right' }">
 
     <!-- ── Main body ── -->
     <div class="editor-body">
@@ -42,15 +49,57 @@ function openNodeDefEditor(def) {
         <NodePalette @open-node-def-editor="openNodeDefEditor" />
       </aside>
 
-      <!-- Centre: Canvas -->
-      <main class="canvas-area">
-        <EditorCanvas :zoom="zoom" @update:zoom="emit('update:zoom', $event)" />
-      </main>
+      <!-- Centre: Canvas + optional bottom IR -->
+      <div class="center-column">
+        <main class="canvas-area">
+          <EditorCanvas :zoom="zoom" @update:zoom="emit('update:zoom', $event)" />
+        </main>
 
-      <!-- Right: Property Panel -->
+        <!-- IR Preview — BOTTOM position -->
+        <div
+          v-if="irPosition === 'bottom'"
+          class="ir-preview-wrapper"
+          :class="{ open: irOpen }"
+        >
+          <div class="ir-preview-header" @click="emit('update:irOpen', !irOpen)">
+            <span>IR Preview</span>
+            <span class="ir-header-actions">
+              <button
+                class="ir-pos-btn"
+                title="Move to right side"
+                @click.stop="toggleIrPosition"
+              >⇥</button>
+              <span class="ir-toggle-icon">{{ irOpen ? '▼' : '▲' }}</span>
+            </span>
+          </div>
+          <div v-show="irOpen" class="ir-preview-body">
+            <IrPreview />
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Property Panel OR IR Preview (right position) -->
       <aside class="panel panel-right">
-        <div class="panel-title">Properties</div>
-        <PropertyPanel />
+        <template v-if="irOpen && irPosition === 'right'">
+          <div class="ir-preview-header ir-preview-header--right" @click="emit('update:irOpen', !irOpen)">
+            <span>IR Preview</span>
+            <span class="ir-header-actions">
+              <button
+                class="ir-pos-btn"
+                title="Move to bottom"
+                @click.stop="toggleIrPosition"
+              >⇤</button>
+              <span class="ir-toggle-icon">✕</span>
+            </span>
+          </div>
+          <div class="ir-preview-body ir-preview-body--right">
+            <IrPreview />
+          </div>
+        </template>
+        <template v-else>
+          <div class="panel-title">Properties</div>
+          <PropertyPanel />
+        </template>
       </aside>
 
     </div>
@@ -61,25 +110,14 @@ function openNodeDefEditor(def) {
       :definition="nodeDefEditorTarget"
     />
 
-    <!-- ── IR Preview (collapsible bottom strip) ── -->
-    <div class="ir-preview-wrapper" :class="{ open: irOpen }">
-      <div class="ir-preview-header" @click="emit('update:irOpen', !irOpen)">
-        <span>IR Preview</span>
-        <span class="ir-toggle-icon">{{ irOpen ? '▼' : '▲' }}</span>
-      </div>
-      <div v-show="irOpen" class="ir-preview-body">
-        <IrPreview />
-      </div>
-    </div>
-
   </div>
 </template>
 
 <style scoped>
 /* ── Root layout ── */
 .editor-root {
-  display: grid;
-  grid-template-rows: 1fr auto;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   background: #11111b;
@@ -91,7 +129,22 @@ function openNodeDefEditor(def) {
 .editor-body {
   display: grid;
   grid-template-columns: 240px 1fr 280px;
+  flex: 1;
   overflow: hidden;
+  min-height: 0;
+}
+
+/* When IR is on the right, give the right panel more space */
+.ir-right .editor-body {
+  grid-template-columns: 240px 1fr 400px;
+}
+
+/* ── Center column (canvas + optional bottom IR) ── */
+.center-column {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* ── Side panels ── */
@@ -116,18 +169,22 @@ function openNodeDefEditor(def) {
   text-transform: uppercase;
   color: #6c7086;
   border-bottom: 1px solid #313244;
+  flex-shrink: 0;
 }
 
 /* ── Canvas area ── */
 .canvas-area {
+  flex: 1;
   overflow: hidden;
   position: relative;
+  min-height: 0;
 }
 
-/* ── IR Preview strip ── */
+/* ── IR Preview strip (bottom) ── */
 .ir-preview-wrapper {
   background: #181825;
   border-top: 1px solid #313244;
+  flex-shrink: 0;
 }
 
 .ir-preview-header {
@@ -143,9 +200,35 @@ function openNodeDefEditor(def) {
   cursor: pointer;
   user-select: none;
   transition: background 0.12s;
+  flex-shrink: 0;
 }
 .ir-preview-header:hover {
   background: #1e1e2e;
+}
+
+.ir-preview-header--right {
+  border-bottom: 1px solid #313244;
+}
+
+.ir-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ir-pos-btn {
+  background: none;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  color: #6c7086;
+  font-size: 10px;
+  padding: 1px 6px;
+  cursor: pointer;
+  line-height: 1;
+}
+.ir-pos-btn:hover {
+  background: #313244;
+  color: #cdd6f4;
 }
 
 .ir-toggle-icon {
@@ -158,5 +241,12 @@ function openNodeDefEditor(def) {
   display: flex;
   flex-direction: column;
   border-top: 1px solid #313244;
+}
+
+/* Right-side IR fills the panel */
+.ir-preview-body--right {
+  flex: 1;
+  height: auto;
+  border-top: none;
 }
 </style>
