@@ -1,8 +1,8 @@
 /**
  * Generate SVG path for a data wire (horizontal: left-to-right).
  *
- * Clean horizontal S-curve. For short distances the wire is nearly straight;
- * for longer ones it bends gently. Backward wires loop around smoothly.
+ * Nearly straight when close, gentle S-curve at distance.
+ * Backward wires loop smoothly below both endpoints.
  */
 export function dataWirePath(x1, y1, x2, y2) {
   const dx = x2 - x1;
@@ -10,17 +10,15 @@ export function dataWirePath(x1, y1, x2, y2) {
   const absDy = Math.abs(dy);
 
   if (dx >= 0) {
-    // Forward: gentle horizontal S-curve.
-    // Scale offset with distance — nearly straight when close.
-    const offset = Math.min(dx * 0.4, 150) + Math.min(absDy * 0.1, 30);
-    const clampedOffset = Math.max(20, offset);
-    return `M ${x1} ${y1} C ${x1 + clampedOffset} ${y1}, ${x2 - clampedOffset} ${y2}, ${x2} ${y2}`;
+    // Forward: horizontal S-curve, proportional to distance.
+    const offset = Math.max(20, Math.min(dx * 0.4 + absDy * 0.08, 150));
+    return `M ${x1} ${y1} C ${x1 + offset} ${y1}, ${x2 - offset} ${y2}, ${x2} ${y2}`;
   }
 
-  // Backward: smooth loop around. Goes below both endpoints.
+  // Backward: loop below. Keep arc tight — proportional to actual distance, not oversized.
   const absDx = Math.abs(dx);
-  const spread = Math.max(40, absDx * 0.3 + absDy * 0.15);
-  const drop = Math.max(30, absDy * 0.4 + absDx * 0.2);
+  const spread = Math.max(30, Math.min(absDx * 0.25 + absDy * 0.1, 120));
+  const drop = Math.max(25, Math.min(absDy * 0.3 + absDx * 0.15, 100));
   const midX = (x1 + x2) / 2;
   const loopY = Math.max(y1, y2) + drop;
   return (
@@ -33,8 +31,8 @@ export function dataWirePath(x1, y1, x2, y2) {
 /**
  * Generate SVG path for a control wire (vertical: top-to-bottom).
  *
- * Clean vertical S-curve. Control points stay directly above/below endpoints
- * so the wire doesn't drift sideways. Backward (loop) wires arc to the right.
+ * Nearly straight when close, gentle S-curve at distance.
+ * Backward (loop) wires arc to the side — tightly, not oversized.
  */
 export function controlWirePath(x1, y1, x2, y2) {
   const dy = y2 - y1;
@@ -42,22 +40,21 @@ export function controlWirePath(x1, y1, x2, y2) {
   const absDx = Math.abs(dx);
 
   if (dy >= 0) {
-    // Forward: vertical S-curve, straight when close.
-    const offset = Math.min(dy * 0.4, 120) + Math.min(absDx * 0.08, 20);
-    const clampedOffset = Math.max(15, offset);
-    return `M ${x1} ${y1} C ${x1} ${y1 + clampedOffset}, ${x2} ${y2 - clampedOffset}, ${x2} ${y2}`;
+    // Forward: vertical S-curve. Control points stay above/below endpoints.
+    // When there's horizontal offset, blend a small horizontal component
+    // so the curve transitions smoothly instead of going straight down then snapping sideways.
+    const vOffset = Math.max(15, Math.min(dy * 0.4, 120));
+    const hBlend = absDx > 0 ? Math.min(absDx * 0.15, 30) : 0;
+    return `M ${x1} ${y1} C ${x1 + hBlend} ${y1 + vOffset}, ${x2 - hBlend} ${y2 - vOffset}, ${x2} ${y2}`;
   }
 
-  // Backward (loop): arc out to the right proportional to distance.
+  // Backward (loop): arc to the side. Keep arc proportional to distance, not oversized.
   const absDy = Math.abs(dy);
-  const dist = Math.sqrt(absDx * absDx + absDy * absDy);
-  const arcOut = Math.max(50, Math.min(dist * 0.35, 200));
-  // Direction: go right if target is to the right or same column, left if target is far left
-  const side = dx >= 0 ? 1 : (absDx > arcOut ? -1 : 1);
-  const cx = Math.max(x1, x2) + arcOut * side;
-  const midY = (y1 + y2) / 2;
+  const arcOut = Math.max(40, Math.min(Math.sqrt(absDx * absDx + absDy * absDy) * 0.3, 150));
+  // Arc direction: go to the right of the rightmost endpoint
+  const rightX = Math.max(x1, x2);
   return (
     `M ${x1} ${y1} ` +
-    `C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`
+    `C ${rightX + arcOut} ${y1}, ${rightX + arcOut} ${y2}, ${x2} ${y2}`
   );
 }

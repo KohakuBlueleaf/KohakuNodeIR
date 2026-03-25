@@ -291,14 +291,18 @@ function onPointerDown(e) {
     beginPan(e.clientX, e.clientY);
     return;
   }
-  // Left mouse on empty canvas → rubber-band selection
+  // Left mouse on empty canvas
   if (e.button === 0) {
     const isCanvas = e.target === containerRef.value || e.target.classList.contains('canvas-transform');
     if (isCanvas) {
-      if (!e.shiftKey) {
+      if (e.shiftKey) {
+        // Shift+left drag → rubber-band selection
+        beginSelection(e.clientX, e.clientY);
+      } else {
+        // Left drag → pan (deselect first)
         editor.deselectAll();
+        beginPan(e.clientX, e.clientY);
       }
-      beginSelection(e.clientX, e.clientY);
     }
   }
 }
