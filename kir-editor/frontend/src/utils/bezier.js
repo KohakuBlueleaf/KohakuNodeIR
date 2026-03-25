@@ -50,7 +50,10 @@ export function controlWirePath(x1, y1, x2, y2) {
 
   // Backward (loop): arc to the side. Keep arc proportional to distance, not oversized.
   const absDy = Math.abs(dy);
-  const arcOut = Math.max(40, Math.min(Math.sqrt(absDx * absDx + absDy * absDy) * 0.3, 150));
+  const arcOut = Math.max(
+    40,
+    Math.min(Math.sqrt(absDx * absDx + absDy * absDy) * 0.3, 150),
+  );
   // Arc direction: go to the right of the rightmost endpoint
   const rightX = Math.max(x1, x2);
   return (

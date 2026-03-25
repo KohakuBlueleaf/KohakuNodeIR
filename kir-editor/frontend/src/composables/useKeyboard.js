@@ -1,9 +1,9 @@
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useGraphStore } from '../stores/graph.js'
-import { useEditorStore } from '../stores/editor.js'
-import { useHistoryStore } from '../stores/history.js'
-import { detectAndParseAsync } from '../parser/index.js'
-import { parserResultToGraph } from '../utils/parserResultToGraph.js'
+import { ref, onMounted, onUnmounted } from "vue";
+import { useGraphStore } from "../stores/graph.js";
+import { useEditorStore } from "../stores/editor.js";
+import { useHistoryStore } from "../stores/history.js";
+import { detectAndParseAsync } from "../parser/index.js";
+import { parserResultToGraph } from "../utils/parserResultToGraph.js";
 
 /**
  * useKeyboard
@@ -17,12 +17,12 @@ import { parserResultToGraph } from '../utils/parserResultToGraph.js'
  *                           useSelection.cancelSelection.
  */
 export function useKeyboard({ onCancelOperation } = {}) {
-  const graphStore = useGraphStore()
-  const editorStore = useEditorStore()
-  const historyStore = useHistoryStore()
+  const graphStore = useGraphStore();
+  const editorStore = useEditorStore();
+  const historyStore = useHistoryStore();
 
   // Exposed so the template / usePanZoom can check pan-mode state
-  const spaceHeld = ref(false)
+  const spaceHeld = ref(false);
 
   // ---------------------------------------------------------------------------
   // Guards
@@ -30,13 +30,14 @@ export function useKeyboard({ onCancelOperation } = {}) {
 
   function isEditingText() {
     // Skip all shortcuts when code editor view is active
-    if (editorStore.activeViewMode === 'code') return true
-    const el = document.activeElement
-    if (!el) return false
-    const tag = el.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true
-    if (el.closest?.('.monaco-editor')) return true
-    return false
+    if (editorStore.activeViewMode === "code") return true;
+    const el = document.activeElement;
+    if (!el) return false;
+    const tag = el.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable)
+      return true;
+    if (el.closest?.(".monaco-editor")) return true;
+    return false;
   }
 
   // ---------------------------------------------------------------------------
@@ -45,65 +46,65 @@ export function useKeyboard({ onCancelOperation } = {}) {
 
   function onKeyDown(e) {
     // Space — enable pan mode
-    if (e.code === 'Space' && !e.repeat) {
+    if (e.code === "Space" && !e.repeat) {
       if (!isEditingText()) {
-        spaceHeld.value = true
-        editorStore.setSpacePanActive(true)
-        e.preventDefault()
+        spaceHeld.value = true;
+        editorStore.setSpacePanActive(true);
+        e.preventDefault();
       }
-      return
+      return;
     }
 
     // Don't fire shortcuts when the user is typing
-    if (isEditingText()) return
+    if (isEditingText()) return;
 
-    const ctrl = e.ctrlKey || e.metaKey
+    const ctrl = e.ctrlKey || e.metaKey;
 
     // Escape — cancel current operation
-    if (e.key === 'Escape') {
-      if (typeof onCancelOperation === 'function') onCancelOperation()
-      return
+    if (e.key === "Escape") {
+      if (typeof onCancelOperation === "function") onCancelOperation();
+      return;
     }
 
     // Delete / Backspace — delete selected nodes
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      deleteSelected()
-      return
+    if (e.key === "Delete" || e.key === "Backspace") {
+      deleteSelected();
+      return;
     }
 
     // Ctrl+A — select all nodes
-    if (ctrl && e.key === 'a') {
-      e.preventDefault()
-      editorStore.setSelection(graphStore.nodeList.map((n) => n.id))
-      return
+    if (ctrl && e.key === "a") {
+      e.preventDefault();
+      editorStore.setSelection(graphStore.nodeList.map((n) => n.id));
+      return;
     }
 
     // Ctrl+V — paste KIR text or graph JSON from clipboard
-    if (ctrl && e.key === 'v') {
-      e.preventDefault()
-      handlePaste()
-      return
+    if (ctrl && e.key === "v") {
+      e.preventDefault();
+      handlePaste();
+      return;
     }
 
     // Ctrl+Z — undo
-    if (ctrl && !e.shiftKey && e.key === 'z') {
-      e.preventDefault()
-      historyStore.undo()
-      return
+    if (ctrl && !e.shiftKey && e.key === "z") {
+      e.preventDefault();
+      historyStore.undo();
+      return;
     }
 
     // Ctrl+Shift+Z — redo
-    if (ctrl && e.shiftKey && e.key === 'z') {
-      e.preventDefault()
-      historyStore.redo()
-      return
+    if (ctrl && e.shiftKey && e.key === "z") {
+      e.preventDefault();
+      historyStore.redo();
+      return;
     }
 
     // Ctrl+Y — redo (Windows convention)
-    if (ctrl && e.key === 'y') {
-      e.preventDefault()
-      historyStore.redo()
-      return
+    if (ctrl && e.key === "y") {
+      e.preventDefault();
+      historyStore.redo();
+      return;
     }
   }
 
@@ -112,9 +113,9 @@ export function useKeyboard({ onCancelOperation } = {}) {
   // ---------------------------------------------------------------------------
 
   function onKeyUp(e) {
-    if (e.code === 'Space') {
-      spaceHeld.value = false
-      editorStore.setSpacePanActive(false)
+    if (e.code === "Space") {
+      spaceHeld.value = false;
+      editorStore.setSpacePanActive(false);
     }
   }
 
@@ -124,7 +125,7 @@ export function useKeyboard({ onCancelOperation } = {}) {
 
   function deleteSelected() {
     // Use the store's deleteSelected which handles both nodes and connections
-    editorStore.deleteSelected()
+    editorStore.deleteSelected();
   }
 
   // ---------------------------------------------------------------------------
@@ -133,25 +134,34 @@ export function useKeyboard({ onCancelOperation } = {}) {
 
   // parserResultToGraph imported from ../utils/parserResultToGraph.js
   async function handlePaste() {
-    let text
+    let text;
     try {
-      text = await navigator.clipboard.readText()
+      text = await navigator.clipboard.readText();
     } catch {
       // Clipboard access denied or unavailable — silently ignore
-      return
+      return;
     }
 
-    if (!text || !text.trim()) return
+    if (!text || !text.trim()) return;
 
     try {
-      const result = await detectAndParseAsync(text)
-      if (!result || !result.nodes || result.nodes.length === 0) return
+      const result = await detectAndParseAsync(text);
+      if (!result || !result.nodes || result.nodes.length === 0) return;
 
-      const { nodes, connections } = parserResultToGraph(result.nodes, result.edges)
-      graphStore.clear()
-      for (const node of nodes) graphStore.addNode(node)
+      const { nodes, connections } = parserResultToGraph(
+        result.nodes,
+        result.edges,
+      );
+      graphStore.clear();
+      for (const node of nodes) graphStore.addNode(node);
       for (const conn of connections) {
-        graphStore.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType)
+        graphStore.addConnection(
+          conn.fromNodeId,
+          conn.fromPortId,
+          conn.toNodeId,
+          conn.toPortId,
+          conn.portType,
+        );
       }
     } catch {
       // Parse failed — clipboard content is not a supported graph format
@@ -163,14 +173,14 @@ export function useKeyboard({ onCancelOperation } = {}) {
   // ---------------------------------------------------------------------------
 
   onMounted(() => {
-    window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
-  })
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+  });
 
   onUnmounted(() => {
-    window.removeEventListener('keydown', onKeyDown)
-    window.removeEventListener('keyup', onKeyUp)
-  })
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("keyup", onKeyUp);
+  });
 
-  return { spaceHeld }
+  return { spaceHeld };
 }

@@ -61,9 +61,7 @@ def _literal_value(expr: Expression) -> Any:
     return None
 
 
-def _parse_var_name(
-    var_name: str, known_node_ids: set[str]
-) -> tuple[str, str] | None:
+def _parse_var_name(var_name: str, known_node_ids: set[str]) -> tuple[str, str] | None:
     """Try to split a variable name into (node_id, port_name).
 
     Tries the longest matching node_id prefix first.
@@ -72,7 +70,7 @@ def _parse_var_name(
     for nid in sorted(known_node_ids, key=len, reverse=True):
         prefix = nid + "_"
         if var_name.startswith(prefix) and len(var_name) > len(prefix):
-            return (nid, var_name[len(prefix):])
+            return (nid, var_name[len(prefix) :])
 
     # Fallback: use regex for the last underscore split.
     m = _VAR_PATTERN.match(var_name)
@@ -134,7 +132,9 @@ class KirGraphDecompiler:
             if isinstance(stmt, Namespace):
                 if stmt.name not in self._handled_namespaces:
                     # Walk namespace body — merge node handles the ctrl edge in
-                    self._walk_statements(stmt.body, prev_node_id=last_id, in_namespace=True)
+                    self._walk_statements(
+                        stmt.body, prev_node_id=last_id, in_namespace=True
+                    )
                 # After a namespace (entered via jump), don't chain to next
                 last_id = None
                 continue
@@ -148,40 +148,71 @@ class KirGraphDecompiler:
                     if merge_id in self._nodes:
                         # Backward edge (loop back)
                         merge_node = self._nodes[merge_id]
-                        back_port = "back" if "back" in merge_node.ctrl_inputs else (
-                            merge_node.ctrl_inputs[-1] if merge_node.ctrl_inputs else "back"
+                        back_port = (
+                            "back"
+                            if "back" in merge_node.ctrl_inputs
+                            else (
+                                merge_node.ctrl_inputs[-1]
+                                if merge_node.ctrl_inputs
+                                else "back"
+                            )
                         )
                         if last_id:
                             prev_node = self._nodes[last_id]
-                            from_port = prev_node.ctrl_outputs[0] if prev_node.ctrl_outputs else "out"
-                            self._edges.append(KGEdge(
-                                type="control", from_node=last_id, from_port=from_port,
-                                to_node=merge_id, to_port=back_port,
-                            ))
+                            from_port = (
+                                prev_node.ctrl_outputs[0]
+                                if prev_node.ctrl_outputs
+                                else "out"
+                            )
+                            self._edges.append(
+                                KGEdge(
+                                    type="control",
+                                    from_node=last_id,
+                                    from_port=from_port,
+                                    to_node=merge_id,
+                                    to_port=back_port,
+                                )
+                            )
                         elif parent_branch_edge:
                             # Inside a branch namespace with no preceding nodes
-                            self._edges.append(KGEdge(
-                                type="control",
-                                from_node=parent_branch_edge[0],
-                                from_port=parent_branch_edge[1],
-                                to_node=merge_id, to_port=back_port,
-                            ))
+                            self._edges.append(
+                                KGEdge(
+                                    type="control",
+                                    from_node=parent_branch_edge[0],
+                                    from_port=parent_branch_edge[1],
+                                    to_node=merge_id,
+                                    to_port=back_port,
+                                )
+                            )
                     else:
                         # Forward jump — create merge node
                         merge_node = KGNode(
-                            id=merge_id, type="merge", name="Merge",
-                            data_inputs=[], data_outputs=[],
-                            ctrl_inputs=["entry", "back"], ctrl_outputs=["out"],
+                            id=merge_id,
+                            type="merge",
+                            name="Merge",
+                            data_inputs=[],
+                            data_outputs=[],
+                            ctrl_inputs=["entry", "back"],
+                            ctrl_outputs=["out"],
                             meta=self._build_meta(jump_meta),
                         )
                         self._nodes[merge_id] = merge_node
                         if last_id:
                             prev_node = self._nodes[last_id]
-                            from_port = prev_node.ctrl_outputs[0] if prev_node.ctrl_outputs else "out"
-                            self._edges.append(KGEdge(
-                                type="control", from_node=last_id, from_port=from_port,
-                                to_node=merge_id, to_port="entry",
-                            ))
+                            from_port = (
+                                prev_node.ctrl_outputs[0]
+                                if prev_node.ctrl_outputs
+                                else "out"
+                            )
+                            self._edges.append(
+                                KGEdge(
+                                    type="control",
+                                    from_node=last_id,
+                                    from_port=from_port,
+                                    to_node=merge_id,
+                                    to_port="entry",
+                                )
+                            )
                         last_id = merge_id
                 continue
 
@@ -196,12 +227,19 @@ class KirGraphDecompiler:
             if last_id is not None and not in_dataflow:
                 node = self._nodes[node_id]
                 prev_node = self._nodes[last_id]
-                from_port = prev_node.ctrl_outputs[0] if prev_node.ctrl_outputs else "out"
+                from_port = (
+                    prev_node.ctrl_outputs[0] if prev_node.ctrl_outputs else "out"
+                )
                 to_port = node.ctrl_inputs[0] if node.ctrl_inputs else "in"
-                self._edges.append(KGEdge(
-                    type="control", from_node=last_id, from_port=from_port,
-                    to_node=node_id, to_port=to_port,
-                ))
+                self._edges.append(
+                    KGEdge(
+                        type="control",
+                        from_node=last_id,
+                        from_port=from_port,
+                        to_node=node_id,
+                        to_port=to_port,
+                    )
+                )
 
             if in_dataflow:
                 pass  # No ctrl chaining in dataflow blocks
@@ -307,9 +345,7 @@ class KirGraphDecompiler:
                 data_inputs.append(KGPort(port=port_name))
             elif isinstance(inp, Literal):
                 port_name = self._infer_input_port_name(i, stmt)
-                data_inputs.append(
-                    KGPort(port=port_name, default=inp.value)
-                )
+                data_inputs.append(KGPort(port=port_name, default=inp.value))
             else:
                 port_name = f"in_{i}"
                 data_inputs.append(KGPort(port=port_name))
@@ -449,7 +485,9 @@ class KirGraphDecompiler:
             if ns is not None:
                 self._handled_namespaces.add(label)
                 first_id = self._walk_statements(
-                    ns.body, prev_node_id=None, in_namespace=True,
+                    ns.body,
+                    prev_node_id=None,
+                    in_namespace=True,
                     parent_branch_edge=(branch_node_id, port),
                 )
                 if first_id:
@@ -547,9 +585,7 @@ class KirGraphDecompiler:
     # Second pass: data edges
     # ------------------------------------------------------------------
 
-    def _resolve_data_edges(
-        self, stmts: list[Statement], known_ids: set[str]
-    ) -> None:
+    def _resolve_data_edges(self, stmts: list[Statement], known_ids: set[str]) -> None:
         """Walk all statements and create data edges from variable references."""
         for stmt in stmts:
             if isinstance(stmt, DataflowBlock):
@@ -585,17 +621,11 @@ class KirGraphDecompiler:
             # Resolve data inputs.
             if isinstance(stmt, FuncCall):
                 for i, inp in enumerate(stmt.inputs):
-                    self._resolve_data_input(
-                        inp, node, i, known_ids
-                    )
+                    self._resolve_data_input(inp, node, i, known_ids)
             elif isinstance(stmt, Branch):
-                self._resolve_data_input(
-                    stmt.condition, node, 0, known_ids
-                )
+                self._resolve_data_input(stmt.condition, node, 0, known_ids)
             elif isinstance(stmt, Switch):
-                self._resolve_data_input(
-                    stmt.value, node, 0, known_ids
-                )
+                self._resolve_data_input(stmt.value, node, 0, known_ids)
 
     def _resolve_data_input(
         self,

@@ -1,7 +1,7 @@
-import { reactive, computed } from 'vue';
-import { defineStore } from 'pinia';
-import { snapToGrid, snapPoint } from '../utils/grid.js';
-import { useHistoryStore } from './history.js';
+import { reactive, computed } from "vue";
+import { defineStore } from "pinia";
+import { snapToGrid, snapPoint } from "../utils/grid.js";
+import { useHistoryStore } from "./history.js";
 
 // --- Constants ---
 const PORT_PADDING = 30; // px from edge before first ctrl port
@@ -10,17 +10,17 @@ const CTRL_ROW_H = 18;
 const DATA_ROW_H = 28; // fixed row height for each data port
 
 let _idCounter = 0;
-function generateId(prefix = 'id') {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+function generateId(prefix = "id") {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return `${prefix}-${crypto.randomUUID()}`;
   }
   return `${prefix}-${++_idCounter}-${Date.now()}`;
 }
 
-export const useGraphStore = defineStore('graph', () => {
+export const useGraphStore = defineStore("graph", () => {
   // ---- State ----
   // Using reactive Maps so Vue can track mutations
-  const nodes = reactive(new Map());       // Map<string, NodeData>
+  const nodes = reactive(new Map()); // Map<string, NodeData>
   const connections = reactive(new Map()); // Map<string, ConnectionData>
 
   // ---- Computed ----
@@ -36,12 +36,12 @@ export const useGraphStore = defineStore('graph', () => {
    */
   function addNode(nodeData) {
     useHistoryStore().pushState();
-    const id = nodeData.id ?? generateId('node');
+    const id = nodeData.id ?? generateId("node");
     const snapped = snapPoint(nodeData.x ?? 0, nodeData.y ?? 0);
     const node = {
       id,
-      type: nodeData.type ?? 'function',
-      name: nodeData.name ?? 'Node',
+      type: nodeData.type ?? "function",
+      name: nodeData.name ?? "Node",
       x: snapped.x,
       y: snapped.y,
       width: snapToGrid(nodeData.width ?? 160),
@@ -99,8 +99,17 @@ export const useGraphStore = defineStore('graph', () => {
   function computeMinHeight(node) {
     const hasCtrlIn = node.controlPorts.inputs.length > 0;
     const hasCtrlOut = node.controlPorts.outputs.length > 0;
-    const dataRows = Math.max(node.dataPorts.inputs.length, node.dataPorts.outputs.length);
-    return (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + dataRows * DATA_ROW_H + (hasCtrlOut ? CTRL_ROW_H : 0) + 8;
+    const dataRows = Math.max(
+      node.dataPorts.inputs.length,
+      node.dataPorts.outputs.length,
+    );
+    return (
+      (hasCtrlIn ? CTRL_ROW_H : 0) +
+      HEADER_H +
+      dataRows * DATA_ROW_H +
+      (hasCtrlOut ? CTRL_ROW_H : 0) +
+      8
+    );
   }
 
   /**
@@ -144,8 +153,15 @@ export const useGraphStore = defineStore('graph', () => {
       return null;
     }
     useHistoryStore().pushState();
-    const id = generateId('conn');
-    const connection = { id, fromNodeId, fromPortId, toNodeId, toPortId, portType };
+    const id = generateId("conn");
+    const connection = {
+      id,
+      fromNodeId,
+      fromPortId,
+      toNodeId,
+      toPortId,
+      portType,
+    };
     connections.set(id, connection);
     return id;
   }
@@ -230,17 +246,22 @@ export const useGraphStore = defineStore('graph', () => {
 
     // Data port Y = ctrlIn area + header + row center
     function dataRowY(index) {
-      return (hasCtrlIn ? CTRL_ROW_H : 0) + HEADER_H + index * DATA_ROW_H + DATA_ROW_H / 2;
+      return (
+        (hasCtrlIn ? CTRL_ROW_H : 0) +
+        HEADER_H +
+        index * DATA_ROW_H +
+        DATA_ROW_H / 2
+      );
     }
 
     // Data inputs — left edge
-    const dataInIndex = dataPorts.inputs.findIndex(p => p.id === portId);
+    const dataInIndex = dataPorts.inputs.findIndex((p) => p.id === portId);
     if (dataInIndex !== -1) {
       return { x, y: y + dataRowY(dataInIndex) };
     }
 
     // Data outputs — right edge
-    const dataOutIndex = dataPorts.outputs.findIndex(p => p.id === portId);
+    const dataOutIndex = dataPorts.outputs.findIndex((p) => p.id === portId);
     if (dataOutIndex !== -1) {
       return { x: x + width, y: y + dataRowY(dataOutIndex) };
     }
@@ -248,7 +269,7 @@ export const useGraphStore = defineStore('graph', () => {
     // Control inputs — top edge
     // The diamond center sits at the vertical midpoint of the ctrl-row div
     // (CTRL_ROW_H / 2 = 9px below the top of the node).
-    const ctrlInIndex = controlPorts.inputs.findIndex(p => p.id === portId);
+    const ctrlInIndex = controlPorts.inputs.findIndex((p) => p.id === portId);
     if (ctrlInIndex !== -1) {
       return {
         x: x + evenSpacing(ctrlInIndex, controlPorts.inputs.length, width),
@@ -261,7 +282,7 @@ export const useGraphStore = defineStore('graph', () => {
     // so the wire anchor matches the visual bottom of the node even when the
     // node has more data ports than the stored height accounts for.
     // The diamond center sits CTRL_ROW_H / 2 px above the bottom of the node.
-    const ctrlOutIndex = controlPorts.outputs.findIndex(p => p.id === portId);
+    const ctrlOutIndex = controlPorts.outputs.findIndex((p) => p.id === portId);
     if (ctrlOutIndex !== -1) {
       const effectiveHeight = Math.max(height, computeMinHeight(node));
       return {
@@ -295,7 +316,7 @@ export const useGraphStore = defineStore('graph', () => {
    * @returns {boolean}
    */
   function canConnect(fromNodeId, fromPortId, toNodeId, toPortId, portType) {
-    if (portType !== 'data' && portType !== 'control') return false;
+    if (portType !== "data" && portType !== "control") return false;
 
     // No self-loops
     if (fromNodeId === toNodeId) return false;
@@ -305,14 +326,20 @@ export const useGraphStore = defineStore('graph', () => {
     if (!fromNode || !toNode) return false;
 
     // Validate port existence and direction
-    if (portType === 'data') {
-      const fromIsOutput = fromNode.dataPorts.outputs.some(p => p.id === fromPortId);
-      const toIsInput = toNode.dataPorts.inputs.some(p => p.id === toPortId);
+    if (portType === "data") {
+      const fromIsOutput = fromNode.dataPorts.outputs.some(
+        (p) => p.id === fromPortId,
+      );
+      const toIsInput = toNode.dataPorts.inputs.some((p) => p.id === toPortId);
       if (!fromIsOutput || !toIsInput) return false;
     } else {
       // control
-      const fromIsOutput = fromNode.controlPorts.outputs.some(p => p.id === fromPortId);
-      const toIsInput = toNode.controlPorts.inputs.some(p => p.id === toPortId);
+      const fromIsOutput = fromNode.controlPorts.outputs.some(
+        (p) => p.id === fromPortId,
+      );
+      const toIsInput = toNode.controlPorts.inputs.some(
+        (p) => p.id === toPortId,
+      );
       if (!fromIsOutput || !toIsInput) return false;
     }
 
@@ -357,18 +384,19 @@ export const useGraphStore = defineStore('graph', () => {
    */
   function serialize() {
     return {
-      nodes: Array.from(nodes.values()).map(n => ({ ...n,
+      nodes: Array.from(nodes.values()).map((n) => ({
+        ...n,
         dataPorts: {
-          inputs: n.dataPorts.inputs.map(p => ({ ...p })),
-          outputs: n.dataPorts.outputs.map(p => ({ ...p })),
+          inputs: n.dataPorts.inputs.map((p) => ({ ...p })),
+          outputs: n.dataPorts.outputs.map((p) => ({ ...p })),
         },
         controlPorts: {
-          inputs: n.controlPorts.inputs.map(p => ({ ...p })),
-          outputs: n.controlPorts.outputs.map(p => ({ ...p })),
+          inputs: n.controlPorts.inputs.map((p) => ({ ...p })),
+          outputs: n.controlPorts.outputs.map((p) => ({ ...p })),
         },
         properties: { ...n.properties },
       })),
-      connections: Array.from(connections.values()).map(c => ({ ...c })),
+      connections: Array.from(connections.values()).map((c) => ({ ...c })),
     };
   }
 
@@ -383,12 +411,12 @@ export const useGraphStore = defineStore('graph', () => {
       nodes.set(n.id, {
         ...n,
         dataPorts: {
-          inputs: n.dataPorts.inputs.map(p => ({ ...p })),
-          outputs: n.dataPorts.outputs.map(p => ({ ...p })),
+          inputs: n.dataPorts.inputs.map((p) => ({ ...p })),
+          outputs: n.dataPorts.outputs.map((p) => ({ ...p })),
         },
         controlPorts: {
-          inputs: n.controlPorts.inputs.map(p => ({ ...p })),
-          outputs: n.controlPorts.outputs.map(p => ({ ...p })),
+          inputs: n.controlPorts.inputs.map((p) => ({ ...p })),
+          outputs: n.controlPorts.outputs.map((p) => ({ ...p })),
         },
         properties: { ...n.properties },
       });

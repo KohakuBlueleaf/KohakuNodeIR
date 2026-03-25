@@ -75,6 +75,8 @@ struct GraphBuilder {
     deferred_ctrl_out: Vec<(String, String)>,
     /// Track namespaces already walked by Branch/Switch handlers
     walked_ns: HashSet<String>,
+    /// Merge metadata from Jump statements: ns_label -> (node_id, pos)
+    merge_meta: HashMap<String, (String, [i64; 2])>,
 }
 
 impl GraphBuilder {
@@ -88,13 +90,19 @@ impl GraphBuilder {
             jump_wires: Vec::new(),
             deferred_ctrl_out: Vec::new(),
             walked_ns: HashSet::new(),
+            merge_meta: HashMap::new(),
         }
     }
 
     fn build(mut self, stmts: &[Statement]) -> KirGraph {
         self.walk(stmts, None, false, None, "out");
         self.resolve_jump_wires();
-        synthesize_merge_nodes(&mut self.nodes, &mut self.edges);
+        synthesize_merge_nodes(
+            &mut self.nodes,
+            &mut self.edges,
+            &self.merge_meta,
+            &self.ns_first_node,
+        );
         KirGraph {
             nodes: self.nodes,
             edges: self.edges,
@@ -116,7 +124,8 @@ impl GraphBuilder {
     // ------------------------------------------------------------------
 
     fn ctrl_edge(&mut self, from_id: &str, from_port: &str, to_id: &str, to_port: &str) {
-        self.edges.push(KGEdge::control(from_id, from_port, to_id, to_port));
+        self.edges
+            .push(KGEdge::control(from_id, from_port, to_id, to_port));
     }
 
     fn wire_deferred(&mut self, to_nid: &str) {
@@ -150,7 +159,8 @@ impl GraphBuilder {
                     } else {
                         format!("in_{}", i)
                     };
-                    self.edges.push(KGEdge::data(&src_nid, &src_port, nid, &to_port));
+                    self.edges
+                        .push(KGEdge::data(&src_nid, &src_port, nid, &to_port));
                 }
             }
         }
@@ -159,7 +169,8 @@ impl GraphBuilder {
     fn wire_condition(&mut self, condition: &Expression, nid: &str, port: &str) {
         if let Expression::Identifier(id) = condition {
             if let Some((src_nid, src_port)) = self.var_source.get(&id.name).cloned() {
-                self.edges.push(KGEdge::data(&src_nid, &src_port, nid, port));
+                self.edges
+                    .push(KGEdge::data(&src_nid, &src_port, nid, port));
             }
         }
     }
@@ -169,8 +180,7 @@ impl GraphBuilder {
     // ------------------------------------------------------------------
 
     fn make_func_node(&mut self, stmt: &FuncCall) -> String {
-        let nid = meta_id(&stmt.metadata)
-            .unwrap_or_else(|| self.gen_id(&stmt.func_name));
+        let nid = meta_id(&stmt.metadata).unwrap_or_else(|| self.gen_id(&stmt.func_name));
         let pos = meta_pos(&stmt.metadata);
 
         let mut d_in: Vec<KGPort> = Vec::new();
@@ -212,7 +222,9 @@ impl GraphBuilder {
                     crate::ast::OutputTarget::Name(n) => n.clone(),
                     crate::ast::OutputTarget::Wildcard => "_".to_string(),
                 };
-                if s == "_" { return None; }
+                if s == "_" {
+                    return None;
+                }
                 let port_name = if s.starts_with(&prefix) {
                     s[prefix.len()..].to_string()
                 } else {
@@ -276,8 +288,7 @@ impl GraphBuilder {
             }
         }
 
-        let nid = meta_id(&stmt.metadata)
-            .unwrap_or_else(|| self.gen_id("value"));
+        let nid = meta_id(&stmt.metadata).unwrap_or_else(|| self.gen_id("value"));
         let pos = meta_pos(&stmt.metadata);
 
         let val = if let Expression::Literal(lit) = &stmt.value {
@@ -308,7 +319,8 @@ impl GraphBuilder {
             properties: props,
             meta,
         });
-        self.var_source.insert(stmt.target.clone(), (nid.clone(), "value".to_string()));
+        self.var_source
+            .insert(stmt.target.clone(), (nid.clone(), "value".to_string()));
 
         if first_node_in_scope.is_none() {
             Some(nid)
@@ -355,8 +367,7 @@ impl GraphBuilder {
         ctrl_out_port: &str,
         used_initial_port: &mut bool,
     ) -> (Option<String>, Option<String>) {
-        let nid = meta_id(&stmt.metadata)
-            .unwrap_or_else(|| self.gen_id("branch"));
+        let nid = meta_id(&stmt.metadata).unwrap_or_else(|| self.gen_id("branch"));
         let pos = meta_pos(&stmt.metadata);
 
         let mut meta = HashMap::new();
@@ -398,13 +409,15 @@ impl GraphBuilder {
                     self.walked_ns.insert(ns.name.clone());
                     self.walk(&ns.body, Some(&nid), false, Some(&ns.name), "true");
                     if ns.body.is_empty() {
-                        self.deferred_ctrl_out.push((nid.clone(), "true".to_string()));
+                        self.deferred_ctrl_out
+                            .push((nid.clone(), "true".to_string()));
                     }
                 } else if ns.name == stmt.false_label {
                     self.walked_ns.insert(ns.name.clone());
                     self.walk(&ns.body, Some(&nid), false, Some(&ns.name), "false");
                     if ns.body.is_empty() {
-                        self.deferred_ctrl_out.push((nid.clone(), "false".to_string()));
+                        self.deferred_ctrl_out
+                            .push((nid.clone(), "false".to_string()));
                     }
                 }
             }
@@ -423,8 +436,7 @@ impl GraphBuilder {
         ctrl_out_port: &str,
         used_initial_port: &mut bool,
     ) -> (Option<String>, Option<String>) {
-        let nid = meta_id(&stmt.metadata)
-            .unwrap_or_else(|| self.gen_id("switch"));
+        let nid = meta_id(&stmt.metadata).unwrap_or_else(|| self.gen_id("switch"));
         let pos = meta_pos(&stmt.metadata);
 
         let cout: Vec<String> = stmt.cases.iter().map(|(_, label)| label.clone()).collect();
@@ -514,8 +526,7 @@ impl GraphBuilder {
         ctrl_out_port: &str,
         used_initial_port: &mut bool,
     ) -> (Option<String>, Option<String>) {
-        let nid = meta_id(&stmt.metadata)
-            .unwrap_or_else(|| self.gen_id("parallel"));
+        let nid = meta_id(&stmt.metadata).unwrap_or_else(|| self.gen_id("parallel"));
         let pos = meta_pos(&stmt.metadata);
 
         let mut meta = HashMap::new();
@@ -552,7 +563,13 @@ impl GraphBuilder {
             if let Statement::Namespace(ns) = s {
                 if stmt.labels.contains(&ns.name) {
                     self.walked_ns.insert(ns.name.clone());
-                    self.walk(&ns.body, Some(&nid), false, Some(&ns.name), &ns.name.clone());
+                    self.walk(
+                        &ns.body,
+                        Some(&nid),
+                        false,
+                        Some(&ns.name),
+                        &ns.name.clone(),
+                    );
                 }
             }
         }
@@ -633,8 +650,7 @@ impl GraphBuilder {
         for stmt in stmts {
             match stmt {
                 Statement::Assignment(a) => {
-                    first_node_in_scope =
-                        self.handle_assignment(a, first_node_in_scope.clone());
+                    first_node_in_scope = self.handle_assignment(a, first_node_in_scope.clone());
                 }
 
                 Statement::FuncCall(fc) => {
@@ -702,7 +718,13 @@ impl GraphBuilder {
                     } else {
                         "out".to_string()
                     };
-                    self.jump_wires.push((last_ctrl.clone(), port, j.target.clone()));
+                    self.jump_wires
+                        .push((last_ctrl.clone(), port, j.target.clone()));
+                    // Save @meta from jump (carries merge node position)
+                    if let Some(nid) = meta_id(&j.metadata) {
+                        let pos = meta_pos(&j.metadata);
+                        self.merge_meta.insert(j.target.clone(), (nid, pos));
+                    }
                     last_ctrl = None;
                 }
 
@@ -818,12 +840,23 @@ fn get_from_port(
 // Merge node synthesis
 // ---------------------------------------------------------------------------
 
-fn synthesize_merge_nodes(nodes: &mut Vec<KGNode>, edges: &mut Vec<KGEdge>) {
+fn synthesize_merge_nodes(
+    nodes: &mut Vec<KGNode>,
+    edges: &mut Vec<KGEdge>,
+    merge_meta: &HashMap<String, (String, [i64; 2])>,
+    ns_first_node: &HashMap<String, Option<String>>,
+) {
     let mut node_counter = 0u32;
     let mut gen_id = || {
         node_counter += 1;
         format!("merge_{}", node_counter)
     };
+
+    // Reverse map: first_node_in_ns -> ns_label
+    let first_to_ns: HashMap<&str, &str> = ns_first_node
+        .iter()
+        .filter_map(|(k, v)| v.as_deref().map(|v| (v, k.as_str())))
+        .collect();
 
     // Find all nodes with 2+ incoming ctrl edges
     let mut incoming_ctrl: HashMap<String, Vec<usize>> = HashMap::new();
@@ -840,14 +873,29 @@ fn synthesize_merge_nodes(nodes: &mut Vec<KGNode>, edges: &mut Vec<KGEdge>) {
         if edge_indices.len() < 2 {
             continue;
         }
-        let merge_nid = gen_id();
+
+        // Check if we have saved @meta for this merge
+        let ns_label = first_to_ns.get(target_nid.as_str());
+        let meta_info = ns_label.and_then(|ns| merge_meta.get(*ns));
+
+        let merge_nid = if let Some((nid, _)) = meta_info {
+            nid.clone()
+        } else {
+            gen_id()
+        };
+        let pos = if let Some((_, p)) = meta_info {
+            *p
+        } else {
+            [0, 0]
+        };
+
         let n_inputs = edge_indices.len();
         let merge_inputs: Vec<String> = (0..n_inputs).map(|i| format!("in_{}", i)).collect();
 
         let mut meta = HashMap::new();
         meta.insert(
             "pos".to_string(),
-            Value::List(vec![Value::Int(0), Value::Int(0)]),
+            Value::List(vec![Value::Int(pos[0]), Value::Int(pos[1])]),
         );
 
         new_nodes.push(KGNode {
@@ -867,7 +915,12 @@ fn synthesize_merge_nodes(nodes: &mut Vec<KGNode>, edges: &mut Vec<KGEdge>) {
             let from_node = old.from_node.clone();
             let from_port = old.from_port.clone();
             // We'll mark the edge index for replacement
-            new_edges.push(KGEdge::control(&from_node, &from_port, &merge_nid, &merge_inputs[i]));
+            new_edges.push(KGEdge::control(
+                &from_node,
+                &from_port,
+                &merge_nid,
+                &merge_inputs[i],
+            ));
             // Mark as replaced by storing sentinel — we'll handle in final step
         }
 
@@ -974,7 +1027,11 @@ done:
     fn test_simple_kir_to_graph() {
         let graph = kir_to_graph(SIMPLE_KIR).expect("parse failed");
         // Should have: init node and print node
-        assert!(graph.nodes.len() >= 2, "expected at least 2 nodes, got {}", graph.nodes.len());
+        assert!(
+            graph.nodes.len() >= 2,
+            "expected at least 2 nodes, got {}",
+            graph.nodes.len()
+        );
         let types: Vec<&str> = graph.nodes.iter().map(|n| n.r#type.as_str()).collect();
         assert!(types.contains(&"init"), "expected init node");
         assert!(types.contains(&"print"), "expected print node");
@@ -990,16 +1047,22 @@ done:
     #[test]
     fn test_simple_kir_has_ctrl_edge() {
         let graph = kir_to_graph(SIMPLE_KIR).expect("parse failed");
-        let ctrl_edges: Vec<&KGEdge> =
-            graph.edges.iter().filter(|e| e.r#type == "control").collect();
+        let ctrl_edges: Vec<&KGEdge> = graph
+            .edges
+            .iter()
+            .filter(|e| e.r#type == "control")
+            .collect();
         assert!(!ctrl_edges.is_empty(), "expected control edge");
     }
 
     #[test]
     fn test_branch_kir_has_branch_node() {
         let graph = kir_to_graph(BRANCH_KIR).expect("parse failed");
-        let branch_nodes: Vec<&KGNode> =
-            graph.nodes.iter().filter(|n| n.r#type == "branch").collect();
+        let branch_nodes: Vec<&KGNode> = graph
+            .nodes
+            .iter()
+            .filter(|n| n.r#type == "branch")
+            .collect();
         assert_eq!(branch_nodes.len(), 1, "expected 1 branch node");
         let b = branch_nodes[0];
         assert!(b.ctrl_outputs.contains(&"true".to_string()));
@@ -1019,17 +1082,29 @@ done:
     fn test_dataflow_block_has_ctrl_chain() {
         let graph = kir_to_graph(DATAFLOW_KIR).expect("parse failed");
         // add_1 and add_2 should be connected by a ctrl edge (pass-through chain)
-        let ctrl_edges: Vec<&KGEdge> =
-            graph.edges.iter().filter(|e| e.r#type == "control").collect();
-        assert!(!ctrl_edges.is_empty(), "expected ctrl chain in dataflow block");
+        let ctrl_edges: Vec<&KGEdge> = graph
+            .edges
+            .iter()
+            .filter(|e| e.r#type == "control")
+            .collect();
+        assert!(
+            !ctrl_edges.is_empty(),
+            "expected ctrl chain in dataflow block"
+        );
     }
 
     #[test]
     fn test_mixed_mode_kir() {
         let source = include_str!("../../../../examples/kir_basics/mixed_mode.kir");
         let graph = kir_to_graph(source).expect("parse failed");
-        assert!(!graph.nodes.is_empty(), "expected nodes from mixed_mode.kir");
-        assert!(!graph.edges.is_empty(), "expected edges from mixed_mode.kir");
+        assert!(
+            !graph.nodes.is_empty(),
+            "expected nodes from mixed_mode.kir"
+        );
+        assert!(
+            !graph.edges.is_empty(),
+            "expected edges from mixed_mode.kir"
+        );
         // Verify we have branch and merge nodes
         let has_branch = graph.nodes.iter().any(|n| n.r#type == "branch");
         assert!(has_branch, "expected branch node in mixed_mode.kir");

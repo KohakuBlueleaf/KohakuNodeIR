@@ -196,10 +196,10 @@ fn bfs_ctrl_chain(
     let mut bfs_queue: VecDeque<String> = VecDeque::new();
 
     let bfs_from = |start: &str,
-                        grid: &mut HashMap<String, (i32, i32)>,
-                        placed: &mut HashSet<String>,
-                        ctrl_row: &mut i32,
-                        bfs_queue: &mut VecDeque<String>| {
+                    grid: &mut HashMap<String, (i32, i32)>,
+                    placed: &mut HashSet<String>,
+                    ctrl_row: &mut i32,
+                    bfs_queue: &mut VecDeque<String>| {
         if placed.contains(start) {
             return;
         }
@@ -411,9 +411,15 @@ fn place_data_sources(
             if consumers.is_empty() {
                 continue;
             }
-            let consumer_positions: Vec<(i32, i32)> =
-                consumers.iter().filter_map(|c| grid.get(c).copied()).collect();
-            let min_col = consumer_positions.iter().map(|(c, _)| *c).min().unwrap_or(0);
+            let consumer_positions: Vec<(i32, i32)> = consumers
+                .iter()
+                .filter_map(|c| grid.get(c).copied())
+                .collect();
+            let min_col = consumer_positions
+                .iter()
+                .map(|(c, _)| *c)
+                .min()
+                .unwrap_or(0);
             let target_row = consumer_positions[0].1;
             let mut col = min_col - 1;
             let occupied: HashSet<(i32, i32)> = grid.values().copied().collect();
@@ -445,8 +451,10 @@ fn place_data_consumers(
             if sources.is_empty() {
                 continue;
             }
-            let source_positions: Vec<(i32, i32)> =
-                sources.iter().filter_map(|s| grid.get(s).copied()).collect();
+            let source_positions: Vec<(i32, i32)> = sources
+                .iter()
+                .filter_map(|s| grid.get(s).copied())
+                .collect();
             let max_col = source_positions.iter().map(|(c, _)| *c).max().unwrap_or(0);
             let target_row = source_positions[0].1;
             let mut col = max_col + 1;
@@ -524,7 +532,10 @@ fn shift_and_convert_to_pixels(
     for node in &graph.nodes {
         let mut new_meta = node.meta.clone();
         if let Some(&(c, r)) = shifted.get(&node.id) {
-            let (w, h) = sizes.get(&node.id).copied().unwrap_or((MIN_WIDTH, MIN_HEIGHT));
+            let (w, h) = sizes
+                .get(&node.id)
+                .copied()
+                .unwrap_or((MIN_WIDTH, MIN_HEIGHT));
             let px = *col_x.get(&c).unwrap_or(&100.0);
             let py = 100.0 + r as f64 * (MIN_HEIGHT + V_SPACING);
             new_meta.insert(

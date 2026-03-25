@@ -34,11 +34,19 @@ fn lit(value: &Value) -> Literal {
         Value::List(l) => (Value::List(l.clone()), "list"),
         Value::Dict(d) => (Value::Dict(d.clone()), "dict"),
     };
-    Literal { value: v, literal_type: t.to_string(), line: None }
+    Literal {
+        value: v,
+        literal_type: t.to_string(),
+        line: None,
+    }
 }
 
 fn lit_zero() -> Literal {
-    Literal { value: Value::Int(0), literal_type: "int".to_string(), line: None }
+    Literal {
+        value: Value::Int(0),
+        literal_type: "int".to_string(),
+        line: None,
+    }
 }
 
 fn meta_for(node: &KGNode) -> MetaAnnotation {
@@ -97,8 +105,11 @@ struct KirGraphCompiler {
 
 impl KirGraphCompiler {
     fn new(graph: &KirGraph) -> Self {
-        let nodes: HashMap<String, KGNode> =
-            graph.nodes.iter().map(|n| (n.id.clone(), n.clone())).collect();
+        let nodes: HashMap<String, KGNode> = graph
+            .nodes
+            .iter()
+            .map(|n| (n.id.clone(), n.clone()))
+            .collect();
 
         let mut ctrl_out: CtrlOut = HashMap::new();
         let mut ctrl_in: CtrlIn = HashMap::new();
@@ -108,14 +119,16 @@ impl KirGraphCompiler {
 
         for edge in &graph.edges {
             if edge.r#type == "control" {
-                ctrl_out
-                    .entry(edge.from_node.clone())
-                    .or_default()
-                    .push((edge.from_port.clone(), edge.to_node.clone(), edge.to_port.clone()));
-                ctrl_in
-                    .entry(edge.to_node.clone())
-                    .or_default()
-                    .push((edge.from_node.clone(), edge.from_port.clone(), edge.to_port.clone()));
+                ctrl_out.entry(edge.from_node.clone()).or_default().push((
+                    edge.from_port.clone(),
+                    edge.to_node.clone(),
+                    edge.to_port.clone(),
+                ));
+                ctrl_in.entry(edge.to_node.clone()).or_default().push((
+                    edge.from_node.clone(),
+                    edge.from_port.clone(),
+                    edge.to_port.clone(),
+                ));
                 ctrl_connected.insert(edge.from_node.clone());
                 ctrl_connected.insert(edge.to_node.clone());
                 connected_ctrl_in_ports
@@ -123,10 +136,10 @@ impl KirGraphCompiler {
                     .or_default()
                     .insert(edge.to_port.clone());
             } else {
-                data_in
-                    .entry(edge.to_node.clone())
-                    .or_default()
-                    .insert(edge.to_port.clone(), (edge.from_node.clone(), edge.from_port.clone()));
+                data_in.entry(edge.to_node.clone()).or_default().insert(
+                    edge.to_port.clone(),
+                    (edge.from_node.clone(), edge.from_port.clone()),
+                );
             }
         }
 
@@ -175,9 +188,7 @@ impl KirGraphCompiler {
             let conn: HashMap<String, (String, String)> =
                 self.data_in.get(nid).cloned().unwrap_or_default();
             for (in_port, (src_node, _src_port)) in &conn {
-                if !self.loop_body_nodes.contains(src_node)
-                    && !merge_ids_set.contains(src_node)
-                {
+                if !self.loop_body_nodes.contains(src_node) && !merge_ids_set.contains(src_node) {
                     // Input crosses loop boundary from initial value
                     let in_idx = node.data_inputs.iter().position(|p| &p.port == in_port);
                     if let Some(idx) = in_idx {
@@ -224,7 +235,11 @@ impl KirGraphCompiler {
 
         match node.r#type.as_str() {
             "value" => {
-                let val = node.properties.get("value").cloned().unwrap_or(Value::Int(0));
+                let val = node
+                    .properties
+                    .get("value")
+                    .cloned()
+                    .unwrap_or(Value::Int(0));
                 let out = node
                     .data_outputs
                     .first()
@@ -301,7 +316,10 @@ impl KirGraphCompiler {
         if df_stmts.is_empty() {
             return Vec::new();
         }
-        vec![Statement::DataflowBlock(DataflowBlock { body: df_stmts, line: None })]
+        vec![Statement::DataflowBlock(DataflowBlock {
+            body: df_stmts,
+            line: None,
+        })]
     }
 
     fn all_data_sources_emitted(&self, node_id: &str, extra: &HashSet<String>) -> bool {
@@ -319,7 +337,11 @@ impl KirGraphCompiler {
     fn emit_node_raw(&self, node: &KGNode) -> Vec<Statement> {
         let m = meta_for(node);
         if node.r#type == "value" {
-            let val = node.properties.get("value").cloned().unwrap_or(Value::Int(0));
+            let val = node
+                .properties
+                .get("value")
+                .cloned()
+                .unwrap_or(Value::Int(0));
             let out = node
                 .data_outputs
                 .first()
@@ -355,8 +377,16 @@ impl KirGraphCompiler {
 
     fn emit_branch(&mut self, node: &KGNode, m: MetaAnnotation) -> Vec<Statement> {
         let cond = self.input_expr(node, "condition");
-        let tp = node.ctrl_outputs.first().cloned().unwrap_or_else(|| "true".to_string());
-        let fp = node.ctrl_outputs.get(1).cloned().unwrap_or_else(|| "false".to_string());
+        let tp = node
+            .ctrl_outputs
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "true".to_string());
+        let fp = node
+            .ctrl_outputs
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| "false".to_string());
         let tl = format!("{}_{}", node.id, tp);
         let fl = format!("{}_{}", node.id, fp);
         let mut stmts: Vec<Statement> = vec![Statement::Branch(Branch {
@@ -369,7 +399,11 @@ impl KirGraphCompiler {
         let node_id = node.id.clone();
         for (port, label) in [(&tp.clone(), &tl.clone()), (&fp.clone(), &fl.clone())] {
             let body = self.chain_from_port(&node_id, port);
-            stmts.push(Statement::Namespace(Namespace { name: label.clone(), body, line: None }));
+            stmts.push(Statement::Namespace(Namespace {
+                name: label.clone(),
+                body,
+                line: None,
+            }));
         }
         stmts
     }
@@ -394,9 +428,10 @@ impl KirGraphCompiler {
 
         for port in node.ctrl_outputs.clone() {
             let label = format!("{}_{}", node.id, port);
-            let is_default = cp.get(&port).map_or(false, |v| {
-                matches!(v, Value::Str(s) if s == "_default_")
-            }) || port == "default";
+            let is_default = cp
+                .get(&port)
+                .map_or(false, |v| matches!(v, Value::Str(s) if s == "_default_"))
+                || port == "default";
             if is_default {
                 default_label = Some(label.clone());
             } else if let Some(case_val) = cp.get(&port) {
@@ -417,7 +452,11 @@ impl KirGraphCompiler {
         let node_id = node.id.clone();
         for (port, label) in labels {
             let body = self.chain_from_port(&node_id, &port);
-            stmts.push(Statement::Namespace(Namespace { name: label, body, line: None }));
+            stmts.push(Statement::Namespace(Namespace {
+                name: label,
+                body,
+                line: None,
+            }));
         }
         stmts
     }
@@ -437,7 +476,11 @@ impl KirGraphCompiler {
         let node_id = node.id.clone();
         for (port, label) in ports.iter().zip(labels.iter()) {
             let body = self.chain_from_port(&node_id, port);
-            stmts.push(Statement::Namespace(Namespace { name: label.clone(), body, line: None }));
+            stmts.push(Statement::Namespace(Namespace {
+                name: label.clone(),
+                body,
+                line: None,
+            }));
         }
         stmts
     }
@@ -570,7 +613,9 @@ impl KirGraphCompiler {
 
     fn chain_from_port(&mut self, node_id: &str, port: &str) -> Vec<Statement> {
         let target = self.ctrl_out.get(node_id).and_then(|outs| {
-            outs.iter().find(|(fp, _, _)| fp == port).map(|(_, to, _)| to.clone())
+            outs.iter()
+                .find(|(fp, _, _)| fp == port)
+                .map(|(_, to, _)| to.clone())
         });
         match target {
             Some(to_id) => self.walk(&to_id),
@@ -680,9 +725,14 @@ impl KirGraphCompiler {
         let mut body: Vec<Statement> = Vec::new();
 
         if !independent.is_empty() {
-            let df_body: Vec<Statement> =
-                independent.iter().flat_map(|n| self.emit_node_raw(n)).collect();
-            body.push(Statement::DataflowBlock(DataflowBlock { body: df_body, line: None }));
+            let df_body: Vec<Statement> = independent
+                .iter()
+                .flat_map(|n| self.emit_node_raw(n))
+                .collect();
+            body.push(Statement::DataflowBlock(DataflowBlock {
+                body: df_body,
+                line: None,
+            }));
             for n in &independent {
                 self.visited.insert(n.id.clone());
             }
@@ -692,7 +742,11 @@ impl KirGraphCompiler {
             body.extend(self.emit_ctrl(&ctrl_nodes.clone()));
         }
 
-        Program { body, mode: None, line: None }
+        Program {
+            body,
+            mode: None,
+            line: None,
+        }
     }
 }
 
@@ -763,8 +817,14 @@ mod tests {
             id: id.to_string(),
             r#type: type_.to_string(),
             name: type_.to_string(),
-            data_inputs: inputs.iter().map(|p| KGPort::with_type(*p, "any")).collect(),
-            data_outputs: outputs.iter().map(|p| KGPort::with_type(*p, "any")).collect(),
+            data_inputs: inputs
+                .iter()
+                .map(|p| KGPort::with_type(*p, "any"))
+                .collect(),
+            data_outputs: outputs
+                .iter()
+                .map(|p| KGPort::with_type(*p, "any"))
+                .collect(),
             ctrl_inputs: vec![],
             ctrl_outputs: vec![],
             properties: HashMap::new(),
@@ -780,8 +840,10 @@ mod tests {
         let mut g = KirGraph::default();
         g.nodes.push(value_node("v1", 10));
         g.nodes.push(value_node("v2", 20));
-        g.nodes.push(func_node("add1", "add", vec!["a", "b"], vec!["result"]));
-        g.nodes.push(func_node("print1", "print", vec!["x"], vec![]));
+        g.nodes
+            .push(func_node("add1", "add", vec!["a", "b"], vec!["result"]));
+        g.nodes
+            .push(func_node("print1", "print", vec!["x"], vec![]));
         g.edges.push(KGEdge::data("v1", "value", "add1", "a"));
         g.edges.push(KGEdge::data("v2", "value", "add1", "b"));
         g.edges.push(KGEdge::data("add1", "result", "print1", "x"));
@@ -789,7 +851,10 @@ mod tests {
         let prog = compile(&g);
         let kir = serializer::write(&prog);
 
-        assert!(kir.contains("@dataflow:"), "expected @dataflow block, got:\n{kir}");
+        assert!(
+            kir.contains("@dataflow:"),
+            "expected @dataflow block, got:\n{kir}"
+        );
         assert!(kir.contains("v1_value = 10"), "got:\n{kir}");
         assert!(kir.contains("v2_value = 20"), "got:\n{kir}");
         assert!(kir.contains("add(add1_result)"), "got:\n{kir}");
@@ -837,7 +902,10 @@ mod tests {
         let prog = compile(&g);
         let kir = serializer::write(&prog);
 
-        assert!(kir.contains("do_work"), "expected do_work call, got:\n{kir}");
+        assert!(
+            kir.contains("do_work"),
+            "expected do_work call, got:\n{kir}"
+        );
     }
 
     /// Branch pattern: branch → true/false arms
@@ -877,18 +945,31 @@ mod tests {
             meta: HashMap::new(),
         });
 
-        g.edges.push(KGEdge::data("cond_val", "value", "br", "condition"));
+        g.edges
+            .push(KGEdge::data("cond_val", "value", "br", "condition"));
         g.edges.push(KGEdge::control("br", "true", "true_fn", "in"));
-        g.edges.push(KGEdge::control("br", "false", "false_fn", "in"));
-        g.edges.push(KGEdge::control("true_fn", "out", "merge1", "a"));
-        g.edges.push(KGEdge::control("false_fn", "out", "merge1", "b"));
+        g.edges
+            .push(KGEdge::control("br", "false", "false_fn", "in"));
+        g.edges
+            .push(KGEdge::control("true_fn", "out", "merge1", "a"));
+        g.edges
+            .push(KGEdge::control("false_fn", "out", "merge1", "b"));
 
         let prog = compile(&g);
         let kir = serializer::write(&prog);
 
-        assert!(kir.contains("branch("), "expected branch statement, got:\n{kir}");
-        assert!(kir.contains("br_true"), "expected br_true label, got:\n{kir}");
-        assert!(kir.contains("br_false"), "expected br_false label, got:\n{kir}");
+        assert!(
+            kir.contains("branch("),
+            "expected branch statement, got:\n{kir}"
+        );
+        assert!(
+            kir.contains("br_true"),
+            "expected br_true label, got:\n{kir}"
+        );
+        assert!(
+            kir.contains("br_false"),
+            "expected br_false label, got:\n{kir}"
+        );
     }
 
     /// Loop pattern: merge → counter → back-edge jump
@@ -919,8 +1000,10 @@ mod tests {
         g.nodes.push(counter);
 
         // ctrl: merge → counter → back to merge
-        g.edges.push(KGEdge::control("loop_merge", "out", "counter", "in"));
-        g.edges.push(KGEdge::control("counter", "out", "loop_merge", "back"));
+        g.edges
+            .push(KGEdge::control("loop_merge", "out", "counter", "in"));
+        g.edges
+            .push(KGEdge::control("counter", "out", "loop_merge", "back"));
 
         // data: initial value → counter's input on first iteration
         g.edges.push(KGEdge::data("init", "value", "counter", "x"));
@@ -928,8 +1011,14 @@ mod tests {
         let prog = compile(&g);
         let kir = serializer::write(&prog);
 
-        assert!(kir.contains("ns_loop_merge:"), "expected loop namespace, got:\n{kir}");
-        assert!(kir.contains("jump(`ns_loop_merge`)"), "expected jump, got:\n{kir}");
+        assert!(
+            kir.contains("ns_loop_merge:"),
+            "expected loop namespace, got:\n{kir}"
+        );
+        assert!(
+            kir.contains("jump(`ns_loop_merge`)"),
+            "expected jump, got:\n{kir}"
+        );
         // Feedback init: counter_y = init_value
         assert!(
             kir.contains("counter_y = init_value"),
@@ -966,7 +1055,10 @@ mod tests {
         let prog = compile(&g);
         let kir = serializer::write(&prog);
 
-        assert!(kir.contains("parallel("), "expected parallel statement, got:\n{kir}");
+        assert!(
+            kir.contains("parallel("),
+            "expected parallel statement, got:\n{kir}"
+        );
         assert!(kir.contains("par_a"), "expected par_a label, got:\n{kir}");
         assert!(kir.contains("par_b"), "expected par_b label, got:\n{kir}");
     }
@@ -984,6 +1076,9 @@ mod tests {
 
         let kir1 = serializer::write(&compile(&g));
         let kir2 = serializer::write(&compile(&g2));
-        assert_eq!(kir1, kir2, "compilation must be stable after JSON roundtrip");
+        assert_eq!(
+            kir1, kir2,
+            "compilation must be stable after JSON roundtrip"
+        );
     }
 }

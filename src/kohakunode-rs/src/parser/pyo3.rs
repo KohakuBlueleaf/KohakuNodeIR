@@ -12,8 +12,8 @@ use pyo3::prelude::*;
 /// Raises `ValueError` if parsing fails.
 #[pyfunction]
 pub fn parse_kir(text: &str) -> PyResult<String> {
-    let program = super::parse(text)
-        .map_err(|e| PyValueError::new_err(format!("KIR parse error: {e}")))?;
+    let program =
+        super::parse(text).map_err(|e| PyValueError::new_err(format!("KIR parse error: {e}")))?;
     let json = serde_json::to_string(&program)
         .map_err(|e| PyValueError::new_err(format!("JSON serialization error: {e}")))?;
     Ok(json)

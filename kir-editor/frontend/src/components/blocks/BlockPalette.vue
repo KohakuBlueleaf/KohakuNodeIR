@@ -2,24 +2,33 @@
 // BlockPalette.vue — sidebar listing all available block types grouped by category.
 // Drag a palette item onto the BlockCanvas to create a new node.
 
-import { computed, ref } from 'vue';
-import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
+import { computed, ref } from "vue";
+import { useNodeRegistryStore } from "../../stores/nodeRegistry.js";
 
 // ── Stores ─────────────────────────────────────────────────────────────────────
 const registry = useNodeRegistryStore();
 
 // ── Category ordering ─────────────────────────────────────────────────────────
-const CATEGORY_ORDER = ['Control Flow', 'Math', 'Comparison', 'String', 'Display', 'File', 'Data', 'Convert'];
+const CATEGORY_ORDER = [
+  "Control Flow",
+  "Math",
+  "Comparison",
+  "String",
+  "Display",
+  "File",
+  "Data",
+  "Convert",
+];
 
 const CATEGORY_COLORS = {
-  'Control Flow': '#fab387',
-  'Math':         '#89b4fa',
-  'Comparison':   '#f9e2af',
-  'String':       '#a6e3a1',
-  'Display':      '#89dceb',
-  'File':         '#cba6f7',
-  'Data':         '#a6e3a1',
-  'Convert':      '#74c7ec',
+  "Control Flow": "#fab387",
+  Math: "#89b4fa",
+  Comparison: "#f9e2af",
+  String: "#a6e3a1",
+  Display: "#89dceb",
+  File: "#cba6f7",
+  Data: "#a6e3a1",
+  Convert: "#74c7ec",
 };
 
 // ── Grouped definitions ───────────────────────────────────────────────────────
@@ -36,7 +45,7 @@ const grouped = computed(() => {
   });
   return sorted.map((cat) => ({
     name: cat,
-    color: CATEGORY_COLORS[cat] ?? '#a6adc8',
+    color: CATEGORY_COLORS[cat] ?? "#a6adc8",
     defs: registry.getNodesByCategory(cat),
   }));
 });
@@ -57,8 +66,8 @@ function toggleCategory(name) {
 // so it can create the node on drop.
 
 function onDragStart(e, typeName) {
-  e.dataTransfer.effectAllowed = 'copy';
-  e.dataTransfer.setData('application/x-block-type', typeName);
+  e.dataTransfer.effectAllowed = "copy";
+  e.dataTransfer.setData("application/x-block-type", typeName);
 }
 </script>
 
@@ -66,18 +75,18 @@ function onDragStart(e, typeName) {
   <aside class="block-palette">
     <div class="palette-title">Blocks</div>
 
-    <div
-      v-for="group in grouped"
-      :key="group.name"
-      class="palette-category"
-    >
+    <div v-for="group in grouped" :key="group.name" class="palette-category">
       <!-- Category header (collapsible) -->
       <button
         class="palette-cat-header"
         :style="{ '--cat-color': group.color }"
         @click="toggleCategory(group.name)"
       >
-        <span class="palette-cat-chevron" :class="{ 'is-collapsed': collapsed.has(group.name) }">&#x25BC;</span>
+        <span
+          class="palette-cat-chevron"
+          :class="{ 'is-collapsed': collapsed.has(group.name) }"
+          >&#x25BC;</span
+        >
         <span class="palette-cat-name">{{ group.name }}</span>
       </button>
 
@@ -193,7 +202,9 @@ function onDragStart(e, typeName) {
   cursor: grab;
   font-size: 11px;
   color: #cdd6f4;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
 }
 
 .palette-item:hover {
@@ -227,7 +238,7 @@ function onDragStart(e, typeName) {
 
 .palette-item-type {
   font-size: 9px;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   color: #585b70;
   white-space: nowrap;
   overflow: hidden;

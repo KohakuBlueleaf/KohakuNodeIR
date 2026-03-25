@@ -8,7 +8,7 @@
  * pipeline that goes through the .kirgraph intermediate format.
  */
 
-import { graphToKirgraph } from './kirgraph.js'
+import { graphToKirgraph } from "./kirgraph.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -19,7 +19,7 @@ import { graphToKirgraph } from './kirgraph.js'
  * Strips the 'node-' prefix and replaces non-alphanumeric chars with '_'.
  */
 function shortId(nodeId) {
-  return nodeId.replace(/^node-/, '').replace(/[^a-zA-Z0-9_]/g, '_')
+  return nodeId.replace(/^node-/, "").replace(/[^a-zA-Z0-9_]/g, "_");
 }
 
 /**
@@ -27,8 +27,8 @@ function shortId(nodeId) {
  * For value nodes, use the node name as the variable name.
  */
 function varName(nodeId, portName) {
-  const clean = portName.replace(/[^a-zA-Z0-9_]/g, '_')
-  return `v_${shortId(nodeId)}_${clean}`
+  const clean = portName.replace(/[^a-zA-Z0-9_]/g, "_");
+  return `v_${shortId(nodeId)}_${clean}`;
 }
 
 /**
@@ -39,17 +39,22 @@ function varName(nodeId, portName) {
  * when multiple nodes have the same port name.
  */
 function outputVarName(node, portName) {
-  if (node.type === 'value' && node.name && node.name !== 'Node' && node.name !== 'value') {
-    return sanitizeIdent(node.name)
+  if (
+    node.type === "value" &&
+    node.name &&
+    node.name !== "Node" &&
+    node.name !== "value"
+  ) {
+    return sanitizeIdent(node.name);
   }
-  return varName(node.id, portName)
+  return varName(node.id, portName);
 }
 
 /**
  * Sanitize an identifier to be valid in KIR (letters, digits, underscores, dots).
  */
 function sanitizeIdent(name) {
-  return name.replace(/[^a-zA-Z0-9_.]/g, '_').replace(/^(\d)/, '_$1')
+  return name.replace(/[^a-zA-Z0-9_.]/g, "_").replace(/^(\d)/, "_$1");
 }
 
 /**
@@ -58,39 +63,39 @@ function sanitizeIdent(name) {
  * null/undefined become None, numbers stay as-is.
  */
 function formatLiteral(value, dataType) {
-  if (value === null || value === undefined) return 'None'
-  if (typeof value === 'boolean') return value ? 'True' : 'False'
-  if (typeof value === 'string') {
+  if (value === null || value === undefined) return "None";
+  if (typeof value === "boolean") return value ? "True" : "False";
+  if (typeof value === "string") {
     // Use double quotes, escaping internal double quotes
-    const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-    return `"${escaped}"`
+    const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    return `"${escaped}"`;
   }
-  if (typeof value === 'number') return String(value)
+  if (typeof value === "number") return String(value);
   // Arrays and objects: JSON-like but with Python syntax
   if (Array.isArray(value)) {
-    return '[' + value.map(v => formatLiteral(v)).join(', ') + ']'
+    return "[" + value.map((v) => formatLiteral(v)).join(", ") + "]";
   }
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     const pairs = Object.entries(value).map(
-      ([k, v]) => `${formatLiteral(k)}: ${formatLiteral(v)}`
-    )
-    return '{' + pairs.join(', ') + '}'
+      ([k, v]) => `${formatLiteral(k)}: ${formatLiteral(v)}`,
+    );
+    return "{" + pairs.join(", ") + "}";
   }
-  return String(value)
+  return String(value);
 }
 
 /**
  * Sanitize a namespace label — must be a valid KIR identifier.
  */
 function nsLabel(base) {
-  return sanitizeIdent(base).toLowerCase()
+  return sanitizeIdent(base).toLowerCase();
 }
 
 /**
  * Return a stable loop/merge label for a merge node.
  */
 function mergeLabel(node) {
-  return nsLabel(`loop_${shortId(node.id)}`)
+  return nsLabel(`loop_${shortId(node.id)}`);
 }
 
 /**
@@ -102,23 +107,23 @@ function mergeLabel(node) {
  * output reaches back to the merge, the merge is a loop header.
  */
 function isLoopMerge(mergeNode, idx) {
-  const reachable = new Set()
-  const stack = [mergeNode.id]
+  const reachable = new Set();
+  const stack = [mergeNode.id];
   while (stack.length > 0) {
-    const id = stack.pop()
-    if (reachable.has(id)) continue
-    reachable.add(id)
-    const outConns = idx.ctrlOutByNode.get(id) ?? []
+    const id = stack.pop();
+    if (reachable.has(id)) continue;
+    reachable.add(id);
+    const outConns = idx.ctrlOutByNode.get(id) ?? [];
     for (const conn of outConns) {
-      if (!reachable.has(conn.toNodeId)) stack.push(conn.toNodeId)
+      if (!reachable.has(conn.toNodeId)) stack.push(conn.toNodeId);
     }
   }
   // Check if any ctrl-input of the merge comes from a reachable node
-  const inConns = idx.ctrlInByNode.get(mergeNode.id) ?? []
+  const inConns = idx.ctrlInByNode.get(mergeNode.id) ?? [];
   for (const conn of inConns) {
-    if (reachable.has(conn.fromNodeId)) return true
+    if (reachable.has(conn.fromNodeId)) return true;
   }
-  return false
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,49 +134,67 @@ function isLoopMerge(mergeNode, idx) {
  * Build lookup structures from the flat node and connection lists.
  */
 function buildIndices(nodeList, connectionList) {
-  const nodeMap = new Map()          // nodeId -> node
-  for (const n of nodeList) nodeMap.set(n.id, n)
+  const nodeMap = new Map(); // nodeId -> node
+  for (const n of nodeList) nodeMap.set(n.id, n);
 
   // Control connections: from (nodeId, portId) -> to (nodeId, portId)
-  const ctrlOutEdges = new Map()     // "fromNodeId:fromPortId" -> { toNodeId, toPortId, conn }
-  const ctrlInEdges = new Map()      // "toNodeId:toPortId" -> { fromNodeId, fromPortId, conn }
-  const ctrlInByNode = new Map()     // nodeId -> [conn, ...]
-  const ctrlOutByNode = new Map()    // nodeId -> [conn, ...]
+  const ctrlOutEdges = new Map(); // "fromNodeId:fromPortId" -> { toNodeId, toPortId, conn }
+  const ctrlInEdges = new Map(); // "toNodeId:toPortId" -> { fromNodeId, fromPortId, conn }
+  const ctrlInByNode = new Map(); // nodeId -> [conn, ...]
+  const ctrlOutByNode = new Map(); // nodeId -> [conn, ...]
 
   // Data connections
-  const dataInEdges = new Map()      // "toNodeId:toPortId" -> { fromNodeId, fromPortId, conn }
-  const dataOutEdges = new Map()     // "fromNodeId:fromPortId" -> [{ toNodeId, toPortId, conn }, ...]
+  const dataInEdges = new Map(); // "toNodeId:toPortId" -> { fromNodeId, fromPortId, conn }
+  const dataOutEdges = new Map(); // "fromNodeId:fromPortId" -> [{ toNodeId, toPortId, conn }, ...]
 
   for (const conn of connectionList) {
-    if (conn.portType === 'control') {
-      const key = `${conn.fromNodeId}:${conn.fromPortId}`
-      ctrlOutEdges.set(key, { toNodeId: conn.toNodeId, toPortId: conn.toPortId, conn })
+    if (conn.portType === "control") {
+      const key = `${conn.fromNodeId}:${conn.fromPortId}`;
+      ctrlOutEdges.set(key, {
+        toNodeId: conn.toNodeId,
+        toPortId: conn.toPortId,
+        conn,
+      });
 
-      const inKey = `${conn.toNodeId}:${conn.toPortId}`
-      ctrlInEdges.set(inKey, { fromNodeId: conn.fromNodeId, fromPortId: conn.fromPortId, conn })
+      const inKey = `${conn.toNodeId}:${conn.toPortId}`;
+      ctrlInEdges.set(inKey, {
+        fromNodeId: conn.fromNodeId,
+        fromPortId: conn.fromPortId,
+        conn,
+      });
 
-      if (!ctrlInByNode.has(conn.toNodeId)) ctrlInByNode.set(conn.toNodeId, [])
-      ctrlInByNode.get(conn.toNodeId).push(conn)
+      if (!ctrlInByNode.has(conn.toNodeId)) ctrlInByNode.set(conn.toNodeId, []);
+      ctrlInByNode.get(conn.toNodeId).push(conn);
 
-      if (!ctrlOutByNode.has(conn.fromNodeId)) ctrlOutByNode.set(conn.fromNodeId, [])
-      ctrlOutByNode.get(conn.fromNodeId).push(conn)
+      if (!ctrlOutByNode.has(conn.fromNodeId))
+        ctrlOutByNode.set(conn.fromNodeId, []);
+      ctrlOutByNode.get(conn.fromNodeId).push(conn);
     } else {
       // data
-      const inKey = `${conn.toNodeId}:${conn.toPortId}`
-      dataInEdges.set(inKey, { fromNodeId: conn.fromNodeId, fromPortId: conn.fromPortId, conn })
+      const inKey = `${conn.toNodeId}:${conn.toPortId}`;
+      dataInEdges.set(inKey, {
+        fromNodeId: conn.fromNodeId,
+        fromPortId: conn.fromPortId,
+        conn,
+      });
 
-      const outKey = `${conn.fromNodeId}:${conn.fromPortId}`
-      if (!dataOutEdges.has(outKey)) dataOutEdges.set(outKey, [])
-      dataOutEdges.get(outKey).push({ toNodeId: conn.toNodeId, toPortId: conn.toPortId, conn })
+      const outKey = `${conn.fromNodeId}:${conn.fromPortId}`;
+      if (!dataOutEdges.has(outKey)) dataOutEdges.set(outKey, []);
+      dataOutEdges
+        .get(outKey)
+        .push({ toNodeId: conn.toNodeId, toPortId: conn.toPortId, conn });
     }
   }
 
   return {
     nodeMap,
-    ctrlOutEdges, ctrlInEdges,
-    ctrlInByNode, ctrlOutByNode,
-    dataInEdges, dataOutEdges,
-  }
+    ctrlOutEdges,
+    ctrlInEdges,
+    ctrlInByNode,
+    ctrlOutByNode,
+    dataInEdges,
+    dataOutEdges,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -184,25 +207,27 @@ function buildIndices(nodeList, connectionList) {
  * If not connected: return the formatted default value or throw.
  */
 function resolveInput(node, inputPort, idx) {
-  const key = `${node.id}:${inputPort.id}`
-  const edge = idx.dataInEdges.get(key)
+  const key = `${node.id}:${inputPort.id}`;
+  const edge = idx.dataInEdges.get(key);
 
   if (edge) {
     // Find the source port name
-    const srcNode = idx.nodeMap.get(edge.fromNodeId)
-    if (!srcNode) return 'None'
-    const srcPort = srcNode.dataPorts.outputs.find(p => p.id === edge.fromPortId)
-    if (!srcPort) return 'None'
-    return outputVarName(srcNode, srcPort.name)
+    const srcNode = idx.nodeMap.get(edge.fromNodeId);
+    if (!srcNode) return "None";
+    const srcPort = srcNode.dataPorts.outputs.find(
+      (p) => p.id === edge.fromPortId,
+    );
+    if (!srcPort) return "None";
+    return outputVarName(srcNode, srcPort.name);
   }
 
   // Not connected — use default value (note: false and 0 are valid defaults)
   if (inputPort.defaultValue !== undefined && inputPort.defaultValue !== null) {
-    return formatLiteral(inputPort.defaultValue, inputPort.dataType)
+    return formatLiteral(inputPort.defaultValue, inputPort.dataType);
   }
 
   // No connection and no default
-  return 'None'
+  return "None";
 }
 
 // ---------------------------------------------------------------------------
@@ -210,8 +235,8 @@ function resolveInput(node, inputPort, idx) {
 // ---------------------------------------------------------------------------
 
 function emitMeta(node, indent) {
-  const pad = '    '.repeat(indent)
-  return `${pad}@meta node_id="${node.id}" pos=(${Math.round(node.x)}, ${Math.round(node.y)})`
+  const pad = "    ".repeat(indent);
+  return `${pad}@meta node_id="${node.id}" pos=(${Math.round(node.x)}, ${Math.round(node.y)})`;
 }
 
 // ---------------------------------------------------------------------------
@@ -228,83 +253,106 @@ function emitMeta(node, indent) {
  *   When provided, branch/switch/parallel arm nodes are added to the set so the
  *   outer compiler loop knows not to double-emit them.
  */
-function emitNode(node, idx, indent, enclosingLoopLabel = null, emitted = null) {
-  const pad = '    '.repeat(indent)
-  const lines = []
+function emitNode(
+  node,
+  idx,
+  indent,
+  enclosingLoopLabel = null,
+  emitted = null,
+) {
+  const pad = "    ".repeat(indent);
+  const lines = [];
 
   // Always emit metadata
-  lines.push(emitMeta(node, indent))
+  lines.push(emitMeta(node, indent));
 
   switch (node.type) {
-    case 'value':
-      lines.push(...emitValueNode(node, idx, pad))
-      break
-    case 'branch':
-      lines.push(...emitBranchNode(node, idx, pad, indent, enclosingLoopLabel, emitted))
-      break
-    case 'switch':
-      lines.push(...emitSwitchNode(node, idx, pad, indent, enclosingLoopLabel, emitted))
-      break
-    case 'merge':
+    case "value":
+      lines.push(...emitValueNode(node, idx, pad));
+      break;
+    case "branch":
+      lines.push(
+        ...emitBranchNode(node, idx, pad, indent, enclosingLoopLabel, emitted),
+      );
+      break;
+    case "switch":
+      lines.push(
+        ...emitSwitchNode(node, idx, pad, indent, enclosingLoopLabel, emitted),
+      );
+      break;
+    case "merge":
       // Merge is handled structurally — it's a namespace label / convergence point.
       // When encountered in a walk, we just emit a comment.
-      lines.push(`${pad}# merge point`)
-      break
-    case 'parallel':
-      lines.push(...emitParallelNode(node, idx, pad, indent, enclosingLoopLabel, emitted))
-      break
+      lines.push(`${pad}# merge point`);
+      break;
+    case "parallel":
+      lines.push(
+        ...emitParallelNode(
+          node,
+          idx,
+          pad,
+          indent,
+          enclosingLoopLabel,
+          emitted,
+        ),
+      );
+      break;
     default:
       // Generic function call: math, comparison, string, file, display, user-defined
-      lines.push(...emitFunctionNode(node, idx, pad))
-      break
+      lines.push(...emitFunctionNode(node, idx, pad));
+      break;
   }
 
-  return lines
+  return lines;
 }
 
 /**
  * Value node: `varname = literal`
  */
 function emitValueNode(node, idx, pad) {
-  const outPort = node.dataPorts.outputs[0]
-  if (!outPort) return [`${pad}# value node with no output port`]
+  const outPort = node.dataPorts.outputs[0];
+  if (!outPort) return [`${pad}# value node with no output port`];
 
-  const vn = outputVarName(node, outPort.name)
+  const vn = outputVarName(node, outPort.name);
 
   // Determine the value — from properties or a sensible default
-  let val = 'None'
+  let val = "None";
   if (node.properties?.value !== undefined) {
-    val = formatLiteral(node.properties.value, node.properties?.valueType)
-  } else if (node.properties?.valueType === 'int') {
-    val = '0'
-  } else if (node.properties?.valueType === 'float') {
-    val = '0.0'
-  } else if (node.properties?.valueType === 'str') {
-    val = '""'
-  } else if (node.properties?.valueType === 'bool') {
-    val = 'False'
+    val = formatLiteral(node.properties.value, node.properties?.valueType);
+  } else if (node.properties?.valueType === "int") {
+    val = "0";
+  } else if (node.properties?.valueType === "float") {
+    val = "0.0";
+  } else if (node.properties?.valueType === "str") {
+    val = '""';
+  } else if (node.properties?.valueType === "bool") {
+    val = "False";
   }
 
-  return [`${pad}${vn} = ${val}`]
+  return [`${pad}${vn} = ${val}`];
 }
 
 /**
  * Generic function call: `(inputs)func_name(outputs)`
  */
 function emitFunctionNode(node, idx, pad) {
-  const funcName = sanitizeIdent(node.type)
+  const funcName = sanitizeIdent(node.type);
 
   // Resolve inputs
-  const inputArgs = node.dataPorts.inputs.map(port => resolveInput(node, port, idx))
+  const inputArgs = node.dataPorts.inputs.map((port) =>
+    resolveInput(node, port, idx),
+  );
 
   // Build output variable names
-  const outputVars = node.dataPorts.outputs.map(port => outputVarName(node, port.name))
+  const outputVars = node.dataPorts.outputs.map((port) =>
+    outputVarName(node, port.name),
+  );
 
   // If no outputs, use empty parens
-  const inputStr = inputArgs.join(', ')
-  const outputStr = outputVars.join(', ')
+  const inputStr = inputArgs.join(", ");
+  const outputStr = outputVars.join(", ");
 
-  return [`${pad}(${inputStr})${funcName}(${outputStr})`]
+  return [`${pad}(${inputStr})${funcName}(${outputStr})`];
 }
 
 /**
@@ -315,47 +363,69 @@ function emitFunctionNode(node, idx, pad) {
  *   if any.  When a branch arm has no ctrl connection and we are inside a loop,
  *   the arm is a "continue" arm and should emit `()jump(\`loop\`)`.
  */
-function emitBranchNode(node, idx, pad, indent, enclosingLoopLabel = null, emitted = null) {
-  const lines = []
+function emitBranchNode(
+  node,
+  idx,
+  pad,
+  indent,
+  enclosingLoopLabel = null,
+  emitted = null,
+) {
+  const lines = [];
 
   // Resolve the condition input
-  const condPort = node.dataPorts.inputs[0]
-  const condExpr = condPort ? resolveInput(node, condPort, idx) : 'False'
+  const condPort = node.dataPorts.inputs[0];
+  const condExpr = condPort ? resolveInput(node, condPort, idx) : "False";
 
   // Find the control output ports.  Use port names as namespace labels when they
   // are meaningful (e.g. "continue"/"done"), otherwise fall back to "true"/"false".
-  const outPorts = node.controlPorts.outputs
-  const port0 = outPorts[0]
-  const port1 = outPorts[1]
+  const outPorts = node.controlPorts.outputs;
+  const port0 = outPorts[0];
+  const port1 = outPorts[1];
 
   // Derive namespace names from the port names when they are user-visible labels
   // (not the generic "true"/"false" defaults), so round-tripped KIR looks clean.
   function branchNsName(port, fallback) {
-    if (!port) return nsLabel(fallback)
-    const n = port.name
-    if (n && n !== 'true' && n !== 'false' && !/^(out|in_\d+|_out_\d+)$/.test(n)) {
-      return nsLabel(n)
+    if (!port) return nsLabel(fallback);
+    const n = port.name;
+    if (
+      n &&
+      n !== "true" &&
+      n !== "false" &&
+      !/^(out|in_\d+|_out_\d+)$/.test(n)
+    ) {
+      return nsLabel(n);
     }
-    return nsLabel(fallback)
+    return nsLabel(fallback);
   }
 
-  const trueNs  = branchNsName(port0, `br_${shortId(node.id)}_true`)
-  const falseNs = branchNsName(port1, `br_${shortId(node.id)}_false`)
+  const trueNs = branchNsName(port0, `br_${shortId(node.id)}_true`);
+  const falseNs = branchNsName(port1, `br_${shortId(node.id)}_false`);
 
-  lines.push(`${pad}(${condExpr})branch(\`${trueNs}\`, \`${falseNs}\`)`)
+  lines.push(`${pad}(${condExpr})branch(\`${trueNs}\`, \`${falseNs}\`)`);
 
   // Keywords that suggest a branch arm exits a loop (done / break)
-  const LOOP_EXIT_NAMES = new Set(['done', 'exit', 'break', 'end', 'stop', 'false', 'finish'])
+  const LOOP_EXIT_NAMES = new Set([
+    "done",
+    "exit",
+    "break",
+    "end",
+    "stop",
+    "false",
+    "finish",
+  ]);
 
   // Helper: emit one branch arm, tracking emitted nodes in the optional set
   function emitArm(port, nsName) {
-    if (!port) return
-    const { chain, loopJumpLabel } = walkControlChain(node.id, port.id, idx)
-    lines.push(`${pad}${nsName}:`)
+    if (!port) return;
+    const { chain, loopJumpLabel } = walkControlChain(node.id, port.id, idx);
+    lines.push(`${pad}${nsName}:`);
     if (chain.length > 0) {
       for (const chainNode of chain) {
-        if (emitted) emitted.add(chainNode.id)
-        lines.push(...emitNode(chainNode, idx, indent + 1, enclosingLoopLabel, emitted))
+        if (emitted) emitted.add(chainNode.id);
+        lines.push(
+          ...emitNode(chainNode, idx, indent + 1, enclosingLoopLabel, emitted),
+        );
       }
     }
     // Determine if this arm should emit a jump back to an enclosing loop.
@@ -363,110 +433,141 @@ function emitBranchNode(node, idx, pad, indent, enclosingLoopLabel = null, emitt
     // Falling back to enclosingLoopLabel only when:
     //   - the chain is empty (no nodes in this arm), AND
     //   - the port name does NOT suggest "exit" semantics.
-    let jumpTarget = loopJumpLabel ?? null
+    let jumpTarget = loopJumpLabel ?? null;
     if (!jumpTarget && chain.length === 0 && enclosingLoopLabel) {
-      const portNameLower = (port.name ?? '').toLowerCase()
-      const looksLikeExit = LOOP_EXIT_NAMES.has(portNameLower) ||
-        portNameLower.includes('exit') || portNameLower.includes('done') ||
-        portNameLower.includes('end')  || portNameLower.includes('break')
+      const portNameLower = (port.name ?? "").toLowerCase();
+      const looksLikeExit =
+        LOOP_EXIT_NAMES.has(portNameLower) ||
+        portNameLower.includes("exit") ||
+        portNameLower.includes("done") ||
+        portNameLower.includes("end") ||
+        portNameLower.includes("break");
       if (!looksLikeExit) {
-        jumpTarget = enclosingLoopLabel
+        jumpTarget = enclosingLoopLabel;
       }
     }
     if (jumpTarget) {
-      lines.push(`${pad}    ()jump(\`${jumpTarget}\`)`)
+      lines.push(`${pad}    ()jump(\`${jumpTarget}\`)`);
     }
     // Empty arm with no jump — genuinely empty namespace (exit from loop)
   }
 
-  emitArm(port0, trueNs)
-  emitArm(port1, falseNs)
+  emitArm(port0, trueNs);
+  emitArm(port1, falseNs);
 
-  return lines
+  return lines;
 }
 
 /**
  * Switch node: `(value)switch(case0=>\`ns0\`, case1=>\`ns1\`, ...)`
  */
-function emitSwitchNode(node, idx, pad, indent, enclosingLoopLabel = null, emitted = null) {
-  const lines = []
+function emitSwitchNode(
+  node,
+  idx,
+  pad,
+  indent,
+  enclosingLoopLabel = null,
+  emitted = null,
+) {
+  const lines = [];
 
   // Resolve the value input
-  const valPort = node.dataPorts.inputs[0]
-  const valExpr = valPort ? resolveInput(node, valPort, idx) : 'None'
+  const valPort = node.dataPorts.inputs[0];
+  const valExpr = valPort ? resolveInput(node, valPort, idx) : "None";
 
   // Build case mappings from control output ports
-  const cases = []
+  const cases = [];
   for (const ctrlOut of node.controlPorts.outputs) {
-    const caseName = ctrlOut.name
-    const caseNs = nsLabel(`sw_${shortId(node.id)}_${sanitizeIdent(caseName)}`)
+    const caseName = ctrlOut.name;
+    const caseNs = nsLabel(`sw_${shortId(node.id)}_${sanitizeIdent(caseName)}`);
 
     // Extract case value from the port name (e.g. "case 0" -> 0, "case 1" -> 1)
-    const caseMatch = caseName.match(/(\d+)/)
-    const caseVal = caseMatch ? caseMatch[1] : `"${caseName}"`
+    const caseMatch = caseName.match(/(\d+)/);
+    const caseVal = caseMatch ? caseMatch[1] : `"${caseName}"`;
 
-    cases.push({ ctrlOut, caseVal, caseNs })
+    cases.push({ ctrlOut, caseVal, caseNs });
   }
 
   // Emit switch statement
-  const caseArgs = cases.map(c => `${c.caseVal}=>\`${c.caseNs}\``).join(', ')
-  lines.push(`${pad}(${valExpr})switch(${caseArgs})`)
+  const caseArgs = cases.map((c) => `${c.caseVal}=>\`${c.caseNs}\``).join(", ");
+  lines.push(`${pad}(${valExpr})switch(${caseArgs})`);
 
   // Emit each case namespace
   for (const c of cases) {
-    const { chain, loopJumpLabel } = walkControlChain(node.id, c.ctrlOut.id, idx)
-    lines.push(`${pad}${c.caseNs}:`)
+    const { chain, loopJumpLabel } = walkControlChain(
+      node.id,
+      c.ctrlOut.id,
+      idx,
+    );
+    lines.push(`${pad}${c.caseNs}:`);
     if (chain.length > 0) {
       for (const chainNode of chain) {
-        if (emitted) emitted.add(chainNode.id)
-        lines.push(...emitNode(chainNode, idx, indent + 1, enclosingLoopLabel, emitted))
+        if (emitted) emitted.add(chainNode.id);
+        lines.push(
+          ...emitNode(chainNode, idx, indent + 1, enclosingLoopLabel, emitted),
+        );
       }
     }
-    const jumpTarget = loopJumpLabel ?? (chain.length === 0 ? enclosingLoopLabel : null)
+    const jumpTarget =
+      loopJumpLabel ?? (chain.length === 0 ? enclosingLoopLabel : null);
     if (jumpTarget) {
-      lines.push(`${pad}    ()jump(\`${jumpTarget}\`)`)
+      lines.push(`${pad}    ()jump(\`${jumpTarget}\`)`);
     } else if (chain.length === 0) {
-      lines.push(`${pad}    # (empty case)`)
+      lines.push(`${pad}    # (empty case)`);
     }
   }
 
-  return lines
+  return lines;
 }
 
 /**
  * Parallel node: `()parallel(\`ns0\`, \`ns1\`, ...)`
  */
-function emitParallelNode(node, idx, pad, indent, enclosingLoopLabel = null, emitted = null) {
-  const lines = []
+function emitParallelNode(
+  node,
+  idx,
+  pad,
+  indent,
+  enclosingLoopLabel = null,
+  emitted = null,
+) {
+  const lines = [];
 
-  const branches = []
+  const branches = [];
   for (let i = 0; i < node.controlPorts.outputs.length; i++) {
-    const ctrlOut = node.controlPorts.outputs[i]
-    const branchNs = nsLabel(`par_${shortId(node.id)}_${i}`)
-    branches.push({ ctrlOut, branchNs })
+    const ctrlOut = node.controlPorts.outputs[i];
+    const branchNs = nsLabel(`par_${shortId(node.id)}_${i}`);
+    branches.push({ ctrlOut, branchNs });
   }
 
-  const nsArgs = branches.map(b => `\`${b.branchNs}\``).join(', ')
-  lines.push(`${pad}()parallel(${nsArgs})`)
+  const nsArgs = branches.map((b) => `\`${b.branchNs}\``).join(", ");
+  lines.push(`${pad}()parallel(${nsArgs})`);
 
   for (const b of branches) {
-    const { chain, loopJumpLabel } = walkControlChain(node.id, b.ctrlOut.id, idx)
-    lines.push(`${pad}${b.branchNs}:`)
+    const { chain, loopJumpLabel } = walkControlChain(
+      node.id,
+      b.ctrlOut.id,
+      idx,
+    );
+    lines.push(`${pad}${b.branchNs}:`);
     if (chain.length > 0) {
       for (const chainNode of chain) {
-        if (emitted) emitted.add(chainNode.id)
-        lines.push(...emitNode(chainNode, idx, indent + 1, enclosingLoopLabel, emitted))
+        if (emitted) emitted.add(chainNode.id);
+        lines.push(
+          ...emitNode(chainNode, idx, indent + 1, enclosingLoopLabel, emitted),
+        );
       }
     }
-    const jumpTarget = loopJumpLabel ?? (chain.length === 0 ? enclosingLoopLabel : null)
+    const jumpTarget =
+      loopJumpLabel ?? (chain.length === 0 ? enclosingLoopLabel : null);
     if (jumpTarget) {
-      lines.push(`${pad}    ()jump(\`${jumpTarget}\`)`)
+      lines.push(`${pad}    ()jump(\`${jumpTarget}\`)`);
     } else if (chain.length === 0) {
-      lines.push(`${pad}    # (empty parallel branch)`)
+      lines.push(`${pad}    # (empty parallel branch)`);
     }
   }
 
-  return lines
+  return lines;
 }
 
 // ---------------------------------------------------------------------------
@@ -482,62 +583,66 @@ function emitParallelNode(node, idx, pad, indent, enclosingLoopLabel = null, emi
  *                   null if termination was at a convergence merge or dead end.
  */
 function walkControlChain(fromNodeId, fromPortId, idx) {
-  const chain = []
-  const visited = new Set()
-  let currentNodeId = fromNodeId
-  let currentPortId = fromPortId
+  const chain = [];
+  const visited = new Set();
+  let currentNodeId = fromNodeId;
+  let currentPortId = fromPortId;
 
   while (true) {
-    const edgeKey = `${currentNodeId}:${currentPortId}`
-    const edge = idx.ctrlOutEdges.get(edgeKey)
-    if (!edge) break
+    const edgeKey = `${currentNodeId}:${currentPortId}`;
+    const edge = idx.ctrlOutEdges.get(edgeKey);
+    if (!edge) break;
 
-    const nextNode = idx.nodeMap.get(edge.toNodeId)
-    if (!nextNode) break
+    const nextNode = idx.nodeMap.get(edge.toNodeId);
+    if (!nextNode) break;
 
     // Avoid infinite loops from visiting the same node twice
-    if (visited.has(nextNode.id)) break
-    visited.add(nextNode.id)
+    if (visited.has(nextNode.id)) break;
+    visited.add(nextNode.id);
 
     // If this node is a merge, determine if it is a loop merge or convergence.
-    if (nextNode.type === 'merge') {
+    if (nextNode.type === "merge") {
       if (isLoopMerge(nextNode, idx)) {
         // Loop back-edge: tell the caller to emit a jump to the loop label.
-        return { chain, loopJumpLabel: mergeLabel(nextNode) }
+        return { chain, loopJumpLabel: mergeLabel(nextNode) };
       }
       // Convergence merge — stop; the parent scope continues from here.
-      break
+      break;
     }
 
-    chain.push(nextNode)
+    chain.push(nextNode);
 
     // For branch/switch/parallel: sub-chains are emitted inside emitNode.
     // After them, look for a merge node to continue from.
-    if (nextNode.type === 'branch' || nextNode.type === 'switch' || nextNode.type === 'parallel') {
-      const mergeNode = findMergeAfter(nextNode, idx)
+    if (
+      nextNode.type === "branch" ||
+      nextNode.type === "switch" ||
+      nextNode.type === "parallel"
+    ) {
+      const mergeNode = findMergeAfter(nextNode, idx);
       if (mergeNode) {
         if (isLoopMerge(mergeNode, idx)) {
-          return { chain, loopJumpLabel: mergeLabel(mergeNode) }
+          return { chain, loopJumpLabel: mergeLabel(mergeNode) };
         }
-        const mergeOutPort = mergeNode.controlPorts.outputs[0]
+        const mergeOutPort = mergeNode.controlPorts.outputs[0];
         if (mergeOutPort) {
-          currentNodeId = mergeNode.id
-          currentPortId = mergeOutPort.id
-          continue
+          currentNodeId = mergeNode.id;
+          currentPortId = mergeOutPort.id;
+          continue;
         }
       }
-      break
+      break;
     }
 
     // For regular nodes, follow the first control output
-    const outPort = nextNode.controlPorts.outputs[0]
-    if (!outPort) break
+    const outPort = nextNode.controlPorts.outputs[0];
+    if (!outPort) break;
 
-    currentNodeId = nextNode.id
-    currentPortId = outPort.id
+    currentNodeId = nextNode.id;
+    currentPortId = outPort.id;
   }
 
-  return { chain, loopJumpLabel: null }
+  return { chain, loopJumpLabel: null };
 }
 
 /**
@@ -548,48 +653,52 @@ function walkControlChain(fromNodeId, fromPortId, idx) {
 function findMergeAfter(branchingNode, idx) {
   // For each control output of the branching node, walk the chain and
   // collect all merge nodes reachable.
-  const visited = new Set()
+  const visited = new Set();
 
   function walkToMerge(nodeId, portId, depth) {
-    if (depth > 100) return null // safety limit
-    const edgeKey = `${nodeId}:${portId}`
-    const edge = idx.ctrlOutEdges.get(edgeKey)
-    if (!edge) return null
+    if (depth > 100) return null; // safety limit
+    const edgeKey = `${nodeId}:${portId}`;
+    const edge = idx.ctrlOutEdges.get(edgeKey);
+    if (!edge) return null;
 
-    const nextNode = idx.nodeMap.get(edge.toNodeId)
-    if (!nextNode) return null
+    const nextNode = idx.nodeMap.get(edge.toNodeId);
+    if (!nextNode) return null;
 
-    if (nextNode.type === 'merge') return nextNode
+    if (nextNode.type === "merge") return nextNode;
 
-    if (visited.has(nextNode.id)) return null
-    visited.add(nextNode.id)
+    if (visited.has(nextNode.id)) return null;
+    visited.add(nextNode.id);
 
     // If it's another branching node, recurse deeper
-    if (nextNode.type === 'branch' || nextNode.type === 'switch' || nextNode.type === 'parallel') {
+    if (
+      nextNode.type === "branch" ||
+      nextNode.type === "switch" ||
+      nextNode.type === "parallel"
+    ) {
       // Find its merge first
-      const innerMerge = findMergeAfter(nextNode, idx)
+      const innerMerge = findMergeAfter(nextNode, idx);
       if (innerMerge) {
-        const mergeOut = innerMerge.controlPorts.outputs[0]
+        const mergeOut = innerMerge.controlPorts.outputs[0];
         if (mergeOut) {
-          return walkToMerge(innerMerge.id, mergeOut.id, depth + 1)
+          return walkToMerge(innerMerge.id, mergeOut.id, depth + 1);
         }
       }
-      return null
+      return null;
     }
 
     // Regular node — continue walking
-    const outPort = nextNode.controlPorts.outputs[0]
-    if (!outPort) return null
-    return walkToMerge(nextNode.id, outPort.id, depth + 1)
+    const outPort = nextNode.controlPorts.outputs[0];
+    if (!outPort) return null;
+    return walkToMerge(nextNode.id, outPort.id, depth + 1);
   }
 
   // Check each branch output
   for (const ctrlOut of branchingNode.controlPorts.outputs) {
-    const merge = walkToMerge(branchingNode.id, ctrlOut.id, 0)
-    if (merge) return merge
+    const merge = walkToMerge(branchingNode.id, ctrlOut.id, 0);
+    if (merge) return merge;
   }
 
-  return null
+  return null;
 }
 
 /**
@@ -597,25 +706,27 @@ function findMergeAfter(branchingNode, idx) {
  * For control flow mode, this is where execution starts.
  */
 function findEntryNodes(nodeList, idx) {
-  const entries = []
+  const entries = [];
 
   for (const node of nodeList) {
     // Only consider nodes that participate in control flow
-    const hasCtrlPorts = node.controlPorts.inputs.length > 0 || node.controlPorts.outputs.length > 0
+    const hasCtrlPorts =
+      node.controlPorts.inputs.length > 0 ||
+      node.controlPorts.outputs.length > 0;
 
-    if (!hasCtrlPorts) continue
+    if (!hasCtrlPorts) continue;
 
     // Entry node: has control output(s) but no incoming control connections
-    const incomingCtrl = idx.ctrlInByNode.get(node.id)
+    const incomingCtrl = idx.ctrlInByNode.get(node.id);
     if (!incomingCtrl || incomingCtrl.length === 0) {
-      entries.push(node)
+      entries.push(node);
     }
   }
 
   // Sort by y position (top-most first), then x
-  entries.sort((a, b) => a.y - b.y || a.x - b.x)
+  entries.sort((a, b) => a.y - b.y || a.x - b.x);
 
-  return entries
+  return entries;
 }
 
 /**
@@ -623,10 +734,10 @@ function findEntryNodes(nodeList, idx) {
  * These are typically value nodes that feed into the control flow.
  */
 function findPureDataNodes(nodeList) {
-  return nodeList.filter(n =>
-    n.controlPorts.inputs.length === 0 &&
-    n.controlPorts.outputs.length === 0
-  )
+  return nodeList.filter(
+    (n) =>
+      n.controlPorts.inputs.length === 0 && n.controlPorts.outputs.length === 0,
+  );
 }
 
 /**
@@ -639,12 +750,16 @@ function findPureDataNodes(nodeList) {
  * (or all entries are empty).
  */
 function findDisconnectedCtrlNodes(nodeList, idx) {
-  return nodeList.filter(n => {
-    if (n.controlPorts.inputs.length === 0 && n.controlPorts.outputs.length === 0) return false
-    const hasCtrlIn  = (idx.ctrlInByNode.get(n.id)  ?? []).length > 0
-    const hasCtrlOut = (idx.ctrlOutByNode.get(n.id) ?? []).length > 0
-    return !hasCtrlIn && !hasCtrlOut
-  })
+  return nodeList.filter((n) => {
+    if (
+      n.controlPorts.inputs.length === 0 &&
+      n.controlPorts.outputs.length === 0
+    )
+      return false;
+    const hasCtrlIn = (idx.ctrlInByNode.get(n.id) ?? []).length > 0;
+    const hasCtrlOut = (idx.ctrlOutByNode.get(n.id) ?? []).length > 0;
+    return !hasCtrlIn && !hasCtrlOut;
+  });
 }
 
 /**
@@ -653,34 +768,34 @@ function findDisconnectedCtrlNodes(nodeList, idx) {
  * Returns them in topological order (sources first).
  */
 function collectDataDeps(node, idx, excludeSet) {
-  const order = []
-  const visited = new Set()
+  const order = [];
+  const visited = new Set();
 
   function dfs(n) {
-    if (visited.has(n.id)) return
-    visited.add(n.id)
+    if (visited.has(n.id)) return;
+    visited.add(n.id);
     for (const port of n.dataPorts.inputs) {
-      const key  = `${n.id}:${port.id}`
-      const edge = idx.dataInEdges.get(key)
-      if (!edge) continue
-      const src = idx.nodeMap.get(edge.fromNodeId)
-      if (!src || excludeSet.has(src.id)) continue
-      dfs(src)
+      const key = `${n.id}:${port.id}`;
+      const edge = idx.dataInEdges.get(key);
+      if (!edge) continue;
+      const src = idx.nodeMap.get(edge.fromNodeId);
+      if (!src || excludeSet.has(src.id)) continue;
+      dfs(src);
     }
-    if (!excludeSet.has(n.id)) order.push(n)
+    if (!excludeSet.has(n.id)) order.push(n);
   }
 
   // We want deps OF node, not including node itself
   for (const port of node.dataPorts.inputs) {
-    const key  = `${node.id}:${port.id}`
-    const edge = idx.dataInEdges.get(key)
-    if (!edge) continue
-    const src = idx.nodeMap.get(edge.fromNodeId)
-    if (!src || excludeSet.has(src.id)) continue
-    dfs(src)
+    const key = `${node.id}:${port.id}`;
+    const edge = idx.dataInEdges.get(key);
+    if (!edge) continue;
+    const src = idx.nodeMap.get(edge.fromNodeId);
+    if (!src || excludeSet.has(src.id)) continue;
+    dfs(src);
   }
   // Remove node itself if it snuck in
-  return order.filter(n => n.id !== node.id)
+  return order.filter((n) => n.id !== node.id);
 }
 
 /**
@@ -689,18 +804,18 @@ function collectDataDeps(node, idx, excludeSet) {
  * merges or dead ends).  Results are added to `out` (a Set).
  */
 function collectCtrlChain(startNodeId, idx, out) {
-  const stack = [startNodeId]
+  const stack = [startNodeId];
   while (stack.length > 0) {
-    const nodeId = stack.pop()
-    if (!nodeId || out.has(nodeId)) continue
-    out.add(nodeId)
-    const node = idx.nodeMap.get(nodeId)
-    if (!node || node.type === 'merge') continue
+    const nodeId = stack.pop();
+    if (!nodeId || out.has(nodeId)) continue;
+    out.add(nodeId);
+    const node = idx.nodeMap.get(nodeId);
+    if (!node || node.type === "merge") continue;
     // For branch/switch/parallel follow all ctrl outputs
     for (const port of node.controlPorts.outputs) {
-      const edgeKey = `${node.id}:${port.id}`
-      const edge    = idx.ctrlOutEdges.get(edgeKey)
-      if (edge && edge.toNodeId !== node.id) stack.push(edge.toNodeId)
+      const edgeKey = `${node.id}:${port.id}`;
+      const edge = idx.ctrlOutEdges.get(edgeKey);
+      if (edge && edge.toNodeId !== node.id) stack.push(edge.toNodeId);
     }
   }
 }
@@ -712,33 +827,40 @@ function collectCtrlChain(startNodeId, idx, out) {
  * loop body were lost during import.
  */
 function ctrlChainTerminatesOpen(entryNode, idx) {
-  const visited = new Set()
+  const visited = new Set();
 
   function walk(node) {
-    if (!node || visited.has(node.id)) return false
-    visited.add(node.id)
+    if (!node || visited.has(node.id)) return false;
+    visited.add(node.id);
 
-    if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
+    if (
+      node.type === "branch" ||
+      node.type === "switch" ||
+      node.type === "parallel"
+    ) {
       // Check if ALL ctrl outputs of this node have no connections
-      let allOpen = true
+      let allOpen = true;
       for (const port of node.controlPorts.outputs) {
-        const edgeKey = `${node.id}:${port.id}`
-        const edge    = idx.ctrlOutEdges.get(edgeKey)
-        if (edge && edge.toNodeId !== node.id) { allOpen = false; break }
+        const edgeKey = `${node.id}:${port.id}`;
+        const edge = idx.ctrlOutEdges.get(edgeKey);
+        if (edge && edge.toNodeId !== node.id) {
+          allOpen = false;
+          break;
+        }
       }
-      return allOpen
+      return allOpen;
     }
 
-    const outPort = node.controlPorts.outputs[0]
-    if (!outPort) return false
-    const edgeKey = `${node.id}:${outPort.id}`
-    const edge    = idx.ctrlOutEdges.get(edgeKey)
-    if (!edge || edge.toNodeId === node.id) return false
-    const nextNode = idx.nodeMap.get(edge.toNodeId)
-    return walk(nextNode)
+    const outPort = node.controlPorts.outputs[0];
+    if (!outPort) return false;
+    const edgeKey = `${node.id}:${outPort.id}`;
+    const edge = idx.ctrlOutEdges.get(edgeKey);
+    if (!edge || edge.toNodeId === node.id) return false;
+    const nextNode = idx.nodeMap.get(edge.toNodeId);
+    return walk(nextNode);
   }
 
-  return walk(entryNode)
+  return walk(entryNode);
 }
 
 // ---------------------------------------------------------------------------
@@ -746,25 +868,27 @@ function ctrlChainTerminatesOpen(entryNode, idx) {
 // ---------------------------------------------------------------------------
 
 function compileControlflow(nodeList, connectionList) {
-  if (nodeList.length === 0) return '# (empty graph)\n'
+  if (nodeList.length === 0) return "# (empty graph)\n";
 
-  const idx = buildIndices(nodeList, connectionList)
-  const lines = []
+  const idx = buildIndices(nodeList, connectionList);
+  const lines = [];
 
-  lines.push('## KohakuNodeIR — compiled from node graph')
-  lines.push(`## Nodes: ${nodeList.length}   Connections: ${connectionList.length}`)
-  lines.push('')
+  lines.push("## KohakuNodeIR — compiled from node graph");
+  lines.push(
+    `## Nodes: ${nodeList.length}   Connections: ${connectionList.length}`,
+  );
+  lines.push("");
 
   // Track which nodes have been emitted (shared across all steps)
-  const emitted = new Set()
+  const emitted = new Set();
 
   // ── Step 1: Pure data nodes (no ctrl ports) → variable assignments ─────────
-  const dataOnlyNodes = findPureDataNodes(nodeList)
+  const dataOnlyNodes = findPureDataNodes(nodeList);
   for (const node of dataOnlyNodes) {
-    lines.push(...emitNode(node, idx, 0))
-    emitted.add(node.id)
+    lines.push(...emitNode(node, idx, 0));
+    emitted.add(node.id);
   }
-  if (dataOnlyNodes.length > 0) lines.push('')
+  if (dataOnlyNodes.length > 0) lines.push("");
 
   // ── Step 2: Disconnected-ctrl nodes → pre-loop @dataflow: block ──────────
   // Nodes that have ctrl ports but NO ctrl connections were inside @dataflow:
@@ -776,69 +900,80 @@ function compileControlflow(nodeList, connectionList) {
   //
   //   • "in-loop" / "post-loop" — have ctrl-connected data deps.
   //     Collected and emitted at the correct point in steps 6 / 7.
-  const disconnectedCtrlNodes = findDisconnectedCtrlNodes(nodeList, idx)
+  const disconnectedCtrlNodes = findDisconnectedCtrlNodes(nodeList, idx);
 
   // Set of all nodes that participate in ctrl flow (have at least one ctrl edge)
-  const ctrlConnectedIds = new Set()
+  const ctrlConnectedIds = new Set();
   for (const node of nodeList) {
-    const hasCtrlIn  = (idx.ctrlInByNode.get(node.id)  ?? []).length > 0
-    const hasCtrlOut = (idx.ctrlOutByNode.get(node.id) ?? []).length > 0
-    if (hasCtrlIn || hasCtrlOut) ctrlConnectedIds.add(node.id)
+    const hasCtrlIn = (idx.ctrlInByNode.get(node.id) ?? []).length > 0;
+    const hasCtrlOut = (idx.ctrlOutByNode.get(node.id) ?? []).length > 0;
+    if (hasCtrlIn || hasCtrlOut) ctrlConnectedIds.add(node.id);
   }
 
   // Returns true if any transitive data dep of `node` is a ctrl-connected node
   function hasCtrlConnectedDataDep(node, visited = new Set()) {
-    if (visited.has(node.id)) return false
-    visited.add(node.id)
+    if (visited.has(node.id)) return false;
+    visited.add(node.id);
     for (const port of node.dataPorts.inputs) {
-      const key  = `${node.id}:${port.id}`
-      const edge = idx.dataInEdges.get(key)
-      if (!edge) continue
-      const srcId = edge.fromNodeId
-      if (ctrlConnectedIds.has(srcId)) return true
-      const src = idx.nodeMap.get(srcId)
-      if (src && hasCtrlConnectedDataDep(src, visited)) return true
+      const key = `${node.id}:${port.id}`;
+      const edge = idx.dataInEdges.get(key);
+      if (!edge) continue;
+      const srcId = edge.fromNodeId;
+      if (ctrlConnectedIds.has(srcId)) return true;
+      const src = idx.nodeMap.get(srcId);
+      if (src && hasCtrlConnectedDataDep(src, visited)) return true;
     }
-    return false
+    return false;
   }
 
-  const preLoopDisconn = disconnectedCtrlNodes.filter(n => !hasCtrlConnectedDataDep(n))
+  const preLoopDisconn = disconnectedCtrlNodes.filter(
+    (n) => !hasCtrlConnectedDataDep(n),
+  );
 
   if (preLoopDisconn.length > 0) {
-    const preSet     = new Set(preLoopDisconn.map(n => n.id))
-    const topoSorted = topoSortByData(preLoopDisconn, idx, preSet)
-    lines.push('@dataflow:')
+    const preSet = new Set(preLoopDisconn.map((n) => n.id));
+    const topoSorted = topoSortByData(preLoopDisconn, idx, preSet);
+    lines.push("@dataflow:");
     for (const node of topoSorted) {
-      for (const l of emitNode(node, idx, 1)) lines.push(l)
-      emitted.add(node.id)
-      lines.push('')
+      for (const l of emitNode(node, idx, 1)) lines.push(l);
+      emitted.add(node.id);
+      lines.push("");
     }
   }
 
   // ── Step 3: Loop-merge nodes → loop structures ────────────────────────────
-  const loopMerges = nodeList.filter(n => n.type === 'merge' && isLoopMerge(n, idx))
+  const loopMerges = nodeList.filter(
+    (n) => n.type === "merge" && isLoopMerge(n, idx),
+  );
 
   // ── Step 4: Regular ctrl entry nodes (no incoming ctrl) ───────────────────
   // Exclude disconnected-ctrl nodes (they are emitted as @dataflow: blocks in
   // steps 2, 6, or 7 — never as regular ctrl statements).
-  const disconnectedCtrlSet = new Set(disconnectedCtrlNodes.map(n => n.id))
+  const disconnectedCtrlSet = new Set(disconnectedCtrlNodes.map((n) => n.id));
   const regularEntries = findEntryNodes(nodeList, idx).filter(
-    n => !emitted.has(n.id) && n.type !== 'merge' && !disconnectedCtrlSet.has(n.id)
-  )
+    (n) =>
+      !emitted.has(n.id) &&
+      n.type !== "merge" &&
+      !disconnectedCtrlSet.has(n.id),
+  );
 
   const hasAnything =
-    dataOnlyNodes.length > 0 || disconnectedCtrlNodes.length > 0 ||
-    loopMerges.length > 0 || regularEntries.length > 0
+    dataOnlyNodes.length > 0 ||
+    disconnectedCtrlNodes.length > 0 ||
+    loopMerges.length > 0 ||
+    regularEntries.length > 0;
 
   if (!hasAnything) {
-    lines.push('# Warning: no entry point found (no node without incoming control connections)')
-    const sorted = [...nodeList].sort((a, b) => a.y - b.y || a.x - b.x)
-    lines.push('# ── Nodes (no control flow detected) ──')
+    lines.push(
+      "# Warning: no entry point found (no node without incoming control connections)",
+    );
+    const sorted = [...nodeList].sort((a, b) => a.y - b.y || a.x - b.x);
+    lines.push("# ── Nodes (no control flow detected) ──");
     for (const node of sorted) {
-      if (emitted.has(node.id)) continue
-      lines.push(...emitNode(node, idx, 0))
+      if (emitted.has(node.id)) continue;
+      lines.push(...emitNode(node, idx, 0));
     }
-    return lines.join('\n') + '\n'
+    return lines.join("\n") + "\n";
   }
 
   // ── Step 5 + 6: Interleaved: emit pre-loop nodes, then loop structures ──────
@@ -857,16 +992,16 @@ function compileControlflow(nodeList, connectionList) {
   //   (b) pre-loop code (to be emitted flat before the loop).
 
   // Build a map: mergeNode.id → loopBodyEntryNode (or null if reachable via ctrl)
-  const loopBodyEntryMap = new Map()  // mergeId → entry node (or null)
+  const loopBodyEntryMap = new Map(); // mergeId → entry node (or null)
 
   for (const mergeNode of loopMerges) {
-    const outPort = mergeNode.controlPorts.outputs[0]
-    let bodyStartId = null
+    const outPort = mergeNode.controlPorts.outputs[0];
+    let bodyStartId = null;
     if (outPort) {
-      const edgeKey = `${mergeNode.id}:${outPort.id}`
-      const edge    = idx.ctrlOutEdges.get(edgeKey)
+      const edgeKey = `${mergeNode.id}:${outPort.id}`;
+      const edge = idx.ctrlOutEdges.get(edgeKey);
       if (edge && edge.toNodeId !== mergeNode.id) {
-        bodyStartId = edge.toNodeId  // properly connected body
+        bodyStartId = edge.toNodeId; // properly connected body
       }
     }
 
@@ -875,139 +1010,159 @@ function compileControlflow(nodeList, connectionList) {
       // An entry node is the loop body if its ctrl chain terminates (all branch
       // arms have no outgoing ctrl), indicating the back-edge was dropped.
       for (const entry of regularEntries) {
-        if (emitted.has(entry.id)) continue
+        if (emitted.has(entry.id)) continue;
         if (ctrlChainTerminatesOpen(entry, idx)) {
-          bodyStartId = entry.id
-          break
+          bodyStartId = entry.id;
+          break;
         }
       }
     }
-    loopBodyEntryMap.set(mergeNode.id, bodyStartId)
+    loopBodyEntryMap.set(mergeNode.id, bodyStartId);
   }
 
   // Collect all node IDs that are inside loop bodies
-  const loopBodyNodeIds = new Set()
+  const loopBodyNodeIds = new Set();
   for (const [mergeId, bodyStartId] of loopBodyEntryMap) {
-    if (!bodyStartId) continue
-    collectCtrlChain(bodyStartId, idx, loopBodyNodeIds)
+    if (!bodyStartId) continue;
+    collectCtrlChain(bodyStartId, idx, loopBodyNodeIds);
   }
 
   // Separate regular entries into pre-loop and post-loop.
   // Post-loop entries are those not in the loop body AND whose Y position
   // exceeds the loop body's max Y (they come after the loop spatially).
-  const loopBodyMaxY = loopBodyNodeIds.size > 0
-    ? Math.max(...Array.from(loopBodyNodeIds).map(id => idx.nodeMap.get(id)?.y ?? 0))
-    : -Infinity
+  const loopBodyMaxY =
+    loopBodyNodeIds.size > 0
+      ? Math.max(
+          ...Array.from(loopBodyNodeIds).map(
+            (id) => idx.nodeMap.get(id)?.y ?? 0,
+          ),
+        )
+      : -Infinity;
 
-  const preLoopRegular  = regularEntries.filter(n =>
-    !loopBodyNodeIds.has(n.id) && (loopMerges.length === 0 || (n.y ?? 0) <= loopBodyMaxY)
-  )
-  const postLoopRegular = regularEntries.filter(n =>
-    !loopBodyNodeIds.has(n.id) && loopMerges.length > 0 && (n.y ?? 0) > loopBodyMaxY
-  )
+  const preLoopRegular = regularEntries.filter(
+    (n) =>
+      !loopBodyNodeIds.has(n.id) &&
+      (loopMerges.length === 0 || (n.y ?? 0) <= loopBodyMaxY),
+  );
+  const postLoopRegular = regularEntries.filter(
+    (n) =>
+      !loopBodyNodeIds.has(n.id) &&
+      loopMerges.length > 0 &&
+      (n.y ?? 0) > loopBodyMaxY,
+  );
 
   // Emit pre-loop regular entry nodes
   for (const entry of preLoopRegular) {
-    if (emitted.has(entry.id)) continue
-    const chain = walkFromEntry(entry, idx, emitted)
+    if (emitted.has(entry.id)) continue;
+    const chain = walkFromEntry(entry, idx, emitted);
     for (const item of chain) {
-      if (item._sentinel === 'loop_start') {
-        lines.push(`()jump(\`${item.label}\`)`)
-        lines.push(`${item.label}:`)
-        continue
+      if (item._sentinel === "loop_start") {
+        lines.push(`()jump(\`${item.label}\`)`);
+        lines.push(`${item.label}:`);
+        continue;
       }
-      if (item._sentinel === 'loop_merge') {
-        emitted.add(item.node.id)
-        continue
+      if (item._sentinel === "loop_merge") {
+        emitted.add(item.node.id);
+        continue;
       }
-      if (emitted.has(item.id)) continue
+      if (emitted.has(item.id)) continue;
       for (const dep of collectDataDeps(item, idx, emitted)) {
-        if (emitted.has(dep.id)) continue
-        lines.push(...emitNode(dep, idx, 0, null, emitted))
-        emitted.add(dep.id)
+        if (emitted.has(dep.id)) continue;
+        lines.push(...emitNode(dep, idx, 0, null, emitted));
+        emitted.add(dep.id);
       }
-      emitted.add(item.id)
-      lines.push(...emitNode(item, idx, 0, null, emitted))
+      emitted.add(item.id);
+      lines.push(...emitNode(item, idx, 0, null, emitted));
     }
-    lines.push('')
+    lines.push("");
   }
 
   // Emit loop merge structures
   for (const mergeNode of loopMerges) {
-    if (emitted.has(mergeNode.id)) continue
-    const label       = mergeLabel(mergeNode)
-    const bodyStartId = loopBodyEntryMap.get(mergeNode.id)
+    if (emitted.has(mergeNode.id)) continue;
+    const label = mergeLabel(mergeNode);
+    const bodyStartId = loopBodyEntryMap.get(mergeNode.id);
 
-    lines.push(`()jump(\`${label}\`)`)
-    lines.push(`${label}:`)
-    emitted.add(mergeNode.id)
+    lines.push(`()jump(\`${label}\`)`);
+    lines.push(`${label}:`);
+    emitted.add(mergeNode.id);
 
     if (bodyStartId && !emitted.has(bodyStartId)) {
-      const bodyItems = walkLoopBody(mergeNode, bodyStartId, idx, emitted, label)
+      const bodyItems = walkLoopBody(
+        mergeNode,
+        bodyStartId,
+        idx,
+        emitted,
+        label,
+      );
 
       for (const item of bodyItems) {
-        if (item._sentinel === 'dataflow_group') {
-          lines.push('    @dataflow:')
-          const groupSet   = new Set(item.nodes.map(n => n.id))
-          const topoGroup  = topoSortByData(item.nodes, idx, groupSet)
+        if (item._sentinel === "dataflow_group") {
+          lines.push("    @dataflow:");
+          const groupSet = new Set(item.nodes.map((n) => n.id));
+          const topoGroup = topoSortByData(item.nodes, idx, groupSet);
           for (const dfNode of topoGroup) {
-            for (const l of emitNode(dfNode, idx, 2, null, emitted)) lines.push(l)
-            emitted.add(dfNode.id)
-            lines.push('')
+            for (const l of emitNode(dfNode, idx, 2, null, emitted))
+              lines.push(l);
+            emitted.add(dfNode.id);
+            lines.push("");
           }
-          continue
+          continue;
         }
 
-        if (emitted.has(item.id)) continue
+        if (emitted.has(item.id)) continue;
         for (const dep of collectDataDeps(item, idx, emitted)) {
-          if (emitted.has(dep.id)) continue
-          lines.push(...emitNode(dep, idx, 1, null, emitted))
-          emitted.add(dep.id)
+          if (emitted.has(dep.id)) continue;
+          lines.push(...emitNode(dep, idx, 1, null, emitted));
+          emitted.add(dep.id);
         }
-        emitted.add(item.id)
-        lines.push(...emitNode(item, idx, 1, label, emitted))
+        emitted.add(item.id);
+        lines.push(...emitNode(item, idx, 1, label, emitted));
       }
     }
-    lines.push('')
+    lines.push("");
   }
 
   // ── Step 7: Emit remaining disconnected-ctrl nodes → @dataflow: block ─────
   // These are the post-loop @dataflow: nodes (to_string, concat, print …).
-  const postLoopDisconn = disconnectedCtrlNodes.filter(n => !emitted.has(n.id))
+  const postLoopDisconn = disconnectedCtrlNodes.filter(
+    (n) => !emitted.has(n.id),
+  );
   if (postLoopDisconn.length > 0) {
-    const postSet    = new Set(postLoopDisconn.map(n => n.id))
-    const topoSorted = topoSortByData(postLoopDisconn, idx, postSet)
-    lines.push('@dataflow:')
+    const postSet = new Set(postLoopDisconn.map((n) => n.id));
+    const topoSorted = topoSortByData(postLoopDisconn, idx, postSet);
+    lines.push("@dataflow:");
     for (const node of topoSorted) {
-      for (const l of emitNode(node, idx, 1, null, emitted)) lines.push(l)
-      emitted.add(node.id)
-      lines.push('')
+      for (const l of emitNode(node, idx, 1, null, emitted)) lines.push(l);
+      emitted.add(node.id);
+      lines.push("");
     }
   }
 
   // ── Step 7b: Emit post-loop regular entry nodes ────────────────────────────
   // These are ctrl-connected nodes that appear after the loop (by Y position).
   for (const entry of postLoopRegular) {
-    if (emitted.has(entry.id)) continue
-    const chain = walkFromEntry(entry, idx, emitted)
+    if (emitted.has(entry.id)) continue;
+    const chain = walkFromEntry(entry, idx, emitted);
     for (const item of chain) {
-      if (item._sentinel === 'loop_start' || item._sentinel === 'loop_merge') continue
-      if (emitted.has(item.id)) continue
+      if (item._sentinel === "loop_start" || item._sentinel === "loop_merge")
+        continue;
+      if (emitted.has(item.id)) continue;
       for (const dep of collectDataDeps(item, idx, emitted)) {
-        if (emitted.has(dep.id)) continue
-        lines.push(...emitNode(dep, idx, 0, null, emitted))
-        emitted.add(dep.id)
+        if (emitted.has(dep.id)) continue;
+        lines.push(...emitNode(dep, idx, 0, null, emitted));
+        emitted.add(dep.id);
       }
-      emitted.add(item.id)
-      lines.push(...emitNode(item, idx, 0, null, emitted))
+      emitted.add(item.id);
+      lines.push(...emitNode(item, idx, 0, null, emitted));
     }
-    lines.push('')
+    lines.push("");
   }
 
   // (No step 8: nodes emitted inside branch/switch/parallel arms are now tracked
   // via the emitted set passed through emitNode, preventing double-emission.)
 
-  return lines.join('\n') + '\n'
+  return lines.join("\n") + "\n";
 }
 
 /**
@@ -1016,24 +1171,24 @@ function compileControlflow(nodeList, connectionList) {
  * Returns nodes in topological order (sources first).
  */
 function topoSortByData(nodes, idx, nodeSet) {
-  const order   = []
-  const visited = new Set()
+  const order = [];
+  const visited = new Set();
 
   function visit(node) {
-    if (visited.has(node.id)) return
-    visited.add(node.id)
+    if (visited.has(node.id)) return;
+    visited.add(node.id);
     for (const port of node.dataPorts.inputs) {
-      const key  = `${node.id}:${port.id}`
-      const edge = idx.dataInEdges.get(key)
-      if (!edge || !nodeSet.has(edge.fromNodeId)) continue
-      const src = idx.nodeMap.get(edge.fromNodeId)
-      if (src) visit(src)
+      const key = `${node.id}:${port.id}`;
+      const edge = idx.dataInEdges.get(key);
+      if (!edge || !nodeSet.has(edge.fromNodeId)) continue;
+      const src = idx.nodeMap.get(edge.fromNodeId);
+      if (src) visit(src);
     }
-    order.push(node)
+    order.push(node);
   }
 
-  for (const n of nodes) visit(n)
-  return order
+  for (const n of nodes) visit(n);
+  return order;
 }
 
 /**
@@ -1043,64 +1198,72 @@ function topoSortByData(nodes, idx, nodeSet) {
  *   { _sentinel: 'dataflow_group', nodes: [...] }  — an in-loop @dataflow: block
  */
 function walkLoopBody(mergeNode, startNodeId, idx, emitted, loopLabel) {
-  const ctrlChain = []
-  const visited   = new Set([mergeNode.id])
+  const ctrlChain = [];
+  const visited = new Set([mergeNode.id]);
 
   // Walk ctrl chain from startNodeId until we hit a merge or dead end.
   function walk(nodeId) {
-    if (!nodeId || visited.has(nodeId)) return
-    visited.add(nodeId)
+    if (!nodeId || visited.has(nodeId)) return;
+    visited.add(nodeId);
 
-    const node = idx.nodeMap.get(nodeId)
-    if (!node) return
+    const node = idx.nodeMap.get(nodeId);
+    if (!node) return;
 
-    if (node.type === 'merge') return
+    if (node.type === "merge") return;
 
-    ctrlChain.push(node)
+    ctrlChain.push(node);
 
-    if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
-      const mergeAfter = findMergeAfter(node, idx)
+    if (
+      node.type === "branch" ||
+      node.type === "switch" ||
+      node.type === "parallel"
+    ) {
+      const mergeAfter = findMergeAfter(node, idx);
       if (mergeAfter && mergeAfter.id !== mergeNode.id) {
-        visited.add(mergeAfter.id)
-        const outPort = mergeAfter.controlPorts.outputs[0]
+        visited.add(mergeAfter.id);
+        const outPort = mergeAfter.controlPorts.outputs[0];
         if (outPort) {
-          const edgeKey = `${mergeAfter.id}:${outPort.id}`
-          const edge    = idx.ctrlOutEdges.get(edgeKey)
-          if (edge && edge.toNodeId !== mergeAfter.id) walk(edge.toNodeId)
+          const edgeKey = `${mergeAfter.id}:${outPort.id}`;
+          const edge = idx.ctrlOutEdges.get(edgeKey);
+          if (edge && edge.toNodeId !== mergeAfter.id) walk(edge.toNodeId);
         }
       }
-      return
+      return;
     }
 
-    const outPort = node.controlPorts.outputs[0]
-    if (!outPort) return
-    const edgeKey = `${node.id}:${outPort.id}`
-    const edge    = idx.ctrlOutEdges.get(edgeKey)
-    if (!edge || edge.toNodeId === node.id) return
-    walk(edge.toNodeId)
+    const outPort = node.controlPorts.outputs[0];
+    if (!outPort) return;
+    const edgeKey = `${node.id}:${outPort.id}`;
+    const edge = idx.ctrlOutEdges.get(edgeKey);
+    if (!edge || edge.toNodeId === node.id) return;
+    walk(edge.toNodeId);
   }
 
-  walk(startNodeId)
+  walk(startNodeId);
 
-  if (ctrlChain.length === 0) return []
+  if (ctrlChain.length === 0) return [];
 
   // Determine the Y-range of the loop body ctrl chain.
-  const bodyYMin = Math.min(...ctrlChain.map(n => n.y ?? 0))
-  const bodyYMax = Math.max(...ctrlChain.map(n => n.y ?? 0))
+  const bodyYMin = Math.min(...ctrlChain.map((n) => n.y ?? 0));
+  const bodyYMax = Math.max(...ctrlChain.map((n) => n.y ?? 0));
 
   // Collect disconnected-ctrl nodes that are NOT yet emitted globally AND whose
   // Y position falls within the loop body's Y range.  These are in-loop
   // @dataflow: candidates (e.g. multiply, add between counter-update and
   // less_than in a loop body).
-  const inLoopDisconn = Array.from(idx.nodeMap.values()).filter(n => {
-    if (emitted.has(n.id)) return false
-    if (n.controlPorts.inputs.length === 0 && n.controlPorts.outputs.length === 0) return false
-    const hasCtrlIn  = (idx.ctrlInByNode.get(n.id)  ?? []).length > 0
-    const hasCtrlOut = (idx.ctrlOutByNode.get(n.id) ?? []).length > 0
-    if (hasCtrlIn || hasCtrlOut) return false
-    const ny = n.y ?? 0
-    return ny >= bodyYMin && ny <= bodyYMax
-  })
+  const inLoopDisconn = Array.from(idx.nodeMap.values()).filter((n) => {
+    if (emitted.has(n.id)) return false;
+    if (
+      n.controlPorts.inputs.length === 0 &&
+      n.controlPorts.outputs.length === 0
+    )
+      return false;
+    const hasCtrlIn = (idx.ctrlInByNode.get(n.id) ?? []).length > 0;
+    const hasCtrlOut = (idx.ctrlOutByNode.get(n.id) ?? []).length > 0;
+    if (hasCtrlIn || hasCtrlOut) return false;
+    const ny = n.y ?? 0;
+    return ny >= bodyYMin && ny <= bodyYMax;
+  });
 
   // Build the final item list by interleaving ctrl nodes and @dataflow: groups.
   // We insert an @dataflow: group before the first ctrl node whose Y position
@@ -1111,35 +1274,38 @@ function walkLoopBody(mergeNode, startNodeId, idx, emitted, loopLabel) {
   // then build groups: consecutive disconnected-ctrl nodes form a @dataflow: block.
 
   const allBodyItems = [
-    ...ctrlChain.map(n => ({ kind: 'ctrl', node: n, y: n.y ?? 0 })),
-    ...inLoopDisconn.map(n => ({ kind: 'df',   node: n, y: n.y ?? 0 })),
-  ].sort((a, b) => a.y - b.y || 0)
+    ...ctrlChain.map((n) => ({ kind: "ctrl", node: n, y: n.y ?? 0 })),
+    ...inLoopDisconn.map((n) => ({ kind: "df", node: n, y: n.y ?? 0 })),
+  ].sort((a, b) => a.y - b.y || 0);
 
-  const finalItems  = []
-  let dfBuffer = []
+  const finalItems = [];
+  let dfBuffer = [];
 
   function flushDfBuffer() {
-    if (dfBuffer.length === 0) return
-    const nodeSet = new Set(dfBuffer.map(n => n.id))
-    finalItems.push({ _sentinel: 'dataflow_group', nodes: topoSortByData(dfBuffer, idx, nodeSet) })
-    dfBuffer = []
+    if (dfBuffer.length === 0) return;
+    const nodeSet = new Set(dfBuffer.map((n) => n.id));
+    finalItems.push({
+      _sentinel: "dataflow_group",
+      nodes: topoSortByData(dfBuffer, idx, nodeSet),
+    });
+    dfBuffer = [];
   }
 
   for (const item of allBodyItems) {
-    if (item.kind === 'df') {
-      dfBuffer.push(item.node)
+    if (item.kind === "df") {
+      dfBuffer.push(item.node);
     } else {
       // ctrl node — flush any pending dataflow group first, then emit the ctrl node
-      flushDfBuffer()
-      finalItems.push(item.node)
+      flushDfBuffer();
+      finalItems.push(item.node);
     }
   }
   // Any remaining dataflow items (after the last ctrl node) — still emit them
   // inside the loop body (they'll be placed after the last ctrl node, which is
   // usually the branch, so they won't appear after it in practice).
-  flushDfBuffer()
+  flushDfBuffer();
 
-  return finalItems
+  return finalItems;
 }
 
 /**
@@ -1154,61 +1320,65 @@ function walkLoopBody(mergeNode, startNodeId, idx, emitted, loopLabel) {
  *   { _sentinel: 'loop_merge', node }   — the merge node itself (already labeled above)
  */
 function walkFromEntry(entryNode, idx, emitted) {
-  const result  = []
-  const visited = new Set()
+  const result = [];
+  const visited = new Set();
 
   function walk(node) {
-    if (!node || visited.has(node.id)) return
-    visited.add(node.id)
+    if (!node || visited.has(node.id)) return;
+    visited.add(node.id);
 
-    if (node.type === 'merge') {
+    if (node.type === "merge") {
       if (isLoopMerge(node, idx)) {
-        const label = mergeLabel(node)
-        result.push({ _sentinel: 'loop_start', label })
-        result.push({ _sentinel: 'loop_merge', node })
-        const outPort = node.controlPorts.outputs[0]
+        const label = mergeLabel(node);
+        result.push({ _sentinel: "loop_start", label });
+        result.push({ _sentinel: "loop_merge", node });
+        const outPort = node.controlPorts.outputs[0];
         if (outPort) {
-          const edgeKey = `${node.id}:${outPort.id}`
-          const edge    = idx.ctrlOutEdges.get(edgeKey)
+          const edgeKey = `${node.id}:${outPort.id}`;
+          const edge = idx.ctrlOutEdges.get(edgeKey);
           if (edge && edge.toNodeId !== node.id) {
-            const nextNode = idx.nodeMap.get(edge.toNodeId)
-            if (nextNode) walk(nextNode)
+            const nextNode = idx.nodeMap.get(edge.toNodeId);
+            if (nextNode) walk(nextNode);
           }
         }
       } else {
         // Convergence merge — skip node, continue from its output
-        const outPort = node.controlPorts.outputs[0]
+        const outPort = node.controlPorts.outputs[0];
         if (outPort) {
-          const edgeKey = `${node.id}:${outPort.id}`
-          const edge    = idx.ctrlOutEdges.get(edgeKey)
+          const edgeKey = `${node.id}:${outPort.id}`;
+          const edge = idx.ctrlOutEdges.get(edgeKey);
           if (edge) {
-            const nextNode = idx.nodeMap.get(edge.toNodeId)
-            if (nextNode) walk(nextNode)
+            const nextNode = idx.nodeMap.get(edge.toNodeId);
+            if (nextNode) walk(nextNode);
           }
         }
       }
-      return
+      return;
     }
 
-    result.push(node)
+    result.push(node);
 
-    if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
-      const mergeNode = findMergeAfter(node, idx)
-      if (mergeNode) walk(mergeNode)
-      return
+    if (
+      node.type === "branch" ||
+      node.type === "switch" ||
+      node.type === "parallel"
+    ) {
+      const mergeNode = findMergeAfter(node, idx);
+      if (mergeNode) walk(mergeNode);
+      return;
     }
 
-    const outPort = node.controlPorts.outputs[0]
-    if (!outPort) return
-    const edgeKey = `${node.id}:${outPort.id}`
-    const edge    = idx.ctrlOutEdges.get(edgeKey)
-    if (!edge) return
-    const nextNode = idx.nodeMap.get(edge.toNodeId)
-    if (nextNode) walk(nextNode)
+    const outPort = node.controlPorts.outputs[0];
+    if (!outPort) return;
+    const edgeKey = `${node.id}:${outPort.id}`;
+    const edge = idx.ctrlOutEdges.get(edgeKey);
+    if (!edge) return;
+    const nextNode = idx.nodeMap.get(edge.toNodeId);
+    if (nextNode) walk(nextNode);
   }
 
-  walk(entryNode)
-  return result
+  walk(entryNode);
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -1216,46 +1386,57 @@ function walkFromEntry(entryNode, idx, emitted) {
 // ---------------------------------------------------------------------------
 
 function compileDataflow(nodeList, connectionList) {
-  if (nodeList.length === 0) return '@mode dataflow\n\n# (empty graph)\n'
+  if (nodeList.length === 0) return "@mode dataflow\n\n# (empty graph)\n";
 
-  const idx = buildIndices(nodeList, connectionList)
-  const lines = []
+  const idx = buildIndices(nodeList, connectionList);
+  const lines = [];
 
-  lines.push('@mode dataflow')
-  lines.push('')
-  lines.push('## KohakuNodeIR — dataflow mode')
-  lines.push(`## Nodes: ${nodeList.length}   Connections: ${connectionList.length}`)
-  lines.push('')
+  lines.push("@mode dataflow");
+  lines.push("");
+  lines.push("## KohakuNodeIR — dataflow mode");
+  lines.push(
+    `## Nodes: ${nodeList.length}   Connections: ${connectionList.length}`,
+  );
+  lines.push("");
 
   // In dataflow mode, we just list all nodes. The backend handles topological sort.
   // Sort by position as a hint (top-left first).
-  const sorted = [...nodeList].sort((a, b) => a.y - b.y || a.x - b.x)
+  const sorted = [...nodeList].sort((a, b) => a.y - b.y || a.x - b.x);
 
   for (const node of sorted) {
-    lines.push(emitMeta(node, 0))
+    lines.push(emitMeta(node, 0));
 
-    if (node.type === 'value') {
+    if (node.type === "value") {
       // Emit as assignment
-      const outPort = node.dataPorts.outputs[0]
+      const outPort = node.dataPorts.outputs[0];
       if (outPort) {
-        const vn = outputVarName(node, outPort.name)
-        let val = 'None'
+        const vn = outputVarName(node, outPort.name);
+        let val = "None";
         if (node.properties?.value !== undefined) {
-          val = formatLiteral(node.properties.value, node.properties?.valueType)
+          val = formatLiteral(
+            node.properties.value,
+            node.properties?.valueType,
+          );
         }
-        lines.push(`${vn} = ${val}`)
+        lines.push(`${vn} = ${val}`);
       }
     } else {
       // Emit as function call
-      const funcName = sanitizeIdent(node.type)
-      const inputArgs = node.dataPorts.inputs.map(port => resolveInput(node, port, idx))
-      const outputVars = node.dataPorts.outputs.map(port => outputVarName(node, port.name))
-      lines.push(`(${inputArgs.join(', ')})${funcName}(${outputVars.join(', ')})`)
+      const funcName = sanitizeIdent(node.type);
+      const inputArgs = node.dataPorts.inputs.map((port) =>
+        resolveInput(node, port, idx),
+      );
+      const outputVars = node.dataPorts.outputs.map((port) =>
+        outputVarName(node, port.name),
+      );
+      lines.push(
+        `(${inputArgs.join(", ")})${funcName}(${outputVars.join(", ")})`,
+      );
     }
-    lines.push('')
+    lines.push("");
   }
 
-  return lines.join('\n') + '\n'
+  return lines.join("\n") + "\n";
 }
 
 // ---------------------------------------------------------------------------
@@ -1270,27 +1451,27 @@ function compileDataflow(nodeList, connectionList) {
  * @param {'controlflow'|'dataflow'} mode - Compilation mode
  * @returns {{ ir: string, errors: string[] }} The compiled IR text and any errors/warnings
  */
-export function compileGraph(nodeList, connectionList, mode = 'controlflow') {
-  const errors = []
+export function compileGraph(nodeList, connectionList, mode = "controlflow") {
+  const errors = [];
 
   try {
-    let ir
-    if (mode === 'dataflow') {
-      ir = compileDataflow(nodeList, connectionList)
+    let ir;
+    if (mode === "dataflow") {
+      ir = compileDataflow(nodeList, connectionList);
     } else {
-      ir = compileControlflow(nodeList, connectionList)
+      ir = compileControlflow(nodeList, connectionList);
     }
-    return { ir, errors }
+    return { ir, errors };
   } catch (err) {
-    errors.push(`Compilation error: ${err.message}`)
+    errors.push(`Compilation error: ${err.message}`);
     return {
       ir: `# Compilation failed\n# ${err.message}\n`,
       errors,
-    }
+    };
   }
 }
 
-export default compileGraph
+export default compileGraph;
 
 // ---------------------------------------------------------------------------
 // Kirgraph pipeline (L1 → L2)
@@ -1305,8 +1486,8 @@ export default compileGraph
  * @returns {string} KIR text
  */
 export function compileViaKirgraph(nodeList, connectionList) {
-  const kirgraph = graphToKirgraph(nodeList, connectionList)
-  return compileKirgraphToKir(kirgraph)
+  const kirgraph = graphToKirgraph(nodeList, connectionList);
+  return compileKirgraphToKir(kirgraph);
 }
 
 /**
@@ -1320,75 +1501,92 @@ export function compileViaKirgraph(nodeList, connectionList) {
  * @returns {string} KIR text
  */
 export function compileKirgraphToKir(kirgraph) {
-  const kgNodes = kirgraph.nodes ?? []
-  const kgEdges = kirgraph.edges ?? []
+  const kgNodes = kirgraph.nodes ?? [];
+  const kgEdges = kirgraph.edges ?? [];
 
-  if (kgNodes.length === 0) return '# (empty graph)\n'
+  if (kgNodes.length === 0) return "# (empty graph)\n";
 
   // ---- Build indices from kirgraph ----------------------------------------
 
   /** @type {Map<string, object>} nodeId -> KGNode */
-  const nodeMap = new Map()
-  for (const n of kgNodes) nodeMap.set(n.id, n)
+  const nodeMap = new Map();
+  for (const n of kgNodes) nodeMap.set(n.id, n);
 
   // Control edge adjacency
   // key: "fromNodeId:fromPortName" -> { toNodeId, toPortName }
-  const ctrlOutEdges  = new Map()
+  const ctrlOutEdges = new Map();
   // key: "toNodeId:toPortName" -> { fromNodeId, fromPortName }
-  const ctrlInEdges   = new Map()
+  const ctrlInEdges = new Map();
   // nodeId -> [edge, ...]
-  const ctrlInByNode  = new Map()
-  const ctrlOutByNode = new Map()
+  const ctrlInByNode = new Map();
+  const ctrlOutByNode = new Map();
 
   // Data edge adjacency
   // key: "toNodeId:toPortName" -> { fromNodeId, fromPortName }
-  const dataInEdges   = new Map()
+  const dataInEdges = new Map();
 
   for (const edge of kgEdges) {
-    if (edge.type === 'control') {
-      const outKey = `${edge.from.node}:${edge.from.port}`
-      ctrlOutEdges.set(outKey, { toNodeId: edge.to.node, toPortName: edge.to.port })
+    if (edge.type === "control") {
+      const outKey = `${edge.from.node}:${edge.from.port}`;
+      ctrlOutEdges.set(outKey, {
+        toNodeId: edge.to.node,
+        toPortName: edge.to.port,
+      });
 
-      const inKey = `${edge.to.node}:${edge.to.port}`
-      ctrlInEdges.set(inKey, { fromNodeId: edge.from.node, fromPortName: edge.from.port })
+      const inKey = `${edge.to.node}:${edge.to.port}`;
+      ctrlInEdges.set(inKey, {
+        fromNodeId: edge.from.node,
+        fromPortName: edge.from.port,
+      });
 
-      if (!ctrlInByNode.has(edge.to.node)) ctrlInByNode.set(edge.to.node, [])
-      ctrlInByNode.get(edge.to.node).push(edge)
+      if (!ctrlInByNode.has(edge.to.node)) ctrlInByNode.set(edge.to.node, []);
+      ctrlInByNode.get(edge.to.node).push(edge);
 
-      if (!ctrlOutByNode.has(edge.from.node)) ctrlOutByNode.set(edge.from.node, [])
-      ctrlOutByNode.get(edge.from.node).push(edge)
+      if (!ctrlOutByNode.has(edge.from.node))
+        ctrlOutByNode.set(edge.from.node, []);
+      ctrlOutByNode.get(edge.from.node).push(edge);
     } else {
-      const inKey = `${edge.to.node}:${edge.to.port}`
-      dataInEdges.set(inKey, { fromNodeId: edge.from.node, fromPortName: edge.from.port })
+      const inKey = `${edge.to.node}:${edge.to.port}`;
+      dataInEdges.set(inKey, {
+        fromNodeId: edge.from.node,
+        fromPortName: edge.from.port,
+      });
     }
   }
 
-  const kgIdx = { nodeMap, ctrlOutEdges, ctrlInEdges, ctrlInByNode, ctrlOutByNode, dataInEdges }
+  const kgIdx = {
+    nodeMap,
+    ctrlOutEdges,
+    ctrlInEdges,
+    ctrlInByNode,
+    ctrlOutByNode,
+    dataInEdges,
+  };
 
   // ---- Loop merge detection (kirgraph) ------------------------------------
 
   function kgMergeLabel(kgNode) {
-    const cleanId = kgNode.id.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()
-    return `loop_${cleanId}`
+    const cleanId = kgNode.id.replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase();
+    return `loop_${cleanId}`;
   }
 
   function kgIsLoopMerge(kgNode) {
     // Forward reachability from the merge node using ctrl edges
-    const reachable = new Set()
-    const stack = [kgNode.id]
+    const reachable = new Set();
+    const stack = [kgNode.id];
     while (stack.length > 0) {
-      const id = stack.pop()
-      if (reachable.has(id)) continue
-      reachable.add(id)
-      for (const edge of (ctrlOutByNode.get(id) ?? [])) {
-        if (!reachable.has(edge.to.node)) stack.push(edge.to.node)
+      const id = stack.pop();
+      if (reachable.has(id)) continue;
+      reachable.add(id);
+      for (const edge of ctrlOutByNode.get(id) ?? []) {
+        if (!reachable.has(edge.to.node)) stack.push(edge.to.node);
       }
     }
     // A back-edge exists if any ctrl input of the merge comes from a reachable node
-    for (const edge of (ctrlInByNode.get(kgNode.id) ?? [])) {
-      if (reachable.has(edge.from.node)) return true
+    for (const edge of ctrlInByNode.get(kgNode.id) ?? []) {
+      if (reachable.has(edge.from.node)) return true;
     }
-    return false
+    return false;
   }
 
   // ---- Variable naming -----------------------------------------------------
@@ -1396,390 +1594,438 @@ export function compileKirgraphToKir(kirgraph) {
   // In kirgraph the node id is already a clean semantic id (e.g. "add1", "val_a").
   // Variable name: {nodeId}_{portName} (sanitised), matching the spec §5.1.
   function kgVarName(nodeId, portName) {
-    const cleanId   = nodeId.replace(/[^a-zA-Z0-9_]/g, '_')
-    const cleanPort = portName.replace(/[^a-zA-Z0-9_]/g, '_')
-    return `${cleanId}_${cleanPort}`
+    const cleanId = nodeId.replace(/[^a-zA-Z0-9_]/g, "_");
+    const cleanPort = portName.replace(/[^a-zA-Z0-9_]/g, "_");
+    return `${cleanId}_${cleanPort}`;
   }
 
   // ---- Data input resolution -----------------------------------------------
 
   function kgResolveInput(kgNode, inputPort) {
     // inputPort is { port, type, default? }
-    const key = `${kgNode.id}:${inputPort.port}`
-    const edge = dataInEdges.get(key)
+    const key = `${kgNode.id}:${inputPort.port}`;
+    const edge = dataInEdges.get(key);
 
     if (edge) {
       // Variable produced by the source node's output port
-      return kgVarName(edge.fromNodeId, edge.fromPortName)
+      return kgVarName(edge.fromNodeId, edge.fromPortName);
     }
 
     // Not connected — use default value
     if (inputPort.default !== undefined && inputPort.default !== null) {
-      return formatLiteral(inputPort.default, inputPort.type)
+      return formatLiteral(inputPort.default, inputPort.type);
     }
 
-    return 'None'
+    return "None";
   }
 
   // ---- Meta emission -------------------------------------------------------
 
   function kgEmitMeta(kgNode, indent) {
-    const pad = '    '.repeat(indent)
-    const pos = kgNode.meta?.pos ?? [0, 0]
-    return `${pad}@meta node_id="${kgNode.id}" pos=(${pos[0]}, ${pos[1]})`
+    const pad = "    ".repeat(indent);
+    const pos = kgNode.meta?.pos ?? [0, 0];
+    return `${pad}@meta node_id="${kgNode.id}" pos=(${pos[0]}, ${pos[1]})`;
   }
 
   // ---- Node statement emission ---------------------------------------------
 
   function kgEmitNode(kgNode, indent) {
-    const pad   = '    '.repeat(indent)
-    const lines = []
-    lines.push(kgEmitMeta(kgNode, indent))
+    const pad = "    ".repeat(indent);
+    const lines = [];
+    lines.push(kgEmitMeta(kgNode, indent));
 
     switch (kgNode.type) {
-      case 'value':
-        lines.push(...kgEmitValueNode(kgNode, pad))
-        break
-      case 'branch':
-        lines.push(...kgEmitBranchNode(kgNode, pad, indent))
-        break
-      case 'switch':
-        lines.push(...kgEmitSwitchNode(kgNode, pad, indent))
-        break
-      case 'parallel':
-        lines.push(...kgEmitParallelNode(kgNode, pad, indent))
-        break
-      case 'merge':
-        lines.push(`${pad}# merge point`)
-        break
+      case "value":
+        lines.push(...kgEmitValueNode(kgNode, pad));
+        break;
+      case "branch":
+        lines.push(...kgEmitBranchNode(kgNode, pad, indent));
+        break;
+      case "switch":
+        lines.push(...kgEmitSwitchNode(kgNode, pad, indent));
+        break;
+      case "parallel":
+        lines.push(...kgEmitParallelNode(kgNode, pad, indent));
+        break;
+      case "merge":
+        lines.push(`${pad}# merge point`);
+        break;
       default:
-        lines.push(...kgEmitFunctionNode(kgNode, pad))
-        break
+        lines.push(...kgEmitFunctionNode(kgNode, pad));
+        break;
     }
 
-    return lines
+    return lines;
   }
 
   function kgEmitValueNode(kgNode, pad) {
-    const outPort = (kgNode.data_outputs ?? [])[0]
-    if (!outPort) return [`${pad}# value node with no output port`]
+    const outPort = (kgNode.data_outputs ?? [])[0];
+    if (!outPort) return [`${pad}# value node with no output port`];
 
-    const vn  = kgVarName(kgNode.id, outPort.port)
-    const val = kgNode.properties?.value !== undefined
-      ? formatLiteral(kgNode.properties.value, kgNode.properties?.value_type)
-      : 'None'
+    const vn = kgVarName(kgNode.id, outPort.port);
+    const val =
+      kgNode.properties?.value !== undefined
+        ? formatLiteral(kgNode.properties.value, kgNode.properties?.value_type)
+        : "None";
 
-    return [`${pad}${vn} = ${val}`]
+    return [`${pad}${vn} = ${val}`];
   }
 
   function kgEmitFunctionNode(kgNode, pad) {
-    const funcName  = sanitizeIdent(kgNode.type)
-    const inputArgs = (kgNode.data_inputs ?? []).map(p => kgResolveInput(kgNode, p))
-    const outVars   = (kgNode.data_outputs ?? []).map(p => kgVarName(kgNode.id, p.port))
-    return [`${pad}(${inputArgs.join(', ')})${funcName}(${outVars.join(', ')})`]
+    const funcName = sanitizeIdent(kgNode.type);
+    const inputArgs = (kgNode.data_inputs ?? []).map((p) =>
+      kgResolveInput(kgNode, p),
+    );
+    const outVars = (kgNode.data_outputs ?? []).map((p) =>
+      kgVarName(kgNode.id, p.port),
+    );
+    return [
+      `${pad}(${inputArgs.join(", ")})${funcName}(${outVars.join(", ")})`,
+    ];
   }
 
   function kgEmitBranchNode(kgNode, pad, indent) {
-    const lines = []
-    const condPort = (kgNode.data_inputs ?? [])[0]
-    const condExpr = condPort ? kgResolveInput(kgNode, condPort) : 'False'
+    const lines = [];
+    const condPort = (kgNode.data_inputs ?? [])[0];
+    const condExpr = condPort ? kgResolveInput(kgNode, condPort) : "False";
 
-    const truePortName  = (kgNode.ctrl_outputs ?? []).find(n => n === 'true' || n.toLowerCase().includes('true'))
-      ?? (kgNode.ctrl_outputs ?? [])[0] ?? 'true'
-    const falsePortName = (kgNode.ctrl_outputs ?? []).find(n => n === 'false' || n.toLowerCase().includes('false'))
-      ?? (kgNode.ctrl_outputs ?? [])[1] ?? 'false'
+    const truePortName =
+      (kgNode.ctrl_outputs ?? []).find(
+        (n) => n === "true" || n.toLowerCase().includes("true"),
+      ) ??
+      (kgNode.ctrl_outputs ?? [])[0] ??
+      "true";
+    const falsePortName =
+      (kgNode.ctrl_outputs ?? []).find(
+        (n) => n === "false" || n.toLowerCase().includes("false"),
+      ) ??
+      (kgNode.ctrl_outputs ?? [])[1] ??
+      "false";
 
-    const trueNs  = nsLabel(`br_${kgNode.id}_true`)
-    const falseNs = nsLabel(`br_${kgNode.id}_false`)
+    const trueNs = nsLabel(`br_${kgNode.id}_true`);
+    const falseNs = nsLabel(`br_${kgNode.id}_false`);
 
-    lines.push(`${pad}(${condExpr})branch(\`${trueNs}\`, \`${falseNs}\`)`)
+    lines.push(`${pad}(${condExpr})branch(\`${trueNs}\`, \`${falseNs}\`)`);
 
-    const { chain: trueChain, loopJumpLabel: trueJump } = kgWalkControlChain(kgNode.id, truePortName, kgIdx)
-    lines.push(`${pad}${trueNs}:`)
+    const { chain: trueChain, loopJumpLabel: trueJump } = kgWalkControlChain(
+      kgNode.id,
+      truePortName,
+      kgIdx,
+    );
+    lines.push(`${pad}${trueNs}:`);
     if (trueChain.length > 0) {
-      for (const n of trueChain) lines.push(...kgEmitNode(n, indent + 1))
+      for (const n of trueChain) lines.push(...kgEmitNode(n, indent + 1));
     } else if (!trueJump) {
-      lines.push(`${pad}    # (empty branch)`)
+      lines.push(`${pad}    # (empty branch)`);
     }
-    if (trueJump) lines.push(`${pad}    ()jump(\`${trueJump}\`)`)
+    if (trueJump) lines.push(`${pad}    ()jump(\`${trueJump}\`)`);
 
-    const { chain: falseChain, loopJumpLabel: falseJump } = kgWalkControlChain(kgNode.id, falsePortName, kgIdx)
-    lines.push(`${pad}${falseNs}:`)
+    const { chain: falseChain, loopJumpLabel: falseJump } = kgWalkControlChain(
+      kgNode.id,
+      falsePortName,
+      kgIdx,
+    );
+    lines.push(`${pad}${falseNs}:`);
     if (falseChain.length > 0) {
-      for (const n of falseChain) lines.push(...kgEmitNode(n, indent + 1))
+      for (const n of falseChain) lines.push(...kgEmitNode(n, indent + 1));
     } else if (!falseJump) {
-      lines.push(`${pad}    # (empty branch)`)
+      lines.push(`${pad}    # (empty branch)`);
     }
-    if (falseJump) lines.push(`${pad}    ()jump(\`${falseJump}\`)`)
+    if (falseJump) lines.push(`${pad}    ()jump(\`${falseJump}\`)`);
 
-    return lines
+    return lines;
   }
 
   function kgEmitSwitchNode(kgNode, pad, indent) {
-    const lines = []
-    const valPort = (kgNode.data_inputs ?? [])[0]
-    const valExpr = valPort ? kgResolveInput(kgNode, valPort) : 'None'
+    const lines = [];
+    const valPort = (kgNode.data_inputs ?? [])[0];
+    const valExpr = valPort ? kgResolveInput(kgNode, valPort) : "None";
 
-    const cases = (kgNode.ctrl_outputs ?? []).map(portName => {
-      const caseNs  = nsLabel(`sw_${kgNode.id}_${sanitizeIdent(portName)}`)
-      const numMatch = portName.match(/(\d+)/)
-      const caseVal  = numMatch ? numMatch[1] : `"${portName}"`
-      return { portName, caseNs, caseVal }
-    })
+    const cases = (kgNode.ctrl_outputs ?? []).map((portName) => {
+      const caseNs = nsLabel(`sw_${kgNode.id}_${sanitizeIdent(portName)}`);
+      const numMatch = portName.match(/(\d+)/);
+      const caseVal = numMatch ? numMatch[1] : `"${portName}"`;
+      return { portName, caseNs, caseVal };
+    });
 
-    const caseArgs = cases.map(c => `${c.caseVal}=>\`${c.caseNs}\``).join(', ')
-    lines.push(`${pad}(${valExpr})switch(${caseArgs})`)
+    const caseArgs = cases
+      .map((c) => `${c.caseVal}=>\`${c.caseNs}\``)
+      .join(", ");
+    lines.push(`${pad}(${valExpr})switch(${caseArgs})`);
 
     for (const c of cases) {
-      const { chain, loopJumpLabel } = kgWalkControlChain(kgNode.id, c.portName, kgIdx)
-      lines.push(`${pad}${c.caseNs}:`)
+      const { chain, loopJumpLabel } = kgWalkControlChain(
+        kgNode.id,
+        c.portName,
+        kgIdx,
+      );
+      lines.push(`${pad}${c.caseNs}:`);
       if (chain.length > 0) {
-        for (const n of chain) lines.push(...kgEmitNode(n, indent + 1))
+        for (const n of chain) lines.push(...kgEmitNode(n, indent + 1));
       } else if (!loopJumpLabel) {
-        lines.push(`${pad}    # (empty case)`)
+        lines.push(`${pad}    # (empty case)`);
       }
-      if (loopJumpLabel) lines.push(`${pad}    ()jump(\`${loopJumpLabel}\`)`)
+      if (loopJumpLabel) lines.push(`${pad}    ()jump(\`${loopJumpLabel}\`)`);
     }
 
-    return lines
+    return lines;
   }
 
   function kgEmitParallelNode(kgNode, pad, indent) {
-    const lines   = []
+    const lines = [];
     const branches = (kgNode.ctrl_outputs ?? []).map((portName, i) => ({
       portName,
       ns: nsLabel(`par_${kgNode.id}_${i}`),
-    }))
+    }));
 
-    const nsArgs = branches.map(b => `\`${b.ns}\``).join(', ')
-    lines.push(`${pad}()parallel(${nsArgs})`)
+    const nsArgs = branches.map((b) => `\`${b.ns}\``).join(", ");
+    lines.push(`${pad}()parallel(${nsArgs})`);
 
     for (const b of branches) {
-      const { chain, loopJumpLabel } = kgWalkControlChain(kgNode.id, b.portName, kgIdx)
-      lines.push(`${pad}${b.ns}:`)
+      const { chain, loopJumpLabel } = kgWalkControlChain(
+        kgNode.id,
+        b.portName,
+        kgIdx,
+      );
+      lines.push(`${pad}${b.ns}:`);
       if (chain.length > 0) {
-        for (const n of chain) lines.push(...kgEmitNode(n, indent + 1))
+        for (const n of chain) lines.push(...kgEmitNode(n, indent + 1));
       } else if (!loopJumpLabel) {
-        lines.push(`${pad}    # (empty parallel branch)`)
+        lines.push(`${pad}    # (empty parallel branch)`);
       }
-      if (loopJumpLabel) lines.push(`${pad}    ()jump(\`${loopJumpLabel}\`)`)
+      if (loopJumpLabel) lines.push(`${pad}    ()jump(\`${loopJumpLabel}\`)`);
     }
 
-    return lines
+    return lines;
   }
 
   // ---- Control chain walking -----------------------------------------------
 
   function kgWalkControlChain(fromNodeId, fromPortName, kgIdx) {
-    const chain   = []
-    const visited = new Set()
-    let curNodeId   = fromNodeId
-    let curPortName = fromPortName
+    const chain = [];
+    const visited = new Set();
+    let curNodeId = fromNodeId;
+    let curPortName = fromPortName;
 
     while (true) {
-      const edgeKey = `${curNodeId}:${curPortName}`
-      const edge    = kgIdx.ctrlOutEdges.get(edgeKey)
-      if (!edge) break
+      const edgeKey = `${curNodeId}:${curPortName}`;
+      const edge = kgIdx.ctrlOutEdges.get(edgeKey);
+      if (!edge) break;
 
-      const nextNode = kgIdx.nodeMap.get(edge.toNodeId)
-      if (!nextNode || visited.has(nextNode.id)) break
-      visited.add(nextNode.id)
+      const nextNode = kgIdx.nodeMap.get(edge.toNodeId);
+      if (!nextNode || visited.has(nextNode.id)) break;
+      visited.add(nextNode.id);
 
-      if (nextNode.type === 'merge') {
+      if (nextNode.type === "merge") {
         if (kgIsLoopMerge(nextNode)) {
-          return { chain, loopJumpLabel: kgMergeLabel(nextNode) }
+          return { chain, loopJumpLabel: kgMergeLabel(nextNode) };
         }
-        break
+        break;
       }
 
-      chain.push(nextNode)
+      chain.push(nextNode);
 
-      if (nextNode.type === 'branch' || nextNode.type === 'switch' || nextNode.type === 'parallel') {
-        const mergeNode = kgFindMergeAfter(nextNode, kgIdx)
+      if (
+        nextNode.type === "branch" ||
+        nextNode.type === "switch" ||
+        nextNode.type === "parallel"
+      ) {
+        const mergeNode = kgFindMergeAfter(nextNode, kgIdx);
         if (mergeNode) {
           if (kgIsLoopMerge(mergeNode)) {
-            return { chain, loopJumpLabel: kgMergeLabel(mergeNode) }
+            return { chain, loopJumpLabel: kgMergeLabel(mergeNode) };
           }
-          const mergeOutName = (mergeNode.ctrl_outputs ?? [])[0]
+          const mergeOutName = (mergeNode.ctrl_outputs ?? [])[0];
           if (mergeOutName) {
-            curNodeId   = mergeNode.id
-            curPortName = mergeOutName
-            continue
+            curNodeId = mergeNode.id;
+            curPortName = mergeOutName;
+            continue;
           }
         }
-        break
+        break;
       }
 
-      const outPortName = (nextNode.ctrl_outputs ?? [])[0]
-      if (!outPortName) break
+      const outPortName = (nextNode.ctrl_outputs ?? [])[0];
+      if (!outPortName) break;
 
-      curNodeId   = nextNode.id
-      curPortName = outPortName
+      curNodeId = nextNode.id;
+      curPortName = outPortName;
     }
 
-    return { chain, loopJumpLabel: null }
+    return { chain, loopJumpLabel: null };
   }
 
   function kgFindMergeAfter(branchingNode, kgIdx) {
-    const visited = new Set()
+    const visited = new Set();
 
     function walk(nodeId, portName, depth) {
-      if (depth > 100) return null
-      const edge = kgIdx.ctrlOutEdges.get(`${nodeId}:${portName}`)
-      if (!edge) return null
+      if (depth > 100) return null;
+      const edge = kgIdx.ctrlOutEdges.get(`${nodeId}:${portName}`);
+      if (!edge) return null;
 
-      const next = kgIdx.nodeMap.get(edge.toNodeId)
-      if (!next) return null
-      if (next.type === 'merge') return next
-      if (visited.has(next.id)) return null
-      visited.add(next.id)
+      const next = kgIdx.nodeMap.get(edge.toNodeId);
+      if (!next) return null;
+      if (next.type === "merge") return next;
+      if (visited.has(next.id)) return null;
+      visited.add(next.id);
 
-      if (next.type === 'branch' || next.type === 'switch' || next.type === 'parallel') {
-        const inner = kgFindMergeAfter(next, kgIdx)
+      if (
+        next.type === "branch" ||
+        next.type === "switch" ||
+        next.type === "parallel"
+      ) {
+        const inner = kgFindMergeAfter(next, kgIdx);
         if (inner) {
-          const innerOut = (inner.ctrl_outputs ?? [])[0]
-          if (innerOut) return walk(inner.id, innerOut, depth + 1)
+          const innerOut = (inner.ctrl_outputs ?? [])[0];
+          if (innerOut) return walk(inner.id, innerOut, depth + 1);
         }
-        return null
+        return null;
       }
 
-      const out = (next.ctrl_outputs ?? [])[0]
-      if (!out) return null
-      return walk(next.id, out, depth + 1)
+      const out = (next.ctrl_outputs ?? [])[0];
+      if (!out) return null;
+      return walk(next.id, out, depth + 1);
     }
 
-    for (const portName of (branchingNode.ctrl_outputs ?? [])) {
-      const m = walk(branchingNode.id, portName, 0)
-      if (m) return m
+    for (const portName of branchingNode.ctrl_outputs ?? []) {
+      const m = walk(branchingNode.id, portName, 0);
+      if (m) return m;
     }
-    return null
+    return null;
   }
 
   // ---- Partition nodes -------------------------------------------------------
 
   // Pure data nodes: no ctrl_inputs and no ctrl_outputs
-  const pureDataNodes = kgNodes.filter(n =>
-    (n.ctrl_inputs  ?? []).length === 0 &&
-    (n.ctrl_outputs ?? []).length === 0
-  )
+  const pureDataNodes = kgNodes.filter(
+    (n) =>
+      (n.ctrl_inputs ?? []).length === 0 && (n.ctrl_outputs ?? []).length === 0,
+  );
 
   // Ctrl-connected nodes with no incoming ctrl edges (entry points)
-  const entryNodes = kgNodes.filter(n => {
-    const hasCtrl = (n.ctrl_inputs ?? []).length > 0 || (n.ctrl_outputs ?? []).length > 0
-    if (!hasCtrl) return false
-    const incoming = ctrlInByNode.get(n.id)
-    return !incoming || incoming.length === 0
-  }).sort((a, b) => {
-    const pa = a.meta?.pos ?? [0, 0]
-    const pb = b.meta?.pos ?? [0, 0]
-    return pa[1] - pb[1] || pa[0] - pb[0]
-  })
+  const entryNodes = kgNodes
+    .filter((n) => {
+      const hasCtrl =
+        (n.ctrl_inputs ?? []).length > 0 || (n.ctrl_outputs ?? []).length > 0;
+      if (!hasCtrl) return false;
+      const incoming = ctrlInByNode.get(n.id);
+      return !incoming || incoming.length === 0;
+    })
+    .sort((a, b) => {
+      const pa = a.meta?.pos ?? [0, 0];
+      const pb = b.meta?.pos ?? [0, 0];
+      return pa[1] - pb[1] || pa[0] - pb[0];
+    });
 
   // ---- Emit ---------------------------------------------------------------
 
-  const lines = []
-  lines.push('## KohakuNodeIR — compiled via kirgraph')
-  lines.push(`## Nodes: ${kgNodes.length}   Edges: ${kgEdges.length}`)
-  lines.push('')
+  const lines = [];
+  lines.push("## KohakuNodeIR — compiled via kirgraph");
+  lines.push(`## Nodes: ${kgNodes.length}   Edges: ${kgEdges.length}`);
+  lines.push("");
 
   if (pureDataNodes.length > 0) {
-    lines.push('@dataflow:')
+    lines.push("@dataflow:");
     for (const n of pureDataNodes) {
-      for (const l of kgEmitNode(n, 1)) lines.push(l)
-      lines.push('')
+      for (const l of kgEmitNode(n, 1)) lines.push(l);
+      lines.push("");
     }
   }
 
   if (entryNodes.length > 0) {
-    const emitted = new Set(pureDataNodes.map(n => n.id))
+    const emitted = new Set(pureDataNodes.map((n) => n.id));
 
     for (const entry of entryNodes) {
-      if (emitted.has(entry.id)) continue
+      if (emitted.has(entry.id)) continue;
 
       // Walk from this entry collecting all nodes in ctrl order.
       // Items may be node objects or sentinels:
       //   { _sentinel: 'loop_start', label }  — emit jump + label
       //   { _sentinel: 'loop_merge', node }   — skip (label already emitted)
-      const visited2 = new Set()
+      const visited2 = new Set();
       function walkEntry(node) {
-        if (!node || visited2.has(node.id)) return []
-        visited2.add(node.id)
+        if (!node || visited2.has(node.id)) return [];
+        visited2.add(node.id);
 
-        if (node.type === 'merge') {
+        if (node.type === "merge") {
           if (kgIsLoopMerge(node)) {
-            const label = kgMergeLabel(node)
+            const label = kgMergeLabel(node);
             const result = [
-              { _sentinel: 'loop_start', label },
-              { _sentinel: 'loop_merge', node },
-            ]
-            const mOut = (node.ctrl_outputs ?? [])[0]
+              { _sentinel: "loop_start", label },
+              { _sentinel: "loop_merge", node },
+            ];
+            const mOut = (node.ctrl_outputs ?? [])[0];
             if (mOut) {
-              const nextEdge = ctrlOutEdges.get(`${node.id}:${mOut}`)
+              const nextEdge = ctrlOutEdges.get(`${node.id}:${mOut}`);
               if (nextEdge) {
-                const nextNode = nodeMap.get(nextEdge.toNodeId)
-                result.push(...walkEntry(nextNode))
+                const nextNode = nodeMap.get(nextEdge.toNodeId);
+                result.push(...walkEntry(nextNode));
               }
             }
-            return result
+            return result;
           }
           // Convergence merge — continue without emitting a label
-          const mOut = (node.ctrl_outputs ?? [])[0]
-          if (!mOut) return []
-          const nextEdge = ctrlOutEdges.get(`${node.id}:${mOut}`)
-          if (!nextEdge) return []
-          const nextNode = nodeMap.get(nextEdge.toNodeId)
-          return walkEntry(nextNode)
+          const mOut = (node.ctrl_outputs ?? [])[0];
+          if (!mOut) return [];
+          const nextEdge = ctrlOutEdges.get(`${node.id}:${mOut}`);
+          if (!nextEdge) return [];
+          const nextNode = nodeMap.get(nextEdge.toNodeId);
+          return walkEntry(nextNode);
         }
 
-        const result = [node]
+        const result = [node];
 
-        if (node.type === 'branch' || node.type === 'switch' || node.type === 'parallel') {
-          const merge = kgFindMergeAfter(node, kgIdx)
+        if (
+          node.type === "branch" ||
+          node.type === "switch" ||
+          node.type === "parallel"
+        ) {
+          const merge = kgFindMergeAfter(node, kgIdx);
           if (merge) {
-            result.push(...walkEntry(merge))
+            result.push(...walkEntry(merge));
           }
-          return result
+          return result;
         }
 
-        const outPort = (node.ctrl_outputs ?? [])[0]
-        if (!outPort) return result
-        const nextEdge = ctrlOutEdges.get(`${node.id}:${outPort}`)
-        if (!nextEdge) return result
-        const nextNode = nodeMap.get(nextEdge.toNodeId)
-        result.push(...walkEntry(nextNode))
-        return result
+        const outPort = (node.ctrl_outputs ?? [])[0];
+        if (!outPort) return result;
+        const nextEdge = ctrlOutEdges.get(`${node.id}:${outPort}`);
+        if (!nextEdge) return result;
+        const nextNode = nodeMap.get(nextEdge.toNodeId);
+        result.push(...walkEntry(nextNode));
+        return result;
       }
 
-      const chain = walkEntry(entry)
+      const chain = walkEntry(entry);
       for (const item of chain) {
-        if (item._sentinel === 'loop_start') {
-          lines.push(`()jump(\`${item.label}\`)`)
-          lines.push(`${item.label}:`)
-          continue
+        if (item._sentinel === "loop_start") {
+          lines.push(`()jump(\`${item.label}\`)`);
+          lines.push(`${item.label}:`);
+          continue;
         }
-        if (item._sentinel === 'loop_merge') {
-          emitted.add(item.node.id)
-          continue
+        if (item._sentinel === "loop_merge") {
+          emitted.add(item.node.id);
+          continue;
         }
-        if (emitted.has(item.id)) continue
-        emitted.add(item.id)
-        for (const l of kgEmitNode(item, 0)) lines.push(l)
-        lines.push('')
+        if (emitted.has(item.id)) continue;
+        emitted.add(item.id);
+        for (const l of kgEmitNode(item, 0)) lines.push(l);
+        lines.push("");
       }
     }
   } else if (pureDataNodes.length === 0) {
     // Nothing was organised — fall back to position-sorted emit
-    lines.push('# Warning: no control flow entry point found')
+    lines.push("# Warning: no control flow entry point found");
     const sorted = [...kgNodes].sort((a, b) => {
-      const pa = a.meta?.pos ?? [0, 0]
-      const pb = b.meta?.pos ?? [0, 0]
-      return pa[1] - pb[1] || pa[0] - pb[0]
-    })
+      const pa = a.meta?.pos ?? [0, 0];
+      const pb = b.meta?.pos ?? [0, 0];
+      return pa[1] - pb[1] || pa[0] - pb[0];
+    });
     for (const n of sorted) {
-      for (const l of kgEmitNode(n, 0)) lines.push(l)
-      lines.push('')
+      for (const l of kgEmitNode(n, 0)) lines.push(l);
+      lines.push("");
     }
   }
 
-  return lines.join('\n') + '\n'
+  return lines.join("\n") + "\n";
 }

@@ -39,7 +39,9 @@ class MockWebSocket {
 
   // Test helper: trigger onmessage
   triggerMessage(data) {
-    this.onmessage?.({ data: typeof data === "string" ? data : JSON.stringify(data) });
+    this.onmessage?.({
+      data: typeof data === "string" ? data : JSON.stringify(data),
+    });
   }
 }
 

@@ -38,9 +38,9 @@ function normalizePos(pos, fallbackIndex) {
   if (Array.isArray(pos) && pos.length >= 2) {
     return { x: Number(pos[0]), y: Number(pos[1]) };
   }
-  if (pos && typeof pos === 'object') {
-    const x = pos['0'] ?? pos.x ?? 0;
-    const y = pos['1'] ?? pos.y ?? 0;
+  if (pos && typeof pos === "object") {
+    const x = pos["0"] ?? pos.x ?? 0;
+    const y = pos["1"] ?? pos.y ?? 0;
     return { x: Number(x), y: Number(y) };
   }
   // Auto-layout grid (col=index%4, row=floor(index/4), spacing 300×200)
@@ -57,9 +57,9 @@ function normalizeSize(size) {
   if (Array.isArray(size) && size.length >= 2) {
     return { width: Number(size[0]), height: Number(size[1]) };
   }
-  if (size && typeof size === 'object') {
-    const w = size['0'] ?? size.width ?? 200;
-    const h = size['1'] ?? size.height ?? 100;
+  if (size && typeof size === "object") {
+    const w = size["0"] ?? size.width ?? 200;
+    const h = size["1"] ?? size.height ?? 100;
     return { width: Number(w), height: Number(h) };
   }
   return { width: 200, height: 100 };
@@ -79,14 +79,14 @@ function nodeId(comfyId) {
  * Mirrors Python: _sanitize_type()
  */
 function sanitizeType(comfyType) {
-  let result = '';
+  let result = "";
   for (const ch of String(comfyType).toLowerCase()) {
     if (/[a-z0-9_]/.test(ch)) {
       result += ch;
-    } else if (ch === ' ') {
-      result += '_';
+    } else if (ch === " ") {
+      result += "_";
     } else {
-      result += `_x${ch.charCodeAt(0).toString(16).padStart(2, '0')}_`;
+      result += `_x${ch.charCodeAt(0).toString(16).padStart(2, "0")}_`;
     }
   }
   return result;
@@ -97,7 +97,7 @@ function sanitizeType(comfyType) {
  * Mirrors Python: _sanitize_port_name()
  */
 function sanitizePortName(name) {
-  return String(name).toLowerCase().replace(/ /g, '_');
+  return String(name).toLowerCase().replace(/ /g, "_");
 }
 
 /**
@@ -115,17 +115,17 @@ function parseLink(link) {
       originSlot: link[2],
       targetId: link[3],
       targetSlot: link[4],
-      type: link.length > 5 ? link[5] : 'any',
+      type: link.length > 5 ? link[5] : "any",
     };
   }
-  if (link && typeof link === 'object') {
+  if (link && typeof link === "object") {
     return {
       id: link.id,
       originId: link.origin_id,
       originSlot: link.origin_slot,
       targetId: link.target_id,
       targetSlot: link.target_slot,
-      type: link.type ?? 'any',
+      type: link.type ?? "any",
     };
   }
   throw new Error(`Unsupported link format: ${typeof link}`);
@@ -143,9 +143,9 @@ function parseLink(link) {
  * Workflow format: top-level object has a "nodes" array.
  */
 function isApiFormat(workflow) {
-  if ('nodes' in workflow) return false;
+  if ("nodes" in workflow) return false;
   for (const v of Object.values(workflow)) {
-    if (v && typeof v === 'object' && 'class_type' in v) return true;
+    if (v && typeof v === "object" && "class_type" in v) return true;
   }
   return false;
 }
@@ -184,9 +184,9 @@ function convertApiFormat(workflow) {
 
   nids.forEach((nid, i) => {
     const nodeData = workflow[nid];
-    if (!nodeData || typeof nodeData !== 'object') return;
+    if (!nodeData || typeof nodeData !== "object") return;
 
-    const comfyType = nodeData.class_type ?? 'unknown';
+    const comfyType = nodeData.class_type ?? "unknown";
     const inputsData = nodeData.inputs ?? {};
 
     const dataInputs = [];
@@ -196,14 +196,14 @@ function convertApiFormat(workflow) {
       if (
         Array.isArray(value) &&
         value.length === 2 &&
-        (typeof value[0] === 'number' || typeof value[0] === 'string') &&
-        typeof value[1] === 'number'
+        (typeof value[0] === "number" || typeof value[0] === "string") &&
+        typeof value[1] === "number"
       ) {
         // Connection reference [source_node_id, output_slot]
-        dataInputs.push({ name: safeName, type: 'any' });
+        dataInputs.push({ name: safeName, type: "any" });
       } else {
         // Literal default value
-        dataInputs.push({ name: safeName, type: 'any', default: value });
+        dataInputs.push({ name: safeName, type: "any", default: value });
       }
     }
 
@@ -233,15 +233,15 @@ function convertApiFormat(workflow) {
 
   for (const nid of nids) {
     const nodeData = workflow[nid];
-    if (!nodeData || typeof nodeData !== 'object') continue;
+    if (!nodeData || typeof nodeData !== "object") continue;
     const inputsData = nodeData.inputs ?? {};
 
     for (const [portName, value] of Object.entries(inputsData)) {
       if (
         Array.isArray(value) &&
         value.length === 2 &&
-        (typeof value[0] === 'number' || typeof value[0] === 'string') &&
-        typeof value[1] === 'number'
+        (typeof value[0] === "number" || typeof value[0] === "string") &&
+        typeof value[1] === "number"
       ) {
         const srcNid = String(value[0]);
         const srcSlot = value[1];
@@ -254,7 +254,7 @@ function convertApiFormat(workflow) {
         outputPortsSeen[srcKgId].add(outPortName);
 
         edges.push({
-          type: 'data',
+          type: "data",
           fromNode: srcKgId,
           fromPort: outPortName,
           toNode: dstKgId,
@@ -270,7 +270,7 @@ function convertApiFormat(workflow) {
     if (!node) continue;
     for (const pname of [...portNames].sort()) {
       if (!node.dataOutputs.some((p) => p.name === pname)) {
-        node.dataOutputs.push({ name: pname, type: 'any' });
+        node.dataOutputs.push({ name: pname, type: "any" });
       }
     }
   }
@@ -314,10 +314,14 @@ function convertWorkflowFormat(workflow) {
   for (const cn of comfyNodes) {
     const cnId = cn.id;
     for (const [idx, out] of (cn.outputs ?? []).entries()) {
-      outputPortNames[`${cnId}:${idx}`] = sanitizePortName(out.name ?? `output_${idx}`);
+      outputPortNames[`${cnId}:${idx}`] = sanitizePortName(
+        out.name ?? `output_${idx}`,
+      );
     }
     for (const [idx, inp] of (cn.inputs ?? []).entries()) {
-      inputPortNames[`${cnId}:${idx}`] = sanitizePortName(inp.name ?? `input_${idx}`);
+      inputPortNames[`${cnId}:${idx}`] = sanitizePortName(
+        inp.name ?? `input_${idx}`,
+      );
     }
   }
 
@@ -327,7 +331,7 @@ function convertWorkflowFormat(workflow) {
   for (const [i, cn] of comfyNodes.entries()) {
     const cnId = cn.id;
     const kgId = nodeId(cnId);
-    const comfyType = cn.type ?? 'unknown';
+    const comfyType = cn.type ?? "unknown";
 
     const { x, y } = normalizePos(cn.pos, i);
     const { width, height } = normalizeSize(cn.size);
@@ -335,15 +339,15 @@ function convertWorkflowFormat(workflow) {
     // Build data input ports
     const rawInputs = cn.inputs ?? [];
     const dataInputs = rawInputs.map((inp) => ({
-      name: sanitizePortName(inp.name ?? 'input'),
-      type: String(inp.type ?? 'any').toLowerCase(),
+      name: sanitizePortName(inp.name ?? "input"),
+      type: String(inp.type ?? "any").toLowerCase(),
     }));
 
     // Build data output ports
     const rawOutputs = cn.outputs ?? [];
     const dataOutputs = rawOutputs.map((out) => ({
-      name: sanitizePortName(out.name ?? 'output'),
-      type: String(out.type ?? 'any').toLowerCase(),
+      name: sanitizePortName(out.name ?? "output"),
+      type: String(out.type ?? "any").toLowerCase(),
     }));
 
     // Apply widget_values: fill in defaults for unconnected input slots,
@@ -367,7 +371,7 @@ function convertWorkflowFormat(workflow) {
       while (widgetIdx < widgets.length) {
         dataInputs.push({
           name: `widget_${widgetIdx}`,
-          type: 'any',
+          type: "any",
           default: widgets[widgetIdx++],
         });
       }
@@ -391,11 +395,14 @@ function convertWorkflowFormat(workflow) {
   // Convert links to edges
   for (const plk of parsedLinks) {
     const fromPort =
-      outputPortNames[`${plk.originId}:${plk.originSlot}`] ?? `output_${plk.originSlot}`;
-    const toPort = inputPortNames[`${plk.targetId}:${plk.targetSlot}`] ?? `input_${plk.targetSlot}`;
+      outputPortNames[`${plk.originId}:${plk.originSlot}`] ??
+      `output_${plk.originSlot}`;
+    const toPort =
+      inputPortNames[`${plk.targetId}:${plk.targetSlot}`] ??
+      `input_${plk.targetSlot}`;
 
     edges.push({
-      type: 'data',
+      type: "data",
       fromNode: nodeId(plk.originId),
       fromPort,
       toNode: nodeId(plk.targetId),
@@ -418,8 +425,8 @@ function convertWorkflowFormat(workflow) {
  * @returns {{ nodes: object[], edges: object[] }} Viewer graph.
  */
 export function loadComfyUI(json) {
-  if (!json || typeof json !== 'object') {
-    throw new Error('loadComfyUI: expected a JSON object');
+  if (!json || typeof json !== "object") {
+    throw new Error("loadComfyUI: expected a JSON object");
   }
 
   if (isApiFormat(json)) {

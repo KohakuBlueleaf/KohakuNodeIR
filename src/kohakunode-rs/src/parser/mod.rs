@@ -17,9 +17,9 @@ use pest::Parser as PestParser;
 use pest_derive::Parser;
 
 use crate::ast::{
-    Assignment, Branch, DataflowBlock, Expression, FuncCall, Identifier, Jump, KeywordArg,
-    Literal, MetaAnnotation, ModeDecl, Namespace, OutputTarget, Parallel, Parameter,
-    Program, Statement, SubgraphDef, Switch, Value,
+    Assignment, Branch, DataflowBlock, Expression, FuncCall, Identifier, Jump, KeywordArg, Literal,
+    MetaAnnotation, ModeDecl, Namespace, OutputTarget, Parallel, Parameter, Program, Statement,
+    SubgraphDef, Switch, Value,
 };
 
 // ---------------------------------------------------------------------------
@@ -63,9 +63,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
 // AST builder — top-level
 // ---------------------------------------------------------------------------
 
-fn build_program(
-    mut pairs: pest::iterators::Pairs<'_, Rule>,
-) -> Result<Program, ParseError> {
+fn build_program(mut pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Program, ParseError> {
     // The top-level pair is the `program` rule.
     let program_pair = pairs
         .next()
@@ -107,7 +105,11 @@ fn build_program(
         }
     }
 
-    Ok(Program { body, mode, line: None })
+    Ok(Program {
+        body,
+        mode,
+        line: None,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -134,7 +136,9 @@ fn build_statement(pair: pest::iterators::Pair<'_, Rule>) -> Result<RawStmt, Par
     match inner.as_rule() {
         Rule::simple_stmt => build_simple_stmt(inner),
         Rule::compound_stmt => build_compound_stmt(inner),
-        r => Err(ParseError::Internal(format!("unexpected rule in statement: {r:?}"))),
+        r => Err(ParseError::Internal(format!(
+            "unexpected rule in statement: {r:?}"
+        ))),
     }
 }
 
@@ -162,7 +166,9 @@ fn build_compound_stmt(pair: pest::iterators::Pair<'_, Rule>) -> Result<RawStmt,
         Rule::namespace_def => Ok(RawStmt::Stmt(build_namespace_def(child)?)),
         Rule::subgraph_def => Ok(RawStmt::Stmt(build_subgraph_def(child)?)),
         Rule::dataflow_block => Ok(RawStmt::Stmt(build_dataflow_block(child)?)),
-        r => Err(ParseError::Internal(format!("unexpected compound_stmt rule: {r:?}"))),
+        r => Err(ParseError::Internal(format!(
+            "unexpected compound_stmt rule: {r:?}"
+        ))),
     }
 }
 
@@ -252,7 +258,9 @@ fn build_call_in_item(pair: pest::iterators::Pair<'_, Rule>) -> Result<Expressio
     match child.as_rule() {
         Rule::kwarg => build_kwarg(child),
         Rule::expr => build_expr(child),
-        r => Err(ParseError::Internal(format!("unexpected call_in_item rule: {r:?}"))),
+        r => Err(ParseError::Internal(format!(
+            "unexpected call_in_item rule: {r:?}"
+        ))),
     }
 }
 
@@ -301,7 +309,9 @@ fn build_call_out_item(pair: pest::iterators::Pair<'_, Rule>) -> Result<RawOutpu
         .ok_or_else(|| ParseError::Internal("empty call_out_item".into()))?;
 
     match child.as_rule() {
-        Rule::out_name => Ok(RawOutput::Name(child.into_inner().next().unwrap().as_str().to_string())),
+        Rule::out_name => Ok(RawOutput::Name(
+            child.into_inner().next().unwrap().as_str().to_string(),
+        )),
         Rule::out_wildcard => Ok(RawOutput::Wildcard),
         Rule::out_label_ref => {
             let label = build_label_ref_str(child.into_inner().next().unwrap());
@@ -321,7 +331,9 @@ fn build_call_out_item(pair: pest::iterators::Pair<'_, Rule>) -> Result<RawOutpu
             let label = build_label_ref_str(label_pair);
             Ok(RawOutput::SwitchDefault(label))
         }
-        r => Err(ParseError::Internal(format!("unexpected call_out_item: {r:?}"))),
+        r => Err(ParseError::Internal(format!(
+            "unexpected call_out_item: {r:?}"
+        ))),
     }
 }
 
@@ -379,10 +391,13 @@ fn dispatch_call(
             }))
         }
         "jump" => {
-            let target = raw_outputs.into_iter().find_map(|o| match o {
-                RawOutput::LabelRef(s) => Some(s),
-                _ => None,
-            }).unwrap_or_default();
+            let target = raw_outputs
+                .into_iter()
+                .find_map(|o| match o {
+                    RawOutput::LabelRef(s) => Some(s),
+                    _ => None,
+                })
+                .unwrap_or_default();
             Ok(Statement::Jump(Jump {
                 target,
                 metadata: None,
@@ -441,7 +456,9 @@ fn build_namespace_def(pair: pest::iterators::Pair<'_, Rule>) -> Result<Statemen
     match child.as_rule() {
         Rule::namespace_body => build_namespace_body(child),
         Rule::namespace_empty => build_namespace_empty(child),
-        r => Err(ParseError::Internal(format!("unexpected namespace_def child: {r:?}"))),
+        r => Err(ParseError::Internal(format!(
+            "unexpected namespace_def child: {r:?}"
+        ))),
     }
 }
 
@@ -533,7 +550,11 @@ fn build_param(pair: pest::iterators::Pair<'_, Rule>) -> Result<Parameter, Parse
         Rule::param_plain => {
             let line = line_of(&child);
             let name = child.into_inner().next().unwrap().as_str().to_string();
-            Ok(Parameter { name, default: None, line })
+            Ok(Parameter {
+                name,
+                default: None,
+                line,
+            })
         }
         Rule::param_with_default => {
             let line = line_of(&child);
@@ -546,7 +567,9 @@ fn build_param(pair: pest::iterators::Pair<'_, Rule>) -> Result<Parameter, Parse
                 line,
             })
         }
-        r => Err(ParseError::Internal(format!("unexpected param rule: {r:?}"))),
+        r => Err(ParseError::Internal(format!(
+            "unexpected param rule: {r:?}"
+        ))),
     }
 }
 
@@ -606,7 +629,9 @@ fn build_meta_val(pair: pest::iterators::Pair<'_, Rule>) -> Result<Value, ParseE
             let name = child.into_inner().next().unwrap().as_str().to_string();
             Ok(Value::Str(name))
         }
-        r => Err(ParseError::Internal(format!("unexpected meta_val rule: {r:?}"))),
+        r => Err(ParseError::Internal(format!(
+            "unexpected meta_val rule: {r:?}"
+        ))),
     }
 }
 
@@ -657,15 +682,23 @@ fn build_literal(pair: pest::iterators::Pair<'_, Rule>) -> Result<Literal, Parse
             let line = line_of(&child);
             let raw = child.into_inner().next().unwrap().as_str();
             let value = parse_int(raw)?;
-            Ok(Literal { value: Value::Int(value), literal_type: "int".into(), line })
+            Ok(Literal {
+                value: Value::Int(value),
+                literal_type: "int".into(),
+                line,
+            })
         }
         Rule::float_lit => {
             let line = line_of(&child);
             let raw = child.into_inner().next().unwrap().as_str();
-            let value: f64 = raw.parse().map_err(|_| {
-                ParseError::Internal(format!("invalid float literal: {raw}"))
-            })?;
-            Ok(Literal { value: Value::Float(value), literal_type: "float".into(), line })
+            let value: f64 = raw
+                .parse()
+                .map_err(|_| ParseError::Internal(format!("invalid float literal: {raw}")))?;
+            Ok(Literal {
+                value: Value::Float(value),
+                literal_type: "float".into(),
+                line,
+            })
         }
         Rule::bool_lit => {
             let line = line_of(&child);
@@ -675,17 +708,29 @@ fn build_literal(pair: pest::iterators::Pair<'_, Rule>) -> Result<Literal, Parse
                 Rule::FALSE => false,
                 _ => unreachable!(),
             };
-            Ok(Literal { value: Value::Bool(value), literal_type: "bool".into(), line })
+            Ok(Literal {
+                value: Value::Bool(value),
+                literal_type: "bool".into(),
+                line,
+            })
         }
         Rule::none_lit => {
             let line = line_of(&child);
-            Ok(Literal { value: Value::None, literal_type: "none".into(), line })
+            Ok(Literal {
+                value: Value::None,
+                literal_type: "none".into(),
+                line,
+            })
         }
         Rule::string_lit => {
             let line = line_of(&child);
             let raw = child.into_inner().next().unwrap().as_str();
             let value = parse_string(raw)?;
-            Ok(Literal { value: Value::Str(value), literal_type: "str".into(), line })
+            Ok(Literal {
+                value: Value::Str(value),
+                literal_type: "str".into(),
+                line,
+            })
         }
         Rule::list_lit => {
             let line = line_of(&child);
@@ -723,7 +768,9 @@ fn build_literal(pair: pest::iterators::Pair<'_, Rule>) -> Result<Literal, Parse
                 line,
             })
         }
-        r => Err(ParseError::Internal(format!("unexpected literal rule: {r:?}"))),
+        r => Err(ParseError::Internal(format!(
+            "unexpected literal rule: {r:?}"
+        ))),
     }
 }
 
@@ -742,9 +789,7 @@ fn expr_to_value(expr: Expression) -> Value {
 
 /// Collect `statement` children from an iterator, skipping INDENT / DEDENT
 /// and other structural tokens.
-fn collect_body_stmts(
-    pairs: pest::iterators::Pairs<'_, Rule>,
-) -> Result<Vec<RawStmt>, ParseError> {
+fn collect_body_stmts(pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Vec<RawStmt>, ParseError> {
     let mut stmts = Vec::new();
     for pair in pairs {
         if pair.as_rule() == Rule::statement {
@@ -827,7 +872,9 @@ fn parse_string(raw: &str) -> Result<String, ParseError> {
     } else if raw.starts_with('"') || raw.starts_with('\'') {
         (&raw[1..raw.len() - 1], 1)
     } else {
-        return Err(ParseError::Internal(format!("malformed string literal: {raw}")));
+        return Err(ParseError::Internal(format!(
+            "malformed string literal: {raw}"
+        )));
     };
     let _ = quote_len;
 
@@ -1128,9 +1175,9 @@ mod tests {
         // Navigate from the crate root (kohakunode-rs/) up to the repo root.
         let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         manifest
-            .parent()  // src/
+            .parent() // src/
             .unwrap()
-            .parent()  // repo root
+            .parent() // repo root
             .unwrap()
             .join("examples")
             .join("kir_basics")

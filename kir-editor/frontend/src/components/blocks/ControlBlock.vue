@@ -3,11 +3,11 @@
 //                   dataflow / subgraph AST nodes.
 // Renders from AST data. Block mode is read-only.
 
-import { defineAsyncComponent } from 'vue';
-import InputChip from './InputChip.vue';
+import { defineAsyncComponent } from "vue";
+import InputChip from "./InputChip.vue";
 
 // Async import breaks the circular dependency: ControlBlock -> BlockStack -> ControlBlock
-const BlockStack = defineAsyncComponent(() => import('./BlockStack.vue'));
+const BlockStack = defineAsyncComponent(() => import("./BlockStack.vue"));
 
 const props = defineProps({
   block: {
@@ -18,28 +18,35 @@ const props = defineProps({
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const TYPE_COLORS = {
-  branch:    '#fab387',
-  switch:    '#f9e2af',
-  parallel:  '#94e2d5',
-  namespace: '#cba6f7',
-  dataflow:  '#89b4fa',
-  subgraph:  '#b4befe',
+  branch: "#fab387",
+  switch: "#f9e2af",
+  parallel: "#94e2d5",
+  namespace: "#cba6f7",
+  dataflow: "#89b4fa",
+  subgraph: "#b4befe",
 };
 
 function blockColor(type) {
-  return TYPE_COLORS[type] ?? '#fab387';
+  return TYPE_COLORS[type] ?? "#fab387";
 }
 
 // ── Icon ──────────────────────────────────────────────────────────────────────
 function blockIcon(type) {
   switch (type) {
-    case 'branch':    return '\u2ADD'; // ⊝
-    case 'switch':    return '\u25A6'; // ▦
-    case 'parallel':  return '\u2261'; // ≡
-    case 'namespace': return '\u2605'; // ★
-    case 'dataflow':  return '\u2BB0'; // ⮰
-    case 'subgraph':  return '\u2753'; // @def
-    default:          return '\u25A0';
+    case "branch":
+      return "\u2ADD"; // ⊝
+    case "switch":
+      return "\u25A6"; // ▦
+    case "parallel":
+      return "\u2261"; // ≡
+    case "namespace":
+      return "\u2605"; // ★
+    case "dataflow":
+      return "\u2BB0"; // ⮰
+    case "subgraph":
+      return "\u2753"; // @def
+    default:
+      return "\u25A0";
   }
 }
 
@@ -51,7 +58,10 @@ function blockIcon(type) {
 function arms(block) {
   if (block.arms && block.arms.length) return block.arms;
   // Namespace, dataflow, subgraph: single body arm
-  if (block.blocks) return [{ label: block.label ?? block.name ?? block.type, blocks: block.blocks }];
+  if (block.blocks)
+    return [
+      { label: block.label ?? block.name ?? block.type, blocks: block.blocks },
+    ];
   return [];
 }
 
@@ -59,8 +69,8 @@ function arms(block) {
  * Derive the header condition/value chip expression, if any.
  */
 function headerExpr(block) {
-  if (block.type === 'branch') return block.condition ?? null;
-  if (block.type === 'switch') return block.value ?? null;
+  if (block.type === "branch") return block.condition ?? null;
+  if (block.type === "switch") return block.value ?? null;
   return null;
 }
 
@@ -69,13 +79,20 @@ function headerExpr(block) {
  */
 function headerLabel(block) {
   switch (block.type) {
-    case 'branch':    return 'branch';
-    case 'switch':    return 'switch';
-    case 'parallel':  return 'parallel';
-    case 'namespace': return block.label ?? 'namespace';
-    case 'dataflow':  return '@dataflow';
-    case 'subgraph':  return `@def ${block.name ?? ''}`;
-    default:          return block.type;
+    case "branch":
+      return "branch";
+    case "switch":
+      return "switch";
+    case "parallel":
+      return "parallel";
+    case "namespace":
+      return block.label ?? "namespace";
+    case "dataflow":
+      return "@dataflow";
+    case "subgraph":
+      return `@def ${block.name ?? ""}`;
+    default:
+      return block.type;
   }
 }
 </script>
@@ -99,27 +116,29 @@ function headerLabel(block) {
       <!-- Condition / value chip (branch condition, switch value) -->
       <div v-if="headerExpr(block)" class="ctrl-condition">
         <span class="ctrl-cond-label">
-          {{ block.type === 'branch' ? 'if' : 'on' }}
+          {{ block.type === "branch" ? "if" : "on" }}
         </span>
         <InputChip :expr="headerExpr(block)" />
       </div>
 
       <!-- Subgraph params -->
-      <div v-if="block.type === 'subgraph' && block.params?.length" class="ctrl-params">
-        <span
-          v-for="p in block.params"
-          :key="p"
-          class="ctrl-param-chip"
-        >{{ p }}</span>
+      <div
+        v-if="block.type === 'subgraph' && block.params?.length"
+        class="ctrl-params"
+      >
+        <span v-for="p in block.params" :key="p" class="ctrl-param-chip">{{
+          p
+        }}</span>
       </div>
 
       <!-- Subgraph outputs -->
-      <div v-if="block.type === 'subgraph' && block.outputs?.length" class="ctrl-sg-outputs">
-        <span
-          v-for="o in block.outputs"
-          :key="o"
-          class="ctrl-sg-output-chip"
-        >&#x2192; {{ o }}</span>
+      <div
+        v-if="block.type === 'subgraph' && block.outputs?.length"
+        class="ctrl-sg-outputs"
+      >
+        <span v-for="o in block.outputs" :key="o" class="ctrl-sg-output-chip"
+          >&#x2192; {{ o }}</span
+        >
       </div>
     </div>
 
@@ -133,7 +152,7 @@ function headerLabel(block) {
         <!-- Arm label (left sidebar) — for switch, shows the case expression -->
         <div class="ctrl-arm-label">
           <span class="arm-label-text">
-            {{ arm.caseExpr ? arm.caseExpr.text + ' =>' : arm.label }}
+            {{ arm.caseExpr ? arm.caseExpr.text + " =>" : arm.label }}
           </span>
         </div>
 
@@ -184,7 +203,8 @@ function headerLabel(block) {
 /* Header */
 .ctrl-header {
   padding: 4px 12px 8px;
-  border-bottom: 1.5px solid color-mix(in srgb, var(--ctrl-color) 30%, transparent);
+  border-bottom: 1.5px solid
+    color-mix(in srgb, var(--ctrl-color) 30%, transparent);
 }
 
 .ctrl-header-row {
@@ -205,7 +225,7 @@ function headerLabel(block) {
   font-size: 12px;
   color: var(--ctrl-color);
   flex: 1;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
 }
 
 .ctrl-type-badge {
@@ -243,7 +263,7 @@ function headerLabel(block) {
 }
 
 .ctrl-param-chip {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 10px;
   background: color-mix(in srgb, var(--ctrl-color) 15%, transparent);
   border: 1px solid color-mix(in srgb, var(--ctrl-color) 30%, transparent);
@@ -261,7 +281,7 @@ function headerLabel(block) {
 }
 
 .ctrl-sg-output-chip {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 10px;
   background: color-mix(in srgb, #a6e3a1 12%, transparent);
   border: 1px solid color-mix(in srgb, #a6e3a1 30%, transparent);
@@ -288,7 +308,8 @@ function headerLabel(block) {
 .ctrl-arm-label {
   width: 24px;
   background: color-mix(in srgb, var(--ctrl-color) 20%, #181825);
-  border-right: 1.5px solid color-mix(in srgb, var(--ctrl-color) 40%, transparent);
+  border-right: 1.5px solid
+    color-mix(in srgb, var(--ctrl-color) 40%, transparent);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -305,7 +326,7 @@ function headerLabel(block) {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   opacity: 0.85;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
 }
 
 /* Arm body */

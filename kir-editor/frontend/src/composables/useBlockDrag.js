@@ -1,6 +1,6 @@
-import { ref, shallowRef } from 'vue';
-import { useGraphStore } from '../stores/graph.js';
-import { useHistoryStore } from '../stores/history.js';
+import { ref, shallowRef } from "vue";
+import { useGraphStore } from "../stores/graph.js";
+import { useHistoryStore } from "../stores/history.js";
 
 // ── Shared drag state ──────────────────────────────────────────────────────────
 // Exported as module-level refs so BlockCanvas can read them for the drop
@@ -39,7 +39,7 @@ function getCtrlNeighbors(graph, nodeId) {
   let prevConn = null;
   let nextConn = null;
   for (const conn of graph.connections.values()) {
-    if (conn.portType !== 'control') continue;
+    if (conn.portType !== "control") continue;
     if (conn.toNodeId === nodeId) prevConn = conn;
     if (conn.fromNodeId === nodeId && !nextConn) nextConn = conn;
   }
@@ -60,7 +60,7 @@ function detachFromChain(graph, nodeId) {
       prevConn.fromPortId,
       nextConn.toNodeId,
       nextConn.toPortId,
-      'control',
+      "control",
     );
   }
 
@@ -80,7 +80,7 @@ function detachFromChain(graph, nodeId) {
 function findArmTailNodeId(graph, armPortId) {
   let conn = null;
   for (const c of graph.connections.values()) {
-    if (c.portType === 'control' && c.fromPortId === armPortId) {
+    if (c.portType === "control" && c.fromPortId === armPortId) {
       conn = c;
       break;
     }
@@ -98,7 +98,11 @@ function findArmTailNodeId(graph, armPortId) {
     if (!outPort) break;
     let nextConn = null;
     for (const c of graph.connections.values()) {
-      if (c.portType === 'control' && c.fromNodeId === currentId && c.fromPortId === outPort.id) {
+      if (
+        c.portType === "control" &&
+        c.fromNodeId === currentId &&
+        c.fromPortId === outPort.id
+      ) {
         nextConn = c;
         break;
       }
@@ -129,7 +133,13 @@ function insertIntoArm(graph, nodeId, armPortId, cBlockNodeId) {
 
   if (!tailId) {
     // Arm is empty: connect C-block arm port → node
-    graph.addConnection(cBlockNodeId, armPortId, nodeId, insertInPort.id, 'control');
+    graph.addConnection(
+      cBlockNodeId,
+      armPortId,
+      nodeId,
+      insertInPort.id,
+      "control",
+    );
   } else {
     // Append after tail
     const tailNode = graph.nodes.get(tailId);
@@ -139,12 +149,16 @@ function insertIntoArm(graph, nodeId, armPortId, cBlockNodeId) {
 
     // Remove any existing connection from tail's output (should be none at tail, but be safe)
     for (const [cid, c] of graph.connections) {
-      if (c.portType === 'control' && c.fromNodeId === tailId && c.fromPortId === tailOut.id) {
+      if (
+        c.portType === "control" &&
+        c.fromNodeId === tailId &&
+        c.fromPortId === tailOut.id
+      ) {
         graph.connections.delete(cid);
         break;
       }
     }
-    graph.addConnection(tailId, tailOut.id, nodeId, insertInPort.id, 'control');
+    graph.addConnection(tailId, tailOut.id, nodeId, insertInPort.id, "control");
   }
 }
 
@@ -176,7 +190,11 @@ function insertAfterNode(graph, nodeId, afterNodeId) {
   // Find what the anchor was connected to (its next node)
   let oldNextConn = null;
   for (const conn of graph.connections.values()) {
-    if (conn.portType === 'control' && conn.fromNodeId === afterNodeId && conn.fromPortId === anchorOutPort.id) {
+    if (
+      conn.portType === "control" &&
+      conn.fromNodeId === afterNodeId &&
+      conn.fromPortId === anchorOutPort.id
+    ) {
       oldNextConn = conn;
       break;
     }
@@ -186,11 +204,23 @@ function insertAfterNode(graph, nodeId, afterNodeId) {
   if (oldNextConn) graph.connections.delete(oldNextConn.id);
 
   // anchor → insert
-  graph.addConnection(afterNodeId, anchorOutPort.id, nodeId, insertInPort.id, 'control');
+  graph.addConnection(
+    afterNodeId,
+    anchorOutPort.id,
+    nodeId,
+    insertInPort.id,
+    "control",
+  );
 
   // insert → old-next (if exists and insertNode has an output)
   if (oldNextConn && insertOutPort) {
-    graph.addConnection(nodeId, insertOutPort.id, oldNextConn.toNodeId, oldNextConn.toPortId, 'control');
+    graph.addConnection(
+      nodeId,
+      insertOutPort.id,
+      oldNextConn.toNodeId,
+      oldNextConn.toPortId,
+      "control",
+    );
   }
 }
 
@@ -214,8 +244,8 @@ export function useBlockDrag(nodeId) {
     _startClientY = e.clientY;
     _hasMoved = false;
 
-    window.addEventListener('pointermove', _onPointerMove);
-    window.addEventListener('pointerup', _onPointerUp);
+    window.addEventListener("pointermove", _onPointerMove);
+    window.addEventListener("pointerup", _onPointerUp);
   }
 
   function _onPointerMove(e) {
@@ -223,7 +253,8 @@ export function useBlockDrag(nodeId) {
     const dy = e.clientY - _startClientY;
 
     if (!_hasMoved) {
-      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD)
+        return;
       // Threshold crossed — start drag
       _hasMoved = true;
       draggingNodeId.value = nodeId;
@@ -236,7 +267,7 @@ export function useBlockDrag(nodeId) {
     const el = document.elementFromPoint(e.clientX, e.clientY);
 
     // Check first: is the cursor inside a C-block arm body?
-    const armEl = el?.closest('[data-arm-port-id]');
+    const armEl = el?.closest("[data-arm-port-id]");
     if (armEl) {
       const armPortId = armEl.dataset.armPortId;
       const cBlockNodeId = armEl.dataset.armCBlockId;
@@ -247,13 +278,13 @@ export function useBlockDrag(nodeId) {
     }
 
     // Otherwise: check for a normal block node reorder target
-    const targetEl = el?.closest('[data-block-node-id]');
+    const targetEl = el?.closest("[data-block-node-id]");
     if (targetEl && targetEl.dataset.blockNodeId !== nodeId) {
       const rect = targetEl.getBoundingClientRect();
       const midY = rect.top + rect.height / 2;
       dropTarget.value = {
         nodeId: targetEl.dataset.blockNodeId,
-        position: e.clientY < midY ? 'before' : 'after',
+        position: e.clientY < midY ? "before" : "after",
       };
     } else {
       dropTarget.value = null;
@@ -261,8 +292,8 @@ export function useBlockDrag(nodeId) {
   }
 
   function _onPointerUp() {
-    window.removeEventListener('pointermove', _onPointerMove);
-    window.removeEventListener('pointerup', _onPointerUp);
+    window.removeEventListener("pointermove", _onPointerMove);
+    window.removeEventListener("pointerup", _onPointerUp);
 
     if (!_hasMoved || !draggingNodeId.value) {
       draggingNodeId.value = null;
@@ -294,13 +325,13 @@ export function useBlockDrag(nodeId) {
     }
 
     // Insert at drop position
-    if (target.position === 'after') {
+    if (target.position === "after") {
       insertAfterNode(graph, draggedId, target.nodeId);
     } else {
       // Insert before target: find what comes before target, then insert after that
       let beforeTarget = null;
       for (const conn of graph.connections.values()) {
-        if (conn.portType === 'control' && conn.toNodeId === target.nodeId) {
+        if (conn.portType === "control" && conn.toNodeId === target.nodeId) {
           beforeTarget = conn.fromNodeId;
           break;
         }
@@ -318,19 +349,33 @@ export function useBlockDrag(nodeId) {
         if (draggedOut && targetIn) {
           // Remove any existing connection from dragged out
           for (const conn of graph.connections.values()) {
-            if (conn.portType === 'control' && conn.fromNodeId === draggedId && conn.fromPortId === draggedOut.id) {
+            if (
+              conn.portType === "control" &&
+              conn.fromNodeId === draggedId &&
+              conn.fromPortId === draggedOut.id
+            ) {
               graph.connections.delete(conn.id);
               break;
             }
           }
           // Remove any existing ctrl-in connection to target
           for (const conn of graph.connections.values()) {
-            if (conn.portType === 'control' && conn.toNodeId === target.nodeId && conn.toPortId === targetIn.id) {
+            if (
+              conn.portType === "control" &&
+              conn.toNodeId === target.nodeId &&
+              conn.toPortId === targetIn.id
+            ) {
               graph.connections.delete(conn.id);
               break;
             }
           }
-          graph.addConnection(draggedId, draggedOut.id, target.nodeId, targetIn.id, 'control');
+          graph.addConnection(
+            draggedId,
+            draggedOut.id,
+            target.nodeId,
+            targetIn.id,
+            "control",
+          );
         }
       }
     }

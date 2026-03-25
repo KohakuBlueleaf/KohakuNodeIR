@@ -43,9 +43,9 @@ function normalizePos(pos, fallbackIndex) {
   if (Array.isArray(pos) && pos.length >= 2) {
     return { x: Number(pos[0]), y: Number(pos[1]) };
   }
-  if (pos && typeof pos === 'object') {
-    const x = pos['0'] ?? pos.x ?? 0;
-    const y = pos['1'] ?? pos.y ?? 0;
+  if (pos && typeof pos === "object") {
+    const x = pos["0"] ?? pos.x ?? 0;
+    const y = pos["1"] ?? pos.y ?? 0;
     return { x: Number(x), y: Number(y) };
   }
   // Auto-layout grid position
@@ -65,9 +65,9 @@ function normalizeSize(size) {
   if (Array.isArray(size) && size.length >= 2) {
     return { width: Number(size[0]), height: Number(size[1]) };
   }
-  if (size && typeof size === 'object') {
-    const w = size['0'] ?? size.width ?? DEFAULT_WIDTH;
-    const h = size['1'] ?? size.height ?? DEFAULT_HEIGHT;
+  if (size && typeof size === "object") {
+    const w = size["0"] ?? size.width ?? DEFAULT_WIDTH;
+    const h = size["1"] ?? size.height ?? DEFAULT_HEIGHT;
     return { width: Number(w), height: Number(h) };
   }
   return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
@@ -87,15 +87,15 @@ function convertNode(kgNode, index) {
 
   // data_inputs: [{ port, type, default? }]  →  dataInputs: [{ name, type, default }]
   const dataInputs = (kgNode.data_inputs ?? []).map((p) => ({
-    name: p.port ?? p.name ?? '',
-    type: p.type ?? 'any',
+    name: p.port ?? p.name ?? "",
+    type: p.type ?? "any",
     ...(p.default !== undefined ? { default: p.default } : {}),
   }));
 
   // data_outputs: [{ port, type }]  →  dataOutputs: [{ name, type }]
   const dataOutputs = (kgNode.data_outputs ?? []).map((p) => ({
-    name: p.port ?? p.name ?? '',
-    type: p.type ?? 'any',
+    name: p.port ?? p.name ?? "",
+    type: p.type ?? "any",
   }));
 
   // ctrl_inputs / ctrl_outputs are already plain string arrays.
@@ -104,8 +104,8 @@ function convertNode(kgNode, index) {
 
   return {
     id: String(kgNode.id),
-    type: String(kgNode.type ?? 'unknown'),
-    name: String(kgNode.name ?? kgNode.id ?? ''),
+    type: String(kgNode.type ?? "unknown"),
+    name: String(kgNode.name ?? kgNode.id ?? ""),
     x,
     y,
     width,
@@ -125,7 +125,7 @@ function convertNode(kgNode, index) {
  */
 function convertEdge(kgEdge) {
   return {
-    type: kgEdge.type === 'control' ? 'control' : 'data',
+    type: kgEdge.type === "control" ? "control" : "data",
     fromNode: String(kgEdge.from.node),
     fromPort: String(kgEdge.from.port),
     toNode: String(kgEdge.to.node),
@@ -140,8 +140,8 @@ function convertEdge(kgEdge) {
  * @returns {{ nodes: object[], edges: object[] }} Viewer graph.
  */
 export function loadKirgraph(json) {
-  if (!json || typeof json !== 'object') {
-    throw new Error('loadKirgraph: expected a JSON object');
+  if (!json || typeof json !== "object") {
+    throw new Error("loadKirgraph: expected a JSON object");
   }
 
   const rawNodes = Array.isArray(json.nodes) ? json.nodes : [];

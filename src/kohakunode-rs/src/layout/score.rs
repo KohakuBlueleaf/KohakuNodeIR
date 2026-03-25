@@ -58,9 +58,7 @@ pub struct LayoutScore {
 // ---------------------------------------------------------------------------
 
 /// Map each node to (col, row) grid coordinates.
-pub fn build_grid(
-    graph: &KirGraph,
-) -> (HashMap<String, (i32, i32)>, HashMap<String, (f64, f64)>) {
+pub fn build_grid(graph: &KirGraph) -> (HashMap<String, (i32, i32)>, HashMap<String, (f64, f64)>) {
     let mut positions: HashMap<String, (f64, f64)> = HashMap::new();
     let mut sizes: HashMap<String, (f64, f64)> = HashMap::new();
 
@@ -204,8 +202,7 @@ pub fn count_crossings(grid: &HashMap<String, (i32, i32)>, edges: &[KGEdge]) -> 
             None => continue,
         };
 
-        let (mut src_col, mut src_row, mut dst_col, mut dst_row) =
-            (src.0, src.1, dst.0, dst.1);
+        let (mut src_col, mut src_row, mut dst_col, mut dst_row) = (src.0, src.1, dst.0, dst.1);
 
         if src_col == dst_col {
             continue; // vertical edges don't cross horizontally
@@ -242,8 +239,7 @@ pub fn count_crossings(grid: &HashMap<String, (i32, i32)>, edges: &[KGEdge]) -> 
             for j in i + 1..n {
                 let (a_left, a_right) = pair_edges[i];
                 let (b_left, b_right) = pair_edges[j];
-                if (a_left < b_left && a_right > b_right)
-                    || (a_left > b_left && a_right < b_right)
+                if (a_left < b_left && a_right > b_right) || (a_left > b_left && a_right < b_right)
                 {
                     total_crossings += 1;
                 }

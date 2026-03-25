@@ -1,40 +1,40 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
-import { useGraphStore } from '../../stores/graph.js';
-import { useEditorStore } from '../../stores/editor.js';
+import { ref, computed } from "vue";
+import { useNodeRegistryStore } from "../../stores/nodeRegistry.js";
+import { useGraphStore } from "../../stores/graph.js";
+import { useEditorStore } from "../../stores/editor.js";
 
 const registry = useNodeRegistryStore();
 const graph = useGraphStore();
 const editor = useEditorStore();
 
 // ---- Search ----
-const searchQuery = ref('');
+const searchQuery = ref("");
 
 // ---- Node def editor dialog ----
-const emit = defineEmits(['open-node-def-editor']);
+const emit = defineEmits(["open-node-def-editor"]);
 
 // ---- Category ordering ----
-const CATEGORY_ORDER = ['Control Flow', 'Data', 'User Defined'];
+const CATEGORY_ORDER = ["Control Flow", "Data", "User Defined"];
 
 // ---- Category icons ----
 const CATEGORY_ICONS = {
-  'Control Flow': 'i-carbon-flow',
-  'Data': 'i-carbon-data-base',
-  'User Defined': 'i-carbon-function',
+  "Control Flow": "i-carbon-flow",
+  Data: "i-carbon-data-base",
+  "User Defined": "i-carbon-function",
 };
 
 // ---- Node type icons ----
 const NODE_ICONS = {
-  branch: 'i-carbon-branch',
-  merge: 'i-carbon-flow-stream',
-  switch: 'i-carbon-switcher',
-  parallel: 'i-carbon-parallel-processing',
-  value: 'i-carbon-string-integer',
+  branch: "i-carbon-branch",
+  merge: "i-carbon-flow-stream",
+  switch: "i-carbon-switcher",
+  parallel: "i-carbon-parallel-processing",
+  value: "i-carbon-string-integer",
 };
 
 function nodeIcon(type) {
-  return NODE_ICONS[type] ?? 'i-carbon-cube';
+  return NODE_ICONS[type] ?? "i-carbon-cube";
 }
 
 // ---- Filtered & grouped definitions ----
@@ -44,7 +44,7 @@ const groupedDefinitions = computed(() => {
 
   const filtered = q
     ? all.filter(
-        d =>
+        (d) =>
           d.name.toLowerCase().includes(q) ||
           d.type.toLowerCase().includes(q) ||
           d.category.toLowerCase().includes(q),
@@ -83,36 +83,40 @@ function toggleCategory(cat) {
 
 // ---- Drag-and-drop ----
 function onDragStart(event, def) {
-  event.dataTransfer.effectAllowed = 'copy';
-  event.dataTransfer.setData('application/x-node-type', def.type);
+  event.dataTransfer.effectAllowed = "copy";
+  event.dataTransfer.setData("application/x-node-type", def.type);
 
   // Ghost image: create a small element that matches the pill
-  const ghost = document.createElement('div');
+  const ghost = document.createElement("div");
   ghost.textContent = def.name;
   ghost.style.cssText = [
-    'position:fixed',
-    'top:-200px',
-    'left:-200px',
-    'padding:4px 10px',
-    'background:#313244',
-    'color:#cdd6f4',
-    'border:1px solid #45475a',
-    'border-radius:6px',
-    'font-size:12px',
-    'font-family:inherit',
-    'pointer-events:none',
-    'white-space:nowrap',
-  ].join(';');
+    "position:fixed",
+    "top:-200px",
+    "left:-200px",
+    "padding:4px 10px",
+    "background:#313244",
+    "color:#cdd6f4",
+    "border:1px solid #45475a",
+    "border-radius:6px",
+    "font-size:12px",
+    "font-family:inherit",
+    "pointer-events:none",
+    "white-space:nowrap",
+  ].join(";");
   document.body.appendChild(ghost);
-  event.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, ghost.offsetHeight / 2);
+  event.dataTransfer.setDragImage(
+    ghost,
+    ghost.offsetWidth / 2,
+    ghost.offsetHeight / 2,
+  );
   // Clean up after the drag starts
   requestAnimationFrame(() => document.body.removeChild(ghost));
 }
 
 // ---- Double-click user-defined node to open editor ----
 function onDblClick(def) {
-  if (def.category === 'User Defined') {
-    emit('open-node-def-editor', def);
+  if (def.category === "User Defined") {
+    emit("open-node-def-editor", def);
   }
 }
 </script>
@@ -147,12 +151,21 @@ function onDblClick(def) {
       >
         <!-- Category header -->
         <button class="palette-cat-header" @click="toggleCategory(category)">
-          <span :class="['palette-cat-icon', CATEGORY_ICONS[category] ?? 'i-carbon-folder']" />
+          <span
+            :class="[
+              'palette-cat-icon',
+              CATEGORY_ICONS[category] ?? 'i-carbon-folder',
+            ]"
+          />
           <span class="palette-cat-name">{{ category }}</span>
           <span class="palette-cat-count">{{ defs.length }}</span>
           <span
             class="palette-cat-chevron"
-            :class="collapsedCategories.has(category) ? 'i-carbon-chevron-right' : 'i-carbon-chevron-down'"
+            :class="
+              collapsedCategories.has(category)
+                ? 'i-carbon-chevron-right'
+                : 'i-carbon-chevron-down'
+            "
           />
         </button>
 
@@ -169,7 +182,10 @@ function onDblClick(def) {
           >
             <span :class="['palette-item-icon', nodeIcon(def.type)]" />
             <span class="palette-item-name">{{ def.name }}</span>
-            <span v-if="def.category === 'User Defined'" class="palette-item-edit-hint">
+            <span
+              v-if="def.category === 'User Defined'"
+              class="palette-item-edit-hint"
+            >
               dbl-click to edit
             </span>
           </div>
@@ -178,7 +194,10 @@ function onDblClick(def) {
 
       <!-- Add user-defined node button -->
       <div class="palette-add-btn-wrapper">
-        <button class="palette-add-btn" @click="emit('open-node-def-editor', null)">
+        <button
+          class="palette-add-btn"
+          @click="emit('open-node-def-editor', null)"
+        >
           <span class="i-carbon-add" />
           New Node Type
         </button>
@@ -275,7 +294,9 @@ function onDblClick(def) {
   text-transform: uppercase;
   cursor: pointer;
   text-align: left;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
   user-select: none;
 }
 .palette-cat-header:hover {
@@ -323,7 +344,10 @@ function onDblClick(def) {
   font-size: 12px;
   color: #cdd6f4;
   user-select: none;
-  transition: background 0.1s, border-color 0.1s, transform 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s,
+    transform 0.1s;
   position: relative;
   overflow: hidden;
 }
@@ -377,7 +401,10 @@ function onDblClick(def) {
   color: #6c7086;
   font-size: 12px;
   cursor: pointer;
-  transition: border-color 0.1s, color 0.1s, background 0.1s;
+  transition:
+    border-color 0.1s,
+    color 0.1s,
+    background 0.1s;
 }
 .palette-add-btn:hover {
   border-color: #89b4fa;

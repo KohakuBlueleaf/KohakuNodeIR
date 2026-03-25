@@ -1,15 +1,15 @@
-import { ref, reactive, computed } from 'vue';
-import { defineStore } from 'pinia';
-import { useGraphStore } from './graph.js';
-import { useHistoryStore } from './history.js';
+import { ref, reactive, computed } from "vue";
+import { defineStore } from "pinia";
+import { useGraphStore } from "./graph.js";
+import { useHistoryStore } from "./history.js";
 
 const ZOOM_MIN = 0.1;
 const ZOOM_MAX = 3.0;
 const ZOOM_STEP = 0.1;
 
-export const useEditorStore = defineStore('editor', () => {
+export const useEditorStore = defineStore("editor", () => {
   // ---- Pan / Zoom ----
-  const panX = ref(0);   // canvas origin offset in screen pixels
+  const panX = ref(0); // canvas origin offset in screen pixels
   const panY = ref(0);
   const zoom = ref(1.0); // scale factor
 
@@ -31,7 +31,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   // ---- Mode ----
   /** @type {import('vue').Ref<'dataflow'|'controlflow'>} */
-  const mode = ref('controlflow');
+  const mode = ref("controlflow");
 
   // ---- Show/hide control ports ----
   const showCtrlPorts = ref(true);
@@ -41,7 +41,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   // ---- Computed ----
   const hasSelection = computed(
-    () => selectedNodeIds.size > 0 || selectedConnectionIds.size > 0
+    () => selectedNodeIds.size > 0 || selectedConnectionIds.size > 0,
   );
 
   // ---- Coordinate Conversion ----
@@ -97,11 +97,17 @@ export const useEditorStore = defineStore('editor', () => {
   // ---- Zoom ----
 
   function zoomIn() {
-    zoom.value = Math.min(ZOOM_MAX, parseFloat((zoom.value + ZOOM_STEP).toFixed(2)));
+    zoom.value = Math.min(
+      ZOOM_MAX,
+      parseFloat((zoom.value + ZOOM_STEP).toFixed(2)),
+    );
   }
 
   function zoomOut() {
-    zoom.value = Math.max(ZOOM_MIN, parseFloat((zoom.value - ZOOM_STEP).toFixed(2)));
+    zoom.value = Math.max(
+      ZOOM_MIN,
+      parseFloat((zoom.value - ZOOM_STEP).toFixed(2)),
+    );
   }
 
   function resetZoom() {
@@ -118,7 +124,10 @@ export const useEditorStore = defineStore('editor', () => {
    */
   function zoomAtPoint(delta, focalX, focalY) {
     const oldZoom = zoom.value;
-    const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, parseFloat((oldZoom + delta).toFixed(2))));
+    const newZoom = Math.min(
+      ZOOM_MAX,
+      Math.max(ZOOM_MIN, parseFloat((oldZoom + delta).toFixed(2))),
+    );
     if (newZoom === oldZoom) return;
 
     // Adjust pan so the focal point stays fixed on screen
@@ -250,8 +259,7 @@ export const useEditorStore = defineStore('editor', () => {
       const nodeRight = node.x + node.width;
       const nodeBottom = node.y + node.height;
       const overlaps =
-        node.x < maxX && nodeRight > minX &&
-        node.y < maxY && nodeBottom > minY;
+        node.x < maxX && nodeRight > minX && node.y < maxY && nodeBottom > minY;
       if (overlaps) {
         selectedNodeIds.add(node.id);
       }
@@ -336,7 +344,13 @@ export const useEditorStore = defineStore('editor', () => {
     draftWire.value = null;
 
     const graph = useGraphStore();
-    return graph.addConnection(fromNodeId, fromPortId, toNodeId, toPortId, portType);
+    return graph.addConnection(
+      fromNodeId,
+      fromPortId,
+      toNodeId,
+      toPortId,
+      portType,
+    );
   }
 
   /**
@@ -354,14 +368,16 @@ export const useEditorStore = defineStore('editor', () => {
    * @param {'dataflow'|'controlflow'} newMode
    */
   function setMode(newMode) {
-    if (newMode === 'dataflow' || newMode === 'controlflow') {
+    if (newMode === "dataflow" || newMode === "controlflow") {
       mode.value = newMode;
     }
   }
 
   // Active view mode ('graph', 'blocks', 'code') — set by App.vue
-  const activeViewMode = ref('graph');
-  function setActiveViewMode(m) { activeViewMode.value = m; }
+  const activeViewMode = ref("graph");
+  function setActiveViewMode(m) {
+    activeViewMode.value = m;
+  }
 
   return {
     // Pan / Zoom

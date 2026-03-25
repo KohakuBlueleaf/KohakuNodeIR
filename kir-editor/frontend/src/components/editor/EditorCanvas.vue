@@ -1,17 +1,17 @@
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
-import { useGraphStore } from '../../stores/graph.js';
-import { useEditorStore } from '../../stores/editor.js';
-import { useHistoryStore } from '../../stores/history.js';
-import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
-import { GRID_SIZE, snapToGrid } from '../../utils/grid.js';
-import { kirgraphToGraph } from '../../compiler/kirgraph.js';
-import { detectAndParseAsync } from '../../parser/index.js';
-import { parserResultToGraph } from '../../utils/parserResultToGraph.js';
-import WireLayer  from '../wire/WireLayer.vue';
-import DraftWire  from '../wire/DraftWire.vue';
-import NodeRenderer from '../nodes/NodeRenderer.vue';
-import SelectionBox from './SelectionBox.vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { useGraphStore } from "../../stores/graph.js";
+import { useEditorStore } from "../../stores/editor.js";
+import { useHistoryStore } from "../../stores/history.js";
+import { useNodeRegistryStore } from "../../stores/nodeRegistry.js";
+import { GRID_SIZE, snapToGrid } from "../../utils/grid.js";
+import { kirgraphToGraph } from "../../compiler/kirgraph.js";
+import { detectAndParseAsync } from "../../parser/index.js";
+import { parserResultToGraph } from "../../utils/parserResultToGraph.js";
+import WireLayer from "../wire/WireLayer.vue";
+import DraftWire from "../wire/DraftWire.vue";
+import NodeRenderer from "../nodes/NodeRenderer.vue";
+import SelectionBox from "./SelectionBox.vue";
 
 // ── Props / emits ──────────────────────────────────────────────────────────────
 const props = defineProps({
@@ -21,7 +21,7 @@ const props = defineProps({
     default: 1,
   },
 });
-const emit = defineEmits(['update:zoom']);
+const emit = defineEmits(["update:zoom"]);
 
 // ── Store ──────────────────────────────────────────────────────────────────────
 const graph = useGraphStore();
@@ -30,7 +30,13 @@ const history = useHistoryStore();
 const registry = useNodeRegistryStore();
 
 // ── Sync zoom prop → editor store so other components read the correct value ──
-watch(() => props.zoom, (z) => { editor.zoom = z; }, { immediate: true });
+watch(
+  () => props.zoom,
+  (z) => {
+    editor.zoom = z;
+  },
+  { immediate: true },
+);
 
 // ── Refs ───────────────────────────────────────────────────────────────────────
 const containerRef = ref(null);
@@ -40,8 +46,8 @@ const panX = ref(0);
 const panY = ref(0);
 
 // ── Panning (middle-mouse or space+drag) ──────────────────────────────────────
-const isPanning    = ref(false);
-const spaceHeld    = ref(false);
+const isPanning = ref(false);
+const spaceHeld = ref(false);
 let panStartX = 0;
 let panStartY = 0;
 let panOriginX = 0;
@@ -66,8 +72,8 @@ function endPan() {
 }
 
 // ── Zoom ──────────────────────────────────────────────────────────────────────
-const ZOOM_MIN  = 0.1;
-const ZOOM_MAX  = 4;
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 4;
 const ZOOM_SPEED = 0.001;
 
 function onWheel(e) {
@@ -79,8 +85,11 @@ function onWheel(e) {
   const my = e.clientY - rect.top;
 
   const oldZoom = props.zoom;
-  const delta   = -e.deltaY * ZOOM_SPEED;
-  const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(oldZoom + delta * oldZoom).toFixed(4)));
+  const delta = -e.deltaY * ZOOM_SPEED;
+  const newZoom = Math.min(
+    ZOOM_MAX,
+    Math.max(ZOOM_MIN, +(oldZoom + delta * oldZoom).toFixed(4)),
+  );
 
   // Zoom toward the mouse pointer: adjust pan so the world point under the
   // cursor stays fixed.
@@ -89,14 +98,14 @@ function onWheel(e) {
   panX.value = mx - ((mx - panX.value) / oldZoom) * newZoom;
   panY.value = my - ((my - panY.value) / oldZoom) * newZoom;
 
-  emit('update:zoom', newZoom);
+  emit("update:zoom", newZoom);
   editor.zoom = newZoom;
 }
 
 // ── Transform style ───────────────────────────────────────────────────────────
 const transformStyle = computed(() => ({
   transform: `translate(${panX.value}px, ${panY.value}px) scale(${props.zoom})`,
-  transformOrigin: '0 0',
+  transformOrigin: "0 0",
 }));
 
 // ── Grid background ───────────────────────────────────────────────────────────
@@ -111,23 +120,22 @@ const gridStyle = computed(() => {
   const ox = ((panX.value % gridPx) + gridPx) % gridPx;
   const oy = ((panY.value % gridPx) + gridPx) % gridPx;
   return {
-    backgroundImage:
-      'radial-gradient(circle, #2a2a3e 1px, transparent 1px)',
-    backgroundSize:  `${gridPx}px ${gridPx}px`,
+    backgroundImage: "radial-gradient(circle, #2a2a3e 1px, transparent 1px)",
+    backgroundSize: `${gridPx}px ${gridPx}px`,
     backgroundPosition: `${ox}px ${oy}px`,
   };
 });
 
 // ── Cursor ────────────────────────────────────────────────────────────────────
 const cursorStyle = computed(() => {
-  if (isPanning.value)  return 'grabbing';
-  if (spaceHeld.value)  return 'grab';
-  if (isSelecting.value) return 'crosshair';
-  return 'default';
+  if (isPanning.value) return "grabbing";
+  if (spaceHeld.value) return "grab";
+  if (isSelecting.value) return "crosshair";
+  return "default";
 });
 
 // ── Rubber-band selection ─────────────────────────────────────────────────────
-const isSelecting  = ref(false);
+const isSelecting = ref(false);
 const selectionBox = ref({ x1: 0, y1: 0, x2: 0, y2: 0 });
 let selectionStart = { x: 0, y: 0 };
 
@@ -170,8 +178,7 @@ function endSelection(additive = false) {
     const nodeRight = node.x + node.width;
     const nodeBottom = node.y + (node.height ?? 120);
     const overlaps =
-      node.x < maxX && nodeRight > minX &&
-      node.y < maxY && nodeBottom > minY;
+      node.x < maxX && nodeRight > minX && node.y < maxY && nodeBottom > minY;
     if (overlaps) {
       editor.selectedNodeIds.add(node.id);
     }
@@ -210,11 +217,15 @@ const draftWire = computed(() => {
 
 function isEditingText() {
   const tag = document.activeElement?.tagName;
-  return tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    document.activeElement?.isContentEditable
+  );
 }
 
 function onKeyDown(e) {
-  if (e.code === 'Space' && e.target === document.body) {
+  if (e.code === "Space" && e.target === document.body) {
     e.preventDefault();
     spaceHeld.value = true;
     return;
@@ -225,41 +236,41 @@ function onKeyDown(e) {
   const ctrl = e.ctrlKey || e.metaKey;
 
   // Delete / Backspace — delete selected nodes and connections
-  if (e.key === 'Delete' || e.key === 'Backspace') {
+  if (e.key === "Delete" || e.key === "Backspace") {
     editor.deleteSelected();
     return;
   }
 
   // Ctrl+Z — undo
-  if (ctrl && !e.shiftKey && e.key === 'z') {
+  if (ctrl && !e.shiftKey && e.key === "z") {
     e.preventDefault();
     history.undo();
     return;
   }
 
   // Ctrl+Shift+Z / Ctrl+Y — redo
-  if ((ctrl && e.shiftKey && e.key === 'z') || (ctrl && e.key === 'y')) {
+  if ((ctrl && e.shiftKey && e.key === "z") || (ctrl && e.key === "y")) {
     e.preventDefault();
     history.redo();
     return;
   }
 
   // Ctrl+A — select all nodes
-  if (ctrl && e.key === 'a') {
+  if (ctrl && e.key === "a") {
     e.preventDefault();
-    editor.setSelection(graph.nodeList.map(n => n.id));
+    editor.setSelection(graph.nodeList.map((n) => n.id));
     return;
   }
 
   // Ctrl+V — paste KIR text or graph JSON from clipboard
-  if (ctrl && e.key === 'v') {
+  if (ctrl && e.key === "v") {
     e.preventDefault();
     handlePaste();
     return;
   }
 
   // Escape — cancel draft wire + deselect all
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     if (editor.isDrawingWire) {
       editor.cancelDraftWire();
     }
@@ -272,7 +283,7 @@ function onKeyDown(e) {
 }
 
 function onKeyUp(e) {
-  if (e.code === 'Space') {
+  if (e.code === "Space") {
     spaceHeld.value = false;
     if (isPanning.value) endPan();
   }
@@ -293,7 +304,9 @@ function onPointerDown(e) {
   }
   // Left mouse on empty canvas
   if (e.button === 0) {
-    const isCanvas = e.target === containerRef.value || e.target.classList.contains('canvas-transform');
+    const isCanvas =
+      e.target === containerRef.value ||
+      e.target.classList.contains("canvas-transform");
     if (isCanvas) {
       if (e.shiftKey) {
         // Shift+left drag → rubber-band selection
@@ -339,7 +352,7 @@ function onPointerUp(e) {
       const portId = el.dataset?.portId;
       const nodeId = el.dataset?.nodeId;
       const portDir = el.dataset?.portDir;
-      if (portId && nodeId && portDir === 'input') {
+      if (portId && nodeId && portDir === "input") {
         editor.endDraftWire(nodeId, portId);
         connected = true;
         break;
@@ -361,18 +374,22 @@ function onContextMenu(e) {
 // ── Drop from palette or file ─────────────────────────────────────────────
 function onDragOver(e) {
   e.preventDefault();
-  e.dataTransfer.dropEffect = 'copy';
+  e.dataTransfer.dropEffect = "copy";
 }
 
 function onDrop(e) {
   e.preventDefault();
 
   // Drop from palette
-  const typeName = e.dataTransfer.getData('application/x-node-type');
+  const typeName = e.dataTransfer.getData("application/x-node-type");
   if (typeName) {
     const rect = containerRef.value.getBoundingClientRect();
-    const canvasX = snapToGrid((e.clientX - rect.left - panX.value) / props.zoom);
-    const canvasY = snapToGrid((e.clientY - rect.top - panY.value) / props.zoom);
+    const canvasX = snapToGrid(
+      (e.clientX - rect.left - panX.value) / props.zoom,
+    );
+    const canvasY = snapToGrid(
+      (e.clientY - rect.top - panY.value) / props.zoom,
+    );
     const nodeData = registry.createNodeData(typeName, canvasX, canvasY);
     if (nodeData) graph.addNode(nodeData);
     return;
@@ -387,7 +404,7 @@ function onDrop(e) {
       try {
         loadFileContent(file.name, ev.target.result);
       } catch (err) {
-        console.error('Failed to load dropped file:', err);
+        console.error("Failed to load dropped file:", err);
       }
     };
     reader.readAsText(file);
@@ -395,13 +412,19 @@ function onDrop(e) {
 }
 
 function loadFileContent(filename, content) {
-  if (filename.endsWith('.kirgraph') || filename.endsWith('.json')) {
+  if (filename.endsWith(".kirgraph") || filename.endsWith(".json")) {
     const kirgraph = JSON.parse(content);
     const { nodes, connections } = kirgraphToGraph(kirgraph);
     graph.clear();
     for (const node of nodes) graph.addNode(node);
     for (const conn of connections) {
-      graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
+      graph.addConnection(
+        conn.fromNodeId,
+        conn.fromPortId,
+        conn.toNodeId,
+        conn.toPortId,
+        conn.portType,
+      );
     }
   }
   // TODO: .kir file loading via L2→L1 decompiler (backend call)
@@ -418,7 +441,12 @@ function loadFileContent(filename, content) {
  * net we strip any stray tags/entities.
  */
 function stripHtml(s) {
-  return s.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"');
+  return s
+    .replace(/<[^>]*>/g, "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"');
 }
 
 async function handlePaste() {
@@ -437,11 +465,20 @@ async function handlePaste() {
     const result = await detectAndParseAsync(text);
     if (!result || !result.nodes || result.nodes.length === 0) return;
 
-    const { nodes, connections } = parserResultToGraph(result.nodes, result.edges);
+    const { nodes, connections } = parserResultToGraph(
+      result.nodes,
+      result.edges,
+    );
     graph.clear();
     for (const node of nodes) graph.addNode(node);
     for (const conn of connections) {
-      graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
+      graph.addConnection(
+        conn.fromNodeId,
+        conn.fromPortId,
+        conn.toNodeId,
+        conn.toPortId,
+        conn.portType,
+      );
     }
   } catch {
     // Parse failed — clipboard content is not a supported graph format
@@ -450,16 +487,16 @@ async function handlePaste() {
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(() => {
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup',   onKeyUp);
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
   // Use the container element for the wheel listener (needs passive: false)
-  containerRef.value?.addEventListener('wheel', onWheel, { passive: false });
+  containerRef.value?.addEventListener("wheel", onWheel, { passive: false });
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeyDown);
-  window.removeEventListener('keyup',   onKeyUp);
-  containerRef.value?.removeEventListener('wheel', onWheel);
+  window.removeEventListener("keydown", onKeyDown);
+  window.removeEventListener("keyup", onKeyUp);
+  containerRef.value?.removeEventListener("wheel", onWheel);
 });
 </script>
 

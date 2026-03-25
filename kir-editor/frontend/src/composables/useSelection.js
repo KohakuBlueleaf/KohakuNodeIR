@@ -1,6 +1,6 @@
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useGraphStore } from '../stores/graph.js'
-import { useEditorStore } from '../stores/editor.js'
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useGraphStore } from "../stores/graph.js";
+import { useEditorStore } from "../stores/editor.js";
 
 /**
  * useSelection
@@ -18,25 +18,26 @@ import { useEditorStore } from '../stores/editor.js'
  *                  expressed in canvas space for intersection testing.
  */
 export function useSelection(canvasRef, screenToCanvas) {
-  const graphStore = useGraphStore()
-  const editorStore = useEditorStore()
+  const graphStore = useGraphStore();
+  const editorStore = useEditorStore();
 
   // Box selection state
-  const isSelecting = ref(false)
+  const isSelecting = ref(false);
 
   // selectionBox is in canvas space: { x, y, width, height }
-  const selectionBox = ref(null)
+  const selectionBox = ref(null);
 
   // Raw screen-space anchor (where the drag started)
-  let boxStartScreen = { x: 0, y: 0 }
+  let boxStartScreen = { x: 0, y: 0 };
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
   function toCanvas(screenX, screenY) {
-    if (typeof screenToCanvas === 'function') return screenToCanvas(screenX, screenY)
-    return { x: screenX, y: screenY }
+    if (typeof screenToCanvas === "function")
+      return screenToCanvas(screenX, screenY);
+    return { x: screenX, y: screenY };
   }
 
   /**
@@ -44,12 +45,12 @@ export function useSelection(canvasRef, screenToCanvas) {
    * Returns the id string or null.
    */
   function findNodeId(e) {
-    let el = e.target
+    let el = e.target;
     while (el && el !== canvasRef.value) {
-      if (el.dataset && el.dataset.nodeId) return el.dataset.nodeId
-      el = el.parentElement
+      if (el.dataset && el.dataset.nodeId) return el.dataset.nodeId;
+      el = el.parentElement;
     }
-    return null
+    return null;
   }
 
   /**
@@ -62,7 +63,7 @@ export function useSelection(canvasRef, screenToCanvas) {
       y: Math.min(ay, by),
       width: Math.abs(bx - ax),
       height: Math.abs(by - ay),
-    }
+    };
   }
 
   /**
@@ -70,17 +71,14 @@ export function useSelection(canvasRef, screenToCanvas) {
    * Both are in canvas space.
    */
   function nodeIntersectsBox(node, box) {
-    const nRight  = node.x + (node.width  ?? 200)
-    const nBottom = node.y + (node.height ?? 100)
-    const bRight  = box.x + box.width
-    const bBottom = box.y + box.height
+    const nRight = node.x + (node.width ?? 200);
+    const nBottom = node.y + (node.height ?? 100);
+    const bRight = box.x + box.width;
+    const bBottom = box.y + box.height;
 
     return (
-      node.x  < bRight  &&
-      nRight  > box.x   &&
-      node.y  < bBottom &&
-      nBottom > box.y
-    )
+      node.x < bRight && nRight > box.x && node.y < bBottom && nBottom > box.y
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -90,12 +88,12 @@ export function useSelection(canvasRef, screenToCanvas) {
 
   function onMouseDown(e) {
     // Ignore non-left clicks
-    if (e.button !== 0) return
+    if (e.button !== 0) return;
 
     // Ignore if space-pan is active
-    if (editorStore.isSpacePanActive) return
+    if (editorStore.isSpacePanActive) return;
 
-    const nodeId = findNodeId(e)
+    const nodeId = findNodeId(e);
 
     if (nodeId) {
       // ----- Clicking on a node -----
@@ -104,29 +102,34 @@ export function useSelection(canvasRef, screenToCanvas) {
       // A full click (no movement) will refine selection on mouseup.
       if (e.shiftKey) {
         // Toggle this node in the selection
-        editorStore.toggleNodeSelection(nodeId)
+        editorStore.toggleNodeSelection(nodeId);
       } else if (!editorStore.selectedNodeIds.has(nodeId)) {
         // Select only this node
-        editorStore.setSelection([nodeId])
+        editorStore.setSelection([nodeId]);
       }
       // Stop propagation so the canvas background handler doesn't fire
-      e.stopPropagation()
+      e.stopPropagation();
     } else {
       // ----- Clicking on the canvas background -----
       // Clear selection unless Shift is held (user may be extending a box)
       if (!e.shiftKey) {
-        editorStore.setSelection([])
+        editorStore.setSelection([]);
       }
 
       // Begin box select
-      const canvasOrigin = toCanvas(e.clientX, e.clientY)
-      boxStartScreen = { x: e.clientX, y: e.clientY }
+      const canvasOrigin = toCanvas(e.clientX, e.clientY);
+      boxStartScreen = { x: e.clientX, y: e.clientY };
 
-      selectionBox.value = { x: canvasOrigin.x, y: canvasOrigin.y, width: 0, height: 0 }
-      isSelecting.value = true
+      selectionBox.value = {
+        x: canvasOrigin.x,
+        y: canvasOrigin.y,
+        width: 0,
+        height: 0,
+      };
+      isSelecting.value = true;
 
-      window.addEventListener('mousemove', onMouseMoveBox)
-      window.addEventListener('mouseup', onMouseUpBox)
+      window.addEventListener("mousemove", onMouseMoveBox);
+      window.addEventListener("mouseup", onMouseUpBox);
     }
   }
 
@@ -135,19 +138,24 @@ export function useSelection(canvasRef, screenToCanvas) {
   // ---------------------------------------------------------------------------
 
   function onMouseMoveBox(e) {
-    if (!isSelecting.value) return
+    if (!isSelecting.value) return;
 
-    const anchor = toCanvas(boxStartScreen.x, boxStartScreen.y)
-    const current = toCanvas(e.clientX, e.clientY)
+    const anchor = toCanvas(boxStartScreen.x, boxStartScreen.y);
+    const current = toCanvas(e.clientX, e.clientY);
 
-    selectionBox.value = normaliseRect(anchor.x, anchor.y, current.x, current.y)
+    selectionBox.value = normaliseRect(
+      anchor.x,
+      anchor.y,
+      current.x,
+      current.y,
+    );
 
     // Live-highlight nodes that fall inside the box
     const ids = Array.from(graphStore.nodes.values())
       .filter((n) => nodeIntersectsBox(n, selectionBox.value))
-      .map((n) => n.id)
+      .map((n) => n.id);
 
-    editorStore.setSelection(ids)
+    editorStore.setSelection(ids);
   }
 
   // ---------------------------------------------------------------------------
@@ -155,12 +163,12 @@ export function useSelection(canvasRef, screenToCanvas) {
   // ---------------------------------------------------------------------------
 
   function onMouseUpBox() {
-    if (!isSelecting.value) return
-    isSelecting.value = false
-    selectionBox.value = null
+    if (!isSelecting.value) return;
+    isSelecting.value = false;
+    selectionBox.value = null;
 
-    window.removeEventListener('mousemove', onMouseMoveBox)
-    window.removeEventListener('mouseup', onMouseUpBox)
+    window.removeEventListener("mousemove", onMouseMoveBox);
+    window.removeEventListener("mouseup", onMouseUpBox);
   }
 
   // ---------------------------------------------------------------------------
@@ -169,20 +177,20 @@ export function useSelection(canvasRef, screenToCanvas) {
   // ---------------------------------------------------------------------------
 
   function onKeyDown(e) {
-    const tag = document.activeElement?.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
 
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      deleteSelected()
-    } else if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault()
-      editorStore.setSelection(Array.from(graphStore.nodes.keys()))
+    if (e.key === "Delete" || e.key === "Backspace") {
+      deleteSelected();
+    } else if (e.key === "a" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      editorStore.setSelection(Array.from(graphStore.nodes.keys()));
     }
   }
 
   function deleteSelected() {
     // Use the store's deleteSelected which handles both nodes and connections
-    editorStore.deleteSelected()
+    editorStore.deleteSelected();
   }
 
   // ---------------------------------------------------------------------------
@@ -190,10 +198,10 @@ export function useSelection(canvasRef, screenToCanvas) {
   // ---------------------------------------------------------------------------
 
   function cancelSelection() {
-    isSelecting.value = false
-    selectionBox.value = null
-    window.removeEventListener('mousemove', onMouseMoveBox)
-    window.removeEventListener('mouseup', onMouseUpBox)
+    isSelecting.value = false;
+    selectionBox.value = null;
+    window.removeEventListener("mousemove", onMouseMoveBox);
+    window.removeEventListener("mouseup", onMouseUpBox);
   }
 
   // ---------------------------------------------------------------------------
@@ -201,23 +209,23 @@ export function useSelection(canvasRef, screenToCanvas) {
   // ---------------------------------------------------------------------------
 
   onMounted(() => {
-    const el = canvasRef.value
-    if (el) el.addEventListener('mousedown', onMouseDown)
-    window.addEventListener('keydown', onKeyDown)
-  })
+    const el = canvasRef.value;
+    if (el) el.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("keydown", onKeyDown);
+  });
 
   onUnmounted(() => {
-    const el = canvasRef.value
-    if (el) el.removeEventListener('mousedown', onMouseDown)
-    window.removeEventListener('keydown', onKeyDown)
-    window.removeEventListener('mousemove', onMouseMoveBox)
-    window.removeEventListener('mouseup', onMouseUpBox)
-  })
+    const el = canvasRef.value;
+    if (el) el.removeEventListener("mousedown", onMouseDown);
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("mousemove", onMouseMoveBox);
+    window.removeEventListener("mouseup", onMouseUpBox);
+  });
 
   return {
     selectionBox,
     isSelecting,
     cancelSelection,
     deleteSelected,
-  }
+  };
 }

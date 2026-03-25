@@ -3,12 +3,12 @@
 // Used for top-level stacks on the canvas AND inside C-block arms.
 // Mutual recursion with ControlBlock is handled via defineAsyncComponent.
 
-import { defineAsyncComponent } from 'vue';
-import HatBlock       from './HatBlock.vue';
-import StatementBlock from './StatementBlock.vue';
+import { defineAsyncComponent } from "vue";
+import HatBlock from "./HatBlock.vue";
+import StatementBlock from "./StatementBlock.vue";
 
 // Async import breaks the circular dependency: BlockStack -> ControlBlock -> BlockStack
-const ControlBlock = defineAsyncComponent(() => import('./ControlBlock.vue'));
+const ControlBlock = defineAsyncComponent(() => import("./ControlBlock.vue"));
 
 const props = defineProps({
   /** Array of Block objects from blockTree.js (AST-based) */
@@ -26,11 +26,11 @@ const props = defineProps({
  */
 function isControlBlock(block) {
   return (
-    block.type === 'branch' ||
-    block.type === 'switch' ||
-    block.type === 'parallel' ||
-    block.type === 'dataflow' ||
-    block.type === 'subgraph'
+    block.type === "branch" ||
+    block.type === "switch" ||
+    block.type === "parallel" ||
+    block.type === "dataflow" ||
+    block.type === "subgraph"
   );
 }
 </script>
@@ -38,7 +38,6 @@ function isControlBlock(block) {
 <template>
   <div class="block-stack">
     <template v-for="block in blocks" :key="block.key">
-
       <!-- Namespace hat (standalone namespace not consumed as a branch arm) -->
       <HatBlock
         v-if="block.type === 'namespace'"
@@ -60,23 +59,19 @@ function isControlBlock(block) {
       >
         <span class="assign-target">{{ block.target }}</span>
         <span class="assign-eq">=</span>
-        <span class="assign-value">{{ block.value?.text ?? '' }}</span>
+        <span class="assign-value">{{ block.value?.text ?? "" }}</span>
       </div>
 
       <!-- Jump -->
-      <div
-        v-else-if="block.type === 'jump'"
-        class="stack-item jump-block"
-      >
+      <div v-else-if="block.type === 'jump'" class="stack-item jump-block">
         <span class="jump-icon">&#x21B7;</span>
-        <span class="jump-target">goto <code>{{ block.target }}</code></span>
+        <span class="jump-target"
+          >goto <code>{{ block.target }}</code></span
+        >
       </div>
 
       <!-- Mode declaration -->
-      <div
-        v-else-if="block.type === 'mode'"
-        class="stack-item mode-block"
-      >
+      <div v-else-if="block.type === 'mode'" class="stack-item mode-block">
         <span class="mode-label">@mode {{ block.mode }}</span>
       </div>
 
@@ -89,11 +84,7 @@ function isControlBlock(block) {
       </div>
 
       <!-- Default: FuncCall statement block -->
-      <StatementBlock
-        v-else
-        :block="block"
-        class="stack-item"
-      />
+      <StatementBlock v-else :block="block" class="stack-item" />
     </template>
 
     <!-- Empty arm placeholder -->
@@ -126,7 +117,7 @@ function isControlBlock(block) {
   padding: 5px 10px;
   font-size: 12px;
   color: #cdd6f4;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   user-select: none;
 }
 
@@ -163,7 +154,7 @@ function isControlBlock(block) {
 }
 
 .jump-target {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 11px;
   color: #cdd6f4;
 }
@@ -186,7 +177,7 @@ function isControlBlock(block) {
 }
 
 .mode-label {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   color: #cba6f7;
   font-size: 10px;
   font-weight: 600;
@@ -205,7 +196,7 @@ function isControlBlock(block) {
 }
 
 .kir-line-text {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 11px;
   color: #a6adc8;
   white-space: pre;

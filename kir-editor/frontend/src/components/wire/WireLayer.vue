@@ -1,8 +1,8 @@
 <script setup>
-import { computed } from 'vue';
-import { useGraphStore } from '../../stores/graph.js';
-import { useEditorStore } from '../../stores/editor.js';
-import { dataWirePath, controlWirePath } from '../../utils/bezier.js';
+import { computed } from "vue";
+import { useGraphStore } from "../../stores/graph.js";
+import { useEditorStore } from "../../stores/editor.js";
+import { dataWirePath, controlWirePath } from "../../utils/bezier.js";
 
 const graph = useGraphStore();
 const editor = useEditorStore();
@@ -15,11 +15,11 @@ const wires = computed(() => {
   const result = [];
   for (const conn of graph.connectionList) {
     const from = graph.getPortPosition(conn.fromNodeId, conn.fromPortId);
-    const to   = graph.getPortPosition(conn.toNodeId,   conn.toPortId);
+    const to = graph.getPortPosition(conn.toNodeId, conn.toPortId);
     if (!from || !to) continue;
 
     const d =
-      conn.portType === 'control'
+      conn.portType === "control"
         ? controlWirePath(from.x, from.y, to.x, to.y)
         : dataWirePath(from.x, from.y, to.x, to.y);
 
@@ -45,11 +45,7 @@ function onWireClick(e, wireId) {
     overflow: visible so bezier handles that drift outside the bounding box are still drawn.
     pointer-events: none on the layer itself; individual hit-area paths enable clicks.
   -->
-  <svg
-    class="wire-layer"
-    xmlns="http://www.w3.org/2000/svg"
-    overflow="visible"
-  >
+  <svg class="wire-layer" xmlns="http://www.w3.org/2000/svg" overflow="visible">
     <g class="wires">
       <g v-for="wire in wires" :key="wire.id">
         <!-- Invisible wide hit-area path for easy clicking -->
@@ -68,7 +64,7 @@ function onWireClick(e, wireId) {
             wire.selected ? 'wire--selected' : '',
           ]"
           fill="none"
-          style="pointer-events: none;"
+          style="pointer-events: none"
         />
       </g>
     </g>
@@ -99,7 +95,10 @@ function onWireClick(e, wireId) {
   stroke-width: 2;
   stroke-linecap: round;
   opacity: 0.85;
-  transition: stroke 0.1s, opacity 0.1s, stroke-width 0.1s;
+  transition:
+    stroke 0.1s,
+    opacity 0.1s,
+    stroke-width 0.1s;
 }
 
 /* Control wires — orange, thicker */
@@ -108,7 +107,10 @@ function onWireClick(e, wireId) {
   stroke-width: 3;
   stroke-linecap: round;
   opacity: 0.85;
-  transition: stroke 0.1s, opacity 0.1s, stroke-width 0.1s;
+  transition:
+    stroke 0.1s,
+    opacity 0.1s,
+    stroke-width 0.1s;
 }
 
 /* Selected state — highlight colour and glow */

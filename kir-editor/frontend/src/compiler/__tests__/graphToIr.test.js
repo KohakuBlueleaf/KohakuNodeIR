@@ -44,7 +44,9 @@ function makeFunctionNode(id, funcType, inputDefs, outputDefs) {
         id: `${id}__${p.name}__di`,
         name: p.name,
         dataType: p.dataType ?? "any",
-        ...(p.defaultValue !== undefined ? { defaultValue: p.defaultValue } : {}),
+        ...(p.defaultValue !== undefined
+          ? { defaultValue: p.defaultValue }
+          : {}),
       })),
       outputs: outputDefs.map((p) => ({
         id: `${id}__${p.name}__do`,
@@ -248,7 +250,9 @@ describe("compileGraph — controlflow mode", () => {
     const { ir } = compileGraph([condVal, branchNode], connections);
 
     // Count namespace definition lines (label:)
-    const labelLines = ir.split("\n").filter((l) => /^\s*\w+\s*:$/.test(l.trim()));
+    const labelLines = ir
+      .split("\n")
+      .filter((l) => /^\s*\w+\s*:$/.test(l.trim()));
     expect(labelLines.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -289,17 +293,26 @@ describe("compileGraph — controlflow mode", () => {
   });
 
   it("value node float property emits float literal", () => {
-    const { ir } = compileGraph([makeValueNode("node-flt", "rate", 3.14, "float")], []);
+    const { ir } = compileGraph(
+      [makeValueNode("node-flt", "rate", 3.14, "float")],
+      [],
+    );
     expect(ir).toContain("rate = 3.14");
   });
 
   it("value node string property emits quoted string literal", () => {
-    const { ir } = compileGraph([makeValueNode("node-str", "greeting", "hello", "str")], []);
+    const { ir } = compileGraph(
+      [makeValueNode("node-str", "greeting", "hello", "str")],
+      [],
+    );
     expect(ir).toContain('greeting = "hello"');
   });
 
   it("value node bool true property emits True", () => {
-    const { ir } = compileGraph([makeValueNode("node-bool", "flag", true, "bool")], []);
+    const { ir } = compileGraph(
+      [makeValueNode("node-bool", "flag", true, "bool")],
+      [],
+    );
     expect(ir).toContain("flag = True");
   });
 
@@ -391,7 +404,12 @@ describe("compileGraph — controlflow mode", () => {
       [{ name: "a" }, { name: "b" }],
       [{ name: "result" }],
     );
-    const printNode = makeFunctionNode("node-print3", "print", [{ name: "value" }], []);
+    const printNode = makeFunctionNode(
+      "node-print3",
+      "print",
+      [{ name: "value" }],
+      [],
+    );
 
     const nodes = [valNode, addNode, printNode];
     const connections = [
@@ -421,7 +439,12 @@ describe("compileGraph — dataflow mode", () => {
 
   it("function node in dataflow mode emits call with resolved inputs", () => {
     const valNode = makeValueNode("node-dv2", "x", 5, "int");
-    const funcNode = makeFunctionNode("node-df2", "square", [{ name: "n" }], [{ name: "out" }]);
+    const funcNode = makeFunctionNode(
+      "node-df2",
+      "square",
+      [{ name: "n" }],
+      [{ name: "out" }],
+    );
 
     const { ir } = compileGraph(
       [valNode, funcNode],

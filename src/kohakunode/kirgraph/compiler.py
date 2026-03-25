@@ -68,13 +68,20 @@ class KirGraphCompiler:
 
         for edge in graph.edges:
             if edge.type == "control":
-                self._ctrl_out[edge.from_node].append((edge.from_port, edge.to_node, edge.to_port))
-                self._ctrl_in[edge.to_node].append((edge.from_node, edge.from_port, edge.to_port))
+                self._ctrl_out[edge.from_node].append(
+                    (edge.from_port, edge.to_node, edge.to_port)
+                )
+                self._ctrl_in[edge.to_node].append(
+                    (edge.from_node, edge.from_port, edge.to_port)
+                )
                 self._ctrl_connected.add(edge.from_node)
                 self._ctrl_connected.add(edge.to_node)
                 self._connected_ctrl_in_ports[edge.to_node].add(edge.to_port)
             else:
-                self._data_in[edge.to_node][edge.to_port] = (edge.from_node, edge.from_port)
+                self._data_in[edge.to_node][edge.to_port] = (
+                    edge.from_node,
+                    edge.from_port,
+                )
 
         self._visited: set[str] = set()
 
@@ -98,7 +105,11 @@ class KirGraphCompiler:
 
         body: list[Statement] = []
         if independent:
-            body.append(DataflowBlock(body=[s for n in independent for s in self._emit_node_raw(n)]))
+            body.append(
+                DataflowBlock(
+                    body=[s for n in independent for s in self._emit_node_raw(n)]
+                )
+            )
             for n in independent:
                 self._visited.add(n.id)
         if ctrl_nodes:
@@ -157,7 +168,11 @@ class KirGraphCompiler:
                     # Input crosses loop boundary (from initial value to loop body)
                     # Find the corresponding output port — use index matching
                     in_idx = next(
-                        (i for i, p in enumerate(node.data_inputs) if p.port == in_port),
+                        (
+                            i
+                            for i, p in enumerate(node.data_inputs)
+                            if p.port == in_port
+                        ),
                         -1,
                     )
                     if in_idx >= 0 and in_idx < len(node.data_outputs):
@@ -190,7 +205,9 @@ class KirGraphCompiler:
             case "value":
                 val = node.properties.get("value", 0)
                 out = node.data_outputs[0].port if node.data_outputs else "value"
-                stmts.append(Assignment(target=_var(node.id, out), value=_lit(val), metadata=[m]))
+                stmts.append(
+                    Assignment(target=_var(node.id, out), value=_lit(val), metadata=[m])
+                )
             case "merge":
                 pass
             case "branch":
@@ -202,7 +219,14 @@ class KirGraphCompiler:
             case _:
                 inputs = [self._input(node, p.port) for p in node.data_inputs]
                 outputs = [_var(node.id, p.port) for p in node.data_outputs]
-                stmts.append(FuncCall(inputs=inputs, func_name=node.type, outputs=outputs, metadata=[m]))
+                stmts.append(
+                    FuncCall(
+                        inputs=inputs,
+                        func_name=node.type,
+                        outputs=outputs,
+                        metadata=[m],
+                    )
+                )
 
         # After emitting this ctrl node, also emit any dependent non-ctrl nodes
         # whose data inputs are now satisfied.
@@ -244,19 +268,27 @@ class KirGraphCompiler:
         if node.type == "value":
             val = node.properties.get("value", 0)
             out = node.data_outputs[0].port if node.data_outputs else "value"
-            return [Assignment(target=_var(node.id, out), value=_lit(val), metadata=[m])]
+            return [
+                Assignment(target=_var(node.id, out), value=_lit(val), metadata=[m])
+            ]
         inputs = [self._input(node, p.port) for p in node.data_inputs]
         outputs = [_var(node.id, p.port) for p in node.data_outputs]
-        return [FuncCall(inputs=inputs, func_name=node.type, outputs=outputs, metadata=[m])]
+        return [
+            FuncCall(inputs=inputs, func_name=node.type, outputs=outputs, metadata=[m])
+        ]
 
     def _emit_branch(self, node: KGNode, m: MetaAnnotation) -> list[Statement]:
         cond = self._input(node, "condition")
         tp = node.ctrl_outputs[0] if len(node.ctrl_outputs) > 0 else "true"
         fp = node.ctrl_outputs[1] if len(node.ctrl_outputs) > 1 else "false"
         tl, fl = f"{node.id}_{tp}", f"{node.id}_{fp}"
-        stmts: list[Statement] = [Branch(condition=cond, true_label=tl, false_label=fl, metadata=[m])]
+        stmts: list[Statement] = [
+            Branch(condition=cond, true_label=tl, false_label=fl, metadata=[m])
+        ]
         for port, label in [(tp, tl), (fp, fl)]:
-            stmts.append(Namespace(name=label, body=self._chain_from_port(node.id, port)))
+            stmts.append(
+                Namespace(name=label, body=self._chain_from_port(node.id, port))
+            )
         return stmts
 
     def _emit_switch(self, node: KGNode, m: MetaAnnotation) -> list[Statement]:
@@ -272,16 +304,22 @@ class KirGraphCompiler:
             else:
                 cases.append((_lit(port), label))
             labels.append((port, label))
-        stmts: list[Statement] = [Switch(value=val, cases=cases, default_label=dl, metadata=[m])]
+        stmts: list[Statement] = [
+            Switch(value=val, cases=cases, default_label=dl, metadata=[m])
+        ]
         for port, label in labels:
-            stmts.append(Namespace(name=label, body=self._chain_from_port(node.id, port)))
+            stmts.append(
+                Namespace(name=label, body=self._chain_from_port(node.id, port))
+            )
         return stmts
 
     def _emit_parallel(self, node: KGNode, m: MetaAnnotation) -> list[Statement]:
         labels = [f"{node.id}_{p}" for p in node.ctrl_outputs]
         stmts: list[Statement] = [Parallel(labels=labels, metadata=[m])]
         for port, label in zip(node.ctrl_outputs, labels):
-            stmts.append(Namespace(name=label, body=self._chain_from_port(node.id, port)))
+            stmts.append(
+                Namespace(name=label, body=self._chain_from_port(node.id, port))
+            )
         return stmts
 
     # ── Control chain walking ──
@@ -302,7 +340,13 @@ class KirGraphCompiler:
                     entry_ids.append(n.id)
 
         if not entry_ids:
-            by_pos = sorted(ctrl_nodes, key=lambda n: (n.meta.get("pos", [0, 0])[1], n.meta.get("pos", [0, 0])[0]))
+            by_pos = sorted(
+                ctrl_nodes,
+                key=lambda n: (
+                    n.meta.get("pos", [0, 0])[1],
+                    n.meta.get("pos", [0, 0])[0],
+                ),
+            )
             entry_ids = [by_pos[0].id]
 
         stmts: list[Statement] = []
@@ -338,10 +382,12 @@ class KirGraphCompiler:
                         src_node, src_port = conn[in_port]
                         init_var = _var(src_node, src_port)
                         if init_var != fb_var:
-                            stmts.append(Assignment(
-                                target=fb_var,
-                                value=Identifier(name=init_var),
-                            ))
+                            stmts.append(
+                                Assignment(
+                                    target=fb_var,
+                                    value=Identifier(name=init_var),
+                                )
+                            )
 
                 inner = self._walk(next_id) if next_id else []
                 stmts.append(Jump(target=ns_label, metadata=[merge_meta]))

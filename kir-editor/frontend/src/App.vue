@@ -1,27 +1,27 @@
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue';
-import NodeEditor from './components/editor/NodeEditor.vue';
-import BlockCanvas from './components/blocks/BlockCanvas.vue';
-import KirCodeEditor from './components/editor/KirCodeEditor.vue';
-import Toolbar from './components/editor/Toolbar.vue';
-import { save, load } from './utils/persist.js';
-import { initWasm } from './parser/wasmParser.js';
-import { useEditorStore } from './stores/editor.js';
+import { ref, watch, onMounted, nextTick } from "vue";
+import NodeEditor from "./components/editor/NodeEditor.vue";
+import BlockCanvas from "./components/blocks/BlockCanvas.vue";
+import KirCodeEditor from "./components/editor/KirCodeEditor.vue";
+import Toolbar from "./components/editor/Toolbar.vue";
+import { save, load } from "./utils/persist.js";
+import { initWasm } from "./parser/wasmParser.js";
+import { useEditorStore } from "./stores/editor.js";
 
 const editorStore = useEditorStore();
 
 // ── View mode (persisted) ──
-const viewMode = ref(load('viewMode', 'graph'));
+const viewMode = ref(load("viewMode", "graph"));
 const codeEditorRef = ref(null);
 let prevViewMode = viewMode.value;
 editorStore.setActiveViewMode(viewMode.value);
 watch(viewMode, (v) => {
-  save('viewMode', v);
+  save("viewMode", v);
   editorStore.setActiveViewMode(v);
-  if (prevViewMode === 'code' && v !== 'code') {
+  if (prevViewMode === "code" && v !== "code") {
     codeEditorRef.value?.onDeactivate();
   }
-  if (v === 'code') nextTick(() => codeEditorRef.value?.refreshFromGraph());
+  if (v === "code") nextTick(() => codeEditorRef.value?.refreshFromGraph());
   prevViewMode = v;
 });
 
@@ -29,16 +29,17 @@ watch(viewMode, (v) => {
 const zoom = ref(1);
 
 // ── IR preview open state (persisted) ──
-const irOpen = ref(load('irOpen', false));
-watch(irOpen, (v) => save('irOpen', v));
+const irOpen = ref(load("irOpen", false));
+watch(irOpen, (v) => save("irOpen", v));
 
 // ── Init WASM on startup ──
-onMounted(() => { initWasm(); });
+onMounted(() => {
+  initWasm();
+});
 </script>
 
 <template>
   <div class="app-root">
-
     <!-- ── Shared toolbar ── -->
     <Toolbar
       :zoom="zoom"
@@ -92,30 +93,34 @@ onMounted(() => { initWasm(); });
         :zoom="zoom"
         @update:zoom="zoom = $event"
       />
-      <KirCodeEditor
-        ref="codeEditorRef"
-        v-show="viewMode === 'code'"
-      />
+      <KirCodeEditor ref="codeEditorRef" v-show="viewMode === 'code'" />
     </div>
-
   </div>
 </template>
 
 <style>
 /* Global reset */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body, #app {
+html,
+body,
+#app {
   width: 100%;
   height: 100%;
   overflow: hidden;
   background: #11111b;
   color: #cdd6f4;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 </style>
 
@@ -152,7 +157,10 @@ html, body, #app {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s,
+    border-color 0.12s;
   user-select: none;
 }
 

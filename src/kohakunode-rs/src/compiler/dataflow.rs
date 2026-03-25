@@ -11,9 +11,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use crate::ast::{
-    Expression, Namespace, OutputTarget, Program, Statement, SubgraphDef,
-};
+use crate::ast::{Expression, Namespace, OutputTarget, Program, Statement, SubgraphDef};
 
 // ---------------------------------------------------------------------------
 // Public entry point
@@ -160,11 +158,8 @@ fn build_dependency_graph(stmts: &[Statement]) -> HashMap<String, HashSet<String
                 graph.insert(a.target.clone(), deps);
             }
             Statement::FuncCall(f) => {
-                let input_names: HashSet<String> = f
-                    .inputs
-                    .iter()
-                    .flat_map(collect_identifier_names)
-                    .collect();
+                let input_names: HashSet<String> =
+                    f.inputs.iter().flat_map(collect_identifier_names).collect();
 
                 let output_names: HashSet<String> = f
                     .outputs
@@ -178,10 +173,8 @@ fn build_dependency_graph(stmts: &[Statement]) -> HashMap<String, HashSet<String
                 for out in &f.outputs {
                     if let OutputTarget::Name(name) = out {
                         // Exclude self-references (update pattern).
-                        let deps: HashSet<String> = input_names
-                            .difference(&output_names)
-                            .cloned()
-                            .collect();
+                        let deps: HashSet<String> =
+                            input_names.difference(&output_names).cloned().collect();
                         graph.insert(name.clone(), deps);
                     }
                 }
@@ -239,8 +232,7 @@ fn topological_sort(stmts: &[Statement]) -> Result<Vec<Statement>, String> {
     let all_outputs: HashSet<&String> = graph.keys().collect();
 
     // Compute in-degrees and dependents list.
-    let mut in_degree: HashMap<&String, usize> =
-        graph.keys().map(|v| (v, 0usize)).collect();
+    let mut in_degree: HashMap<&String, usize> = graph.keys().map(|v| (v, 0usize)).collect();
     let mut dependents: HashMap<&String, Vec<&String>> =
         graph.keys().map(|v| (v, Vec::new())).collect();
 
@@ -315,7 +307,9 @@ fn topological_sort(stmts: &[Statement]) -> Result<Vec<Statement>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{Assignment, DataflowBlock, Expression, FuncCall, Identifier, Literal, OutputTarget, Value};
+    use crate::ast::{
+        Assignment, DataflowBlock, Expression, FuncCall, Identifier, Literal, OutputTarget, Value,
+    };
 
     fn id_expr(name: &str) -> Expression {
         Expression::Identifier(Identifier {
@@ -404,7 +398,10 @@ mod tests {
 
         // DataflowBlock wrapper must be gone — statements inlined directly.
         assert!(
-            result.body.iter().all(|s| !matches!(s, Statement::DataflowBlock(_))),
+            result
+                .body
+                .iter()
+                .all(|s| !matches!(s, Statement::DataflowBlock(_))),
             "DataflowBlock should be inlined"
         );
 
@@ -462,7 +459,7 @@ mod tests {
 
     #[test]
     fn whole_file_dataflow_rejects_control_flow() {
-        use crate::ast::{Jump};
+        use crate::ast::Jump;
         let prog = Program {
             body: vec![Statement::Jump(Jump {
                 target: "somewhere".into(),
@@ -545,10 +542,7 @@ mod tests {
 
         let prog = Program {
             body: vec![Statement::DataflowBlock(DataflowBlock {
-                body: vec![
-                    wildcard_stmt.clone(),
-                    assign("x", int_lit(1)),
-                ],
+                body: vec![wildcard_stmt.clone(), assign("x", int_lit(1))],
                 line: None,
             })],
             mode: None,
@@ -557,9 +551,20 @@ mod tests {
 
         let result = compile_dataflow(&prog).unwrap();
         // The wildcard statement should come after the tracked assignment.
-        let wc_pos = result.body.iter().position(|s| matches!(s, Statement::FuncCall(f) if f.func_name == "side_effect")).unwrap();
-        let x_pos = result.body.iter().position(|s| matches!(s, Statement::Assignment(a) if a.target == "x")).unwrap();
-        assert!(x_pos < wc_pos, "tracked assignment should precede wildcard call");
+        let wc_pos = result
+            .body
+            .iter()
+            .position(|s| matches!(s, Statement::FuncCall(f) if f.func_name == "side_effect"))
+            .unwrap();
+        let x_pos = result
+            .body
+            .iter()
+            .position(|s| matches!(s, Statement::Assignment(a) if a.target == "x"))
+            .unwrap();
+        assert!(
+            x_pos < wc_pos,
+            "tracked assignment should precede wildcard call"
+        );
     }
 
     // ------------------------------------------------------------------
@@ -568,7 +573,7 @@ mod tests {
 
     #[test]
     fn subgraph_def_dataflow_block_expanded() {
-        use crate::ast::{SubgraphDef};
+        use crate::ast::SubgraphDef;
 
         let inner_block = Statement::DataflowBlock(DataflowBlock {
             body: vec![
@@ -594,7 +599,9 @@ mod tests {
         match &result.body[0] {
             Statement::SubgraphDef(sg) => {
                 assert!(
-                    sg.body.iter().all(|s| !matches!(s, Statement::DataflowBlock(_))),
+                    sg.body
+                        .iter()
+                        .all(|s| !matches!(s, Statement::DataflowBlock(_))),
                     "DataflowBlock inside SubgraphDef should be inlined"
                 );
                 let names = output_names(&sg.body);

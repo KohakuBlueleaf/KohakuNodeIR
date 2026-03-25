@@ -3,10 +3,10 @@
 // Renders: { type: 'namespace', key, label, blocks }
 // Block mode is read-only.
 
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent } from "vue";
 
 // Async import to break potential circular dependency if namespaces nest
-const BlockStack = defineAsyncComponent(() => import('./BlockStack.vue'));
+const BlockStack = defineAsyncComponent(() => import("./BlockStack.vue"));
 
 const props = defineProps({
   block: {
@@ -91,7 +91,7 @@ const props = defineProps({
   font-size: 13px;
   font-weight: 700;
   color: #1e1e2e;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
 }
 
 .hat-type-badge {

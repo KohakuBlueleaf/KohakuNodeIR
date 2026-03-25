@@ -9,7 +9,7 @@
  * so they also work through the Vite WS proxy.
  */
 
-const API_BASE = '/api'
+const API_BASE = "/api";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -17,33 +17,33 @@ const API_BASE = '/api'
 
 async function _post(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  })
+  });
   if (!res.ok) {
-    let detail = res.statusText
+    let detail = res.statusText;
     try {
-      const errBody = await res.json()
-      detail = errBody.detail ?? errBody.error ?? detail
+      const errBody = await res.json();
+      detail = errBody.detail ?? errBody.error ?? detail;
     } catch {
       // ignore parse error
     }
-    const err = new Error(detail)
-    err.status = res.status
-    throw err
+    const err = new Error(detail);
+    err.status = res.status;
+    throw err;
   }
-  return res.json()
+  return res.json();
 }
 
 async function _get(path) {
-  const res = await fetch(`${API_BASE}${path}`)
+  const res = await fetch(`${API_BASE}${path}`);
   if (!res.ok) {
-    const err = new Error(res.statusText)
-    err.status = res.status
-    throw err
+    const err = new Error(res.statusText);
+    err.status = res.status;
+    throw err;
   }
-  return res.json()
+  return res.json();
 }
 
 /**
@@ -52,8 +52,8 @@ async function _get(path) {
  * dev proxy (which is configured to proxy WS on /api too).
  */
 function _wsUrl(path) {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${protocol}//${window.location.host}${API_BASE}${path}`
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}${API_BASE}${path}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ function _wsUrl(path) {
  * @returns {Promise<object[]>}
  */
 export async function listNodes() {
-  return _get('/nodes')
+  return _get("/nodes");
 }
 
 /**
@@ -74,7 +74,7 @@ export async function listNodes() {
  * @returns {Promise<{ success: boolean, type: string }>}
  */
 export async function registerNode(definition) {
-  return _post('/nodes/register', definition)
+  return _post("/nodes/register", definition);
 }
 
 /**
@@ -84,21 +84,21 @@ export async function registerNode(definition) {
  */
 export async function deleteNode(typeName) {
   const res = await fetch(`${API_BASE}/nodes/${encodeURIComponent(typeName)}`, {
-    method: 'DELETE',
-  })
+    method: "DELETE",
+  });
   if (!res.ok) {
-    let detail = res.statusText
+    let detail = res.statusText;
     try {
-      const errBody = await res.json()
-      detail = errBody.detail ?? errBody.error ?? detail
+      const errBody = await res.json();
+      detail = errBody.detail ?? errBody.error ?? detail;
     } catch {
       // ignore
     }
-    const err = new Error(detail)
-    err.status = res.status
-    throw err
+    const err = new Error(detail);
+    err.status = res.status;
+    throw err;
   }
-  return res.json()
+  return res.json();
 }
 
 // ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ export async function deleteNode(typeName) {
  * @returns {Promise<object>}
  */
 export async function executeKir(kirSource) {
-  return _post('/execute', { kir_source: kirSource })
+  return _post("/execute", { kir_source: kirSource });
 }
 
 /**
@@ -122,7 +122,7 @@ export async function executeKir(kirSource) {
  * @returns {Promise<object>}
  */
 export async function executeKirgraph(kirgraph) {
-  return _post('/execute/kirgraph', { kirgraph })
+  return _post("/execute/kirgraph", { kirgraph });
 }
 
 /**
@@ -132,7 +132,7 @@ export async function executeKirgraph(kirgraph) {
  * @returns {Promise<{ kir_text: string, level: number }>}
  */
 export async function compileKirgraph(kirgraph, level = 3) {
-  return _post('/compile', { kirgraph, level })
+  return _post("/compile", { kirgraph, level });
 }
 
 /**
@@ -141,7 +141,7 @@ export async function compileKirgraph(kirgraph, level = 3) {
  * @returns {Promise<{ kirgraph: object }>}
  */
 export async function decompileKir(kirSource) {
-  return _post('/decompile', { kir_source: kirSource })
+  return _post("/decompile", { kir_source: kirSource });
 }
 
 // ---------------------------------------------------------------------------
@@ -164,55 +164,55 @@ export async function decompileKir(kirSource) {
  * @returns {{ ws: WebSocket, cancel: () => void }}
  */
 export function executeKirStreaming(kirSource, callbacks = {}) {
-  const { onOutput, onError, onVariable, onCompleted, onStarted } = callbacks
-  const ws = new WebSocket(_wsUrl('/ws/execute'))
+  const { onOutput, onError, onVariable, onCompleted, onStarted } = callbacks;
+  const ws = new WebSocket(_wsUrl("/ws/execute"));
 
   ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'execute', kir_source: kirSource }))
-  }
+    ws.send(JSON.stringify({ type: "execute", kir_source: kirSource }));
+  };
 
   ws.onmessage = (event) => {
-    let msg
+    let msg;
     try {
-      msg = JSON.parse(event.data)
+      msg = JSON.parse(event.data);
     } catch {
-      onOutput?.(event.data)
-      return
+      onOutput?.(event.data);
+      return;
     }
 
     switch (msg.type) {
-      case 'started':
-        onStarted?.()
-        break
-      case 'output':
-      case 'stdout':
-        onOutput?.(msg.value ?? msg.data ?? msg.text ?? '')
-        break
-      case 'error':
-      case 'stderr':
-        onError?.(msg.message ?? msg.data ?? msg.text ?? '')
-        break
-      case 'variable':
-        onVariable?.(msg.name, msg.value)
-        break
-      case 'completed':
-      case 'done':
-      case 'finished':
-        onCompleted?.(msg.variables ?? {})
-        ws.close(1000)
-        break
+      case "started":
+        onStarted?.();
+        break;
+      case "output":
+      case "stdout":
+        onOutput?.(msg.value ?? msg.data ?? msg.text ?? "");
+        break;
+      case "error":
+      case "stderr":
+        onError?.(msg.message ?? msg.data ?? msg.text ?? "");
+        break;
+      case "variable":
+        onVariable?.(msg.name, msg.value);
+        break;
+      case "completed":
+      case "done":
+      case "finished":
+        onCompleted?.(msg.variables ?? {});
+        ws.close(1000);
+        break;
       default:
         // Unknown message type — ignore silently
-        break
+        break;
     }
-  }
+  };
 
   return {
     ws,
     cancel() {
-      ws.close(1000)
+      ws.close(1000);
     },
-  }
+  };
 }
 
 /**
@@ -226,55 +226,56 @@ export function executeKirStreaming(kirSource, callbacks = {}) {
  * @returns {{ ws: WebSocket, cancel: () => void }}
  */
 export function executeKirgraphStreaming(kirgraph, callbacks = {}) {
-  const { onOutput, onError, onVariable, onCompleted, onStarted, onCompiled } = callbacks
-  const ws = new WebSocket(_wsUrl('/ws/execute/kirgraph'))
+  const { onOutput, onError, onVariable, onCompleted, onStarted, onCompiled } =
+    callbacks;
+  const ws = new WebSocket(_wsUrl("/ws/execute/kirgraph"));
 
   ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'execute', kirgraph }))
-  }
+    ws.send(JSON.stringify({ type: "execute", kirgraph }));
+  };
 
   ws.onmessage = (event) => {
-    let msg
+    let msg;
     try {
-      msg = JSON.parse(event.data)
+      msg = JSON.parse(event.data);
     } catch {
-      onOutput?.(event.data)
-      return
+      onOutput?.(event.data);
+      return;
     }
 
     switch (msg.type) {
-      case 'compiled':
-        onCompiled?.(msg.kir_source ?? '')
-        break
-      case 'started':
-        onStarted?.()
-        break
-      case 'output':
-      case 'stdout':
-        onOutput?.(msg.value ?? msg.data ?? msg.text ?? '')
-        break
-      case 'error':
-      case 'stderr':
-        onError?.(msg.message ?? msg.data ?? msg.text ?? '')
-        break
-      case 'variable':
-        onVariable?.(msg.name, msg.value)
-        break
-      case 'completed':
-      case 'done':
-      case 'finished':
-        onCompleted?.(msg.variables ?? {})
-        ws.close(1000)
-        break
+      case "compiled":
+        onCompiled?.(msg.kir_source ?? "");
+        break;
+      case "started":
+        onStarted?.();
+        break;
+      case "output":
+      case "stdout":
+        onOutput?.(msg.value ?? msg.data ?? msg.text ?? "");
+        break;
+      case "error":
+      case "stderr":
+        onError?.(msg.message ?? msg.data ?? msg.text ?? "");
+        break;
+      case "variable":
+        onVariable?.(msg.name, msg.value);
+        break;
+      case "completed":
+      case "done":
+      case "finished":
+        onCompleted?.(msg.variables ?? {});
+        ws.close(1000);
+        break;
       default:
-        break
+        break;
     }
-  }
+  };
 
   return {
     ws,
     cancel() {
-      ws.close(1000)
+      ws.close(1000);
     },
-  }
+  };
 }

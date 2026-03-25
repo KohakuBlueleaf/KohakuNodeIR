@@ -10,16 +10,18 @@ use std::collections::HashMap;
 
 use crate::ast::Value;
 use crate::kirgraph::{KGEdge, KGNode, KirGraph};
-use crate::layout::auto_layout::{auto_layout, estimate_node_size, H_SPACING, MIN_HEIGHT, MIN_WIDTH, V_SPACING};
-use crate::layout::score::{count_crossings, count_overlaps, score_edge, CROSSING_PENALTY, OVERLAP_PENALTY};
+use crate::layout::auto_layout::{
+    auto_layout, estimate_node_size, H_SPACING, MIN_HEIGHT, MIN_WIDTH, V_SPACING,
+};
+use crate::layout::score::{
+    count_crossings, count_overlaps, score_edge, CROSSING_PENALTY, OVERLAP_PENALTY,
+};
 
 // ---------------------------------------------------------------------------
 // Grid helpers
 // ---------------------------------------------------------------------------
 
-fn grid_from_graph(
-    graph: &KirGraph,
-) -> (HashMap<String, (i32, i32)>, HashMap<String, (f64, f64)>) {
+fn grid_from_graph(graph: &KirGraph) -> (HashMap<String, (i32, i32)>, HashMap<String, (f64, f64)>) {
     let mut positions: HashMap<String, (f64, f64)> = HashMap::new();
     let mut sizes: HashMap<String, (f64, f64)> = HashMap::new();
 
@@ -158,7 +160,10 @@ fn apply_grid_to_graph(
                 Value::Int(*row_y.get(&r).unwrap_or(&100.0) as i64),
             ]),
         );
-        let (w, h) = sizes.get(&node.id).copied().unwrap_or((MIN_WIDTH, MIN_HEIGHT));
+        let (w, h) = sizes
+            .get(&node.id)
+            .copied()
+            .unwrap_or((MIN_WIDTH, MIN_HEIGHT));
         new_meta.insert(
             "size".to_string(),
             Value::List(vec![Value::Int(w as i64), Value::Int(h as i64)]),

@@ -1,13 +1,13 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import * as monaco from 'monaco-editor';
-import { registerKirLanguage } from '../../editor/kirLanguage.js';
-import { useGraphStore } from '../../stores/graph.js';
-import { compileGraph } from '../../compiler/graphToIr.js';
-import { graphToKirgraph } from '../../compiler/kirgraph.js';
-import { compileGraphToKir, isWasmReady } from '../../parser/wasmParser.js';
-import { detectAndParseAsync } from '../../parser/index.js';
-import { parserResultToGraph } from '../../utils/parserResultToGraph.js';
+import { ref, watch, onMounted, onBeforeUnmount } from "vue";
+import * as monaco from "monaco-editor";
+import { registerKirLanguage } from "../../editor/kirLanguage.js";
+import { useGraphStore } from "../../stores/graph.js";
+import { compileGraph } from "../../compiler/graphToIr.js";
+import { graphToKirgraph } from "../../compiler/kirgraph.js";
+import { compileGraphToKir, isWasmReady } from "../../parser/wasmParser.js";
+import { detectAndParseAsync } from "../../parser/index.js";
+import { parserResultToGraph } from "../../utils/parserResultToGraph.js";
 
 const graph = useGraphStore();
 const editorContainer = ref(null);
@@ -22,7 +22,7 @@ let suppressGraphWatch = false;
 async function graphToKir() {
   const nodes = graph.nodeList;
   const conns = graph.connectionList;
-  if (!nodes.length) return '';
+  if (!nodes.length) return "";
 
   const kirgraph = graphToKirgraph(nodes, conns);
   const pyKir = await compileGraphToKir(JSON.stringify(kirgraph));
@@ -59,22 +59,35 @@ async function syncToGraph() {
     const result = await detectAndParseAsync(text);
     if (!result?.nodes?.length) return;
 
-    const { nodes, connections } = parserResultToGraph(result.nodes, result.edges);
+    const { nodes, connections } = parserResultToGraph(
+      result.nodes,
+      result.edges,
+    );
     suppressGraphWatch = true;
     graph.clear();
     for (const node of nodes) graph.addNode(node);
     for (const conn of connections) {
-      graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
+      graph.addConnection(
+        conn.fromNodeId,
+        conn.fromPortId,
+        conn.toNodeId,
+        conn.toPortId,
+        conn.portType,
+      );
     }
-    monaco.editor.setModelMarkers(editor.getModel(), 'kir', []);
+    monaco.editor.setModelMarkers(editor.getModel(), "kir", []);
   } catch (err) {
     if (editor) {
-      monaco.editor.setModelMarkers(editor.getModel(), 'kir', [{
-        severity: monaco.MarkerSeverity.Error,
-        message: err.message || 'Parse error',
-        startLineNumber: 1, startColumn: 1,
-        endLineNumber: 1, endColumn: 1,
-      }]);
+      monaco.editor.setModelMarkers(editor.getModel(), "kir", [
+        {
+          severity: monaco.MarkerSeverity.Error,
+          message: err.message || "Parse error",
+          startLineNumber: 1,
+          startColumn: 1,
+          endLineNumber: 1,
+          endColumn: 1,
+        },
+      ]);
     }
   } finally {
     suppressGraphWatch = false;
@@ -137,14 +150,14 @@ onMounted(async () => {
 
   editor = monaco.editor.create(editorContainer.value, {
     value: initialKir,
-    language: 'kir',
-    theme: 'kir-catppuccin',
+    language: "kir",
+    theme: "kir-catppuccin",
     minimap: { enabled: false },
     fontSize: 13,
-    lineNumbers: 'on',
-    renderLineHighlight: 'line',
+    lineNumbers: "on",
+    renderLineHighlight: "line",
     scrollBeyondLastLine: false,
-    wordWrap: 'off',
+    wordWrap: "off",
     tabSize: 4,
     insertSpaces: true,
     automaticLayout: true,
@@ -167,8 +180,11 @@ onBeforeUnmount(() => {
   <div class="kir-code-editor-root">
     <div class="kir-code-editor-header">
       <span class="kir-code-editor-title">KIR Code Editor</span>
-      <span class="kir-code-editor-badge" :class="isWasmReady() ? 'badge--ready' : 'badge--loading'">
-        {{ isWasmReady() ? 'WASM' : '...' }}
+      <span
+        class="kir-code-editor-badge"
+        :class="isWasmReady() ? 'badge--ready' : 'badge--loading'"
+      >
+        {{ isWasmReady() ? "WASM" : "..." }}
       </span>
       <button
         class="meta-toggle-btn"
@@ -176,9 +192,13 @@ onBeforeUnmount(() => {
         :title="hideMeta ? 'Show @meta annotations' : 'Hide @meta annotations'"
         @click="toggleMeta"
       >
-        @meta {{ hideMeta ? 'hidden' : 'visible' }}
+        @meta {{ hideMeta ? "hidden" : "visible" }}
       </button>
-      <button class="sync-btn" title="Apply code changes to node graph" @click="syncToGraph">
+      <button
+        class="sync-btn"
+        title="Apply code changes to node graph"
+        @click="syncToGraph"
+      >
         Sync to Graph
       </button>
       <span class="kir-code-editor-hint">
@@ -255,7 +275,10 @@ onBeforeUnmount(() => {
   background: transparent;
   color: #a6adc8;
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s,
+    color 0.1s;
 }
 
 .meta-toggle-btn:hover {
@@ -274,7 +297,9 @@ onBeforeUnmount(() => {
   background: rgba(137, 180, 250, 0.08);
   color: #89b4fa;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .sync-btn:hover {
@@ -293,4 +318,3 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 </style>
-

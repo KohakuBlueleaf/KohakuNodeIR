@@ -1,10 +1,10 @@
-import { ref, computed } from 'vue';
-import { defineStore } from 'pinia';
-import { useGraphStore } from './graph.js';
+import { ref, computed } from "vue";
+import { defineStore } from "pinia";
+import { useGraphStore } from "./graph.js";
 
 const MAX_HISTORY = 50;
 
-export const useHistoryStore = defineStore('history', () => {
+export const useHistoryStore = defineStore("history", () => {
   // ---- State ----
 
   /** @type {import('vue').Ref<string[]>} JSON-serialized graph snapshots */
@@ -48,7 +48,10 @@ export const useHistoryStore = defineStore('history', () => {
     const snap = _snapshot();
 
     // Avoid pushing duplicate snapshots
-    if (undoStack.value.length > 0 && undoStack.value[undoStack.value.length - 1] === snap) {
+    if (
+      undoStack.value.length > 0 &&
+      undoStack.value[undoStack.value.length - 1] === snap
+    ) {
       return;
     }
 

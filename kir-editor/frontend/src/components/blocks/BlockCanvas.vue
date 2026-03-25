@@ -2,15 +2,15 @@
 // BlockCanvas.vue — scrollable/pannable surface that renders all block stacks.
 // Also hosts the BlockPalette sidebar and handles palette drag-drop to create nodes.
 
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { useGraphStore } from '../../stores/graph.js';
-import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
-import { GRID_SIZE }     from '../../utils/grid.js';
-import { useBlockTree }  from './blockTree.js';
-import { initWasm }      from '../../parser/wasmParser.js';
-import BlockStack        from './BlockStack.vue';
-import BlockPalette      from './BlockPalette.vue';
-import { draggingNodeId, ghostPos } from '../../composables/useBlockDrag.js';
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { useGraphStore } from "../../stores/graph.js";
+import { useNodeRegistryStore } from "../../stores/nodeRegistry.js";
+import { GRID_SIZE } from "../../utils/grid.js";
+import { useBlockTree } from "./blockTree.js";
+import { initWasm } from "../../parser/wasmParser.js";
+import BlockStack from "./BlockStack.vue";
+import BlockPalette from "./BlockPalette.vue";
+import { draggingNodeId, ghostPos } from "../../composables/useBlockDrag.js";
 
 // ── Props / emits ──────────────────────────────────────────────────────────────
 const props = defineProps({
@@ -19,7 +19,7 @@ const props = defineProps({
     default: 1,
   },
 });
-const emit = defineEmits(['update:zoom']);
+const emit = defineEmits(["update:zoom"]);
 
 // ── Stores ─────────────────────────────────────────────────────────────────────
 const graph = useGraphStore();
@@ -27,8 +27,10 @@ const registry = useNodeRegistryStore();
 const { blockTree, wasmStatus } = useBlockTree(graph);
 
 // ── WASM init: kick off loading in the background ─────────────────────────────
-const wasmProgress = ref('');
-initWasm((msg) => { wasmProgress.value = msg; });
+const wasmProgress = ref("");
+initWasm((msg) => {
+  wasmProgress.value = msg;
+});
 
 // ── Refs ───────────────────────────────────────────────────────────────────────
 const containerRef = ref(null);
@@ -36,8 +38,8 @@ const containerRef = ref(null);
 // ── Pan state ─────────────────────────────────────────────────────────────────
 const panX = ref(40);
 const panY = ref(40);
-const isPanning    = ref(false);
-const spaceHeld    = ref(false);
+const isPanning = ref(false);
+const spaceHeld = ref(false);
 let panStartX = 0;
 let panStartY = 0;
 let panOriginX = 0;
@@ -45,8 +47,8 @@ let panOriginY = 0;
 
 function beginPan(clientX, clientY) {
   isPanning.value = true;
-  panStartX  = clientX;
-  panStartY  = clientY;
+  panStartX = clientX;
+  panStartY = clientY;
   panOriginX = panX.value;
   panOriginY = panY.value;
 }
@@ -62,27 +64,30 @@ function endPan() {
 }
 
 // ── Zoom ──────────────────────────────────────────────────────────────────────
-const ZOOM_MIN   = 0.1;
-const ZOOM_MAX   = 4;
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 4;
 const ZOOM_SPEED = 0.001;
 
 function onWheel(e) {
   e.preventDefault();
-  const rect    = containerRef.value.getBoundingClientRect();
-  const mx      = e.clientX - rect.left;
-  const my      = e.clientY - rect.top;
+  const rect = containerRef.value.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
   const oldZoom = props.zoom;
-  const delta   = -e.deltaY * ZOOM_SPEED;
-  const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(oldZoom + delta * oldZoom).toFixed(4)));
+  const delta = -e.deltaY * ZOOM_SPEED;
+  const newZoom = Math.min(
+    ZOOM_MAX,
+    Math.max(ZOOM_MIN, +(oldZoom + delta * oldZoom).toFixed(4)),
+  );
   panX.value = mx - ((mx - panX.value) / oldZoom) * newZoom;
   panY.value = my - ((my - panY.value) / oldZoom) * newZoom;
-  emit('update:zoom', newZoom);
+  emit("update:zoom", newZoom);
 }
 
 // ── Transform style ───────────────────────────────────────────────────────────
 const transformStyle = computed(() => ({
   transform: `translate(${panX.value}px, ${panY.value}px) scale(${props.zoom})`,
-  transformOrigin: '0 0',
+  transformOrigin: "0 0",
 }));
 
 // ── Dot grid background (matches EditorCanvas) ───────────────────────────────
@@ -91,28 +96,28 @@ const gridStyle = computed(() => {
   const ox = ((panX.value % gridPx) + gridPx) % gridPx;
   const oy = ((panY.value % gridPx) + gridPx) % gridPx;
   return {
-    backgroundImage:   'radial-gradient(circle, #2a2a3e 1px, transparent 1px)',
-    backgroundSize:    `${gridPx}px ${gridPx}px`,
-    backgroundPosition:`${ox}px ${oy}px`,
+    backgroundImage: "radial-gradient(circle, #2a2a3e 1px, transparent 1px)",
+    backgroundSize: `${gridPx}px ${gridPx}px`,
+    backgroundPosition: `${ox}px ${oy}px`,
   };
 });
 
 // ── Cursor ────────────────────────────────────────────────────────────────────
 const cursorStyle = computed(() => {
-  if (isPanning.value) return 'grabbing';
-  if (spaceHeld.value) return 'grab';
-  return 'default';
+  if (isPanning.value) return "grabbing";
+  if (spaceHeld.value) return "grab";
+  return "default";
 });
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 function onKeyDown(e) {
-  if (e.code === 'Space' && e.target === document.body) {
+  if (e.code === "Space" && e.target === document.body) {
     e.preventDefault();
     spaceHeld.value = true;
   }
 }
 function onKeyUp(e) {
-  if (e.code === 'Space') {
+  if (e.code === "Space") {
     spaceHeld.value = false;
     if (isPanning.value) endPan();
   }
@@ -120,25 +125,38 @@ function onKeyUp(e) {
 
 // ── Pointer handlers ──────────────────────────────────────────────────────────
 function onPointerDown(e) {
-  if (e.button === 1) { e.preventDefault(); beginPan(e.clientX, e.clientY); return; }
-  if (e.button === 0 && spaceHeld.value) { beginPan(e.clientX, e.clientY); return; }
+  if (e.button === 1) {
+    e.preventDefault();
+    beginPan(e.clientX, e.clientY);
+    return;
+  }
+  if (e.button === 0 && spaceHeld.value) {
+    beginPan(e.clientX, e.clientY);
+    return;
+  }
   if (e.button === 0) {
-    const isCanvas = e.target === containerRef.value || e.target.classList.contains('blocks-transform');
+    const isCanvas =
+      e.target === containerRef.value ||
+      e.target.classList.contains("blocks-transform");
     if (isCanvas) beginPan(e.clientX, e.clientY);
   }
 }
-function onPointerMove(e) { if (isPanning.value) continuePan(e.clientX, e.clientY); }
-function onPointerUp()    { if (isPanning.value) endPan(); }
+function onPointerMove(e) {
+  if (isPanning.value) continuePan(e.clientX, e.clientY);
+}
+function onPointerUp() {
+  if (isPanning.value) endPan();
+}
 
 // ── Stack layout: auto-position stacks in columns ─────────────────────────────
 const STACK_COLUMN_GAP = 32;
-const STACK_ROW_GAP    = 32;
-const STACK_WIDTH      = 280;
+const STACK_ROW_GAP = 32;
+const STACK_WIDTH = 280;
 
 function stackStyle(index) {
   const col = index;
   return {
-    position: 'absolute',
+    position: "absolute",
     left: `${col * (STACK_WIDTH + STACK_COLUMN_GAP)}px`,
     top: `${STACK_ROW_GAP}px`,
     width: `${STACK_WIDTH}px`,
@@ -163,9 +181,9 @@ function screenToCanvas(clientX, clientY) {
 
 function onDragOver(e) {
   // Only accept our custom block-type drag
-  if (!e.dataTransfer.types.includes('application/x-block-type')) return;
+  if (!e.dataTransfer.types.includes("application/x-block-type")) return;
   e.preventDefault();
-  e.dataTransfer.dropEffect = 'copy';
+  e.dataTransfer.dropEffect = "copy";
   isDragOver.value = true;
 }
 
@@ -175,7 +193,7 @@ function onDragLeave() {
 
 function onDrop(e) {
   isDragOver.value = false;
-  const typeName = e.dataTransfer.getData('application/x-block-type');
+  const typeName = e.dataTransfer.getData("application/x-block-type");
   if (!typeName) return;
   e.preventDefault();
 
@@ -184,28 +202,28 @@ function onDrop(e) {
     const nodeData = registry.createNodeData(typeName, x, y);
     graph.addNode(nodeData);
   } catch (err) {
-    console.warn('[BlockCanvas] drop failed:', err.message);
+    console.warn("[BlockCanvas] drop failed:", err.message);
   }
 }
 
 // ── Drag ghost label ──────────────────────────────────────────────────────────
 function ghostNodeName() {
-  if (!draggingNodeId.value) return '';
+  if (!draggingNodeId.value) return "";
   const node = graph.nodes.get(draggingNodeId.value);
-  return node?.name ?? '';
+  return node?.name ?? "";
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(() => {
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup',   onKeyUp);
-  containerRef.value?.addEventListener('wheel', onWheel, { passive: false });
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+  containerRef.value?.addEventListener("wheel", onWheel, { passive: false });
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeyDown);
-  window.removeEventListener('keyup',   onKeyUp);
-  containerRef.value?.removeEventListener('wheel', onWheel);
+  window.removeEventListener("keydown", onKeyDown);
+  window.removeEventListener("keyup", onKeyUp);
+  containerRef.value?.removeEventListener("wheel", onWheel);
 });
 </script>
 
@@ -231,10 +249,11 @@ onBeforeUnmount(() => {
     >
       <!-- Pan/zoom transform wrapper -->
       <div class="blocks-transform" :style="transformStyle">
-
         <!-- Empty state -->
         <div v-if="!blockTree.stacks.length" class="blocks-empty">
-          <span class="blocks-empty-label">No graph to display as blocks yet.</span>
+          <span class="blocks-empty-label"
+            >No graph to display as blocks yet.</span
+          >
         </div>
 
         <!-- Block stacks -->
@@ -246,7 +265,6 @@ onBeforeUnmount(() => {
         >
           <BlockStack :blocks="stack.blocks" />
         </div>
-
       </div>
 
       <!-- Drag-over highlight border -->
@@ -262,7 +280,7 @@ onBeforeUnmount(() => {
       <span v-if="wasmStatus === 'loading'" class="pyodide-spinner" />
       <span class="pyodide-badge-text">
         <template v-if="wasmStatus === 'loading'">
-          {{ wasmProgress || 'Loading parser...' }}
+          {{ wasmProgress || "Loading parser..." }}
         </template>
         <template v-else-if="wasmStatus === 'fallback'">
           Parser unavailable — showing KIR source
@@ -270,16 +288,12 @@ onBeforeUnmount(() => {
         <template v-else-if="wasmStatus === 'error'">
           Parse error — showing KIR source
         </template>
-        <template v-else>
-          Block view (read-only)
-        </template>
+        <template v-else> Block view (read-only) </template>
       </span>
     </div>
 
     <!-- Read-only banner when parser is ready -->
-    <div v-else class="readonly-badge">
-      Block view — read-only
-    </div>
+    <div v-else class="readonly-badge">Block view — read-only</div>
 
     <!-- ── Block drag ghost ── -->
     <Teleport to="body">
@@ -396,7 +410,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .pyodide-badge-text {

@@ -25,11 +25,19 @@ pub struct AnalysisError {
 
 impl AnalysisError {
     fn error(message: impl Into<String>, line: Option<usize>) -> Self {
-        Self { message: message.into(), line, is_warning: false }
+        Self {
+            message: message.into(),
+            line,
+            is_warning: false,
+        }
     }
 
     fn warning(message: impl Into<String>, line: Option<usize>) -> Self {
-        Self { message: message.into(), line, is_warning: true }
+        Self {
+            message: message.into(),
+            line,
+            is_warning: true,
+        }
     }
 }
 
@@ -59,7 +67,11 @@ impl std::error::Error for AnalysisError {}
 pub fn validate(program: &Program) -> Result<(), Vec<AnalysisError>> {
     let issues = analyze(program);
     let errors: Vec<AnalysisError> = issues.into_iter().filter(|e| !e.is_warning).collect();
-    if errors.is_empty() { Ok(()) } else { Err(errors) }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
 }
 
 /// Run all analyzers and return every issue (errors + warnings).
@@ -88,11 +100,7 @@ impl ScopeAnalyzer {
 
     // --- Duplicate @def subgraph names (program-wide, top-level only) -------
 
-    fn check_duplicate_subgraphs(
-        &self,
-        stmts: &[Statement],
-        errors: &mut Vec<AnalysisError>,
-    ) {
+    fn check_duplicate_subgraphs(&self, stmts: &[Statement], errors: &mut Vec<AnalysisError>) {
         let mut seen: HashMap<&str, Option<usize>> = HashMap::new();
         for stmt in stmts {
             if let Statement::SubgraphDef(def) = stmt {
@@ -366,10 +374,7 @@ impl VariableAnalyzer {
         for param in &def.params {
             if seen_params.contains(&param.name) {
                 errors.push(AnalysisError::error(
-                    format!(
-                        "@def {}: duplicate parameter '{}'",
-                        def.name, param.name
-                    ),
+                    format!("@def {}: duplicate parameter '{}'", def.name, param.name),
                     param.line,
                 ));
             } else {
@@ -378,8 +383,11 @@ impl VariableAnalyzer {
         }
 
         // Analyze body with outer defs + param names pre-seeded.
-        let mut inner_defined: HashSet<String> =
-            defined.iter().cloned().chain(seen_params.iter().cloned()).collect();
+        let mut inner_defined: HashSet<String> = defined
+            .iter()
+            .cloned()
+            .chain(seen_params.iter().cloned())
+            .collect();
         self.walk_body(&def.body, &mut inner_defined, errors, false);
     }
 
@@ -441,16 +449,27 @@ mod tests {
     // -----------------------------------------------------------------------
 
     fn ns(name: &str, body: Vec<Statement>, line: Option<usize>) -> Statement {
-        Statement::Namespace(Namespace { name: name.into(), body, line })
+        Statement::Namespace(Namespace {
+            name: name.into(),
+            body,
+            line,
+        })
     }
 
     fn jump(target: &str, line: Option<usize>) -> Statement {
-        Statement::Jump(Jump { target: target.into(), metadata: None, line })
+        Statement::Jump(Jump {
+            target: target.into(),
+            metadata: None,
+            line,
+        })
     }
 
     fn branch(cond: &str, t: &str, f: &str, line: Option<usize>) -> Statement {
         Statement::Branch(Branch {
-            condition: Expression::Identifier(Identifier { name: cond.into(), line: None }),
+            condition: Expression::Identifier(Identifier {
+                name: cond.into(),
+                line: None,
+            }),
             true_label: t.into(),
             false_label: f.into(),
             metadata: None,
@@ -461,7 +480,10 @@ mod tests {
     fn assignment(target: &str, value: &str, line: Option<usize>) -> Statement {
         Statement::Assignment(Assignment {
             target: target.into(),
-            value: Expression::Identifier(Identifier { name: value.into(), line: None }),
+            value: Expression::Identifier(Identifier {
+                name: value.into(),
+                line: None,
+            }),
             metadata: None,
             line,
         })
@@ -481,7 +503,11 @@ mod tests {
     }
 
     fn program(body: Vec<Statement>) -> Program {
-        Program { body, mode: None, line: None }
+        Program {
+            body,
+            mode: None,
+            line: None,
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -525,7 +551,11 @@ mod tests {
         let errs = validate(&prog).unwrap_err();
         assert!(!errs.is_empty());
         let err = &errs[0];
-        assert!(err.message.contains("Undefined variable 'y'"), "got: {}", err.message);
+        assert!(
+            err.message.contains("Undefined variable 'y'"),
+            "got: {}",
+            err.message
+        );
         assert_eq!(err.line, Some(5));
     }
 
@@ -551,7 +581,11 @@ mod tests {
         let errs = validate(&prog).unwrap_err();
         assert!(!errs.is_empty());
         let err = &errs[0];
-        assert!(err.message.contains("Duplicate namespace label 'loop'"), "got: {}", err.message);
+        assert!(
+            err.message.contains("Duplicate namespace label 'loop'"),
+            "got: {}",
+            err.message
+        );
         assert_eq!(err.line, Some(5));
     }
 
@@ -596,7 +630,9 @@ mod tests {
         let errs = validate(&prog).unwrap_err();
         assert!(!errs.is_empty());
         assert!(
-            errs[0].message.contains("Duplicate subgraph definition 'my_graph'"),
+            errs[0]
+                .message
+                .contains("Duplicate subgraph definition 'my_graph'"),
             "got: {}",
             errs[0].message
         );
@@ -616,7 +652,11 @@ mod tests {
         let issues = analyze(&prog);
         let warnings: Vec<_> = issues.iter().filter(|e| e.is_warning).collect();
         assert!(!warnings.is_empty());
-        assert!(warnings[0].message.contains("orphan"), "got: {}", warnings[0].message);
+        assert!(
+            warnings[0].message.contains("orphan"),
+            "got: {}",
+            warnings[0].message
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -665,7 +705,9 @@ mod tests {
         let errs = validate(&prog).unwrap_err();
         assert!(!errs.is_empty());
         assert!(
-            errs[0].message.contains("Wildcard '_' can only be used in output position"),
+            errs[0]
+                .message
+                .contains("Wildcard '_' can only be used in output position"),
             "got: {}",
             errs[0].message
         );

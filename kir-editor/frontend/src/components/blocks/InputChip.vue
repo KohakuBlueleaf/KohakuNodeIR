@@ -13,13 +13,13 @@ const props = defineProps({
 
 // ── kind → accent color ───────────────────────────────────────────────────────
 const KIND_COLORS = {
-  var:     '#89b4fa', // variable reference — blue
-  literal: '#a6e3a1', // literal value — green
-  kwarg:   '#f9e2af', // keyword arg — yellow
-  label:   '#cba6f7', // label ref — mauve
-  wildcard:'#6c7086', // discard _ — overlay
-  empty:   '#45475a', // empty slot — surface2
-  unknown: '#f38ba8', // unknown — red
+  var: "#89b4fa", // variable reference — blue
+  literal: "#a6e3a1", // literal value — green
+  kwarg: "#f9e2af", // keyword arg — yellow
+  label: "#cba6f7", // label ref — mauve
+  wildcard: "#6c7086", // discard _ — overlay
+  empty: "#45475a", // empty slot — surface2
+  unknown: "#f38ba8", // unknown — red
 };
 
 function chipColor(kind) {
@@ -27,8 +27,8 @@ function chipColor(kind) {
 }
 
 function displayText(expr) {
-  if (!expr || expr.kind === 'empty') return '…';
-  return expr.text || '…';
+  if (!expr || expr.kind === "empty") return "…";
+  return expr.text || "…";
 }
 </script>
 
@@ -56,7 +56,7 @@ function displayText(expr) {
   background: color-mix(in srgb, var(--chip-color) 16%, #1e1e2e);
   border: 1px solid color-mix(in srgb, var(--chip-color) 50%, transparent);
   border-radius: 999px;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 11px;
   color: var(--chip-color);
   white-space: nowrap;

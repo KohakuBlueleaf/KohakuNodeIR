@@ -1,37 +1,51 @@
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { ref, computed, inject } from "vue";
 
 const props = defineProps({
   port: { type: Object, required: true },
   nodeId: { type: String, required: true },
-  direction: { type: String, required: true, validator: v => ['input', 'output'].includes(v) },
+  direction: {
+    type: String,
+    required: true,
+    validator: (v) => ["input", "output"].includes(v),
+  },
   portIndex: { type: Number, required: true },
   totalPorts: { type: Number, required: true },
   label: { type: String, default: null },
-})
+});
 
-const emit = defineEmits(['port-mousedown', 'port-mouseup'])
-const isHovered = ref(false)
-const draftWireType = inject('draftWireType', null)
+const emit = defineEmits(["port-mousedown", "port-mouseup"]);
+const isHovered = ref(false);
+const draftWireType = inject("draftWireType", null);
 
 const isCompatible = computed(() => {
-  if (!draftWireType?.value) return false
-  return draftWireType.value === 'control' && props.direction === 'input'
-})
+  if (!draftWireType?.value) return false;
+  return draftWireType.value === "control" && props.direction === "input";
+});
 
-const displayLabel = computed(() => props.label || props.port.name)
+const displayLabel = computed(() => props.label || props.port.name);
 
 function onMouseDown(e) {
-  if (props.direction !== 'output') return
-  e.stopPropagation()
-  e.preventDefault()
-  emit('port-mousedown', { nodeId: props.nodeId, portId: props.port.id, portType: 'control', direction: props.direction })
+  if (props.direction !== "output") return;
+  e.stopPropagation();
+  e.preventDefault();
+  emit("port-mousedown", {
+    nodeId: props.nodeId,
+    portId: props.port.id,
+    portType: "control",
+    direction: props.direction,
+  });
 }
 
 function onMouseUp(e) {
-  if (props.direction !== 'input') return
-  e.stopPropagation()
-  emit('port-mouseup', { nodeId: props.nodeId, portId: props.port.id, portType: 'control', direction: props.direction })
+  if (props.direction !== "input") return;
+  e.stopPropagation();
+  emit("port-mouseup", {
+    nodeId: props.nodeId,
+    portId: props.port.id,
+    portType: "control",
+    direction: props.direction,
+  });
 }
 </script>
 
@@ -40,7 +54,10 @@ function onMouseUp(e) {
     class="ctrl-port"
     :class="[
       `ctrl-port--${direction}`,
-      { 'ctrl-port--hovered': isHovered, 'ctrl-port--compatible': isCompatible },
+      {
+        'ctrl-port--hovered': isHovered,
+        'ctrl-port--compatible': isCompatible,
+      },
     ]"
     :data-port-id="port.id"
     :data-node-id="nodeId"
@@ -90,11 +107,14 @@ function onMouseUp(e) {
 
 .ctrl-port__diamond {
   flex-shrink: 0;
-  width: 10px; height: 10px;
+  width: 10px;
+  height: 10px;
   background: #fab387;
   border: 1.5px solid #1e1e2e;
   transform: rotate(45deg);
-  transition: background 0.12s, box-shadow 0.12s;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
 }
 
 .ctrl-port--hovered .ctrl-port__diamond {
@@ -115,5 +135,7 @@ function onMouseUp(e) {
   margin: 2px 0;
 }
 
-.ctrl-port--hovered .ctrl-port__label { color: #cdd6f4; }
+.ctrl-port--hovered .ctrl-port__label {
+  color: #cdd6f4;
+}
 </style>

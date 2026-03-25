@@ -24,12 +24,19 @@
  *   { nodes, edges, format: 'kir' | 'kirgraph' | 'comfyui' | 'unknown' }
  */
 
-import { loadKirgraph } from './kirgraphLoader.js';
-import { parseKirLite } from './kirLiteParser.js';
-import { loadComfyUI } from './comfyLoader.js';
-import { initWasm, parseKirWithWasm, isWasmReady } from './wasmParser.js';
+import { loadKirgraph } from "./kirgraphLoader.js";
+import { parseKirLite } from "./kirLiteParser.js";
+import { loadComfyUI } from "./comfyLoader.js";
+import { initWasm, parseKirWithWasm, isWasmReady } from "./wasmParser.js";
 
-export { loadKirgraph, parseKirLite, loadComfyUI, initWasm, parseKirWithWasm, isWasmReady };
+export {
+  loadKirgraph,
+  parseKirLite,
+  loadComfyUI,
+  initWasm,
+  parseKirWithWasm,
+  isWasmReady,
+};
 
 /**
  * Detect the format of `content` (optionally aided by `filename`) and parse
@@ -51,28 +58,28 @@ export { loadKirgraph, parseKirLite, loadComfyUI, initWasm, parseKirWithWasm, is
  * @returns {{ nodes: object[], edges: object[], format: string }}
  */
 export function detectAndParse(content, filename = null) {
-  const name = filename ? String(filename) : '';
+  const name = filename ? String(filename) : "";
 
   // ---- Extension-based detection ----
 
-  if (name.endsWith('.kirgraph')) {
-    const json = parseJSON(content, '.kirgraph');
-    return { ...loadKirgraph(json), format: 'kirgraph' };
+  if (name.endsWith(".kirgraph")) {
+    const json = parseJSON(content, ".kirgraph");
+    return { ...loadKirgraph(json), format: "kirgraph" };
   }
 
-  if (name.endsWith('.kir')) {
-    return { ...parseKirLite(content), format: 'kir' };
+  if (name.endsWith(".kir")) {
+    return { ...parseKirLite(content), format: "kir" };
   }
 
-  if (name.endsWith('.json')) {
-    const json = parseJSON(content, '.json');
+  if (name.endsWith(".json")) {
+    const json = parseJSON(content, ".json");
     return detectJson(json);
   }
 
   // ---- Content sniffing (unknown or no extension) ----
 
   const trimmed = content.trimStart();
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     try {
       const json = JSON.parse(content);
       return detectJson(json);
@@ -82,7 +89,7 @@ export function detectAndParse(content, filename = null) {
   }
 
   // Default: treat as KIR text
-  return { ...parseKirLite(content), format: 'kir' };
+  return { ...parseKirLite(content), format: "kir" };
 }
 
 /**
@@ -90,18 +97,20 @@ export function detectAndParse(content, filename = null) {
  * falls back to JS lite parser.
  */
 export async function detectAndParseAsync(content, filename = null) {
-  const name = filename ? String(filename) : '';
+  const name = filename ? String(filename) : "";
 
   // For .kir files, try WASM parser (waits for it if still loading)
   if (
-    name.endsWith('.kir') ||
-    (!name.endsWith('.json') && !name.endsWith('.kirgraph') && !content.trimStart().startsWith('{'))
+    name.endsWith(".kir") ||
+    (!name.endsWith(".json") &&
+      !name.endsWith(".kirgraph") &&
+      !content.trimStart().startsWith("{"))
   ) {
     const ok = await initWasm();
     if (ok) {
       const result = await parseKirWithWasm(content);
       if (result && result.nodes && result.nodes.length > 0) {
-        return { ...result, format: 'kir-wasm' };
+        return { ...result, format: "kir-wasm" };
       }
     }
   }
@@ -121,7 +130,9 @@ function parseJSON(content, context) {
   try {
     return JSON.parse(content);
   } catch (err) {
-    throw new Error(`detectAndParse: invalid JSON in ${context} file — ${err.message}`);
+    throw new Error(
+      `detectAndParse: invalid JSON in ${context} file — ${err.message}`,
+    );
   }
 }
 
@@ -130,28 +141,32 @@ function parseJSON(content, context) {
  * Returns { nodes, edges, format }.
  */
 function detectJson(json) {
-  if (!json || typeof json !== 'object' || Array.isArray(json)) {
-    return { nodes: [], edges: [], format: 'unknown' };
+  if (!json || typeof json !== "object" || Array.isArray(json)) {
+    return { nodes: [], edges: [], format: "unknown" };
   }
 
   // kirgraph: must have version field AND both nodes and edges as arrays
-  if (json.version !== undefined && Array.isArray(json.nodes) && Array.isArray(json.edges)) {
-    return { ...loadKirgraph(json), format: 'kirgraph' };
+  if (
+    json.version !== undefined &&
+    Array.isArray(json.nodes) &&
+    Array.isArray(json.edges)
+  ) {
+    return { ...loadKirgraph(json), format: "kirgraph" };
   }
 
   // ComfyUI workflow: has nodes array + links key (links may be empty array)
-  if (Array.isArray(json.nodes) && 'links' in json) {
-    return { ...loadComfyUI(json), format: 'comfyui' };
+  if (Array.isArray(json.nodes) && "links" in json) {
+    return { ...loadComfyUI(json), format: "comfyui" };
   }
 
   // ComfyUI API format: values are objects with class_type
   if (Object.keys(json).length > 0) {
     const firstVal = Object.values(json)[0];
-    if (firstVal && typeof firstVal === 'object' && 'class_type' in firstVal) {
-      return { ...loadComfyUI(json), format: 'comfyui' };
+    if (firstVal && typeof firstVal === "object" && "class_type" in firstVal) {
+      return { ...loadComfyUI(json), format: "comfyui" };
     }
   }
 
   // Unknown JSON — return empty graph
-  return { nodes: [], edges: [], format: 'unknown' };
+  return { nodes: [], edges: [], format: "unknown" };
 }

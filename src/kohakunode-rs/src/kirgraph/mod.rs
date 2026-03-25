@@ -254,8 +254,7 @@ impl KirGraph {
 
     /// Serialize to a pretty-printed JSON string (2-space indent).
     pub fn to_json(&self) -> String {
-        serde_json::to_string_pretty(self)
-            .expect("KirGraph serialization should never fail")
+        serde_json::to_string_pretty(self).expect("KirGraph serialization should never fail")
     }
 }
 
@@ -325,8 +324,14 @@ mod tests {
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
         let edge = &v["edges"][0];
         // Must use nested objects
-        assert!(edge.get("from").is_some(), "edge must have nested 'from' object");
-        assert!(edge.get("to").is_some(), "edge must have nested 'to' object");
+        assert!(
+            edge.get("from").is_some(),
+            "edge must have nested 'from' object"
+        );
+        assert!(
+            edge.get("to").is_some(),
+            "edge must have nested 'to' object"
+        );
         assert_eq!(edge["from"]["node"], "n1");
         assert_eq!(edge["from"]["port"], "value");
         assert_eq!(edge["to"]["node"], "n2");
@@ -342,7 +347,10 @@ mod tests {
         let json = g.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
         let out_port = &v["nodes"][0]["data_outputs"][0];
-        assert!(out_port.get("default").is_none(), "default must be absent when None");
+        assert!(
+            out_port.get("default").is_none(),
+            "default must be absent when None"
+        );
     }
 
     #[test]

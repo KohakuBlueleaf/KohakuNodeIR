@@ -1,6 +1,10 @@
-import { ref, watch } from 'vue';
-import { compileGraph } from '../../compiler/graphToIr.js';
-import { parseKirToAst, isWasmReady, initWasm } from '../../parser/wasmParser.js';
+import { ref, watch } from "vue";
+import { compileGraph } from "../../compiler/graphToIr.js";
+import {
+  parseKirToAst,
+  isWasmReady,
+  initWasm,
+} from "../../parser/wasmParser.js";
 
 // ---------------------------------------------------------------------------
 // AST → Block tree walker
@@ -14,20 +18,23 @@ import { parseKirToAst, isWasmReady, initWasm } from '../../parser/wasmParser.js
  * @returns {{ kind: string, text: string }}
  */
 function serializeExpr(expr) {
-  if (!expr) return { kind: 'empty', text: '' };
+  if (!expr) return { kind: "empty", text: "" };
   switch (expr.type) {
-    case 'Identifier':
-      return { kind: 'var', text: expr.name ?? '' };
-    case 'Literal':
-      return { kind: 'literal', text: String(expr.value ?? '') };
-    case 'KeywordArg':
-      return { kind: 'kwarg', text: `${expr.name}=${serializeExpr(expr.value).text}` };
-    case 'LabelRef':
-      return { kind: 'label', text: expr.name ?? '' };
-    case 'Wildcard':
-      return { kind: 'wildcard', text: '_' };
+    case "Identifier":
+      return { kind: "var", text: expr.name ?? "" };
+    case "Literal":
+      return { kind: "literal", text: String(expr.value ?? "") };
+    case "KeywordArg":
+      return {
+        kind: "kwarg",
+        text: `${expr.name}=${serializeExpr(expr.value).text}`,
+      };
+    case "LabelRef":
+      return { kind: "label", text: expr.name ?? "" };
+    case "Wildcard":
+      return { kind: "wildcard", text: "_" };
     default:
-      return { kind: 'unknown', text: JSON.stringify(expr) };
+      return { kind: "unknown", text: JSON.stringify(expr) };
   }
 }
 
@@ -37,9 +44,9 @@ function serializeExpr(expr) {
  * @returns {string}
  */
 function serializeOutput(out) {
-  if (!out) return '_';
-  if (typeof out === 'string') return out;
-  if (out.type === 'Wildcard') return '_';
+  if (!out) return "_";
+  if (typeof out === "string") return out;
+  if (out.type === "Wildcard") return "_";
   return String(out);
 }
 
@@ -57,7 +64,7 @@ function walkStatements(stmts) {
   // Build a map of namespace name → namespace node for arm look-ups
   const nsMap = new Map();
   for (const stmt of stmts) {
-    if (stmt.type === 'Namespace') nsMap.set(stmt.name, stmt);
+    if (stmt.type === "Namespace") nsMap.set(stmt.name, stmt);
   }
 
   // Track which namespaces are used as branch/switch arms so we can skip
@@ -66,13 +73,13 @@ function walkStatements(stmts) {
 
   // First pass: find all label refs used in Branch / Switch / Parallel
   for (const stmt of stmts) {
-    if (stmt.type === 'Branch') {
+    if (stmt.type === "Branch") {
       if (stmt.true_label) consumedNs.add(stmt.true_label);
       if (stmt.false_label) consumedNs.add(stmt.false_label);
-    } else if (stmt.type === 'Switch') {
+    } else if (stmt.type === "Switch") {
       for (const [, label] of stmt.cases ?? []) consumedNs.add(label);
       if (stmt.default_label) consumedNs.add(stmt.default_label);
-    } else if (stmt.type === 'Parallel') {
+    } else if (stmt.type === "Parallel") {
       for (const label of stmt.labels ?? []) consumedNs.add(label);
     }
   }
@@ -81,7 +88,7 @@ function walkStatements(stmts) {
 
   for (const stmt of stmts) {
     // Skip namespaces that are already embedded in a control block arm
-    if (stmt.type === 'Namespace' && consumedNs.has(stmt.name)) continue;
+    if (stmt.type === "Namespace" && consumedNs.has(stmt.name)) continue;
 
     const block = stmtToBlock(stmt, nsMap);
     if (block) blocks.push(block);
@@ -99,115 +106,115 @@ function walkStatements(stmts) {
  */
 function stmtToBlock(stmt, nsMap) {
   switch (stmt.type) {
-    case 'FuncCall':
+    case "FuncCall":
       return {
-        type: 'statement',
+        type: "statement",
         key: `fc-${stmt.line ?? Math.random()}`,
-        funcName: stmt.func_name ?? '?',
+        funcName: stmt.func_name ?? "?",
         inputs: (stmt.inputs ?? []).map(serializeExpr),
         outputs: (stmt.outputs ?? []).map(serializeOutput),
       };
 
-    case 'Assignment':
+    case "Assignment":
       return {
-        type: 'assignment',
+        type: "assignment",
         key: `assign-${stmt.line ?? Math.random()}`,
-        target: stmt.target ?? '_',
+        target: stmt.target ?? "_",
         value: serializeExpr(stmt.value),
       };
 
-    case 'Branch': {
+    case "Branch": {
       const trueNs = nsMap.get(stmt.true_label);
       const falseNs = nsMap.get(stmt.false_label);
       return {
-        type: 'branch',
+        type: "branch",
         key: `branch-${stmt.line ?? Math.random()}`,
         condition: serializeExpr(stmt.condition),
         arms: [
           {
-            label: stmt.true_label ?? 'true',
+            label: stmt.true_label ?? "true",
             blocks: trueNs ? walkStatements(trueNs.body) : [],
           },
           {
-            label: stmt.false_label ?? 'false',
+            label: stmt.false_label ?? "false",
             blocks: falseNs ? walkStatements(falseNs.body) : [],
           },
         ],
       };
     }
 
-    case 'Switch': {
+    case "Switch": {
       const arms = (stmt.cases ?? []).map(([expr, label]) => ({
-        label: label ?? '?',
+        label: label ?? "?",
         caseExpr: serializeExpr(expr),
-        blocks: (nsMap.get(label) ? walkStatements(nsMap.get(label).body) : []),
+        blocks: nsMap.get(label) ? walkStatements(nsMap.get(label).body) : [],
       }));
       if (stmt.default_label) {
         const defNs = nsMap.get(stmt.default_label);
         arms.push({
           label: stmt.default_label,
-          caseExpr: { kind: 'label', text: 'default' },
+          caseExpr: { kind: "label", text: "default" },
           blocks: defNs ? walkStatements(defNs.body) : [],
         });
       }
       return {
-        type: 'switch',
+        type: "switch",
         key: `switch-${stmt.line ?? Math.random()}`,
         value: serializeExpr(stmt.value),
         arms,
       };
     }
 
-    case 'Parallel': {
+    case "Parallel": {
       const arms = (stmt.labels ?? []).map((label) => ({
         label,
-        blocks: (nsMap.get(label) ? walkStatements(nsMap.get(label).body) : []),
+        blocks: nsMap.get(label) ? walkStatements(nsMap.get(label).body) : [],
       }));
       return {
-        type: 'parallel',
+        type: "parallel",
         key: `par-${stmt.line ?? Math.random()}`,
         arms,
       };
     }
 
-    case 'Namespace':
+    case "Namespace":
       // Standalone namespace (not consumed as a branch arm)
       return {
-        type: 'namespace',
+        type: "namespace",
         key: `ns-${stmt.name}-${stmt.line ?? Math.random()}`,
-        label: stmt.name ?? '',
+        label: stmt.name ?? "",
         blocks: walkStatements(stmt.body ?? []),
       };
 
-    case 'DataflowBlock':
+    case "DataflowBlock":
       return {
-        type: 'dataflow',
+        type: "dataflow",
         key: `df-${stmt.line ?? Math.random()}`,
         blocks: walkStatements(stmt.body ?? []),
       };
 
-    case 'Jump':
+    case "Jump":
       return {
-        type: 'jump',
+        type: "jump",
         key: `jump-${stmt.line ?? Math.random()}`,
-        target: stmt.target ?? '',
+        target: stmt.target ?? "",
       };
 
-    case 'SubgraphDef':
+    case "SubgraphDef":
       return {
-        type: 'subgraph',
+        type: "subgraph",
         key: `def-${stmt.name}-${stmt.line ?? Math.random()}`,
-        name: stmt.name ?? '',
-        params: (stmt.params ?? []).map((p) => p.name ?? ''),
+        name: stmt.name ?? "",
+        params: (stmt.params ?? []).map((p) => p.name ?? ""),
         outputs: stmt.outputs ?? [],
         blocks: walkStatements(stmt.body ?? []),
       };
 
-    case 'ModeDecl':
+    case "ModeDecl":
       return {
-        type: 'mode',
+        type: "mode",
         key: `mode-${stmt.line ?? Math.random()}`,
-        mode: stmt.mode ?? '',
+        mode: stmt.mode ?? "",
       };
 
     default:
@@ -234,7 +241,7 @@ function astToBlockTree(program) {
   const extraStacks = [];
 
   for (const block of allBlocks) {
-    if (block.type === 'subgraph') {
+    if (block.type === "subgraph") {
       extraStacks.push({ key: block.key, blocks: [block] });
     } else {
       mainBlocks.push(block);
@@ -242,7 +249,7 @@ function astToBlockTree(program) {
   }
 
   const stacks = [];
-  if (mainBlocks.length) stacks.push({ key: 'main', blocks: mainBlocks });
+  if (mainBlocks.length) stacks.push({ key: "main", blocks: mainBlocks });
   stacks.push(...extraStacks);
 
   return { stacks };
@@ -268,9 +275,9 @@ function astToBlockTree(program) {
  */
 export function useBlockTree(graphStore) {
   const blockTree = ref({ stacks: [] });
-  const kirText = ref('');
+  const kirText = ref("");
   // 'idle' | 'loading' | 'ready' | 'error' | 'fallback'
-  const wasmStatus = ref('idle');
+  const wasmStatus = ref("idle");
 
   // Debounce timer handle
   let rebuildTimer = null;
@@ -281,28 +288,28 @@ export function useBlockTree(graphStore) {
 
     if (!nodeList.length) {
       blockTree.value = { stacks: [] };
-      kirText.value = '';
+      kirText.value = "";
       return;
     }
 
     // Step 1: compile graph → KIR text (synchronous)
     // compileGraph returns { ir: string, errors: string[] }
-    let kir = '';
+    let kir = "";
     try {
       const result = compileGraph(nodeList, connectionList);
-      kir = result.ir ?? '';
+      kir = result.ir ?? "";
       if (result.errors?.length) {
-        console.warn('[blockTree] compile warnings:', result.errors);
+        console.warn("[blockTree] compile warnings:", result.errors);
       }
     } catch (err) {
-      console.warn('[blockTree] compileGraph failed:', err);
+      console.warn("[blockTree] compileGraph failed:", err);
       kir = `# compile error: ${err.message}`;
     }
     kirText.value = kir;
 
     // Step 2: parse KIR → AST (asynchronous, requires Pyodide)
     if (!isWasmReady()) {
-      wasmStatus.value = 'loading';
+      wasmStatus.value = "loading";
       // Show fallback KIR text stack while waiting
       blockTree.value = makeFallbackTree(kir);
       // Start WASM loading (no-op if already in progress) then re-run
@@ -313,19 +320,19 @@ export function useBlockTree(graphStore) {
       return;
     }
 
-    wasmStatus.value = 'loading';
+    wasmStatus.value = "loading";
     try {
       const ast = await parseKirToAst(kir);
       if (!ast) {
-        wasmStatus.value = 'fallback';
+        wasmStatus.value = "fallback";
         blockTree.value = makeFallbackTree(kir);
         return;
       }
-      wasmStatus.value = 'ready';
+      wasmStatus.value = "ready";
       blockTree.value = astToBlockTree(ast);
     } catch (err) {
-      console.warn('[blockTree] parseKirToAst failed:', err);
-      wasmStatus.value = 'error';
+      console.warn("[blockTree] parseKirToAst failed:", err);
+      wasmStatus.value = "error";
       blockTree.value = makeFallbackTree(kir);
     }
   }
@@ -338,14 +345,16 @@ export function useBlockTree(graphStore) {
    * @returns {{ stacks: object[] }}
    */
   function makeFallbackTree(kir) {
-    const lines = kir.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
+    const lines = kir
+      .split("\n")
+      .filter((l) => l.trim() && !l.trim().startsWith("#"));
     if (!lines.length) return { stacks: [] };
     const blocks = lines.map((line, i) => ({
-      type: 'kir-line',
+      type: "kir-line",
       key: `kir-${i}`,
       text: line,
     }));
-    return { stacks: [{ key: 'kir-fallback', blocks }] };
+    return { stacks: [{ key: "kir-fallback", blocks }] };
   }
 
   // Debounced re-build: avoid thrashing on rapid graph edits

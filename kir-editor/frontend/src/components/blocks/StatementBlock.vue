@@ -3,7 +3,7 @@
 // Renders from AST data: { type: 'statement', key, funcName, inputs, outputs }
 // Block mode is read-only: no drag, no delete.
 
-import InputChip from './InputChip.vue';
+import InputChip from "./InputChip.vue";
 
 const props = defineProps({
   block: {
@@ -14,34 +14,34 @@ const props = defineProps({
 
 // ── Function name → accent color (Catppuccin Mocha palette) ───────────────────
 const FUNC_COLORS = {
-  print:         '#89dceb',
-  display:       '#89dceb',
-  store:         '#a6e3a1',
-  load:          '#a6e3a1',
-  add:           '#89b4fa',
-  subtract:      '#89b4fa',
-  multiply:      '#89b4fa',
-  divide:        '#89b4fa',
-  mod:           '#89b4fa',
-  pow:           '#89b4fa',
-  greater_than:  '#f9e2af',
-  less_than:     '#f9e2af',
-  equal:         '#f9e2af',
-  not_equal:     '#f9e2af',
-  and:           '#f9e2af',
-  or:            '#f9e2af',
-  not:           '#f9e2af',
-  concat:        '#a6e3a1',
-  format_string: '#a6e3a1',
-  read_file:     '#cba6f7',
-  write_file:    '#cba6f7',
-  to_int:        '#74c7ec',
-  to_float:      '#74c7ec',
-  to_string:     '#74c7ec',
+  print: "#89dceb",
+  display: "#89dceb",
+  store: "#a6e3a1",
+  load: "#a6e3a1",
+  add: "#89b4fa",
+  subtract: "#89b4fa",
+  multiply: "#89b4fa",
+  divide: "#89b4fa",
+  mod: "#89b4fa",
+  pow: "#89b4fa",
+  greater_than: "#f9e2af",
+  less_than: "#f9e2af",
+  equal: "#f9e2af",
+  not_equal: "#f9e2af",
+  and: "#f9e2af",
+  or: "#f9e2af",
+  not: "#f9e2af",
+  concat: "#a6e3a1",
+  format_string: "#a6e3a1",
+  read_file: "#cba6f7",
+  write_file: "#cba6f7",
+  to_int: "#74c7ec",
+  to_float: "#74c7ec",
+  to_string: "#74c7ec",
 };
 
 function blockColor(funcName) {
-  return FUNC_COLORS[funcName] ?? '#89b4fa';
+  return FUNC_COLORS[funcName] ?? "#89b4fa";
 }
 </script>
 
@@ -62,22 +62,14 @@ function blockColor(funcName) {
     <div v-if="block.inputs.length || block.outputs.length" class="block-ports">
       <!-- Data inputs -->
       <div class="block-inputs">
-        <div
-          v-for="(inp, i) in block.inputs"
-          :key="i"
-          class="block-input-row"
-        >
+        <div v-for="(inp, i) in block.inputs" :key="i" class="block-input-row">
           <InputChip :expr="inp" />
         </div>
       </div>
 
       <!-- Data outputs (variable names defined by this call) -->
       <div v-if="block.outputs.length" class="block-outputs">
-        <div
-          v-for="out in block.outputs"
-          :key="out"
-          class="block-output-row"
-        >
+        <div v-for="out in block.outputs" :key="out" class="block-output-row">
           <span class="output-varname">{{ out }}</span>
           <span class="output-arrow">&#x2192;</span>
         </div>
@@ -124,7 +116,8 @@ function blockColor(funcName) {
   align-items: center;
   gap: 6px;
   padding: 4px 12px 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--block-color) 25%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--block-color) 25%, transparent);
 }
 
 .block-name {
@@ -132,7 +125,7 @@ function blockColor(funcName) {
   font-size: 12px;
   color: var(--block-color);
   flex: 1;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
 }
 
 /* Two-column port layout */
@@ -164,7 +157,7 @@ function blockColor(funcName) {
 }
 
 .output-varname {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 10px;
   color: color-mix(in srgb, var(--block-color) 80%, #cdd6f4);
   text-align: right;

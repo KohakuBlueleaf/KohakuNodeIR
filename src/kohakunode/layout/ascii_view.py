@@ -77,11 +77,15 @@ class _GraphBuilder:
         self._deferred_ctrl_out: list[tuple[str, str]] = []
         # Track namespaces already walked by Branch/Switch handlers
         self._walked_ns: set[str] = set()
+        # Merge metadata from Jump statements: target_label -> (node_id, pos)
+        self._merge_meta: dict[str, dict] = {}
 
     def build(self, stmts: list[Statement]) -> KirGraph:
         self._walk(stmts, prev_ctrl=None, in_dataflow=False)
         self._resolve_jump_wires()
-        _synthesize_merge_nodes(self.nodes, self.edges)
+        _synthesize_merge_nodes(
+            self.nodes, self.edges, self._merge_meta, self._ns_first_node
+        )
         return KirGraph(nodes=self.nodes, edges=self.edges)
 
     # ------------------------------------------------------------------
@@ -177,7 +181,7 @@ class _GraphBuilder:
             oname = str(o)
             if oname == "_":
                 continue
-            port_name = oname[len(prefix):] if oname.startswith(prefix) else oname
+            port_name = oname[len(prefix) :] if oname.startswith(prefix) else oname
             d_out.append(KGPort(port=port_name))
         self.nodes.append(
             KGNode(
@@ -196,7 +200,7 @@ class _GraphBuilder:
         for o in stmt.outputs:
             oname = str(o)
             if oname != "_":
-                port_name = oname[len(prefix):] if oname.startswith(prefix) else oname
+                port_name = oname[len(prefix) :] if oname.startswith(prefix) else oname
                 self._var_source[oname] = (nid, port_name)
         return nid
 
@@ -495,6 +499,19 @@ class _GraphBuilder:
                 case Jump():
                     port = get_from_port()
                     self._jump_wires.append((last_ctrl, port, stmt.target))
+                    # Save @meta from jump (carries merge node position)
+                    nid = _meta_id(stmt)
+                    if nid:
+                        self._merge_meta[stmt.target] = {
+                            "node_id": nid,
+                            "pos": _meta_pos(stmt),
+                            "meta": {
+                                k: v
+                                for m in (stmt.metadata or [])
+                                for k, v in m.data.items()
+                                if k not in ("node_id",)
+                            },
+                        }
                     last_ctrl = None
 
                 case Namespace():
@@ -554,13 +571,23 @@ class _GraphBuilder:
                 self._ctrl_edge(entry_id, "out", target_first, "in")
 
 
-def _synthesize_merge_nodes(nodes: list[KGNode], edges: list[KGEdge]) -> None:
+def _synthesize_merge_nodes(
+    nodes: list[KGNode],
+    edges: list[KGEdge],
+    merge_meta: dict[str, dict] | None = None,
+    ns_first_node: dict[str, str | None] | None = None,
+) -> None:
     """Insert synthetic Merge nodes wherever 2+ ctrl edges converge on one node."""
+    merge_meta = merge_meta or {}
+    ns_first_node = ns_first_node or {}
     node_counter = [0]
 
     def gen_id() -> str:
         node_counter[0] += 1
         return f"merge_{node_counter[0]}"
+
+    # Build reverse map: first_node_in_ns → ns_label
+    first_to_ns = {v: k for k, v in ns_first_node.items() if v}
 
     incoming_ctrl: dict[str, list[int]] = {}
     for i, e in enumerate(edges):
@@ -570,7 +597,20 @@ def _synthesize_merge_nodes(nodes: list[KGNode], edges: list[KGEdge]) -> None:
     for target_nid, edge_indices in incoming_ctrl.items():
         if len(edge_indices) < 2:
             continue
-        merge_nid = gen_id()
+
+        # Check if we have saved @meta for the merge targeting this node
+        ns_label = first_to_ns.get(target_nid)
+        meta_info = merge_meta.get(ns_label) if ns_label else None
+
+        merge_nid = meta_info["node_id"] if meta_info else gen_id()
+        pos = meta_info["pos"] if meta_info else [0, 0]
+        extra_meta = meta_info.get("meta", {}) if meta_info else {}
+
+        meta = {"pos": pos}
+        for k, v in extra_meta.items():
+            if k != "pos":
+                meta[k] = v
+
         n_inputs = len(edge_indices)
         merge_inputs = [f"in_{i}" for i in range(n_inputs)]
         nodes.append(
@@ -583,7 +623,7 @@ def _synthesize_merge_nodes(nodes: list[KGNode], edges: list[KGEdge]) -> None:
                 ctrl_inputs=merge_inputs,
                 ctrl_outputs=["out"],
                 properties={},
-                meta={"pos": [0, 0]},
+                meta=meta,
             )
         )
         for i, ei in enumerate(edge_indices):

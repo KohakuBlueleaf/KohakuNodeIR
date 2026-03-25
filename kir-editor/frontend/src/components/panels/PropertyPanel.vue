@@ -1,9 +1,9 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { useGraphStore } from '../../stores/graph.js';
-import { useEditorStore } from '../../stores/editor.js';
-import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
+import { ref, computed, watch } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { useGraphStore } from "../../stores/graph.js";
+import { useEditorStore } from "../../stores/editor.js";
+import { useNodeRegistryStore } from "../../stores/nodeRegistry.js";
 
 const props = defineProps({
   // Compact horizontal layout for the bottom strip position
@@ -24,32 +24,32 @@ const singleNode = computed(() => {
 });
 
 // ---- Editable local state, synced from singleNode ----
-const localName = ref('');
-const localCode = ref('');
+const localName = ref("");
+const localCode = ref("");
 
 // Sync local state whenever the selected node changes
 watch(
   singleNode,
-  node => {
+  (node) => {
     if (!node) return;
     localName.value = node.name;
-    localCode.value = node.properties?.code ?? '';
+    localCode.value = node.properties?.code ?? "";
   },
   { immediate: true },
 );
 
 // ---- Node type color / label ----
 const TYPE_COLORS = {
-  branch: '#fab387',
-  merge: '#fab387',
-  switch: '#fab387',
-  parallel: '#fab387',
-  value: '#a6e3a1',
-  function: '#89b4fa',
+  branch: "#fab387",
+  merge: "#fab387",
+  switch: "#fab387",
+  parallel: "#fab387",
+  value: "#a6e3a1",
+  function: "#89b4fa",
 };
 
 function typeColor(type) {
-  return TYPE_COLORS[type] ?? '#cba6f7';
+  return TYPE_COLORS[type] ?? "#cba6f7";
 }
 
 // ---- Commit name change ----
@@ -70,13 +70,23 @@ function commitCode() {
 }
 
 // ---- Value node ----
-const VALUE_TYPES = ['any', 'int', 'float', 'str', 'bool', 'image', 'tensor', 'list', 'dict'];
+const VALUE_TYPES = [
+  "any",
+  "int",
+  "float",
+  "str",
+  "bool",
+  "image",
+  "tensor",
+  "list",
+  "dict",
+];
 
 function valueNodeType(node) {
-  return node.properties?.valueType ?? 'any';
+  return node.properties?.valueType ?? "any";
 }
 function valueNodeValue(node) {
-  return node.properties?.value ?? '';
+  return node.properties?.value ?? "";
 }
 function setValueNodeType(node, t) {
   node.properties.valueType = t;
@@ -88,38 +98,48 @@ function setValueNodeValue(node, v) {
 // ---- Switch node: case management ----
 function switchCases(node) {
   // controlPorts.outputs that start with "case"
-  return node.controlPorts.outputs.filter(p => p.name.startsWith('case'));
+  return node.controlPorts.outputs.filter((p) => p.name.startsWith("case"));
 }
 
 function addSwitchCase(node) {
   const existing = node.controlPorts.outputs.length;
   const id = `cp-case-${Date.now()}`;
-  node.controlPorts.outputs.push({ id, name: `case ${existing}`, value: '' });
+  node.controlPorts.outputs.push({ id, name: `case ${existing}`, value: "" });
 }
 
 function removeSwitchCase(node, portId) {
-  const idx = node.controlPorts.outputs.findIndex(p => p.id === portId);
+  const idx = node.controlPorts.outputs.findIndex((p) => p.id === portId);
   if (idx !== -1) node.controlPorts.outputs.splice(idx, 1);
 }
 
 // ---- Port type options ----
-const PORT_TYPES = ['any', 'int', 'float', 'str', 'bool', 'image', 'tensor', 'list', 'dict'];
+const PORT_TYPES = [
+  "any",
+  "int",
+  "float",
+  "str",
+  "bool",
+  "image",
+  "tensor",
+  "list",
+  "dict",
+];
 
 // ---- Multi-select: batch delete ----
 async function batchDelete() {
   try {
     await ElMessageBox.confirm(
       `Delete ${selectedCount.value} selected nodes and all their connections?`,
-      'Confirm Delete',
+      "Confirm Delete",
       {
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-        customClass: 'dark-msgbox',
+        confirmButtonText: "Delete",
+        cancelButtonText: "Cancel",
+        type: "warning",
+        customClass: "dark-msgbox",
       },
     );
     editor.deleteSelected();
-    ElMessage({ message: 'Nodes deleted.', type: 'success', duration: 1500 });
+    ElMessage({ message: "Nodes deleted.", type: "success", duration: 1500 });
   } catch {
     // cancelled
   }
@@ -134,7 +154,6 @@ function deleteNode() {
 
 <template>
   <div class="prop-root">
-
     <!-- ── Nothing selected ── -->
     <div v-if="selectedCount === 0" class="prop-empty">
       <span class="i-carbon-select-window prop-empty-icon" />
@@ -149,7 +168,7 @@ function deleteNode() {
       </div>
       <div class="prop-row">
         <el-button type="danger" size="small" plain @click="batchDelete">
-          <span class="i-carbon-trash-can" style="margin-right:4px" />
+          <span class="i-carbon-trash-can" style="margin-right: 4px" />
           Delete All
         </el-button>
       </div>
@@ -157,7 +176,6 @@ function deleteNode() {
 
     <!-- ── Single node selected — auto-wrapping layout ── -->
     <div v-else-if="singleNode" class="prop-scroll">
-
       <!-- Header: name + type badge -->
       <div class="prop-header">
         <el-input
@@ -169,7 +187,11 @@ function deleteNode() {
         />
         <span
           class="prop-type-badge"
-          :style="{ background: typeColor(singleNode.type) + '22', color: typeColor(singleNode.type), borderColor: typeColor(singleNode.type) + '55' }"
+          :style="{
+            background: typeColor(singleNode.type) + '22',
+            color: typeColor(singleNode.type),
+            borderColor: typeColor(singleNode.type) + '55',
+          }"
         >
           {{ singleNode.type }}
         </span>
@@ -184,9 +206,14 @@ function deleteNode() {
             :model-value="valueNodeType(singleNode)"
             size="small"
             class="prop-select"
-            @update:model-value="v => setValueNodeType(singleNode, v)"
+            @update:model-value="(v) => setValueNodeType(singleNode, v)"
           >
-            <el-option v-for="t in VALUE_TYPES" :key="t" :label="t" :value="t" />
+            <el-option
+              v-for="t in VALUE_TYPES"
+              :key="t"
+              :label="t"
+              :value="t"
+            />
           </el-select>
         </div>
         <div class="prop-row prop-row-labeled">
@@ -196,7 +223,7 @@ function deleteNode() {
             size="small"
             placeholder="literal value"
             class="prop-input"
-            @update:model-value="v => setValueNodeValue(singleNode, v)"
+            @update:model-value="(v) => setValueNodeValue(singleNode, v)"
           />
         </div>
       </template>
@@ -205,13 +232,22 @@ function deleteNode() {
       <template v-else-if="singleNode.type === 'branch'">
         <div class="prop-section-title">Condition Port</div>
         <div class="prop-port-info">
-          <span class="i-carbon-data-vis-1 prop-port-icon" style="color:#89b4fa" />
+          <span
+            class="i-carbon-data-vis-1 prop-port-icon"
+            style="color: #89b4fa"
+          />
           <span class="prop-port-name">condition</span>
           <span class="prop-port-type-badge">bool</span>
         </div>
-        <div class="prop-section-title" style="margin-top:10px">Control Outputs</div>
-        <div v-for="port in singleNode.controlPorts.outputs" :key="port.id" class="prop-port-info">
-          <span class="i-carbon-flow prop-port-icon" style="color:#fab387" />
+        <div class="prop-section-title" style="margin-top: 10px">
+          Control Outputs
+        </div>
+        <div
+          v-for="port in singleNode.controlPorts.outputs"
+          :key="port.id"
+          class="prop-port-info"
+        >
+          <span class="i-carbon-flow prop-port-icon" style="color: #fab387" />
           <span class="prop-port-name">{{ port.name }}</span>
         </div>
       </template>
@@ -224,7 +260,10 @@ function deleteNode() {
             <span class="i-carbon-add" /> Add Case
           </button>
         </div>
-        <div v-if="switchCases(singleNode).length === 0" class="prop-empty-hint">
+        <div
+          v-if="switchCases(singleNode).length === 0"
+          class="prop-empty-hint"
+        >
           No cases defined
         </div>
         <div
@@ -239,20 +278,33 @@ function deleteNode() {
             class="prop-case-input"
             placeholder="case label"
           />
-          <button class="prop-remove-btn" @click="removeSwitchCase(singleNode, port.id)">
+          <button
+            class="prop-remove-btn"
+            @click="removeSwitchCase(singleNode, port.id)"
+          >
             <span class="i-carbon-close" />
           </button>
         </div>
       </template>
 
       <!-- ── Function / user-defined node ── -->
-      <template v-else-if="singleNode.type === 'function' || singleNode.properties?.code !== undefined">
+      <template
+        v-else-if="
+          singleNode.type === 'function' ||
+          singleNode.properties?.code !== undefined
+        "
+      >
         <!-- Input ports -->
         <div class="prop-section-title">
           Input Ports
-          <span class="prop-section-count">{{ singleNode.dataPorts.inputs.length }}</span>
+          <span class="prop-section-count">{{
+            singleNode.dataPorts.inputs.length
+          }}</span>
         </div>
-        <div v-if="singleNode.dataPorts.inputs.length === 0" class="prop-empty-hint">
+        <div
+          v-if="singleNode.dataPorts.inputs.length === 0"
+          class="prop-empty-hint"
+        >
           No data inputs
         </div>
         <div
@@ -260,19 +312,36 @@ function deleteNode() {
           :key="port.id"
           class="prop-port-row"
         >
-          <span class="i-carbon-arrow-right prop-port-dir-icon" style="color:#89b4fa" />
-          <el-input v-model="port.name" size="small" class="prop-port-name-input" placeholder="name" />
-          <el-select v-model="port.dataType" size="small" class="prop-port-type-select">
+          <span
+            class="i-carbon-arrow-right prop-port-dir-icon"
+            style="color: #89b4fa"
+          />
+          <el-input
+            v-model="port.name"
+            size="small"
+            class="prop-port-name-input"
+            placeholder="name"
+          />
+          <el-select
+            v-model="port.dataType"
+            size="small"
+            class="prop-port-type-select"
+          >
             <el-option v-for="t in PORT_TYPES" :key="t" :label="t" :value="t" />
           </el-select>
         </div>
 
         <!-- Output ports -->
-        <div class="prop-section-title" style="margin-top:10px">
+        <div class="prop-section-title" style="margin-top: 10px">
           Output Ports
-          <span class="prop-section-count">{{ singleNode.dataPorts.outputs.length }}</span>
+          <span class="prop-section-count">{{
+            singleNode.dataPorts.outputs.length
+          }}</span>
         </div>
-        <div v-if="singleNode.dataPorts.outputs.length === 0" class="prop-empty-hint">
+        <div
+          v-if="singleNode.dataPorts.outputs.length === 0"
+          class="prop-empty-hint"
+        >
           No data outputs
         </div>
         <div
@@ -280,15 +349,29 @@ function deleteNode() {
           :key="port.id"
           class="prop-port-row"
         >
-          <span class="i-carbon-arrow-left prop-port-dir-icon" style="color:#a6e3a1" />
-          <el-input v-model="port.name" size="small" class="prop-port-name-input" placeholder="name" />
-          <el-select v-model="port.dataType" size="small" class="prop-port-type-select">
+          <span
+            class="i-carbon-arrow-left prop-port-dir-icon"
+            style="color: #a6e3a1"
+          />
+          <el-input
+            v-model="port.name"
+            size="small"
+            class="prop-port-name-input"
+            placeholder="name"
+          />
+          <el-select
+            v-model="port.dataType"
+            size="small"
+            class="prop-port-type-select"
+          >
             <el-option v-for="t in PORT_TYPES" :key="t" :label="t" :value="t" />
           </el-select>
         </div>
 
         <!-- Python code -->
-        <div class="prop-section-title" style="margin-top:10px">Python Code</div>
+        <div class="prop-section-title" style="margin-top: 10px">
+          Python Code
+        </div>
         <textarea
           v-model="localCode"
           class="prop-code-area"
@@ -300,23 +383,35 @@ function deleteNode() {
       <!-- ── Generic / merge / parallel ── -->
       <template v-else>
         <div class="prop-section-title">Control Inputs</div>
-        <div v-if="singleNode.controlPorts.inputs.length === 0" class="prop-empty-hint">None</div>
+        <div
+          v-if="singleNode.controlPorts.inputs.length === 0"
+          class="prop-empty-hint"
+        >
+          None
+        </div>
         <div
           v-for="port in singleNode.controlPorts.inputs"
           :key="port.id"
           class="prop-port-info"
         >
-          <span class="i-carbon-flow prop-port-icon" style="color:#fab387" />
+          <span class="i-carbon-flow prop-port-icon" style="color: #fab387" />
           <span class="prop-port-name">{{ port.name }}</span>
         </div>
-        <div class="prop-section-title" style="margin-top:8px">Control Outputs</div>
-        <div v-if="singleNode.controlPorts.outputs.length === 0" class="prop-empty-hint">None</div>
+        <div class="prop-section-title" style="margin-top: 8px">
+          Control Outputs
+        </div>
+        <div
+          v-if="singleNode.controlPorts.outputs.length === 0"
+          class="prop-empty-hint"
+        >
+          None
+        </div>
         <div
           v-for="port in singleNode.controlPorts.outputs"
           :key="port.id"
           class="prop-port-info"
         >
-          <span class="i-carbon-flow prop-port-icon" style="color:#fab387" />
+          <span class="i-carbon-flow prop-port-icon" style="color: #fab387" />
           <span class="prop-port-name">{{ port.name }}</span>
         </div>
       </template>
@@ -336,12 +431,17 @@ function deleteNode() {
 
       <!-- ── Delete ── -->
       <div class="prop-delete-row">
-        <el-button type="danger" size="small" plain style="width:100%" @click="deleteNode">
-          <span class="i-carbon-trash-can" style="margin-right:4px" />
+        <el-button
+          type="danger"
+          size="small"
+          plain
+          style="width: 100%"
+          @click="deleteNode"
+        >
+          <span class="i-carbon-trash-can" style="margin-right: 4px" />
           Delete Node
         </el-button>
       </div>
-
     </div>
   </div>
 </template>
@@ -781,7 +881,9 @@ function deleteNode() {
   color: #89b4fa;
   font-size: 10px;
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
   letter-spacing: 0;
   text-transform: none;
   font-weight: 400;
@@ -835,7 +937,9 @@ function deleteNode() {
   border-radius: 3px;
   font-size: 13px;
   line-height: 1;
-  transition: color 0.1s, background 0.1s;
+  transition:
+    color 0.1s,
+    background 0.1s;
   display: flex;
   align-items: center;
 }
@@ -857,7 +961,8 @@ function deleteNode() {
   border: 1px solid #313244;
   border-left: none;
   border-right: none;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  font-family:
+    "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
   font-size: 11px;
   line-height: 1.6;
   resize: vertical;

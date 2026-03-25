@@ -14,7 +14,6 @@ from kohakunode.ast.nodes import (
 )
 from kohakunode.errors import KirCompilationError
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -402,7 +402,13 @@ describe("parserResultToGraph", () => {
     ];
 
     const parserEdges = [
-      { fromNode: "a", fromPort: "out", toNode: "b", toPort: "in", type: "control" },
+      {
+        fromNode: "a",
+        fromPort: "out",
+        toNode: "b",
+        toPort: "in",
+        type: "control",
+      },
     ];
 
     const { connections } = parserResultToGraph(parserNodes, parserEdges);
@@ -446,7 +452,13 @@ describe("parserResultToGraph", () => {
   // 7. Node geometry defaults
   it("missing x/y/width/height default to 0/0/160/120", () => {
     const parserNodes = [
-      { id: "geo1", type: "function", name: "f", dataInputs: [], dataOutputs: [] },
+      {
+        id: "geo1",
+        type: "function",
+        name: "f",
+        dataInputs: [],
+        dataOutputs: [],
+      },
     ];
 
     const { nodes } = parserResultToGraph(parserNodes, []);

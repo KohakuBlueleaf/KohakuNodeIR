@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue';
-import { dataWirePath, controlWirePath } from '../../utils/bezier.js';
+import { computed } from "vue";
+import { dataWirePath, controlWirePath } from "../../utils/bezier.js";
 
 const props = defineProps({
   /**
@@ -20,18 +20,16 @@ const props = defineProps({
 
 const pathD = computed(() => {
   const { fromX, fromY, toX, toY, portType } = props.wire;
-  return portType === 'control'
+  return portType === "control"
     ? controlWirePath(fromX, fromY, toX, toY)
     : dataWirePath(fromX, fromY, toX, toY);
 });
 
 const strokeColor = computed(() =>
-  props.wire.portType === 'control' ? '#fab387' : '#89b4fa'
+  props.wire.portType === "control" ? "#fab387" : "#89b4fa",
 );
 
-const strokeWidth = computed(() =>
-  props.wire.portType === 'control' ? 3 : 2
-);
+const strokeWidth = computed(() => (props.wire.portType === "control" ? 3 : 2));
 </script>
 
 <template>

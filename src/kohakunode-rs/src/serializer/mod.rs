@@ -75,7 +75,10 @@ fn write_func_call(node: &FuncCall, indent_level: usize) -> Vec<String> {
     let prefix = indent(indent_level);
     let inputs_str = format_input_list(&node.inputs);
     let outputs_str = format_output_list(&node.outputs);
-    lines.push(format!("{}({}){}({})", prefix, inputs_str, node.func_name, outputs_str));
+    lines.push(format!(
+        "{}({}){}({})",
+        prefix, inputs_str, node.func_name, outputs_str
+    ));
     lines
 }
 
@@ -371,15 +374,26 @@ mod tests {
 
     #[test]
     fn test_literal_int() {
-        let lit = Literal { value: Value::Int(42), literal_type: "int".into(), line: None };
+        let lit = Literal {
+            value: Value::Int(42),
+            literal_type: "int".into(),
+            line: None,
+        };
         assert_eq!(write_literal(&lit), "42");
     }
 
     #[test]
     fn test_literal_float() {
-        let lit = Literal { value: Value::Float(3.14), literal_type: "float".into(), line: None };
+        let lit = Literal {
+            value: Value::Float(3.14),
+            literal_type: "float".into(),
+            line: None,
+        };
         let s = write_literal(&lit);
-        assert!(s.contains('.'), "float must contain a decimal point, got: {s}");
+        assert!(
+            s.contains('.'),
+            "float must contain a decimal point, got: {s}"
+        );
         assert!(s.starts_with("3."), "unexpected float repr: {s}");
     }
 
@@ -418,15 +432,27 @@ mod tests {
 
     #[test]
     fn test_literal_bool() {
-        let t = Literal { value: Value::Bool(true), literal_type: "bool".into(), line: None };
-        let f = Literal { value: Value::Bool(false), literal_type: "bool".into(), line: None };
+        let t = Literal {
+            value: Value::Bool(true),
+            literal_type: "bool".into(),
+            line: None,
+        };
+        let f = Literal {
+            value: Value::Bool(false),
+            literal_type: "bool".into(),
+            line: None,
+        };
         assert_eq!(write_literal(&t), "True");
         assert_eq!(write_literal(&f), "False");
     }
 
     #[test]
     fn test_literal_none() {
-        let lit = Literal { value: Value::None, literal_type: "none".into(), line: None };
+        let lit = Literal {
+            value: Value::None,
+            literal_type: "none".into(),
+            line: None,
+        };
         assert_eq!(write_literal(&lit), "None");
     }
 
@@ -485,7 +511,10 @@ mod tests {
                     literal_type: "int".into(),
                     line: None,
                 }),
-                metadata: Some(vec![MetaAnnotation { data: meta_data, line: None }]),
+                metadata: Some(vec![MetaAnnotation {
+                    data: meta_data,
+                    line: None,
+                }]),
                 line: None,
             })],
             mode: None,
@@ -502,8 +531,14 @@ mod tests {
         let prog = Program {
             body: vec![Statement::FuncCall(FuncCall {
                 inputs: vec![
-                    Expression::Identifier(Identifier { name: "a".into(), line: None }),
-                    Expression::Identifier(Identifier { name: "b".into(), line: None }),
+                    Expression::Identifier(Identifier {
+                        name: "a".into(),
+                        line: None,
+                    }),
+                    Expression::Identifier(Identifier {
+                        name: "b".into(),
+                        line: None,
+                    }),
                 ],
                 func_name: "add".into(),
                 outputs: vec![OutputTarget::Name("result".into())],
@@ -538,7 +573,10 @@ mod tests {
     fn test_branch() {
         let prog = Program {
             body: vec![Statement::Branch(Branch {
-                condition: Expression::Identifier(Identifier { name: "cond".into(), line: None }),
+                condition: Expression::Identifier(Identifier {
+                    name: "cond".into(),
+                    line: None,
+                }),
                 true_label: "yes".into(),
                 false_label: "no".into(),
                 metadata: None,
@@ -556,7 +594,10 @@ mod tests {
     fn test_switch_with_default() {
         let prog = Program {
             body: vec![Statement::Switch(Switch {
-                value: Expression::Identifier(Identifier { name: "v".into(), line: None }),
+                value: Expression::Identifier(Identifier {
+                    name: "v".into(),
+                    line: None,
+                }),
                 cases: vec![(
                     Expression::Literal(Literal {
                         value: Value::Int(0),
@@ -717,7 +758,11 @@ mod tests {
             body: vec![Statement::SubgraphDef(SubgraphDef {
                 name: "my_func".into(),
                 params: vec![
-                    Parameter { name: "a".into(), default: None, line: None },
+                    Parameter {
+                        name: "a".into(),
+                        default: None,
+                        line: None,
+                    },
                     Parameter {
                         name: "b".into(),
                         default: Some(Expression::Literal(Literal {
@@ -775,7 +820,10 @@ mod tests {
             line: None,
         };
         let out = write(&prog);
-        assert!(out.contains("\n\n"), "expected blank line between @def and next statement");
+        assert!(
+            out.contains("\n\n"),
+            "expected blank line between @def and next statement"
+        );
         assert!(out.contains("@def f()()"));
         assert!(out.contains("x = 1"));
     }

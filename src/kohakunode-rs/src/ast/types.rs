@@ -269,7 +269,10 @@ mod tests {
     fn test_func_call() {
         let fc = FuncCall {
             inputs: vec![
-                Expression::Identifier(Identifier { name: "x".into(), line: None }),
+                Expression::Identifier(Identifier {
+                    name: "x".into(),
+                    line: None,
+                }),
                 Expression::Literal(Literal {
                     value: Value::Int(42),
                     literal_type: "int".into(),
@@ -288,7 +291,10 @@ mod tests {
     #[test]
     fn test_branch() {
         let b = Branch {
-            condition: Expression::Identifier(Identifier { name: "cond".into(), line: None }),
+            condition: Expression::Identifier(Identifier {
+                name: "cond".into(),
+                line: None,
+            }),
             true_label: "yes".into(),
             false_label: "no".into(),
             metadata: None,
@@ -300,18 +306,16 @@ mod tests {
     #[test]
     fn test_json_roundtrip() {
         let prog = Program {
-            body: vec![
-                Statement::Assignment(Assignment {
-                    target: "x".into(),
-                    value: Expression::Literal(Literal {
-                        value: Value::Int(42),
-                        literal_type: "int".into(),
-                        line: None,
-                    }),
-                    metadata: None,
-                    line: Some(1),
+            body: vec![Statement::Assignment(Assignment {
+                target: "x".into(),
+                value: Expression::Literal(Literal {
+                    value: Value::Int(42),
+                    literal_type: "int".into(),
+                    line: None,
                 }),
-            ],
+                metadata: None,
+                line: Some(1),
+            })],
             mode: None,
             line: None,
         };

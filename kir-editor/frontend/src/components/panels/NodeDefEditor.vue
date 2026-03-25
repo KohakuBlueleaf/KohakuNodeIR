@@ -1,7 +1,7 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { ElMessage } from 'element-plus';
-import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
+import { ref, computed, watch } from "vue";
+import { ElMessage } from "element-plus";
+import { useNodeRegistryStore } from "../../stores/nodeRegistry.js";
 
 // ---- Props / Emits ----
 const props = defineProps({
@@ -16,28 +16,38 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:modelValue', 'saved']);
+const emit = defineEmits(["update:modelValue", "saved"]);
 
 const registry = useNodeRegistryStore();
 
 // ---- Port type options ----
-const PORT_TYPES = ['any', 'int', 'float', 'str', 'bool', 'image', 'tensor', 'list', 'dict'];
+const PORT_TYPES = [
+  "any",
+  "int",
+  "float",
+  "str",
+  "bool",
+  "image",
+  "tensor",
+  "list",
+  "dict",
+];
 
 // ---- Internal form state ----
 const form = ref(makeBlankForm());
 
-const WIDGET_TYPES = ['string', 'number', 'boolean', 'select', 'slider'];
+const WIDGET_TYPES = ["string", "number", "boolean", "select", "slider"];
 
 function makeBlankForm() {
   return {
-    name: '',
-    type: '',        // auto-derived from name if blank
-    category: 'User Defined',
-    description: '',
+    name: "",
+    type: "", // auto-derived from name if blank
+    category: "User Defined",
+    description: "",
     inputs: [],
     outputs: [],
     properties: [],
-    code: '',
+    code: "",
   };
 }
 
@@ -46,7 +56,7 @@ function newPortId() {
   return `dp-user-${++_portIdCounter}-${Date.now()}`;
 }
 
-function makePort(name = '', type = 'any', defaultValue = '') {
+function makePort(name = "", type = "any", defaultValue = "") {
   return { id: newPortId(), name, dataType: type, defaultValue };
 }
 
@@ -61,11 +71,16 @@ watch(
         name: def.name,
         type: def.type,
         category: def.category,
-        description: def.description ?? '',
-        inputs: def.dataPorts.inputs.map(p => ({ ...p, defaultValue: p.defaultValue ?? '' })),
-        outputs: def.dataPorts.outputs.map(p => ({ ...p, defaultValue: '' })),
-        properties: Array.isArray(def.properties) ? def.properties.map(p => ({ ...p })) : [],
-        code: def.code ?? '',
+        description: def.description ?? "",
+        inputs: def.dataPorts.inputs.map((p) => ({
+          ...p,
+          defaultValue: p.defaultValue ?? "",
+        })),
+        outputs: def.dataPorts.outputs.map((p) => ({ ...p, defaultValue: "" })),
+        properties: Array.isArray(def.properties)
+          ? def.properties.map((p) => ({ ...p }))
+          : [],
+        code: def.code ?? "",
       };
     } else {
       form.value = makeBlankForm();
@@ -76,32 +91,35 @@ watch(
 
 // ---- Derived type key ----
 const derivedType = computed(() => {
-  if (form.value.type.trim()) return form.value.type.trim().toLowerCase().replace(/\s+/g, '_');
-  return form.value.name.trim().toLowerCase().replace(/\s+/g, '_') || 'custom';
+  if (form.value.type.trim())
+    return form.value.type.trim().toLowerCase().replace(/\s+/g, "_");
+  return form.value.name.trim().toLowerCase().replace(/\s+/g, "_") || "custom";
 });
 
 // ---- Auto-generated function signature ----
 const generatedSignature = computed(() => {
-  const fnName = derivedType.value || 'my_node';
-  const paramParts = form.value.inputs.map(p => {
-    const safeName = p.name.trim().replace(/\s+/g, '_') || 'arg';
-    return p.defaultValue !== '' && p.defaultValue !== undefined
+  const fnName = derivedType.value || "my_node";
+  const paramParts = form.value.inputs.map((p) => {
+    const safeName = p.name.trim().replace(/\s+/g, "_") || "arg";
+    return p.defaultValue !== "" && p.defaultValue !== undefined
       ? `${safeName}=${JSON.stringify(p.defaultValue)}`
       : safeName;
   });
-  return `def ${fnName}(${paramParts.join(', ')}):`;
+  return `def ${fnName}(${paramParts.join(", ")}):`;
 });
 
 // ---- Existing categories for the dropdown ----
 const existingCategories = computed(() => {
   const cats = registry.getCategories();
-  if (!cats.includes('User Defined')) return ['User Defined', ...cats];
+  if (!cats.includes("User Defined")) return ["User Defined", ...cats];
   return cats;
 });
 
 // ---- Input port management ----
 function addInput() {
-  form.value.inputs.push(makePort(`input${form.value.inputs.length + 1}`, 'any', ''));
+  form.value.inputs.push(
+    makePort(`input${form.value.inputs.length + 1}`, "any", ""),
+  );
 }
 function removeInput(idx) {
   form.value.inputs.splice(idx, 1);
@@ -109,33 +127,37 @@ function removeInput(idx) {
 
 // ---- Output port management ----
 function addOutput() {
-  form.value.outputs.push(makePort(`output${form.value.outputs.length + 1}`, 'any'));
+  form.value.outputs.push(
+    makePort(`output${form.value.outputs.length + 1}`, "any"),
+  );
 }
 function removeOutput(idx) {
   form.value.outputs.splice(idx, 1);
 }
 
 // ---- Property management ----
-function makeProperty(name = '', widget = 'string') {
-  return { name, widget, default: '', options: {} };
+function makeProperty(name = "", widget = "string") {
+  return { name, widget, default: "", options: {} };
 }
 function addProperty() {
-  form.value.properties.push(makeProperty(`prop${form.value.properties.length + 1}`));
+  form.value.properties.push(
+    makeProperty(`prop${form.value.properties.length + 1}`),
+  );
 }
 function removeProperty(idx) {
   form.value.properties.splice(idx, 1);
 }
 function getDefaultForWidget(widget) {
-  if (widget === 'number' || widget === 'slider') return 0;
-  if (widget === 'boolean') return false;
-  return '';
+  if (widget === "number" || widget === "slider") return 0;
+  if (widget === "boolean") return false;
+  return "";
 }
 function onWidgetTypeChange(prop) {
   prop.default = getDefaultForWidget(prop.widget);
-  if (prop.widget === 'slider') {
+  if (prop.widget === "slider") {
     prop.options = { min: 0, max: 100, step: 1 };
-  } else if (prop.widget === 'select') {
-    prop.options = { choices: '' };
+  } else if (prop.widget === "select") {
+    prop.options = { choices: "" };
   } else {
     prop.options = {};
   }
@@ -157,7 +179,7 @@ function onPortDrop(list, toIdx) {
   if (draggingList.value !== list || draggingFrom.value === null) return;
   const fromIdx = draggingFrom.value;
   if (fromIdx === toIdx) return;
-  const arr = list === 'inputs' ? form.value.inputs : form.value.outputs;
+  const arr = list === "inputs" ? form.value.inputs : form.value.outputs;
   const [item] = arr.splice(fromIdx, 1);
   arr.splice(toIdx, 0, item);
   draggingFrom.value = null;
@@ -176,7 +198,11 @@ const previewOutputs = computed(() => form.value.outputs.slice(0, 5));
 function handleSave() {
   const name = form.value.name.trim();
   if (!name) {
-    ElMessage({ message: 'Node name is required.', type: 'warning', duration: 2000 });
+    ElMessage({
+      message: "Node name is required.",
+      type: "warning",
+      duration: 2000,
+    });
     return;
   }
 
@@ -185,12 +211,14 @@ function handleSave() {
   // Build code: if empty, use generated signature as starter
   let code = form.value.code.trim();
   if (!code) {
-    const returnVars = form.value.outputs.map(p => p.name.trim().replace(/\s+/g, '_') || 'out').join(', ');
-    code = `${generatedSignature.value}\n    # TODO: implement\n    ${returnVars ? `return ${returnVars}` : 'pass'}`;
+    const returnVars = form.value.outputs
+      .map((p) => p.name.trim().replace(/\s+/g, "_") || "out")
+      .join(", ");
+    code = `${generatedSignature.value}\n    # TODO: implement\n    ${returnVars ? `return ${returnVars}` : "pass"}`;
   }
 
-  const properties = form.value.properties.map(p => ({
-    name: p.name.trim() || 'prop',
+  const properties = form.value.properties.map((p) => ({
+    name: p.name.trim() || "prop",
     widget: p.widget,
     default: p.default,
     options: { ...p.options },
@@ -199,24 +227,24 @@ function handleSave() {
   const definition = {
     type: typeKey,
     name,
-    category: form.value.category || 'User Defined',
+    category: form.value.category || "User Defined",
     description: form.value.description,
     dataPorts: {
-      inputs: form.value.inputs.map(p => ({
+      inputs: form.value.inputs.map((p) => ({
         id: p.id,
-        name: p.name.trim() || 'in',
+        name: p.name.trim() || "in",
         dataType: p.dataType,
-        defaultValue: p.defaultValue !== '' ? p.defaultValue : undefined,
+        defaultValue: p.defaultValue !== "" ? p.defaultValue : undefined,
       })),
-      outputs: form.value.outputs.map(p => ({
+      outputs: form.value.outputs.map((p) => ({
         id: p.id,
-        name: p.name.trim() || 'out',
+        name: p.name.trim() || "out",
         dataType: p.dataType,
       })),
     },
     controlPorts: {
-      inputs: [{ id: 'cp-in', name: 'in' }],
-      outputs: [{ id: 'cp-out', name: 'out' }],
+      inputs: [{ id: "cp-in", name: "in" }],
+      outputs: [{ id: "cp-out", name: "out" }],
     },
     properties,
     code,
@@ -228,18 +256,28 @@ function handleSave() {
     name,
     category: definition.category,
     description: definition.description,
-    inputs: definition.dataPorts.inputs.map(p => ({ name: p.name, type: p.dataType })),
-    outputs: definition.dataPorts.outputs.map(p => ({ name: p.name, type: p.dataType })),
+    inputs: definition.dataPorts.inputs.map((p) => ({
+      name: p.name,
+      type: p.dataType,
+    })),
+    outputs: definition.dataPorts.outputs.map((p) => ({
+      name: p.name,
+      type: p.dataType,
+    })),
     properties,
     code,
   });
-  ElMessage({ message: `Node type "${name}" saved.`, type: 'success', duration: 2000 });
-  emit('saved', definition);
-  emit('update:modelValue', false);
+  ElMessage({
+    message: `Node type "${name}" saved.`,
+    type: "success",
+    duration: 2000,
+  });
+  emit("saved", definition);
+  emit("update:modelValue", false);
 }
 
 function handleCancel() {
-  emit('update:modelValue', false);
+  emit("update:modelValue", false);
 }
 </script>
 
@@ -254,15 +292,20 @@ function handleCancel() {
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="nde-root">
-
       <!-- ── Left column: form ── -->
       <div class="nde-form">
-
         <!-- Basic info -->
         <div class="nde-section-title">Identity</div>
         <div class="nde-field">
-          <label class="nde-label">Name <span class="nde-required">*</span></label>
-          <el-input v-model="form.name" size="small" placeholder="My Node" class="nde-input" />
+          <label class="nde-label"
+            >Name <span class="nde-required">*</span></label
+          >
+          <el-input
+            v-model="form.name"
+            size="small"
+            placeholder="My Node"
+            class="nde-input"
+          />
         </div>
         <div class="nde-field">
           <label class="nde-label">Type key</label>
@@ -310,7 +353,9 @@ function handleCancel() {
             <span class="i-carbon-add" /> Add Input
           </button>
         </div>
-        <div v-if="form.inputs.length === 0" class="nde-empty-hint">No input ports</div>
+        <div v-if="form.inputs.length === 0" class="nde-empty-hint">
+          No input ports
+        </div>
         <div
           v-for="(port, idx) in form.inputs"
           :key="port.id"
@@ -344,13 +389,18 @@ function handleCancel() {
         </div>
 
         <!-- Output ports -->
-        <div class="nde-section-title nde-section-title-with-btn" style="margin-top:12px">
+        <div
+          class="nde-section-title nde-section-title-with-btn"
+          style="margin-top: 12px"
+        >
           Output Ports
           <button class="nde-port-add-btn" @click="addOutput">
             <span class="i-carbon-add" /> Add Output
           </button>
         </div>
-        <div v-if="form.outputs.length === 0" class="nde-empty-hint">No output ports</div>
+        <div v-if="form.outputs.length === 0" class="nde-empty-hint">
+          No output ports
+        </div>
         <div
           v-for="(port, idx) in form.outputs"
           :key="port.id"
@@ -380,13 +430,18 @@ function handleCancel() {
         </div>
 
         <!-- Properties -->
-        <div class="nde-section-title nde-section-title-with-btn" style="margin-top:12px">
+        <div
+          class="nde-section-title nde-section-title-with-btn"
+          style="margin-top: 12px"
+        >
           Properties
           <button class="nde-port-add-btn" @click="addProperty">
             <span class="i-carbon-add" /> Add Property
           </button>
         </div>
-        <div v-if="form.properties.length === 0" class="nde-empty-hint">No properties</div>
+        <div v-if="form.properties.length === 0" class="nde-empty-hint">
+          No properties
+        </div>
         <div
           v-for="(prop, idx) in form.properties"
           :key="idx"
@@ -398,16 +453,35 @@ function handleCancel() {
             placeholder="name"
             class="nde-prop-name"
           />
-          <el-select v-model="prop.widget" size="small" class="nde-prop-widget" @change="onWidgetTypeChange(prop)">
-            <el-option v-for="w in WIDGET_TYPES" :key="w" :label="w" :value="w" />
+          <el-select
+            v-model="prop.widget"
+            size="small"
+            class="nde-prop-widget"
+            @change="onWidgetTypeChange(prop)"
+          >
+            <el-option
+              v-for="w in WIDGET_TYPES"
+              :key="w"
+              :label="w"
+              :value="w"
+            />
           </el-select>
 
           <!-- Default value: varies by widget type -->
           <template v-if="prop.widget === 'boolean'">
-            <el-switch v-model="prop.default" size="small" class="nde-prop-default" />
+            <el-switch
+              v-model="prop.default"
+              size="small"
+              class="nde-prop-default"
+            />
           </template>
           <template v-else-if="prop.widget === 'number'">
-            <el-input-number v-model="prop.default" size="small" :controls="false" class="nde-prop-default" />
+            <el-input-number
+              v-model="prop.default"
+              size="small"
+              :controls="false"
+              class="nde-prop-default"
+            />
           </template>
           <template v-else-if="prop.widget === 'select'">
             <el-input
@@ -418,12 +492,35 @@ function handleCancel() {
             />
           </template>
           <template v-else-if="prop.widget === 'slider'">
-            <el-input-number v-model="prop.options.min" size="small" :controls="false" placeholder="min" class="nde-prop-slider-field" />
-            <el-input-number v-model="prop.options.max" size="small" :controls="false" placeholder="max" class="nde-prop-slider-field" />
-            <el-input-number v-model="prop.options.step" size="small" :controls="false" placeholder="step" class="nde-prop-slider-field" />
+            <el-input-number
+              v-model="prop.options.min"
+              size="small"
+              :controls="false"
+              placeholder="min"
+              class="nde-prop-slider-field"
+            />
+            <el-input-number
+              v-model="prop.options.max"
+              size="small"
+              :controls="false"
+              placeholder="max"
+              class="nde-prop-slider-field"
+            />
+            <el-input-number
+              v-model="prop.options.step"
+              size="small"
+              :controls="false"
+              placeholder="step"
+              class="nde-prop-slider-field"
+            />
           </template>
           <template v-else>
-            <el-input v-model="prop.default" size="small" placeholder="default" class="nde-prop-default" />
+            <el-input
+              v-model="prop.default"
+              size="small"
+              placeholder="default"
+              class="nde-prop-default"
+            />
           </template>
 
           <button class="nde-port-remove" @click="removeProperty(idx)">
@@ -432,7 +529,9 @@ function handleCancel() {
         </div>
 
         <!-- Python code -->
-        <div class="nde-section-title" style="margin-top:12px">Python Code</div>
+        <div class="nde-section-title" style="margin-top: 12px">
+          Python Code
+        </div>
         <div class="nde-signature">{{ generatedSignature }}</div>
         <textarea
           v-model="form.code"
@@ -440,7 +539,6 @@ function handleCancel() {
           spellcheck="false"
           :placeholder="`${generatedSignature}\n    # Your implementation here\n    return result`"
         />
-
       </div>
 
       <!-- ── Right column: preview ── -->
@@ -461,8 +559,8 @@ function handleCancel() {
                 :key="port.id"
                 class="nde-prev-port nde-prev-port-in"
               >
-                <div class="nde-prev-port-dot" style="background:#89b4fa" />
-                <span class="nde-prev-port-label">{{ port.name || '?' }}</span>
+                <div class="nde-prev-port-dot" style="background: #89b4fa" />
+                <span class="nde-prev-port-label">{{ port.name || "?" }}</span>
                 <span class="nde-prev-port-type">{{ port.dataType }}</span>
               </div>
               <div v-if="form.inputs.length > 5" class="nde-prev-more">
@@ -471,7 +569,7 @@ function handleCancel() {
             </div>
 
             <!-- Node name -->
-            <div class="nde-prev-name">{{ form.name || 'My Node' }}</div>
+            <div class="nde-prev-name">{{ form.name || "My Node" }}</div>
 
             <!-- Data output ports -->
             <div class="nde-prev-ports nde-prev-ports-right">
@@ -481,8 +579,8 @@ function handleCancel() {
                 class="nde-prev-port nde-prev-port-out"
               >
                 <span class="nde-prev-port-type">{{ port.dataType }}</span>
-                <span class="nde-prev-port-label">{{ port.name || '?' }}</span>
-                <div class="nde-prev-port-dot" style="background:#a6e3a1" />
+                <span class="nde-prev-port-label">{{ port.name || "?" }}</span>
+                <div class="nde-prev-port-dot" style="background: #a6e3a1" />
               </div>
               <div v-if="form.outputs.length > 5" class="nde-prev-more">
                 +{{ form.outputs.length - 5 }} more
@@ -523,7 +621,7 @@ function handleCancel() {
       <div class="nde-footer">
         <el-button size="small" plain @click="handleCancel">Cancel</el-button>
         <el-button type="primary" size="small" @click="handleSave">
-          <span class="i-carbon-save" style="margin-right:4px" />
+          <span class="i-carbon-save" style="margin-right: 4px" />
           Save Node Type
         </el-button>
       </div>
@@ -623,7 +721,9 @@ function handleCancel() {
   color: #89b4fa;
   font-size: 10px;
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
   letter-spacing: 0;
   text-transform: none;
   font-weight: 400;
@@ -676,7 +776,9 @@ function handleCancel() {
   border-radius: 3px;
   font-size: 13px;
   line-height: 1;
-  transition: color 0.1s, background 0.1s;
+  transition:
+    color 0.1s,
+    background 0.1s;
   display: flex;
   align-items: center;
 }
@@ -689,7 +791,7 @@ function handleCancel() {
 
 /* ── Signature ── */
 .nde-signature {
-  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
   font-size: 11px;
   color: #89b4fa;
   background: #11111b;
@@ -712,7 +814,8 @@ function handleCancel() {
   color: #cdd6f4;
   border: 1px solid #313244;
   border-radius: 0 0 4px 4px;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  font-family:
+    "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
   font-size: 11px;
   line-height: 1.6;
   padding: 6px 8px;
@@ -897,6 +1000,4 @@ function handleCancel() {
   justify-content: flex-end;
   gap: 8px;
 }
-
-
 </style>

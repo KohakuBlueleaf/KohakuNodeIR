@@ -7,7 +7,7 @@
  * Falls back to the JS lite parser if backend is unavailable.
  */
 
-const BACKEND_URL = 'http://localhost:48888';
+const BACKEND_URL = "http://localhost:48888";
 
 let backendAvailable = null; // null = unknown, true/false = checked
 
@@ -17,7 +17,7 @@ let backendAvailable = null; // null = unknown, true/false = checked
 export async function checkBackend() {
   try {
     const res = await fetch(`${BACKEND_URL}/api/nodes`, {
-      method: 'GET',
+      method: "GET",
       signal: AbortSignal.timeout(2000),
     });
     backendAvailable = res.ok;
@@ -36,8 +36,8 @@ export async function parseKirViaBackend(kirText) {
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/decompile`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kir_source: kirText }),
     });
 
@@ -60,12 +60,12 @@ export async function parseKirViaBackend(kirText) {
         height: size[1] || 100,
         dataInputs: (n.data_inputs || []).map((p) => ({
           name: p.port,
-          type: p.type || 'any',
+          type: p.type || "any",
           default: p.default,
         })),
         dataOutputs: (n.data_outputs || []).map((p) => ({
           name: p.port,
-          type: p.type || 'any',
+          type: p.type || "any",
         })),
         ctrlInputs: n.ctrl_inputs || [],
         ctrlOutputs: n.ctrl_outputs || [],
@@ -80,7 +80,7 @@ export async function parseKirViaBackend(kirText) {
       toPort: e.to_port,
     }));
 
-    return { nodes, edges, format: 'kirgraph-via-backend' };
+    return { nodes, edges, format: "kirgraph-via-backend" };
   } catch {
     return null;
   }

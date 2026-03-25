@@ -101,13 +101,7 @@ impl KirGraphDecompiler {
                     if !self.handled_namespaces.contains(&ns.name) {
                         // Walk namespace body — merge node handles the ctrl
                         // edge in.
-                        self.walk_statements(
-                            &ns.body,
-                            last_id.as_deref(),
-                            true,
-                            false,
-                            None,
-                        );
+                        self.walk_statements(&ns.body, last_id.as_deref(), true, false, None);
                     }
                     // After a namespace (entered via jump), don't chain.
                     last_id = None;
@@ -341,10 +335,7 @@ impl KirGraphDecompiler {
             .unwrap_or_else(|| "value".to_string());
 
         let mut properties: HashMap<String, Value> = HashMap::new();
-        properties.insert(
-            "value_type".to_string(),
-            Value::Str(value_type.clone()),
-        );
+        properties.insert("value_type".to_string(), Value::Str(value_type.clone()));
         if let Some(v) = value {
             properties.insert("value".to_string(), v);
         } else {
@@ -514,12 +505,7 @@ impl KirGraphDecompiler {
         if !cases_prop.is_empty() {
             properties.insert(
                 "cases".to_string(),
-                Value::Dict(
-                    cases_prop
-                        .into_iter()
-                        .map(|(k, v)| (k, v))
-                        .collect(),
-                ),
+                Value::Dict(cases_prop.into_iter().map(|(k, v)| (k, v)).collect()),
             );
         }
 
@@ -643,8 +629,7 @@ impl KirGraphDecompiler {
             if let Some(ns_body) = ns_map.get(label.as_str()) {
                 self.handled_namespaces.insert(label.clone());
                 let ns_body_clone = ns_body.clone();
-                let first_id =
-                    self.walk_statements(&ns_body_clone, None, true, false, None);
+                let first_id = self.walk_statements(&ns_body_clone, None, true, false, None);
                 if let Some(ref fid) = first_id {
                     self.ensure_ctrl_ports(fid, "in");
                     self.edges.push(KGEdge::control(
@@ -661,8 +646,7 @@ impl KirGraphDecompiler {
             if let Some(ns_body) = ns_map.get(dl) {
                 self.handled_namespaces.insert(dl.to_string());
                 let ns_body_clone = ns_body.clone();
-                let first_id =
-                    self.walk_statements(&ns_body_clone, None, true, false, None);
+                let first_id = self.walk_statements(&ns_body_clone, None, true, false, None);
                 if let Some(ref fid) = first_id {
                     self.ensure_ctrl_ports(fid, "in");
                     self.edges.push(KGEdge::control(
@@ -698,8 +682,7 @@ impl KirGraphDecompiler {
             if let Some(ns_body) = ns_map.get(label.as_str()) {
                 self.handled_namespaces.insert(label.clone());
                 let ns_body_clone = ns_body.clone();
-                let first_id =
-                    self.walk_statements(&ns_body_clone, None, true, false, None);
+                let first_id = self.walk_statements(&ns_body_clone, None, true, false, None);
                 if let Some(ref fid) = first_id {
                     self.ensure_ctrl_ports(fid, "in");
                     self.edges.push(KGEdge::control(
@@ -842,7 +825,10 @@ impl KirGraphDecompiler {
 ///
 /// Tries the longest matching `node_id` prefix first. Falls back to the last
 /// underscore split.
-pub fn parse_var_name(var_name: &str, known_node_ids: &HashSet<String>) -> Option<(String, String)> {
+pub fn parse_var_name(
+    var_name: &str,
+    known_node_ids: &HashSet<String>,
+) -> Option<(String, String)> {
     // Try known node ids first (greedy — longest first).
     let mut sorted_ids: Vec<&String> = known_node_ids.iter().collect();
     sorted_ids.sort_by_key(|s| std::cmp::Reverse(s.len()));
@@ -932,9 +918,7 @@ fn build_meta(
 ) -> HashMap<String, Value> {
     let mut result: HashMap<String, Value> = HashMap::new();
 
-    let has_pos = meta_data
-        .and_then(|m| m.get("pos"))
-        .is_some();
+    let has_pos = meta_data.and_then(|m| m.get("pos")).is_some();
 
     if !has_pos {
         *auto_pos_counter += 1;
@@ -1073,10 +1057,7 @@ mod tests {
         known.insert("my".to_string());
         // "my_node_out" should match "my_node" (longer), not "my"
         let result = parse_var_name("my_node_out", &known);
-        assert_eq!(
-            result,
-            Some(("my_node".to_string(), "out".to_string()))
-        );
+        assert_eq!(result, Some(("my_node".to_string(), "out".to_string())));
     }
 
     // -----------------------------------------------------------------------
@@ -1117,21 +1098,38 @@ mod tests {
         let graph = decompile(&program);
 
         // Should have exactly 2 nodes.
-        assert_eq!(graph.nodes.len(), 2, "expected 2 nodes, got {:?}", graph.nodes.iter().map(|n| &n.id).collect::<Vec<_>>());
+        assert_eq!(
+            graph.nodes.len(),
+            2,
+            "expected 2 nodes, got {:?}",
+            graph.nodes.iter().map(|n| &n.id).collect::<Vec<_>>()
+        );
 
-        let val_node = graph.nodes.iter().find(|n| n.id == "val_n1").expect("val_n1 node missing");
+        let val_node = graph
+            .nodes
+            .iter()
+            .find(|n| n.id == "val_n1")
+            .expect("val_n1 node missing");
         assert_eq!(val_node.r#type, "value");
         assert_eq!(val_node.data_outputs.len(), 1);
         assert_eq!(val_node.data_outputs[0].port, "out");
 
-        let add_node = graph.nodes.iter().find(|n| n.id == "add_n2").expect("add_n2 node missing");
+        let add_node = graph
+            .nodes
+            .iter()
+            .find(|n| n.id == "add_n2")
+            .expect("add_n2 node missing");
         assert_eq!(add_node.r#type, "add");
         assert_eq!(add_node.data_inputs.len(), 1);
         assert_eq!(add_node.data_outputs.len(), 1);
         assert_eq!(add_node.data_outputs[0].port, "result");
 
         // Should have a control edge val_n1→add_n2 and a data edge.
-        let ctrl_edges: Vec<_> = graph.edges.iter().filter(|e| e.r#type == "control").collect();
+        let ctrl_edges: Vec<_> = graph
+            .edges
+            .iter()
+            .filter(|e| e.r#type == "control")
+            .collect();
         let data_edges: Vec<_> = graph.edges.iter().filter(|e| e.r#type == "data").collect();
 
         // value nodes have no ctrl outputs, so only func_call chains ctrl.
@@ -1208,18 +1206,30 @@ mod tests {
         // Nodes: br1, fa1, fb1
         assert_eq!(graph.nodes.len(), 3);
 
-        let ctrl_edges: Vec<_> = graph.edges.iter().filter(|e| e.r#type == "control").collect();
+        let ctrl_edges: Vec<_> = graph
+            .edges
+            .iter()
+            .filter(|e| e.r#type == "control")
+            .collect();
 
         // Expect: br1/true → fa1/in  and  br1/false → fb1/in
-        let true_edge = ctrl_edges.iter().find(|e| {
-            e.from_node == "br1" && e.from_port == "true" && e.to_node == "fa1"
-        });
-        let false_edge = ctrl_edges.iter().find(|e| {
-            e.from_node == "br1" && e.from_port == "false" && e.to_node == "fb1"
-        });
+        let true_edge = ctrl_edges
+            .iter()
+            .find(|e| e.from_node == "br1" && e.from_port == "true" && e.to_node == "fa1");
+        let false_edge = ctrl_edges
+            .iter()
+            .find(|e| e.from_node == "br1" && e.from_port == "false" && e.to_node == "fb1");
 
-        assert!(true_edge.is_some(), "missing br1/true → fa1 ctrl edge; edges: {:?}", ctrl_edges);
-        assert!(false_edge.is_some(), "missing br1/false → fb1 ctrl edge; edges: {:?}", ctrl_edges);
+        assert!(
+            true_edge.is_some(),
+            "missing br1/true → fa1 ctrl edge; edges: {:?}",
+            ctrl_edges
+        );
+        assert!(
+            false_edge.is_some(),
+            "missing br1/false → fb1 ctrl edge; edges: {:?}",
+            ctrl_edges
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -1254,7 +1264,11 @@ mod tests {
 
         let graph = decompile(&program);
         assert_eq!(graph.nodes.len(), 2);
-        let ctrl_edges: Vec<_> = graph.edges.iter().filter(|e| e.r#type == "control").collect();
+        let ctrl_edges: Vec<_> = graph
+            .edges
+            .iter()
+            .filter(|e| e.r#type == "control")
+            .collect();
         assert!(
             ctrl_edges.is_empty(),
             "dataflow block should produce no ctrl edges, got: {:?}",

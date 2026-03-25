@@ -16,10 +16,7 @@ use crate::ast::Program;
 #[pyfunction]
 pub fn write(program_json: &str) -> PyResult<String> {
     let program: Program = serde_json::from_str(program_json).map_err(|e| {
-        pyo3::exceptions::PyValueError::new_err(format!(
-            "Failed to parse Program JSON: {}",
-            e
-        ))
+        pyo3::exceptions::PyValueError::new_err(format!("Failed to parse Program JSON: {}", e))
     })?;
     Ok(super::write(&program))
 }

@@ -3,9 +3,9 @@
 // Used inside input slots of statement and control blocks.
 // Clicking on an editable slot opens an inline input to update the default value.
 
-import { ref, nextTick } from 'vue';
-import { useGraphStore } from '../../stores/graph.js';
-import { useHistoryStore } from '../../stores/history.js';
+import { ref, nextTick } from "vue";
+import { useGraphStore } from "../../stores/graph.js";
+import { useHistoryStore } from "../../stores/history.js";
 
 const props = defineProps({
   /** InputSlot object (from blockTree.js resolveInputSlots) */
@@ -21,7 +21,7 @@ const history = useHistoryStore();
 
 // ── Editing state ─────────────────────────────────────────────────────────────
 const isEditing = ref(false);
-const editValue = ref('');
+const editValue = ref("");
 const inputRef = ref(null);
 
 // ── Slot is editable if it is not connected to another node (use default) ─────
@@ -34,14 +34,14 @@ function slotLabel(slot) {
   if (!slot.connected) {
     const v = slot.literalValue;
     if (v === null || v === undefined) return `(${slot.portName})`;
-    if (typeof v === 'string') return `"${v}"`;
+    if (typeof v === "string") return `"${v}"`;
     return String(v);
   }
   // Connected to a non-value node → show variable / node name
   if (slot.literalValue !== null && slot.literalValue !== undefined) {
     // Connected value node — show the literal
     const v = slot.literalValue;
-    if (typeof v === 'string') return `"${v}"`;
+    if (typeof v === "string") return `"${v}"`;
     return String(v);
   }
   return slot.sourceNodeName ?? slot.portName;
@@ -49,11 +49,11 @@ function slotLabel(slot) {
 
 // ── Data type → accent color ──────────────────────────────────────────────────
 const TYPE_COLORS = {
-  bool:  '#f38ba8',
-  int:   '#89b4fa',
-  float: '#89dceb',
-  str:   '#a6e3a1',
-  any:   '#a6adc8',
+  bool: "#f38ba8",
+  int: "#89b4fa",
+  float: "#89dceb",
+  str: "#a6e3a1",
+  any: "#a6adc8",
 };
 
 function accentColor(slot) {
@@ -68,13 +68,17 @@ function startEdit(e) {
   if (props.slot.connected && props.slot.sourceNodeId) {
     const srcNode = graph.nodes.get(props.slot.sourceNodeId);
     if (!srcNode) return;
-    const current = srcNode.properties?.value ?? srcNode.dataPorts?.outputs?.[0]?.defaultValue ?? '';
+    const current =
+      srcNode.properties?.value ??
+      srcNode.dataPorts?.outputs?.[0]?.defaultValue ??
+      "";
     editValue.value = String(current);
   } else {
     // Unconnected slot — edit the port's defaultValue
-    editValue.value = props.slot.literalValue !== null && props.slot.literalValue !== undefined
-      ? String(props.slot.literalValue)
-      : '';
+    editValue.value =
+      props.slot.literalValue !== null && props.slot.literalValue !== undefined
+        ? String(props.slot.literalValue)
+        : "";
   }
 
   isEditing.value = true;
@@ -124,10 +128,10 @@ function cancelEdit() {
 }
 
 function onKeyDown(e) {
-  if (e.key === 'Enter') {
+  if (e.key === "Enter") {
     e.preventDefault();
     commitEdit();
-  } else if (e.key === 'Escape') {
+  } else if (e.key === "Escape") {
     cancelEdit();
   }
   e.stopPropagation();
@@ -141,7 +145,10 @@ function toggleBool() {
     const srcNode = graph.nodes.get(props.slot.sourceNodeId);
     if (!srcNode) return;
     history.pushState();
-    const current = srcNode.properties?.value ?? srcNode.dataPorts?.outputs?.[0]?.defaultValue ?? false;
+    const current =
+      srcNode.properties?.value ??
+      srcNode.dataPorts?.outputs?.[0]?.defaultValue ??
+      false;
     const next = !current;
     if (srcNode.properties !== undefined) srcNode.properties.value = next;
     const outPort = srcNode.dataPorts?.outputs?.[0];
@@ -161,11 +168,11 @@ function toggleBool() {
 
 function parseValue(raw, dataType) {
   switch (dataType) {
-    case 'bool':
-      return raw === 'true' || raw === '1';
-    case 'int':
+    case "bool":
+      return raw === "true" || raw === "1";
+    case "int":
       return parseInt(raw, 10) || 0;
-    case 'float':
+    case "float":
       return parseFloat(raw) || 0;
     default:
       return raw;
@@ -180,8 +187,8 @@ function findNodeForInputPort(portId) {
 }
 
 function inputType(dataType) {
-  if (dataType === 'int' || dataType === 'float') return 'number';
-  return 'text';
+  if (dataType === "int" || dataType === "float") return "number";
+  return "text";
 }
 </script>
 
@@ -197,8 +204,17 @@ function inputType(dataType) {
     @click.stop="toggleBool"
     @keydown.enter.stop="toggleBool"
   >
-    <span class="reporter-bool-indicator" :class="{ 'is-true': slot.literalValue === true || (slot.connected && slot.literalValue === true) }" />
-    <span class="reporter-label">{{ slot.literalValue === true ? 'true' : 'false' }}</span>
+    <span
+      class="reporter-bool-indicator"
+      :class="{
+        'is-true':
+          slot.literalValue === true ||
+          (slot.connected && slot.literalValue === true),
+      }"
+    />
+    <span class="reporter-label">{{
+      slot.literalValue === true ? "true" : "false"
+    }}</span>
   </span>
 
   <!-- Editable slot: click to open inline input -->
@@ -213,7 +229,10 @@ function inputType(dataType) {
     @keydown.enter.stop="startEdit"
   >
     <template v-if="!isEditing">
-      <span v-if="slot.connected && slot.literalValue === null" class="reporter-dot" />
+      <span
+        v-if="slot.connected && slot.literalValue === null"
+        class="reporter-dot"
+      />
       <span class="reporter-label">{{ slotLabel(slot) }}</span>
     </template>
     <template v-else>
@@ -237,7 +256,10 @@ function inputType(dataType) {
     :style="{ '--accent': accentColor(slot) }"
     :title="slot.portName + ' : ' + slot.dataType"
   >
-    <span v-if="slot.connected && slot.literalValue === null" class="reporter-dot" />
+    <span
+      v-if="slot.connected && slot.literalValue === null"
+      class="reporter-dot"
+    />
     <span class="reporter-label">{{ slotLabel(slot) }}</span>
   </span>
 </template>
@@ -251,7 +273,7 @@ function inputType(dataType) {
   background: color-mix(in srgb, var(--accent) 18%, #1e1e2e);
   border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   border-radius: 999px;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 11px;
   color: var(--accent);
   white-space: nowrap;
@@ -316,7 +338,7 @@ function inputType(dataType) {
   border: none;
   outline: none;
   color: var(--accent);
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 11px;
   width: 80px;
   min-width: 40px;
@@ -325,11 +347,11 @@ function inputType(dataType) {
 }
 
 /* Remove number input spinners */
-.reporter-input[type='number']::-webkit-inner-spin-button,
-.reporter-input[type='number']::-webkit-outer-spin-button {
+.reporter-input[type="number"]::-webkit-inner-spin-button,
+.reporter-input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
-.reporter-input[type='number'] {
+.reporter-input[type="number"] {
   -moz-appearance: textfield;
 }
 </style>

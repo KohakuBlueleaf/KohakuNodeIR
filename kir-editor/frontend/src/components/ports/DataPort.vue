@@ -1,36 +1,50 @@
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { ref, computed, inject } from "vue";
 
 const props = defineProps({
   port: { type: Object, required: true },
   nodeId: { type: String, required: true },
-  direction: { type: String, required: true, validator: v => ['input', 'output'].includes(v) },
+  direction: {
+    type: String,
+    required: true,
+    validator: (v) => ["input", "output"].includes(v),
+  },
   portIndex: { type: Number, required: true },
   totalPorts: { type: Number, required: true },
-})
+});
 
-const emit = defineEmits(['port-mousedown', 'port-mouseup'])
-const isHovered = ref(false)
-const draftWireType = inject('draftWireType', null)
+const emit = defineEmits(["port-mousedown", "port-mouseup"]);
+const isHovered = ref(false);
+const draftWireType = inject("draftWireType", null);
 
 const isCompatible = computed(() => {
-  if (!draftWireType?.value) return false
-  return draftWireType.value === 'data' && props.direction === 'input'
-})
+  if (!draftWireType?.value) return false;
+  return draftWireType.value === "data" && props.direction === "input";
+});
 
-const isOutput = computed(() => props.direction === 'output')
+const isOutput = computed(() => props.direction === "output");
 
 function onMouseDown(e) {
-  if (props.direction !== 'output') return
-  e.stopPropagation()
-  e.preventDefault()
-  emit('port-mousedown', { nodeId: props.nodeId, portId: props.port.id, portType: 'data', direction: props.direction })
+  if (props.direction !== "output") return;
+  e.stopPropagation();
+  e.preventDefault();
+  emit("port-mousedown", {
+    nodeId: props.nodeId,
+    portId: props.port.id,
+    portType: "data",
+    direction: props.direction,
+  });
 }
 
 function onMouseUp(e) {
-  if (props.direction !== 'input') return
-  e.stopPropagation()
-  emit('port-mouseup', { nodeId: props.nodeId, portId: props.port.id, portType: 'data', direction: props.direction })
+  if (props.direction !== "input") return;
+  e.stopPropagation();
+  emit("port-mouseup", {
+    nodeId: props.nodeId,
+    portId: props.port.id,
+    portType: "data",
+    direction: props.direction,
+  });
 }
 </script>
 
@@ -39,7 +53,10 @@ function onMouseUp(e) {
     class="data-port"
     :class="[
       `data-port--${direction}`,
-      { 'data-port--hovered': isHovered, 'data-port--compatible': isCompatible },
+      {
+        'data-port--hovered': isHovered,
+        'data-port--compatible': isCompatible,
+      },
     ]"
     :data-port-id="port.id"
     :data-node-id="nodeId"
@@ -83,11 +100,15 @@ function onMouseUp(e) {
 
 .data-port__dot {
   flex-shrink: 0;
-  width: 10px; height: 10px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #89b4fa;
   border: 1.5px solid #1e1e2e;
-  transition: background 0.12s, box-shadow 0.12s, transform 0.12s;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s,
+    transform 0.12s;
 }
 
 .data-port--hovered .data-port__dot {
@@ -107,5 +128,7 @@ function onMouseUp(e) {
   pointer-events: none;
   line-height: 1;
 }
-.data-port--hovered .data-port__label { color: #cdd6f4; }
+.data-port--hovered .data-port__label {
+  color: #cdd6f4;
+}
 </style>

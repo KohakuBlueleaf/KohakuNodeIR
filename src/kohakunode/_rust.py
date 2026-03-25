@@ -1,4 +1,5 @@
 """Rust backend detection. If kohakunode_rs is available, HAS_RUST=True."""
+
 try:
     import kohakunode_rs
 

@@ -13,7 +13,7 @@ import init, {
   write_kir,
   kir_to_graph,
   auto_layout,
-} from '../wasm/kohakunode_rs.js';
+} from "../wasm/kohakunode_rs.js";
 
 let ready = false;
 let loading = null;
@@ -29,13 +29,13 @@ export async function initWasm(onProgress) {
 
   loading = (async () => {
     try {
-      onProgress?.('Loading WASM module...');
+      onProgress?.("Loading WASM module...");
       await init();
       ready = true;
-      onProgress?.('Ready');
+      onProgress?.("Ready");
       return true;
     } catch (err) {
-      console.error('[wasmParser] Init failed:', err);
+      console.error("[wasmParser] Init failed:", err);
       onProgress?.(`Error: ${err.message}`);
       return false;
     }
@@ -79,27 +79,33 @@ function kirgraphToViewer(kg) {
       id: n.id,
       type: n.type,
       name: n.name,
-      x, y, width, height,
+      x,
+      y,
+      width,
+      height,
       dataInputs: (n.data_inputs ?? []).map((p) => {
-        const o = { name: p.port, type: p.type ?? 'any' };
+        const o = { name: p.port, type: p.type ?? "any" };
         if (p.default != null) o.default = p.default;
         return o;
       }),
       dataOutputs: (n.data_outputs ?? []).map((p) => ({
-        name: p.port, type: p.type ?? 'any',
+        name: p.port,
+        type: p.type ?? "any",
       })),
       ctrlInputs: n.ctrl_inputs ?? [],
       ctrlOutputs: n.ctrl_outputs ?? [],
-      ...(n.properties && Object.keys(n.properties).length ? { properties: n.properties } : {}),
+      ...(n.properties && Object.keys(n.properties).length
+        ? { properties: n.properties }
+        : {}),
     };
   });
 
   const edges = (kg.edges ?? []).map((e) => ({
     type: e.type,
-    fromNode: e.from?.node ?? '',
-    fromPort: e.from?.port ?? '',
-    toNode: e.to?.node ?? '',
-    toPort: e.to?.port ?? '',
+    fromNode: e.from?.node ?? "",
+    fromPort: e.from?.port ?? "",
+    toNode: e.to?.node ?? "",
+    toPort: e.to?.port ?? "",
   }));
 
   return { nodes, edges };
@@ -124,7 +130,7 @@ export async function parseKirWithWasm(kirText) {
     const kg = JSON.parse(laidOut);
     return kirgraphToViewer(kg);
   } catch (err) {
-    console.error('[wasmParser] Parse error:', err);
+    console.error("[wasmParser] Parse error:", err);
     return null;
   }
 }
@@ -145,7 +151,7 @@ export async function compileGraphToKir(kirgraphJson) {
     const programJson = compile_kirgraph(kirgraphJson);
     return write_kir(programJson);
   } catch (err) {
-    console.error('[wasmParser] compileGraphToKir error:', err);
+    console.error("[wasmParser] compileGraphToKir error:", err);
     return null;
   }
 }
@@ -168,7 +174,7 @@ export async function compileGraphToKirL3(kirgraphJson) {
     programJson = strip_meta(programJson);
     return write_kir(programJson);
   } catch (err) {
-    console.error('[wasmParser] compileGraphToKirL3 error:', err);
+    console.error("[wasmParser] compileGraphToKirL3 error:", err);
     return null;
   }
 }
@@ -189,7 +195,7 @@ export async function parseKirToAst(kirText) {
     const astJson = parse_kir(kirText);
     return JSON.parse(astJson);
   } catch (err) {
-    console.error('[wasmParser] parseKirToAst error:', err);
+    console.error("[wasmParser] parseKirToAst error:", err);
     return null;
   }
 }

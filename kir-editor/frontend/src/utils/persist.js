@@ -2,7 +2,7 @@
  * persist.js — simple localStorage helpers for saving/restoring UI state.
  */
 
-const PREFIX = 'kohaku-';
+const PREFIX = "kohaku-";
 
 export function save(key, value) {
   try {

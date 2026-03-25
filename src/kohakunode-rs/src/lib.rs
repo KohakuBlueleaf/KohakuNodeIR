@@ -8,8 +8,8 @@ pub mod parser;
 
 pub mod kirgraph;
 
-pub mod layout;
 pub mod analyzer;
+pub mod layout;
 
 #[cfg(feature = "pyo3")]
 mod pyo3_module;

@@ -30,7 +30,7 @@ const GRID_ROW_SPACING = 180;
 const GRID_X0 = 100;
 const GRID_Y0 = 100;
 
-const CONTROL_BUILTINS = new Set(['branch', 'switch', 'jump', 'parallel']);
+const CONTROL_BUILTINS = new Set(["branch", "switch", "jump", "parallel"]);
 
 // ---------------------------------------------------------------------------
 // Tokeniser helpers
@@ -71,11 +71,11 @@ function tokeniseLines(src) {
     const indentMatch = line.match(/^([ \t]*)/);
     let indent = 0;
     for (const ch of indentMatch[1]) {
-      indent += ch === '\t' ? 4 : 1;
+      indent += ch === "\t" ? 4 : 1;
     }
 
     const text = line.trimEnd();
-    if (text.trim() === '') continue; // skip blank / comment-only lines
+    if (text.trim() === "") continue; // skip blank / comment-only lines
 
     result.push({ lineNo: i + 1, indent, text: text.trim() });
   }
@@ -93,7 +93,7 @@ function stripComment(line) {
   let inDouble = false;
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
-    if (ch === '\\' && (inSingle || inDouble)) {
+    if (ch === "\\" && (inSingle || inDouble)) {
       i++; // skip escaped char
       continue;
     }
@@ -105,7 +105,7 @@ function stripComment(line) {
       inDouble = !inDouble;
       continue;
     }
-    if (ch === '#' && !inSingle && !inDouble) {
+    if (ch === "#" && !inSingle && !inDouble) {
       return line.slice(0, i);
     }
   }
@@ -126,7 +126,7 @@ function stripComment(line) {
  */
 function parseMeta(text) {
   // Strip leading @meta
-  const body = text.replace(/^\s*@meta\s*/, '');
+  const body = text.replace(/^\s*@meta\s*/, "");
   const result = {};
 
   // Regex: key=value where value is:
@@ -149,16 +149,16 @@ function parseMetaValue(raw) {
   // Tuple: (x, y)
   if (/^\(/.test(s)) {
     const nums = s
-      .replace(/[()]/g, '')
-      .split(',')
+      .replace(/[()]/g, "")
+      .split(",")
       .map((v) => parseFloat(v.trim()));
     return nums;
   }
   // List: [w, h]
   if (/^\[/.test(s)) {
     const nums = s
-      .replace(/[\[\]]/g, '')
-      .split(',')
+      .replace(/[\[\]]/g, "")
+      .split(",")
       .map((v) => parseFloat(v.trim()));
     return nums;
   }
@@ -173,12 +173,12 @@ function parseMetaValue(raw) {
     }
   }
   // Bool / None
-  if (s === 'True') return true;
-  if (s === 'False') return false;
-  if (s === 'None') return null;
+  if (s === "True") return true;
+  if (s === "False") return false;
+  if (s === "None") return null;
   // Number
   const n = Number(s);
-  if (!isNaN(n) && s !== '') return n;
+  if (!isNaN(n) && s !== "") return n;
   return s;
 }
 
@@ -199,7 +199,7 @@ function splitArgs(src) {
 
   for (let i = 0; i < src.length; i++) {
     const ch = src[i];
-    if (ch === '\\' && (inSingle || inDouble)) {
+    if (ch === "\\" && (inSingle || inDouble)) {
       i++;
       continue;
     }
@@ -212,21 +212,21 @@ function splitArgs(src) {
       continue;
     }
     if (inSingle || inDouble) continue;
-    if (ch === '(' || ch === '[' || ch === '{') {
+    if (ch === "(" || ch === "[" || ch === "{") {
       depth++;
       continue;
     }
-    if (ch === ')' || ch === ']' || ch === '}') {
+    if (ch === ")" || ch === "]" || ch === "}") {
       depth--;
       continue;
     }
-    if (ch === ',' && depth === 0) {
+    if (ch === "," && depth === 0) {
       args.push(src.slice(start, i).trim());
       start = i + 1;
     }
   }
   const last = src.slice(start).trim();
-  if (last !== '') args.push(last);
+  if (last !== "") args.push(last);
   return args;
 }
 
@@ -237,12 +237,12 @@ function splitArgs(src) {
 function parseInputs(src) {
   const items = [];
   for (const tok of splitArgs(src)) {
-    if (tok === '') continue;
+    if (tok === "") continue;
     const kwMatch = tok.match(/^(\w+)\s*=\s*([\s\S]+)$/);
     if (kwMatch) {
-      items.push({ kind: 'kw', name: kwMatch[1], value: kwMatch[2].trim() });
+      items.push({ kind: "kw", name: kwMatch[1], value: kwMatch[2].trim() });
     } else {
-      items.push({ kind: 'pos', value: tok });
+      items.push({ kind: "pos", value: tok });
     }
   }
   return items;
@@ -257,20 +257,24 @@ function parseOutputs(src) {
   const items = [];
   for (const tok of splitArgs(src)) {
     const t = tok.trim();
-    if (t === '') continue;
-    if (t === '_') {
-      items.push({ kind: 'wildcard' });
+    if (t === "") continue;
+    if (t === "_") {
+      items.push({ kind: "wildcard" });
     } else if (/^`[a-zA-Z_]\w*`$/.test(t)) {
-      items.push({ kind: 'label', label: t.slice(1, -1) });
+      items.push({ kind: "label", label: t.slice(1, -1) });
     } else if (/^_\s*=>\s*`[a-zA-Z_]\w*`$/.test(t)) {
       const label = t.match(/`([a-zA-Z_]\w*)`/)[1];
-      items.push({ kind: 'default', label });
+      items.push({ kind: "default", label });
     } else {
       const caseMatch = t.match(/^(.+?)\s*=>\s*`([a-zA-Z_]\w*)`$/);
       if (caseMatch) {
-        items.push({ kind: 'case', value: caseMatch[1].trim(), label: caseMatch[2] });
+        items.push({
+          kind: "case",
+          value: caseMatch[1].trim(),
+          label: caseMatch[2],
+        });
       } else {
-        items.push({ kind: 'name', name: t });
+        items.push({ kind: "name", name: t });
       }
     }
   }
@@ -283,7 +287,7 @@ function parseOutputs(src) {
  */
 function isLiteral(tok) {
   const t = tok.trim();
-  if (t === 'True' || t === 'False' || t === 'None') return true;
+  if (t === "True" || t === "False" || t === "None") return true;
   if (/^-?[\d.]/.test(t) && !isNaN(Number(t))) return true;
   if (/^["'`\[\{]/.test(t)) return true;
   return false;
@@ -317,7 +321,7 @@ function joinContinuations(lines) {
       }
     } else {
       // Continue existing logical line
-      buf += ' ' + text;
+      buf += " " + text;
       depth += countDepth(text);
       if (depth <= 0) {
         result.push({ indent: bufIndent, text: buf });
@@ -338,7 +342,7 @@ function countDepth(text) {
     inD = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
-    if (ch === '\\' && (inS || inD)) {
+    if (ch === "\\" && (inS || inD)) {
       i++;
       continue;
     }
@@ -351,8 +355,8 @@ function countDepth(text) {
       continue;
     }
     if (inS || inD) continue;
-    if (ch === '(' || ch === '[' || ch === '{') d++;
-    else if (ch === ')' || ch === ']' || ch === '}') d--;
+    if (ch === "(" || ch === "[" || ch === "{") d++;
+    else if (ch === ")" || ch === "]" || ch === "}") d--;
   }
   return d;
 }
@@ -405,7 +409,12 @@ export function parseKirLite(kirText) {
   }
 
   function resolveSize(meta) {
-    if (meta && meta.size && Array.isArray(meta.size) && meta.size.length >= 2) {
+    if (
+      meta &&
+      meta.size &&
+      Array.isArray(meta.size) &&
+      meta.size.length >= 2
+    ) {
       return { width: Number(meta.size[0]), height: Number(meta.size[1]) };
     }
     return { width: 180, height: 120 };
@@ -429,7 +438,7 @@ export function parseKirLite(kirText) {
   function emitDataEdges(nodeId, inputItems, dataInputPortNames) {
     inputItems.forEach((inp, idx) => {
       let toPort;
-      if (inp.kind === 'kw') {
+      if (inp.kind === "kw") {
         toPort = inp.name;
       } else {
         toPort = dataInputPortNames[idx] ?? `in_${idx}`;
@@ -438,7 +447,7 @@ export function parseKirLite(kirText) {
       const varRef = resolveVar(inp.value);
       if (varRef) {
         edges.push({
-          type: 'data',
+          type: "data",
           fromNode: varRef.nodeId,
           fromPort: varRef.port,
           toNode: nodeId,
@@ -479,7 +488,7 @@ export function parseKirLite(kirText) {
     if (!fromNode.ctrlOutputs.includes(fromPort)) continue;
     if (toNode.ctrlInputs.length === 0) continue;
     edges.push({
-      type: 'control',
+      type: "control",
       fromNode: fromNodeId,
       fromPort,
       toNode: toNodeId,
@@ -492,7 +501,7 @@ export function parseKirLite(kirText) {
     const varRef = resolveVar(varName);
     if (varRef) {
       edges.push({
-        type: 'data',
+        type: "data",
         fromNode: varRef.nodeId,
         fromPort: varRef.port,
         toNode,
@@ -525,8 +534,8 @@ export function parseKirLite(kirText) {
 
       const mergeNode = {
         id: mergeId,
-        type: 'merge',
-        name: 'Merge',
+        type: "merge",
+        name: "Merge",
         x: targetNode.x - 100,
         y: targetNode.y - 60,
         width: 140,
@@ -534,18 +543,18 @@ export function parseKirLite(kirText) {
         dataInputs: [],
         dataOutputs: [],
         ctrlInputs: mergeInputs,
-        ctrlOutputs: ['out'],
+        ctrlOutputs: ["out"],
       };
       nodes.push(mergeNode);
       nodeById[mergeId] = mergeNode;
 
       // Wire merge out → target node
       edges.push({
-        type: 'control',
+        type: "control",
         fromNode: mergeId,
-        fromPort: 'out',
+        fromPort: "out",
         toNode: targetNodeId,
-        toPort: targetNode.ctrlInputs[0] || 'in',
+        toPort: targetNode.ctrlInputs[0] || "in",
       });
 
       // Rewire existing labelSource edges to go to merge inputs
@@ -553,7 +562,7 @@ export function parseKirLite(kirText) {
       // Rewire branch/switch/parallel edges that target this namespace
       for (let ei = edges.length - 1; ei >= 0; ei--) {
         const e = edges[ei];
-        if (e.type === 'control' && e.toNode === targetNodeId) {
+        if (e.type === "control" && e.toNode === targetNodeId) {
           // Redirect to merge
           e.toNode = mergeId;
           e.toPort = mergeInputs[inputIdx++] || `in_${inputIdx}`;
@@ -564,7 +573,7 @@ export function parseKirLite(kirText) {
       for (const je of jumpEdges) {
         if (je.label === label && je.fromNodeId) {
           edges.push({
-            type: 'control',
+            type: "control",
             fromNode: je.fromNodeId,
             fromPort: je.fromPort,
             toNode: mergeId,
@@ -583,11 +592,11 @@ export function parseKirLite(kirText) {
       const toNode = nodeById[toNodeId];
       if (!toNode) continue;
       edges.push({
-        type: 'control',
+        type: "control",
         fromNode: fromNodeId,
         fromPort: fromPort,
         toNode: toNodeId,
-        toPort: toNode.ctrlInputs[0] || 'in',
+        toPort: toNode.ctrlInputs[0] || "in",
       });
     }
   }
@@ -623,7 +632,8 @@ export function parseKirLite(kirText) {
     function popScope() {
       indentScopeStack.pop();
       prevNodeStack.pop();
-      currentNamespaceLabel = indentScopeStack[indentScopeStack.length - 1]?.label ?? null;
+      currentNamespaceLabel =
+        indentScopeStack[indentScopeStack.length - 1]?.label ?? null;
     }
 
     let nodeSeq = 0; // sequential counter for auto-generated ids
@@ -652,7 +662,13 @@ export function parseKirLite(kirText) {
       const fromPort = fromNode.ctrlOutputs[0];
       const toPort = toNode.ctrlInputs[0];
       if (!fromPort || !toPort) return;
-      edges.push({ type: 'control', fromNode: prevId, fromPort, toNode: toNodeId, toPort });
+      edges.push({
+        type: "control",
+        fromNode: prevId,
+        fromPort,
+        toNode: toNodeId,
+        toPort,
+      });
     }
 
     function doAdvanceCtrl(nodeId) {
@@ -665,7 +681,10 @@ export function parseKirLite(kirText) {
       const { indent, text } = logicalLines[i];
 
       // Sync dedents
-      while (indentLevels.length > 1 && indent < indentLevels[indentLevels.length - 1]) {
+      while (
+        indentLevels.length > 1 &&
+        indent < indentLevels[indentLevels.length - 1]
+      ) {
         indentLevels.pop();
         popScope();
       }
@@ -726,14 +745,14 @@ export function parseKirLite(kirText) {
 
           const node = {
             id: nodeId,
-            type: 'value',
+            type: "value",
             name: varName,
             x,
             y,
             width,
             height,
             dataInputs: [],
-            dataOutputs: [{ name: 'value', type: 'any' }],
+            dataOutputs: [{ name: "value", type: "any" }],
             ctrlInputs: [],
             ctrlOutputs: [],
           };
@@ -741,8 +760,8 @@ export function parseKirLite(kirText) {
           addNodeTracked(node);
 
           // Register variable
-          varMap[varName] = { nodeId, port: 'value' };
-          varMap[`${nodeId}_value`] = { nodeId, port: 'value' };
+          varMap[varName] = { nodeId, port: "value" };
+          varMap[`${nodeId}_value`] = { nodeId, port: "value" };
 
           doEmitCtrlEdge(nodeId);
           doAdvanceCtrl(nodeId);
@@ -764,7 +783,8 @@ export function parseKirLite(kirText) {
           const outputItems = parseOutputs(rawOutputs);
           const fnLower = funcName.toLowerCase();
 
-          const nodeId = meta.node_id ?? `${funcName.replace(/\./g, '_')}_${nextSeq()}`;
+          const nodeId =
+            meta.node_id ?? `${funcName.replace(/\./g, "_")}_${nextSeq()}`;
           let { x, y } = resolvePos(meta);
           if (!meta.pos) {
             const ap = autoPos();
@@ -778,52 +798,66 @@ export function parseKirLite(kirText) {
           let ctrlInputs = [];
           let ctrlOutputs = [];
 
-          if (fnLower === 'branch') {
-            dataInputs = [{ name: 'condition', type: 'bool' }];
-            ctrlInputs = ['in'];
-            ctrlOutputs = outputItems.filter((o) => o.kind === 'label').map((o) => o.label);
-            if (ctrlOutputs.length === 0) ctrlOutputs = ['true', 'false'];
-          } else if (fnLower === 'switch') {
-            dataInputs = [{ name: 'value', type: 'any' }];
-            ctrlInputs = ['in'];
+          if (fnLower === "branch") {
+            dataInputs = [{ name: "condition", type: "bool" }];
+            ctrlInputs = ["in"];
             ctrlOutputs = outputItems
-              .filter((o) => o.kind === 'case' || o.kind === 'default')
+              .filter((o) => o.kind === "label")
               .map((o) => o.label);
-          } else if (fnLower === 'jump') {
+            if (ctrlOutputs.length === 0) ctrlOutputs = ["true", "false"];
+          } else if (fnLower === "switch") {
+            dataInputs = [{ name: "value", type: "any" }];
+            ctrlInputs = ["in"];
+            ctrlOutputs = outputItems
+              .filter((o) => o.kind === "case" || o.kind === "default")
+              .map((o) => o.label);
+          } else if (fnLower === "jump") {
             // jump is NOT a visible node — it's a ctrl wire.
             // Store a deferred edge from the current scope's last node to the target.
             const prevId = getPrev();
             for (const out of outputItems) {
-              if (out.kind === 'label') {
+              if (out.kind === "label") {
                 if (prevId) {
                   const fromNode = nodeById[prevId];
-                  const fromPort = fromNode ? fromNode.ctrlOutputs[0] || 'out' : 'out';
-                  jumpEdges.push({ fromNodeId: prevId, fromPort, label: out.label });
+                  const fromPort = fromNode
+                    ? fromNode.ctrlOutputs[0] || "out"
+                    : "out";
+                  jumpEdges.push({
+                    fromNodeId: prevId,
+                    fromPort,
+                    label: out.label,
+                  });
                 } else {
-                  jumpEdges.push({ fromNodeId: null, fromPort: null, label: out.label });
+                  jumpEdges.push({
+                    fromNodeId: null,
+                    fromPort: null,
+                    label: out.label,
+                  });
                 }
               }
             }
             // Don't create a node, don't advance ctrl
             pendingMetaLocal = {};
             continue;
-          } else if (fnLower === 'parallel') {
-            ctrlInputs = ['in'];
-            ctrlOutputs = outputItems.filter((o) => o.kind === 'label').map((o) => o.label);
+          } else if (fnLower === "parallel") {
+            ctrlInputs = ["in"];
+            ctrlOutputs = outputItems
+              .filter((o) => o.kind === "label")
+              .map((o) => o.label);
           } else {
-            ctrlInputs = ['in'];
-            ctrlOutputs = ['out'];
+            ctrlInputs = ["in"];
+            ctrlOutputs = ["out"];
 
             inputItems.forEach((inp, idx) => {
-              const portName = inp.kind === 'kw' ? inp.name : `in_${idx}`;
-              dataInputs.push({ name: portName, type: 'any' });
+              const portName = inp.kind === "kw" ? inp.name : `in_${idx}`;
+              dataInputs.push({ name: portName, type: "any" });
             });
 
             outputItems.forEach((out, idx) => {
-              if (out.kind === 'name') {
-                dataOutputs.push({ name: out.name, type: 'any' });
-              } else if (out.kind === 'wildcard') {
-                dataOutputs.push({ name: `_out_${idx}`, type: 'any' });
+              if (out.kind === "name") {
+                dataOutputs.push({ name: out.name, type: "any" });
+              } else if (out.kind === "wildcard") {
+                dataOutputs.push({ name: `_out_${idx}`, type: "any" });
               }
             });
           }
@@ -831,14 +865,14 @@ export function parseKirLite(kirText) {
           const node = {
             id: nodeId,
             type:
-              fnLower === 'branch'
-                ? 'branch'
-                : fnLower === 'switch'
-                  ? 'switch'
-                  : fnLower === 'jump'
-                    ? 'jump'
-                    : fnLower === 'parallel'
-                      ? 'parallel'
+              fnLower === "branch"
+                ? "branch"
+                : fnLower === "switch"
+                  ? "switch"
+                  : fnLower === "jump"
+                    ? "jump"
+                    : fnLower === "parallel"
+                      ? "parallel"
                       : funcName,
             name: funcName,
             x,
@@ -855,7 +889,7 @@ export function parseKirLite(kirText) {
 
           // Register raw output names as data variables
           for (const out of outputItems) {
-            if (out.kind === 'name') {
+            if (out.kind === "name") {
               varMap[out.name] = { nodeId, port: out.name };
               // Also {nodeId}_{portName} form
               varMap[`${nodeId}_${out.name}`] = { nodeId, port: out.name };
@@ -869,7 +903,7 @@ export function parseKirLite(kirText) {
           emitDataEdges(
             nodeId,
             inputItems,
-            dataInputs.map((p) => p.name)
+            dataInputs.map((p) => p.name),
           );
 
           // Emit sequential ctrl edge
@@ -878,8 +912,16 @@ export function parseKirLite(kirText) {
 
           // Register deferred label ctrl edges
           for (const out of outputItems) {
-            if (out.kind === 'label' || out.kind === 'case' || out.kind === 'default') {
-              labelSources.push({ fromNodeId: nodeId, fromPort: out.label, label: out.label });
+            if (
+              out.kind === "label" ||
+              out.kind === "case" ||
+              out.kind === "default"
+            ) {
+              labelSources.push({
+                fromNodeId: nodeId,
+                fromPort: out.label,
+                label: out.label,
+              });
             }
           }
 
@@ -904,7 +946,7 @@ export function parseKirLite(kirText) {
  */
 function extractCall(text) {
   const t = text.trim();
-  if (!t.startsWith('(')) return null;
+  if (!t.startsWith("(")) return null;
 
   // Find matching ) for the first (
   let depth = 0;
@@ -913,7 +955,7 @@ function extractCall(text) {
   let closeIdx = -1;
   for (let i = 0; i < t.length; i++) {
     const ch = t[i];
-    if (ch === '\\' && (inS || inD)) {
+    if (ch === "\\" && (inS || inD)) {
       i++;
       continue;
     }
@@ -926,8 +968,8 @@ function extractCall(text) {
       continue;
     }
     if (inS || inD) continue;
-    if (ch === '(') depth++;
-    else if (ch === ')') {
+    if (ch === "(") depth++;
+    else if (ch === ")") {
       depth--;
       if (depth === 0) {
         closeIdx = i;

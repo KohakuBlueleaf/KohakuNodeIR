@@ -137,10 +137,7 @@ mod tests {
     fn test_nested_indent() {
         let src = "a:\n    b:\n        x = 1\n";
         let result = preprocess(src);
-        assert_eq!(
-            result,
-            "a:\nINDENT\nb:\nINDENT\nx = 1\nDEDENT\nDEDENT\n"
-        );
+        assert_eq!(result, "a:\nINDENT\nb:\nINDENT\nx = 1\nDEDENT\nDEDENT\n");
     }
 
     #[test]

@@ -253,7 +253,10 @@ describe("removeConnection", () => {
       y: 0,
       width: 160,
       height: 120,
-      dataPorts: { inputs: [], outputs: [{ id: "rA-do", name: "out", dataType: "int" }] },
+      dataPorts: {
+        inputs: [],
+        outputs: [{ id: "rA-do", name: "out", dataType: "int" }],
+      },
       controlPorts: { inputs: [], outputs: [] },
       properties: {},
     });
@@ -265,7 +268,10 @@ describe("removeConnection", () => {
       y: 0,
       width: 160,
       height: 120,
-      dataPorts: { inputs: [{ id: "rB-di", name: "in", dataType: "int" }], outputs: [] },
+      dataPorts: {
+        inputs: [{ id: "rB-di", name: "in", dataType: "int" }],
+        outputs: [],
+      },
       controlPorts: { inputs: [], outputs: [] },
       properties: {},
     });
@@ -487,7 +493,10 @@ describe("getNodeConnections", () => {
       y: 0,
       width: 160,
       height: 120,
-      dataPorts: { inputs: [], outputs: [{ id: "gcA-do", name: "out", dataType: "int" }] },
+      dataPorts: {
+        inputs: [],
+        outputs: [{ id: "gcA-do", name: "out", dataType: "int" }],
+      },
       controlPorts: { inputs: [], outputs: [] },
       properties: {},
     });
@@ -499,7 +508,10 @@ describe("getNodeConnections", () => {
       y: 0,
       width: 160,
       height: 120,
-      dataPorts: { inputs: [{ id: "gcB-di", name: "in", dataType: "int" }], outputs: [] },
+      dataPorts: {
+        inputs: [{ id: "gcB-di", name: "in", dataType: "int" }],
+        outputs: [],
+      },
       controlPorts: { inputs: [], outputs: [] },
       properties: {},
     });

@@ -1,16 +1,16 @@
 <script setup>
-import { ref } from 'vue';
-import { ElMessage } from 'element-plus';
-import { useEditorStore } from '../../stores/editor.js';
-import { useGraphStore } from '../../stores/graph.js';
-import { useHistoryStore } from '../../stores/history.js';
-import { graphToKirgraph, kirgraphToGraph } from '../../compiler/kirgraph.js';
-import { compileGraph } from '../../compiler/graphToIr.js';
-import { parseKirWithWasm } from '../../parser/wasmParser.js';
-import { executeKirStreaming } from '../../api/backend.js';
-import { detectAndParseAsync } from '../../parser/index.js';
-import { parserResultToGraph } from '../../utils/parserResultToGraph.js';
-import { compileGraphToKir, isWasmReady } from '../../parser/wasmParser.js';
+import { ref } from "vue";
+import { ElMessage } from "element-plus";
+import { useEditorStore } from "../../stores/editor.js";
+import { useGraphStore } from "../../stores/graph.js";
+import { useHistoryStore } from "../../stores/history.js";
+import { graphToKirgraph, kirgraphToGraph } from "../../compiler/kirgraph.js";
+import { compileGraph } from "../../compiler/graphToIr.js";
+import { parseKirWithWasm } from "../../parser/wasmParser.js";
+import { executeKirStreaming } from "../../api/backend.js";
+import { detectAndParseAsync } from "../../parser/index.js";
+import { parserResultToGraph } from "../../utils/parserResultToGraph.js";
+import { compileGraphToKir, isWasmReady } from "../../parser/wasmParser.js";
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 const props = defineProps({
@@ -21,11 +21,11 @@ const props = defineProps({
   // Which view is currently active — affects what zoom controls mean
   viewMode: {
     type: String,
-    default: 'graph',
+    default: "graph",
   },
 });
 
-const emit = defineEmits(['update:zoom', 'open-ir-preview']);
+const emit = defineEmits(["update:zoom", "open-ir-preview"]);
 
 // ── Stores ─────────────────────────────────────────────────────────────────────
 const editorStore = useEditorStore();
@@ -39,16 +39,16 @@ const ZOOM_STEP = 0.25;
 
 function zoomIn() {
   const next = Math.min(ZOOM_MAX, +(props.zoom + ZOOM_STEP).toFixed(2));
-  emit('update:zoom', next);
+  emit("update:zoom", next);
 }
 
 function zoomOut() {
   const next = Math.max(ZOOM_MIN, +(props.zoom - ZOOM_STEP).toFixed(2));
-  emit('update:zoom', next);
+  emit("update:zoom", next);
 }
 
 function resetZoom() {
-  emit('update:zoom', 1);
+  emit("update:zoom", 1);
 }
 
 // ── Undo / Redo ────────────────────────────────────────────────────────────────
@@ -69,12 +69,20 @@ async function runGraph() {
     _cancelRun?.();
     _cancelRun = null;
     isRunning.value = false;
-    ElMessage({ message: 'Execution cancelled.', type: 'info', duration: 1500 });
+    ElMessage({
+      message: "Execution cancelled.",
+      type: "info",
+      duration: 1500,
+    });
     return;
   }
 
   if (!graph.nodeList.length) {
-    ElMessage({ message: 'Graph is empty — add some nodes first.', type: 'warning', duration: 2000 });
+    ElMessage({
+      message: "Graph is empty — add some nodes first.",
+      type: "warning",
+      duration: 2000,
+    });
     return;
   }
 
@@ -83,11 +91,19 @@ async function runGraph() {
   let kir = await compileGraphToKir(JSON.stringify(kirgraph));
 
   if (kir) {
-    ElMessage({ message: 'Compiled with WASM compiler.', type: 'success', duration: 1200 });
+    ElMessage({
+      message: "Compiled with WASM compiler.",
+      type: "success",
+      duration: 1200,
+    });
   } else {
     // Fall back to JS compiler if WASM not ready
     if (!isWasmReady()) {
-      ElMessage({ message: 'WASM not ready — using JS compiler as fallback.', type: 'warning', duration: 2500 });
+      ElMessage({
+        message: "WASM not ready — using JS compiler as fallback.",
+        type: "warning",
+        duration: 2500,
+      });
     }
     const { ir: jsIr } = compileGraph(graph.nodeList, graph.connectionList);
     kir = jsIr;
@@ -96,19 +112,23 @@ async function runGraph() {
   isRunning.value = true;
 
   // Ask the parent to open IR preview so results are visible
-  emit('open-ir-preview');
+  emit("open-ir-preview");
 
   const outputLines = [];
   const variables = {};
 
   const { cancel, ws } = executeKirStreaming(kir, {
     onOutput(text) {
-      outputLines.push(text.replace(/\n$/, ''));
+      outputLines.push(text.replace(/\n$/, ""));
     },
     onError(msg) {
       isRunning.value = false;
       _cancelRun = null;
-      ElMessage({ message: `Execution error: ${msg}`, type: 'error', duration: 5000 });
+      ElMessage({
+        message: `Execution error: ${msg}`,
+        type: "error",
+        duration: 5000,
+      });
     },
     onVariable(name, value) {
       variables[name] = value;
@@ -118,13 +138,13 @@ async function runGraph() {
       _cancelRun = null;
       const varCount = Object.keys(vars).length;
       const summary = outputLines.length
-        ? outputLines.slice(-3).join(' | ')
+        ? outputLines.slice(-3).join(" | ")
         : varCount
-          ? `${varCount} variable${varCount !== 1 ? 's' : ''} set`
-          : 'done';
+          ? `${varCount} variable${varCount !== 1 ? "s" : ""} set`
+          : "done";
       ElMessage({
         message: `Run complete — ${summary}`,
-        type: 'success',
+        type: "success",
         duration: 3000,
       });
     },
@@ -136,8 +156,9 @@ async function runGraph() {
     isRunning.value = false;
     _cancelRun = null;
     ElMessage({
-      message: 'Backend connection failed — is the server running on port 48888?',
-      type: 'error',
+      message:
+        "Backend connection failed — is the server running on port 48888?",
+      type: "error",
       duration: 5000,
     });
   };
@@ -146,7 +167,11 @@ async function runGraph() {
     isRunning.value = false;
     _cancelRun = null;
     if (event.code !== 1000) {
-      ElMessage({ message: `Connection closed (code ${event.code})`, type: 'warning', duration: 3000 });
+      ElMessage({
+        message: `Connection closed (code ${event.code})`,
+        type: "warning",
+        duration: 3000,
+      });
     }
   };
 }
@@ -155,21 +180,25 @@ async function runGraph() {
 function saveGraph() {
   const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
   const json = JSON.stringify(kirgraph, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
+  const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = 'graph.kirgraph';
+  a.download = "graph.kirgraph";
   a.click();
   URL.revokeObjectURL(url);
-  ElMessage({ message: 'Graph saved as graph.kirgraph', type: 'success', duration: 1800 });
+  ElMessage({
+    message: "Graph saved as graph.kirgraph",
+    type: "success",
+    duration: 1800,
+  });
 }
 
 // ── Load ───────────────────────────────────────────────────────────────────────
 function loadGraph() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.kirgraph,.json';
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".kirgraph,.json";
   input.onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -189,9 +218,17 @@ function loadGraph() {
             conn.portType,
           );
         }
-        ElMessage({ message: `Loaded ${nodes.length} node(s) from ${file.name}`, type: 'success', duration: 2000 });
+        ElMessage({
+          message: `Loaded ${nodes.length} node(s) from ${file.name}`,
+          type: "success",
+          duration: 2000,
+        });
       } catch (err) {
-        ElMessage({ message: `Failed to load graph: ${err.message}`, type: 'error', duration: 3000 });
+        ElMessage({
+          message: `Failed to load graph: ${err.message}`,
+          type: "error",
+          duration: 3000,
+        });
       }
     };
     reader.readAsText(file);
@@ -206,34 +243,55 @@ function loadGraph() {
 const isImporting = ref(false);
 
 function importGraph() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.kir,.kirgraph,.json';
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".kir,.kirgraph,.json";
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     isImporting.value = true;
-    ElMessage({ message: `Importing ${file.name}…`, type: 'info', duration: 1500 });
+    ElMessage({
+      message: `Importing ${file.name}…`,
+      type: "info",
+      duration: 1500,
+    });
     try {
       const content = await file.text();
       const result = await detectAndParseAsync(content, file.name);
       if (!result || !result.nodes || result.nodes.length === 0) {
-        ElMessage({ message: 'Import produced an empty graph — check the file format.', type: 'warning', duration: 3000 });
+        ElMessage({
+          message: "Import produced an empty graph — check the file format.",
+          type: "warning",
+          duration: 3000,
+        });
         return;
       }
-      const { nodes, connections } = parserResultToGraph(result.nodes, result.edges);
+      const { nodes, connections } = parserResultToGraph(
+        result.nodes,
+        result.edges,
+      );
       graph.clear();
       for (const node of nodes) graph.addNode(node);
       for (const conn of connections) {
-        graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
+        graph.addConnection(
+          conn.fromNodeId,
+          conn.fromPortId,
+          conn.toNodeId,
+          conn.toPortId,
+          conn.portType,
+        );
       }
       ElMessage({
         message: `Imported ${nodes.length} node(s) from ${file.name} (${result.format})`,
-        type: 'success',
+        type: "success",
         duration: 2500,
       });
     } catch (err) {
-      ElMessage({ message: `Import failed: ${err.message}`, type: 'error', duration: 4000 });
+      ElMessage({
+        message: `Import failed: ${err.message}`,
+        type: "error",
+        duration: 4000,
+      });
     } finally {
       isImporting.value = false;
     }
@@ -244,7 +302,11 @@ function importGraph() {
 // ── Auto Layout (uses WASM Rust layout for consistency with paste) ────────────
 async function runAutoLayout() {
   if (!graph.nodeList.length) {
-    ElMessage({ message: 'Graph is empty — nothing to lay out.', type: 'warning', duration: 2000 });
+    ElMessage({
+      message: "Graph is empty — nothing to lay out.",
+      type: "warning",
+      duration: 2000,
+    });
     return;
   }
 
@@ -252,18 +314,31 @@ async function runAutoLayout() {
   const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
   const kir = await compileGraphToKir(JSON.stringify(kirgraph));
   if (!kir) {
-    ElMessage({ message: 'Could not compile graph for layout.', type: 'warning', duration: 2000 });
+    ElMessage({
+      message: "Could not compile graph for layout.",
+      type: "warning",
+      duration: 2000,
+    });
     return;
   }
 
   const result = await parseKirWithWasm(kir);
   if (!result?.nodes?.length) {
-    ElMessage({ message: 'Layout failed — could not parse compiled KIR.', type: 'warning', duration: 2000 });
+    ElMessage({
+      message: "Layout failed — could not parse compiled KIR.",
+      type: "warning",
+      duration: 2000,
+    });
     return;
   }
 
   // Apply new positions from WASM layout to existing graph nodes
-  const posMap = new Map(result.nodes.map(n => [n.id, { x: n.x, y: n.y, width: n.width, height: n.height }]));
+  const posMap = new Map(
+    result.nodes.map((n) => [
+      n.id,
+      { x: n.x, y: n.y, width: n.width, height: n.height },
+    ]),
+  );
   graph.beginMove();
   for (const node of graph.nodeList) {
     const pos = posMap.get(node.id);
@@ -277,44 +352,76 @@ async function runAutoLayout() {
       }
     }
   }
-  ElMessage({ message: 'Auto layout applied (WASM).', type: 'success', duration: 1500 });
+  ElMessage({
+    message: "Auto layout applied (WASM).",
+    type: "success",
+    duration: 1500,
+  });
 }
 
 // ── Export .kir ────────────────────────────────────────────────────────────────
 function saveAsKir() {
   if (!graph.nodeList.length) {
-    ElMessage({ message: 'Graph is empty — nothing to export.', type: 'warning', duration: 2000 });
+    ElMessage({
+      message: "Graph is empty — nothing to export.",
+      type: "warning",
+      duration: 2000,
+    });
     return;
   }
   const { ir, errors } = compileGraph(graph.nodeList, graph.connectionList);
   if (errors.length) {
-    ElMessage({ message: `Compile warning: ${errors[0]}`, type: 'warning', duration: 3000 });
+    ElMessage({
+      message: `Compile warning: ${errors[0]}`,
+      type: "warning",
+      duration: 3000,
+    });
   }
-  const blob = new Blob([ir], { type: 'text/plain' });
+  const blob = new Blob([ir], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = 'graph.kir';
+  a.download = "graph.kir";
   a.click();
   URL.revokeObjectURL(url);
-  ElMessage({ message: 'Graph exported as graph.kir', type: 'success', duration: 1800 });
+  ElMessage({
+    message: "Graph exported as graph.kir",
+    type: "success",
+    duration: 1800,
+  });
 }
 
 // ── Copy KIR ───────────────────────────────────────────────────────────────────
 async function copyKirToClipboard() {
   if (!graph.nodeList.length) {
-    ElMessage({ message: 'Graph is empty — nothing to copy.', type: 'warning', duration: 2000 });
+    ElMessage({
+      message: "Graph is empty — nothing to copy.",
+      type: "warning",
+      duration: 2000,
+    });
     return;
   }
   const { ir, errors } = compileGraph(graph.nodeList, graph.connectionList);
   if (errors.length) {
-    ElMessage({ message: `Compile warning: ${errors[0]}`, type: 'warning', duration: 3000 });
+    ElMessage({
+      message: `Compile warning: ${errors[0]}`,
+      type: "warning",
+      duration: 3000,
+    });
   }
   try {
     await navigator.clipboard.writeText(ir);
-    ElMessage({ message: 'KIR text copied to clipboard.', type: 'success', duration: 1800 });
+    ElMessage({
+      message: "KIR text copied to clipboard.",
+      type: "success",
+      duration: 1800,
+    });
   } catch {
-    ElMessage({ message: 'Clipboard write failed — check browser permissions.', type: 'error', duration: 3000 });
+    ElMessage({
+      message: "Clipboard write failed — check browser permissions.",
+      type: "error",
+      duration: 3000,
+    });
   }
 }
 </script>
@@ -366,17 +473,27 @@ async function copyKirToClipboard() {
       <button
         class="tool-btn tool-btn--run"
         :class="{ 'tool-btn--run-active': isRunning }"
-        :title="isRunning ? 'Click to cancel execution' : 'Run graph on backend (opens IR panel)'"
+        :title="
+          isRunning
+            ? 'Click to cancel execution'
+            : 'Run graph on backend (opens IR panel)'
+        "
         @click="runGraph"
       >
-        <span :class="isRunning ? 'i-carbon-stop-filled' : 'i-carbon-play-filled'" />
-        {{ isRunning ? 'Stop' : 'Run' }}
+        <span
+          :class="isRunning ? 'i-carbon-stop-filled' : 'i-carbon-play-filled'"
+        />
+        {{ isRunning ? "Stop" : "Run" }}
       </button>
     </div>
 
     <!-- Auto Layout -->
     <div class="toolbar-group">
-      <button class="tool-btn tool-btn--layout" title="Auto-layout all nodes" @click="runAutoLayout">
+      <button
+        class="tool-btn tool-btn--layout"
+        title="Auto-layout all nodes"
+        @click="runAutoLayout"
+      >
         <span class="i-carbon-chart-network" />
         Auto Layout
       </button>
@@ -392,11 +509,19 @@ async function copyKirToClipboard() {
 
     <!-- Save / Load / Export -->
     <div class="toolbar-group">
-      <button class="tool-btn tool-btn--save" title="Save graph as .kirgraph" @click="saveGraph">
+      <button
+        class="tool-btn tool-btn--save"
+        title="Save graph as .kirgraph"
+        @click="saveGraph"
+      >
         <span class="i-carbon-save" />
         Save
       </button>
-      <button class="tool-btn tool-btn--load" title="Load graph from .kirgraph" @click="loadGraph">
+      <button
+        class="tool-btn tool-btn--load"
+        title="Load graph from .kirgraph"
+        @click="loadGraph"
+      >
         <span class="i-carbon-folder-open" />
         Load
       </button>
@@ -407,13 +532,21 @@ async function copyKirToClipboard() {
         @click="importGraph"
       >
         <span class="i-carbon-upload" />
-        {{ isImporting ? 'Importing…' : 'Import' }}
+        {{ isImporting ? "Importing…" : "Import" }}
       </button>
-      <button class="tool-btn tool-btn--export" title="Export compiled KIR as .kir file" @click="saveAsKir">
+      <button
+        class="tool-btn tool-btn--export"
+        title="Export compiled KIR as .kir file"
+        @click="saveAsKir"
+      >
         <span class="i-carbon-document-export" />
         .kir
       </button>
-      <button class="tool-btn tool-btn--copy" title="Copy compiled KIR text to clipboard" @click="copyKirToClipboard">
+      <button
+        class="tool-btn tool-btn--copy"
+        title="Copy compiled KIR text to clipboard"
+        @click="copyKirToClipboard"
+      >
         <span class="i-carbon-copy" />
         Copy KIR
       </button>
@@ -459,7 +592,9 @@ async function copyKirToClipboard() {
   color: #cdd6f4;
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
   white-space: nowrap;
 }
 .tool-btn:hover {
@@ -559,8 +694,13 @@ async function copyKirToClipboard() {
   animation: run-pulse 1.2s ease-in-out infinite;
 }
 @keyframes run-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.65; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
 }
 
 .editor-title {
