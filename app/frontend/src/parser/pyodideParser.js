@@ -187,6 +187,18 @@ export async function compileGraphToKir(kirgraphJson) {
   }
 
   try {
+    // Debug: dump kirgraph JSON to a downloadable blob
+    console.log('[compileGraphToKir] kirgraph JSON length:', kirgraphJson.length);
+    try {
+      const blob = new Blob([kirgraphJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mixed_mode-editor-local.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (_) { /* ignore if fails */ }
+
     pyodide.globals.set('_kirgraph_json_str', kirgraphJson);
 
     const kirText = await pyodide.runPythonAsync(`

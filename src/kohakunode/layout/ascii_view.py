@@ -380,8 +380,10 @@ class _GraphBuilder:
     ) -> tuple[str | None, str | None]:
         """Returns (updated first_node_in_scope, updated last_ctrl)."""
         df_nodes_before = len(self.nodes)
+        df_edges_before = len(self.edges)
         self._walk(stmt.body, None, True)
         df_new = self.nodes[df_nodes_before:]
+        df_new_edges = self.edges[df_edges_before:]
 
         if not df_new:
             return first_node_in_scope, last_ctrl
@@ -389,9 +391,17 @@ class _GraphBuilder:
         first_df = df_new[0].id
         last_df = df_new[-1].id
 
+        # Entry boundary: last_ctrl → first node in block
         if last_ctrl:
             self._ctrl_edge(last_ctrl, get_from_port(), first_df, "in")
         self._wire_deferred(first_df)
+
+        # Chain ALL nodes in lexical order with ctrl pass-through edges.
+        # This ensures the compiler keeps every node in the correct scope.
+        # Without this, data-only nodes float and get placed by data deps
+        # which may pull them into the wrong scope (e.g., into a loop body).
+        for i in range(len(df_new) - 1):
+            self._ctrl_edge(df_new[i].id, "out", df_new[i + 1].id, "in")
 
         if first_node_in_scope is None:
             first_node_in_scope = first_df

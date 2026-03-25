@@ -1,0 +1,792 @@
+{
+  "version": "0.1.0",
+  "nodes": [
+    {
+      "id": "to_float_1",
+      "type": "to_float",
+      "name": "to_float",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "int",
+          "default": 10
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "limit",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          100,
+          900
+        ],
+        "size": [
+          180,
+          100
+        ]
+      }
+    },
+    {
+      "id": "to_float_2",
+      "type": "to_float",
+      "name": "to_float",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "int",
+          "default": 1
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "step",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          100
+        ],
+        "size": [
+          180,
+          100
+        ]
+      }
+    },
+    {
+      "id": "value_3",
+      "type": "value",
+      "name": "counter",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          420
+        ],
+        "size": [
+          180,
+          100
+        ]
+      },
+      "properties": {
+        "value": 0,
+        "valueType": "int"
+      }
+    },
+    {
+      "id": "value_4",
+      "type": "value",
+      "name": "total",
+      "data_inputs": [],
+      "data_outputs": [
+        {
+          "port": "value",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [],
+      "ctrl_outputs": [],
+      "meta": {
+        "pos": [
+          100,
+          740
+        ],
+        "size": [
+          180,
+          100
+        ]
+      },
+      "properties": {
+        "value": 0,
+        "valueType": "int"
+      }
+    },
+    {
+      "id": "add_5",
+      "type": "add",
+      "name": "add",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        },
+        {
+          "port": "in_1",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "counter",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          420
+        ],
+        "size": [
+          180,
+          140
+        ]
+      }
+    },
+    {
+      "id": "multiply_6",
+      "type": "multiply",
+      "name": "multiply",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        },
+        {
+          "port": "in_1",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "squared",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          580
+        ],
+        "size": [
+          180,
+          140
+        ]
+      }
+    },
+    {
+      "id": "add_7",
+      "type": "add",
+      "name": "add",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        },
+        {
+          "port": "in_1",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "total",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          740
+        ],
+        "size": [
+          180,
+          140
+        ]
+      }
+    },
+    {
+      "id": "less_than_8",
+      "type": "less_than",
+      "name": "less_than",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        },
+        {
+          "port": "in_1",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "keep_going",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          900
+        ],
+        "size": [
+          180,
+          140
+        ]
+      }
+    },
+    {
+      "id": "branch_9",
+      "type": "branch",
+      "name": "Branch",
+      "data_inputs": [
+        {
+          "port": "condition",
+          "type": "bool"
+        }
+      ],
+      "data_outputs": [],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "true",
+        "false"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          1060
+        ],
+        "size": [
+          180,
+          100
+        ]
+      }
+    },
+    {
+      "id": "to_string_10",
+      "type": "to_string",
+      "name": "to_string",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "total_str",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          1220
+        ],
+        "size": [
+          180,
+          100
+        ]
+      }
+    },
+    {
+      "id": "to_string_11",
+      "type": "to_string",
+      "name": "to_string",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "count_str",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          580,
+          420
+        ],
+        "size": [
+          180,
+          100
+        ]
+      }
+    },
+    {
+      "id": "concat_12",
+      "type": "concat",
+      "name": "concat",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "str",
+          "default": "Sum of squares 1.."
+        },
+        {
+          "port": "in_1",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "prefix",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          820,
+          420
+        ],
+        "size": [
+          180,
+          140
+        ]
+      }
+    },
+    {
+      "id": "concat_13",
+      "type": "concat",
+      "name": "concat",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        },
+        {
+          "port": "in_1",
+          "type": "str",
+          "default": " = "
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "mid",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          1060,
+          420
+        ],
+        "size": [
+          180,
+          140
+        ]
+      }
+    },
+    {
+      "id": "concat_14",
+      "type": "concat",
+      "name": "concat",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        },
+        {
+          "port": "in_1",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [
+        {
+          "port": "message",
+          "type": "any"
+        }
+      ],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          580,
+          1220
+        ],
+        "size": [
+          180,
+          140
+        ]
+      }
+    },
+    {
+      "id": "print_15",
+      "type": "print",
+      "name": "print",
+      "data_inputs": [
+        {
+          "port": "in_0",
+          "type": "any"
+        }
+      ],
+      "data_outputs": [],
+      "ctrl_inputs": [
+        "in"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          820,
+          1220
+        ],
+        "size": [
+          180,
+          100
+        ]
+      }
+    },
+    {
+      "id": "merge_1",
+      "type": "merge",
+      "name": "Merge",
+      "data_inputs": [],
+      "data_outputs": [],
+      "ctrl_inputs": [
+        "in_0",
+        "in_1"
+      ],
+      "ctrl_outputs": [
+        "out"
+      ],
+      "meta": {
+        "pos": [
+          340,
+          260
+        ],
+        "size": [
+          180,
+          80
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "type": "data",
+      "from": {
+        "node": "value_3",
+        "port": "value"
+      },
+      "to": {
+        "node": "add_5",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "to_float_2",
+        "port": "step"
+      },
+      "to": {
+        "node": "add_5",
+        "port": "in_1"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "add_5",
+        "port": "counter"
+      },
+      "to": {
+        "node": "multiply_6",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "add_5",
+        "port": "counter"
+      },
+      "to": {
+        "node": "multiply_6",
+        "port": "in_1"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "value_4",
+        "port": "value"
+      },
+      "to": {
+        "node": "add_7",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "multiply_6",
+        "port": "squared"
+      },
+      "to": {
+        "node": "add_7",
+        "port": "in_1"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "add_5",
+        "port": "out"
+      },
+      "to": {
+        "node": "multiply_6",
+        "port": "in"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "add_5",
+        "port": "counter"
+      },
+      "to": {
+        "node": "less_than_8",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "to_float_1",
+        "port": "limit"
+      },
+      "to": {
+        "node": "less_than_8",
+        "port": "in_1"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "add_7",
+        "port": "out"
+      },
+      "to": {
+        "node": "less_than_8",
+        "port": "in"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "less_than_8",
+        "port": "keep_going"
+      },
+      "to": {
+        "node": "branch_9",
+        "port": "condition"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "less_than_8",
+        "port": "out"
+      },
+      "to": {
+        "node": "branch_9",
+        "port": "in"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "add_7",
+        "port": "total"
+      },
+      "to": {
+        "node": "to_string_10",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "add_5",
+        "port": "counter"
+      },
+      "to": {
+        "node": "to_string_11",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "to_string_11",
+        "port": "count_str"
+      },
+      "to": {
+        "node": "concat_12",
+        "port": "in_1"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "concat_12",
+        "port": "prefix"
+      },
+      "to": {
+        "node": "concat_13",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "concat_13",
+        "port": "mid"
+      },
+      "to": {
+        "node": "concat_14",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "to_string_10",
+        "port": "total_str"
+      },
+      "to": {
+        "node": "concat_14",
+        "port": "in_1"
+      }
+    },
+    {
+      "type": "data",
+      "from": {
+        "node": "concat_14",
+        "port": "message"
+      },
+      "to": {
+        "node": "print_15",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "branch_9",
+        "port": "false"
+      },
+      "to": {
+        "node": "to_string_10",
+        "port": "in"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "to_float_2",
+        "port": "out"
+      },
+      "to": {
+        "node": "merge_1",
+        "port": "in_0"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "branch_9",
+        "port": "true"
+      },
+      "to": {
+        "node": "merge_1",
+        "port": "in_1"
+      }
+    },
+    {
+      "type": "control",
+      "from": {
+        "node": "merge_1",
+        "port": "out"
+      },
+      "to": {
+        "node": "add_5",
+        "port": "in"
+      }
+    }
+  ]
+}

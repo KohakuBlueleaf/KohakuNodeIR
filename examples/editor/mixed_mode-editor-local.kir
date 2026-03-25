@@ -1,0 +1,34 @@
+@dataflow:
+    @meta node_id="to_float_1" pos=(100, 900) size=[180, 100]
+    (10)to_float(to_float_1_limit)
+    @meta node_id="value_3" pos=(100, 420) size=[180, 100]
+    value_3_value = 0
+    @meta node_id="value_4" pos=(100, 740) size=[180, 100]
+    value_4_value = 0
+@meta node_id="to_float_2" pos=(340, 100) size=[180, 100]
+(1)to_float(to_float_2_step)
+@meta node_id="merge_1" pos=(340, 260) size=[180, 80]
+()jump(`ns_merge_1`)
+ns_merge_1:
+    @meta node_id="add_5" pos=(340, 420) size=[180, 140]
+    (value_3_value, to_float_2_step)add(add_5_counter)
+    @dataflow:
+        @meta node_id="to_string_11" pos=(580, 420) size=[180, 100]
+        (add_5_counter)to_string(to_string_11_count_str)
+        @meta node_id="concat_12" pos=(820, 420) size=[180, 140]
+        ("Sum of squares 1..", to_string_11_count_str)concat(concat_12_prefix)
+        @meta node_id="concat_13" pos=(1060, 420) size=[180, 140]
+        (concat_12_prefix, " = ")concat(concat_13_mid)
+    @meta node_id="multiply_6" pos=(340, 580) size=[180, 140]
+    (add_5_counter, add_5_counter)multiply(multiply_6_squared)
+@meta node_id="add_7" pos=(340, 740) size=[180, 140]
+(value_4_value, multiply_6_squared)add(add_7_total)
+@meta node_id="less_than_8" pos=(340, 900) size=[180, 140]
+(add_5_counter, to_float_1_limit)less_than(less_than_8_keep_going)
+@meta node_id="branch_9" pos=(340, 1060) size=[180, 100]
+(less_than_8_keep_going)branch(`branch_9_true`, `branch_9_false`)
+branch_9_true:
+    ()jump(`ns_merge_1`)
+branch_9_false:
+    @meta node_id="to_string_10" pos=(340, 1220) size=[180, 100]
+    (add_7_total)to_string(to_string_10_total_str)
