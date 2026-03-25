@@ -17,6 +17,10 @@ use crate::kirgraph::{KGNode, KirGraph};
 // ---------------------------------------------------------------------------
 
 fn var(node_id: &str, port: &str) -> String {
+    let prefix = format!("{node_id}_");
+    if port.starts_with(&prefix) {
+        return port.to_string();
+    }
     format!("{node_id}_{port}")
 }
 

@@ -23,6 +23,8 @@ from kohakunode.kirgraph.schema import KGNode, KirGraph
 
 
 def _var(node_id: str, port: str) -> str:
+    if port.startswith(f"{node_id}_"):
+        return port
     return f"{node_id}_{port}"
 
 
