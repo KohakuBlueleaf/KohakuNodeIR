@@ -8,7 +8,8 @@ pub mod pyo3;
 
 use crate::ast::{
     Assignment, Branch, DataflowBlock, Expression, FuncCall, Jump, Literal, MetaAnnotation,
-    Namespace, OutputTarget, Parallel, Parameter, Program, Statement, SubgraphDef, Switch, Value,
+    Namespace, OutputTarget, Parallel, Parameter, Program, Statement, SubgraphDef, Switch,
+    TryExcept, TypeExpr, TypeHintBlock, Value,
 };
 
 const INDENT: &str = "    ";
@@ -26,6 +27,17 @@ pub fn write(program: &Program) -> String {
     if let Some(mode) = &program.mode {
         lines.push(write_mode_decl_str(mode));
         lines.push(String::new());
+    }
+
+    if let Some(typehints) = &program.typehints {
+        if !typehints.is_empty() {
+            let block = TypeHintBlock {
+                entries: typehints.clone(),
+                line: None,
+            };
+            lines.extend(write_typehint_block(&block, 0));
+            lines.push(String::new());
+        }
     }
 
     for stmt in &program.body {
@@ -55,6 +67,8 @@ fn write_statement(stmt: &Statement, indent_level: usize) -> Vec<String> {
         Statement::Namespace(node) => write_namespace(node, indent_level),
         Statement::SubgraphDef(node) => write_subgraph_def(node, indent_level),
         Statement::DataflowBlock(node) => write_dataflow_block(node, indent_level),
+        Statement::TypeHintBlock(node) => write_typehint_block(node, indent_level),
+        Statement::TryExcept(node) => write_try_except(node, indent_level),
     }
 }
 
@@ -66,7 +80,17 @@ fn write_assignment(node: &Assignment, indent_level: usize) -> Vec<String> {
     let mut lines = write_meta_lines(node.metadata.as_deref(), indent_level);
     let prefix = indent(indent_level);
     let value_str = write_expression(&node.value);
-    lines.push(format!("{}{} = {}", prefix, node.target, value_str));
+    if let Some(ty) = &node.type_annotation {
+        lines.push(format!(
+            "{}{}: {} = {}",
+            prefix,
+            node.target,
+            write_type_expr(ty),
+            value_str
+        ));
+    } else {
+        lines.push(format!("{}{} = {}", prefix, node.target, value_str));
+    }
     lines
 }
 
@@ -166,12 +190,66 @@ fn write_dataflow_block(node: &DataflowBlock, indent_level: usize) -> Vec<String
     lines
 }
 
+fn write_typehint_block(node: &TypeHintBlock, indent_level: usize) -> Vec<String> {
+    let prefix = indent(indent_level);
+    let inner_prefix = indent(indent_level + 1);
+    let mut lines = vec![format!("{}@typehint:", prefix)];
+    for entry in &node.entries {
+        let inputs_str = entry
+            .input_types
+            .iter()
+            .map(write_type_expr)
+            .collect::<Vec<_>>()
+            .join(", ");
+        let outputs_str = entry
+            .output_types
+            .iter()
+            .map(write_type_expr)
+            .collect::<Vec<_>>()
+            .join(", ");
+        lines.push(format!(
+            "{}({}){}({})",
+            inner_prefix, inputs_str, entry.func_name, outputs_str
+        ));
+    }
+    lines
+}
+
+fn write_try_except(node: &TryExcept, indent_level: usize) -> Vec<String> {
+    let mut lines = write_meta_lines(node.metadata.as_deref(), indent_level);
+    let prefix = indent(indent_level);
+    lines.push(format!("{}@try:", prefix));
+    for stmt in &node.try_body {
+        lines.extend(write_statement(stmt, indent_level + 1));
+    }
+    lines.push(format!("{}@except:", prefix));
+    for stmt in &node.except_body {
+        lines.extend(write_statement(stmt, indent_level + 1));
+    }
+    lines
+}
+
 // ---------------------------------------------------------------------------
 // Non-statement writers
 // ---------------------------------------------------------------------------
 
 fn write_mode_decl_str(mode: &str) -> String {
     format!("@mode {}", mode)
+}
+
+fn write_type_expr(ty: &TypeExpr) -> String {
+    if let Some(members) = &ty.union_of {
+        return members
+            .iter()
+            .map(write_type_expr)
+            .collect::<Vec<_>>()
+            .join("|");
+    }
+    if ty.is_optional {
+        format!("{}?", ty.name)
+    } else {
+        ty.name.clone()
+    }
 }
 
 fn write_meta(meta: &MetaAnnotation, indent_level: usize) -> String {
@@ -490,10 +568,12 @@ mod tests {
                     literal_type: "int".into(),
                     line: None,
                 }),
+                type_annotation: None,
                 metadata: None,
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "x = 1\n");
@@ -511,6 +591,7 @@ mod tests {
                     literal_type: "int".into(),
                     line: None,
                 }),
+                type_annotation: None,
                 metadata: Some(vec![MetaAnnotation {
                     data: meta_data,
                     line: None,
@@ -518,6 +599,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         let out = write(&prog);
@@ -546,6 +628,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "(a, b)add(result)\n");
@@ -562,6 +645,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "()noop(_)\n");
@@ -583,6 +667,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "(cond)branch(`yes`, `no`)\n");
@@ -611,6 +696,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "(v)switch(0=>`zero`, _=>`other`)\n");
@@ -627,6 +713,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "()jump(`end`)\n");
@@ -641,6 +728,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "()parallel(`a`, `b`)\n");
@@ -653,6 +741,7 @@ mod tests {
         let prog = Program {
             body: vec![],
             mode: Some("dataflow".into()),
+            typehints: None,
             line: None,
         };
         // No body: the blank separator line collapses into the trailing newline.
@@ -669,10 +758,12 @@ mod tests {
                     literal_type: "int".into(),
                     line: None,
                 }),
+                type_annotation: None,
                 metadata: None,
                 line: None,
             })],
             mode: Some("dataflow".into()),
+            typehints: None,
             line: None,
         };
         // With body: blank line separates the @mode from the first statement.
@@ -693,12 +784,14 @@ mod tests {
                         literal_type: "int".into(),
                         line: None,
                     }),
+                    type_annotation: None,
                     metadata: None,
                     line: None,
                 })],
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "main:\n    x = 1\n");
@@ -721,6 +814,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "outer:\n    inner:\n        ()jump(`end`)\n");
@@ -745,6 +839,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         assert_eq!(write(&prog), "@dataflow:\n    (x)f(y)\n");
@@ -782,6 +877,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         let out = write(&prog);
@@ -790,6 +886,181 @@ mod tests {
         // The blank-line entry at the end of the @def block collapses to the
         // trailing newline when there are no further statements after it.
         assert!(out.ends_with("    ()jump(`end`)\n"));
+    }
+
+    // ---- @typehint block --------------------------------------------------
+
+    #[test]
+    fn test_typehint_block_write() {
+        use crate::ast::{TypeExpr, TypeHintEntry};
+
+        let prog = Program {
+            body: vec![],
+            mode: None,
+            typehints: Some(vec![TypeHintEntry {
+                func_name: "add".into(),
+                input_types: vec![
+                    TypeExpr {
+                        name: "int".into(),
+                        is_optional: false,
+                        union_of: None,
+                        line: None,
+                    },
+                    TypeExpr {
+                        name: "int".into(),
+                        is_optional: false,
+                        union_of: None,
+                        line: None,
+                    },
+                ],
+                output_types: vec![TypeExpr {
+                    name: "int".into(),
+                    is_optional: false,
+                    union_of: None,
+                    line: None,
+                }],
+                line: None,
+            }]),
+            line: None,
+        };
+        let out = write(&prog);
+        assert!(out.contains("@typehint:"), "missing @typehint header");
+        assert!(out.contains("(int, int)add(int)"), "missing entry");
+    }
+
+    #[test]
+    fn test_typehint_optional_type_write() {
+        use crate::ast::{TypeExpr, TypeHintEntry};
+
+        let prog = Program {
+            body: vec![],
+            mode: None,
+            typehints: Some(vec![TypeHintEntry {
+                func_name: "maybe".into(),
+                input_types: vec![TypeExpr {
+                    name: "str".into(),
+                    is_optional: true,
+                    union_of: None,
+                    line: None,
+                }],
+                output_types: vec![],
+                line: None,
+            }]),
+            line: None,
+        };
+        let out = write(&prog);
+        assert!(out.contains("(str?)maybe()"), "expected optional type str?");
+    }
+
+    #[test]
+    fn test_typehint_union_type_write() {
+        use crate::ast::{TypeExpr, TypeHintEntry};
+
+        let prog = Program {
+            body: vec![],
+            mode: None,
+            typehints: Some(vec![TypeHintEntry {
+                func_name: "process".into(),
+                input_types: vec![TypeExpr {
+                    name: "int|float".into(),
+                    is_optional: false,
+                    union_of: Some(vec![
+                        TypeExpr {
+                            name: "int".into(),
+                            is_optional: false,
+                            union_of: None,
+                            line: None,
+                        },
+                        TypeExpr {
+                            name: "float".into(),
+                            is_optional: false,
+                            union_of: None,
+                            line: None,
+                        },
+                    ]),
+                    line: None,
+                }],
+                output_types: vec![],
+                line: None,
+            }]),
+            line: None,
+        };
+        let out = write(&prog);
+        assert!(out.contains("int|float"), "expected union type int|float");
+    }
+
+    // ---- typed assignment -------------------------------------------------
+
+    #[test]
+    fn test_typed_assignment_write() {
+        use crate::ast::TypeExpr;
+
+        let prog = Program {
+            body: vec![Statement::Assignment(Assignment {
+                target: "x".into(),
+                value: Expression::Literal(Literal {
+                    value: Value::Int(42),
+                    literal_type: "int".into(),
+                    line: None,
+                }),
+                type_annotation: Some(TypeExpr {
+                    name: "int".into(),
+                    is_optional: false,
+                    union_of: None,
+                    line: None,
+                }),
+                metadata: None,
+                line: None,
+            })],
+            mode: None,
+            typehints: None,
+            line: None,
+        };
+        assert_eq!(write(&prog), "x: int = 42\n");
+    }
+
+    // ---- @try/@except block -----------------------------------------------
+
+    #[test]
+    fn test_try_except_write() {
+        use crate::ast::TryExcept;
+
+        let prog = Program {
+            body: vec![Statement::TryExcept(TryExcept {
+                try_body: vec![Statement::Assignment(Assignment {
+                    target: "x".into(),
+                    value: Expression::Literal(Literal {
+                        value: Value::Int(1),
+                        literal_type: "int".into(),
+                        line: None,
+                    }),
+                    type_annotation: None,
+                    metadata: None,
+                    line: None,
+                })],
+                except_body: vec![Statement::Assignment(Assignment {
+                    target: "x".into(),
+                    value: Expression::Literal(Literal {
+                        value: Value::Int(0),
+                        literal_type: "int".into(),
+                        line: None,
+                    }),
+                    type_annotation: None,
+                    metadata: None,
+                    line: None,
+                })],
+                metadata: None,
+                line: None,
+            })],
+            mode: None,
+            typehints: None,
+            line: None,
+        };
+        let out = write(&prog);
+        assert!(out.contains("@try:"), "missing @try:");
+        assert!(out.contains("@except:"), "missing @except:");
+        assert!(out.contains("    x = 1"), "missing try body");
+        assert!(out.contains("    x = 0"), "missing except body");
     }
 
     #[test]
@@ -812,11 +1083,13 @@ mod tests {
                         literal_type: "int".into(),
                         line: None,
                     }),
+                    type_annotation: None,
                     metadata: None,
                     line: None,
                 }),
             ],
             mode: None,
+            typehints: None,
             line: None,
         };
         let out = write(&prog);

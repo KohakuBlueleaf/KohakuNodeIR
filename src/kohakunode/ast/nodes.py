@@ -84,9 +84,35 @@ class Parameter(ASTNode):
 
 
 @dataclass
+class TypeExpr(ASTNode):
+    """A type expression: int, float, tensor?, int | float, Any, _"""
+
+    name: str = field(default="Any")
+    is_optional: bool = field(default=False)  # A? = A | none
+    union_of: list["TypeExpr"] | None = field(default=None)  # A | B
+
+
+@dataclass
+class TypeHintEntry(ASTNode):
+    """One line in @typehint: block. e.g. (int, int)add(int)"""
+
+    func_name: str = field(default="")
+    input_types: list[TypeExpr] = field(default_factory=list)
+    output_types: list[TypeExpr] = field(default_factory=list)
+
+
+@dataclass
+class TypeHintBlock(Statement):
+    """@typehint: block containing function type declarations."""
+
+    entries: list[TypeHintEntry] = field(default_factory=list)
+
+
+@dataclass
 class Assignment(Statement):
     target: str = field(default="")
     value: Expression = field(default_factory=lambda: Identifier())
+    type_annotation: TypeExpr | None = field(default=None)
     metadata: list[MetaAnnotation] | None = field(default=None)
 
 
@@ -110,6 +136,15 @@ class SubgraphDef(Statement):
     params: list[Parameter] = field(default_factory=list)
     outputs: list[str] = field(default_factory=list)
     body: list[Statement] = field(default_factory=list)
+
+
+@dataclass
+class TryExcept(Statement):
+    """@try/@except error handling block."""
+
+    try_body: list[Statement] = field(default_factory=list)
+    except_body: list[Statement] = field(default_factory=list)
+    metadata: list[MetaAnnotation] | None = field(default=None)
 
 
 @dataclass
@@ -177,3 +212,4 @@ class Program(ASTNode):
     body: list[Statement] = field(default_factory=list)
     # mode is "dataflow" or None
     mode: str | None = field(default=None)
+    typehints: list[TypeHintEntry] | None = field(default=None)

@@ -1,0 +1,315 @@
+// ============================================================
+// Kohaku Node IR  --  Lark Grammar
+// Version: 0.1.0
+//
+// Parser:    LALR(1)
+// Lexer:     contextual
+//
+// Indentation handling
+// --------------------
+// Use lark.indenter.Indenter with the following settings:
+//
+//   NL_type           = "_NEWLINE"
+//   OPEN_PAREN_types  = ["LPAR", "LSQB", "LBRACE"]
+//   CLOSE_PAREN_types = ["RPAR", "RSQB", "RBRACE"]
+//   INDENT_type       = "_INDENT"
+//   DEDENT_type       = "_DEDENT"
+//   tab_len           = 4
+//
+// The Indenter suppresses _NEWLINE tokens while paren_level > 0,
+// making multi-line expressions (split across ( ... ) / [ ... ] /
+// { ... }) work without any grammar-level NL tokens.
+//
+// Design: unified call_stmt
+// -------------------------
+// All call-like forms -- regular function calls AND the built-in
+// control-flow utilities (branch, switch, jump, parallel) -- are
+// parsed by the single rule `call_stmt`. This avoids LALR conflicts
+// that would arise if the contextual lexer had to pick a rule before
+// seeing the function name. The AST transformer identifies builtins
+// by inspecting the func_name value.
+//
+// The output (right-paren) list for call_stmt is unified and covers:
+//   - Regular outputs: NAME or _  (wildcard)
+//   - Label refs:      `label`    (branch, jump, parallel)
+//   - Switch cases:    expr => `label`
+//   - Switch default:  _ => `label`
+//
+// Empty namespace bodies
+// ----------------------
+// A namespace with no body (e.g. "exit_loop:" with nothing after)
+// produces no _INDENT/_DEDENT pair. The grammar handles this with
+// two alternatives: one with an indented body and one without.
+// ============================================================
+
+%declare _INDENT _DEDENT
+
+// Bracket terminals -- the Indenter watches these to track paren depth
+LPAR  : "("
+RPAR  : ")"
+LSQB  : "["
+RSQB  : "]"
+LBRACE: "{"
+RBRACE: "}"
+
+// ============================================================
+// Entry point
+// ============================================================
+
+start : (_NEWLINE | statement)*
+
+// ============================================================
+// Statements
+// ============================================================
+
+// simple_stmt must be followed by one or more newlines (the terminator).
+// compound_stmt contains indented blocks; the _INDENT/_DEDENT encode
+// structure, so no extra newline suffix is needed here.
+statement : simple_stmt _NEWLINE+
+          | compound_stmt
+
+simple_stmt : assignment
+            | call_stmt
+            | meta_anno
+            | mode_decl
+
+compound_stmt : namespace_def
+              | subgraph_def
+              | dataflow_block
+
+// ============================================================
+// Variable Assignment
+// ============================================================
+
+assignment : NAME "=" expr
+
+// ============================================================
+// Expressions (right-hand side of assignments; call inputs)
+// ============================================================
+
+// ? prefix inlines single-child rules in the parse tree
+?expr : literal
+      | NAME -> identifier
+
+// ============================================================
+// Literals
+// ============================================================
+
+?literal : int_lit
+         | float_lit
+         | bool_lit
+         | none_lit
+         | string_lit
+         | list_lit
+         | dict_lit
+
+int_lit   : INT
+float_lit : FLOAT
+bool_lit  : TRUE | FALSE
+none_lit  : NONE
+string_lit: STRING
+
+// Multi-line list/dict: newlines inside LSQB..RSQB / LBRACE..RBRACE
+// are suppressed by the Indenter, so the grammar needs no NL tokens here.
+list_lit : LSQB RSQB
+         | LSQB expr ("," expr)* ","? RSQB
+
+dict_lit : LBRACE RBRACE
+         | LBRACE dict_pair ("," dict_pair)* ","? RBRACE
+
+dict_pair : expr ":" expr
+
+// Tuple literal -- only valid inside @meta values.
+// Minimum two elements (consistent with Python tuple syntax).
+meta_tuple : LPAR meta_val "," meta_val ("," meta_val)* ","? RPAR
+
+// ============================================================
+// Unified call statement
+// ============================================================
+// Syntax:  (input_args)func_name(output_args)
+//
+// Regular function call:
+//   ("./data.bin")load_data(x1, x2)
+//   (x1, x2, mode="fast")process(result, _)
+//   ()generate(value)
+//   (image_processing.blur)  -> dotted func_name
+//
+// Built-in utilities (distinguished by func_name at semantic level):
+//   (cond)branch(`true_label`, `false_label`)
+//   (val)switch(0=>`case_a`, 1=>`case_b`, _=>`default`)
+//   ()jump(`target`)
+//   ()parallel(`label1`, `label2`)
+//
+// The Indenter suppresses newlines inside LPAR..RPAR so multi-line calls
+// like:
+//   (
+//       x1, x2,
+//       mode="fast"
+//   )process(
+//       result
+//   )
+// are tokenised identically to single-line calls.
+
+call_stmt : LPAR call_in_list? RPAR func_name LPAR call_out_list? RPAR
+
+func_name : NAME ("." NAME)*
+
+// Input list: positional args then keyword args (order enforced semantically)
+call_in_list : call_in_item ("," call_in_item)* ","?
+
+?call_in_item : kwarg
+              | expr -> pos_arg
+
+kwarg : NAME "=" expr
+
+// Output list: unified to support all call forms in one rule
+call_out_list : call_out_item ("," call_out_item)* ","?
+
+// out_switch_default and out_switch_case must come before out_wildcard /
+// out_name so that "_ =>" is not eagerly reduced to out_wildcard.
+?call_out_item : out_switch_default
+               | out_switch_case
+               | out_label_ref
+               | out_name
+               | out_wildcard
+
+out_name          : NAME
+out_wildcard      : WILDCARD
+out_label_ref     : label_ref
+out_switch_case   : expr "=>" label_ref
+out_switch_default: WILDCARD "=>" label_ref
+
+// ============================================================
+// Label reference:  `identifier`
+// ============================================================
+
+label_ref : LABEL_REF
+
+// ============================================================
+// Namespace definition
+// ============================================================
+// Two alternatives:
+//   - Non-empty body: produces _INDENT ... _DEDENT pair
+//   - Empty body:     no _INDENT/_DEDENT (just the _NEWLINE that
+//                     separates it from the next statement)
+//
+// Example of empty namespace: "exit_loop:" with nothing after it
+// before the parent block's _DEDENT.
+
+namespace_def : NAME ":" _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT  -> namespace_body
+              | NAME ":" _NEWLINE                                              -> namespace_empty
+
+// ============================================================
+// Subgraph definition
+// ============================================================
+// @def (params)name(outputs):
+//     body
+//
+// Params may have default values. Outputs are plain identifiers.
+// Multi-line signatures work due to Indenter suppressing newlines
+// inside LPAR..RPAR.
+
+subgraph_def : "@def" LPAR param_list? RPAR NAME LPAR def_output_list? RPAR ":" _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT
+
+param_list : param ("," param)* ","?
+
+param : NAME "=" expr  -> param_with_default
+      | NAME           -> param_plain
+
+def_output_list : NAME ("," NAME)* ","?
+
+// ============================================================
+// Dataflow block
+// ============================================================
+// @dataflow:
+//     statements...
+//
+// Scoped block whose statements are reordered by the compiler
+// according to data dependencies before execution.
+
+dataflow_block : "@dataflow" ":" _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT
+
+// ============================================================
+// Metadata annotation
+// ============================================================
+// @meta key=value key2=value2 ...
+// All key=value pairs must be on the same line (no continuation).
+// Values can be literals, identifiers, or tuples (for position data).
+
+meta_anno : "@meta" meta_pair+
+
+meta_pair : NAME "=" meta_val
+
+// meta_val can be a tuple (e.g. pos=(120, 300)) in addition to
+// regular literals and identifier references.
+?meta_val : literal
+          | meta_tuple
+          | NAME -> identifier
+
+// ============================================================
+// Mode declaration
+// ============================================================
+// @mode dataflow
+// Must appear at the top of a file (enforced semantically).
+
+mode_decl : "@mode" NAME
+
+// ============================================================
+// Terminals
+// ============================================================
+
+// Reserved word terminals
+// Priority 2 ensures these are always preferred over NAME.
+TRUE     .2 : "True"
+FALSE    .2 : "False"
+NONE     .2 : "None"
+WILDCARD .2 : "_"
+
+// General identifier
+// NAME will also match the built-in utility names (branch, switch,
+// jump, parallel) since those are NOT reserved at the lexer level --
+// the grammar handles them purely as function names.
+NAME : /[a-zA-Z_][a-zA-Z0-9_]*/
+
+// Backtick-quoted label reference: `identifier`
+LABEL_REF : /`[a-zA-Z_][a-zA-Z0-9_]*`/
+
+// ---- Numeric literals ----
+// FLOAT has priority 1 so it wins over INT when a digit sequence is
+// followed by a dot or exponent.
+
+FLOAT .1 : /[+-]?(\d+\.\d*|\.\d+)([eE][+-]?\d+)?/
+         | /[+-]?\d+[eE][+-]?\d+/
+
+INT : /[+-]?0[xX][0-9a-fA-F]+/   // hex
+    | /[+-]?0[oO][0-7]+/          // octal
+    | /[+-]?0[bB][01]+/           // binary
+    | /[+-]?\d+/                  // decimal
+
+// ---- String literals ----
+// Triple-quoted variants are listed before single-quoted so the lexer
+// matches the longer token when the source starts with """ or '''.
+
+STRING : /"""(\\[\s\S]|[^\\"]|"(?!""))*"""/
+       | /'''(\\[\s\S]|[^\\']|'(?!''))*'''/
+       | /"(\\.|[^"\\])*"/
+       | /'(\\.|[^'\\])*'/
+
+// ---- Comments ----
+// # starts a comment; everything to end of line is consumed.
+// COMMENT is ignored so it never reaches the parser.
+COMMENT : /#[^\r\n]*/
+
+// ---- Newlines ----
+// _NEWLINE captures one or more consecutive blank / whitespace-only
+// lines including leading indentation of the *next* non-blank line.
+// The Indenter postlex inspects this trailing whitespace to determine
+// indent / dedent depth.
+_NEWLINE : /(\r?\n[\t ]*)+/
+
+// ============================================================
+// Ignored tokens
+// ============================================================
+
+%ignore /[ \t]+/   // horizontal whitespace between tokens
+%ignore COMMENT    // line comments (must come before _NEWLINE handling)

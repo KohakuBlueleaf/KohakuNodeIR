@@ -45,6 +45,7 @@ pub fn compile_dataflow(program: &Program) -> Result<Program, String> {
         return Ok(Program {
             body: sorted,
             mode: None,
+            typehints: program.typehints.clone(),
             line: program.line,
         });
     }
@@ -57,6 +58,7 @@ pub fn compile_dataflow(program: &Program) -> Result<Program, String> {
     Ok(Program {
         body: new_body,
         mode: program.mode.clone(),
+        typehints: program.typehints.clone(),
         line: program.line,
     })
 }
@@ -88,6 +90,8 @@ fn stmt_kind_name(stmt: &Statement) -> &'static str {
         Statement::Switch(_) => "Switch",
         Statement::Jump(_) => "Jump",
         Statement::Parallel(_) => "Parallel",
+        Statement::TypeHintBlock(_) => "TypeHintBlock",
+        Statement::TryExcept(_) => "TryExcept",
     }
 }
 
@@ -330,6 +334,7 @@ mod tests {
         Statement::Assignment(Assignment {
             target: target.into(),
             value,
+            type_annotation: None,
             metadata: None,
             line: None,
         })
@@ -391,6 +396,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -421,6 +427,7 @@ mod tests {
         let prog = Program {
             body: vec![assign("x", int_lit(1))],
             mode: None,
+            typehints: None,
             line: None,
         };
         let result = compile_dataflow(&prog).unwrap();
@@ -443,6 +450,7 @@ mod tests {
                 assign("y", int_lit(2)),
             ],
             mode: Some("dataflow".into()),
+            typehints: None,
             line: None,
         };
 
@@ -467,6 +475,7 @@ mod tests {
                 line: None,
             })],
             mode: Some("dataflow".into()),
+            typehints: None,
             line: None,
         };
         assert!(compile_dataflow(&prog).is_err());
@@ -488,6 +497,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         let result = compile_dataflow(&prog);
@@ -512,6 +522,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -546,6 +557,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -592,6 +604,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 

@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useGraphStore } from "../../stores/graph.js";
 import { useEditorStore } from "../../stores/editor.js";
 import { dataWirePath, controlWirePath } from "../../utils/bezier.js";
+import { dtypeColor } from "../../utils/dtypeColors.js";
 
 const graph = useGraphStore();
 const editor = useEditorStore();
@@ -23,10 +24,20 @@ const wires = computed(() => {
         ? controlWirePath(from.x, from.y, to.x, to.y)
         : dataWirePath(from.x, from.y, to.x, to.y);
 
+    let color = null;
+    if (conn.portType === "data") {
+      const fromNode = graph.nodes.get(conn.fromNodeId);
+      const fromPort = fromNode?.dataPorts.outputs.find(
+        (p) => p.id === conn.fromPortId,
+      );
+      color = dtypeColor(fromPort?.dataType ?? "any");
+    }
+
     result.push({
       id: conn.id,
       d,
       portType: conn.portType,
+      color,
       selected: editor.selectedConnectionIds.has(conn.id),
     });
   }
@@ -63,6 +74,7 @@ function onWireClick(e, wireId) {
             wire.portType === 'control' ? 'wire-control' : 'wire-data',
             wire.selected ? 'wire--selected' : '',
           ]"
+          :style="wire.portType === 'data' ? { stroke: wire.color } : {}"
           fill="none"
           style="pointer-events: none"
         />

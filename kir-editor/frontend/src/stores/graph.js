@@ -343,6 +343,19 @@ export const useGraphStore = defineStore("graph", () => {
       if (!fromIsOutput || !toIsInput) return false;
     }
 
+    // Type compatibility check for data connections
+    if (portType === "data") {
+      const fromPort = fromNode.dataPorts.outputs.find(
+        (p) => p.id === fromPortId,
+      );
+      const toPort = toNode.dataPorts.inputs.find((p) => p.id === toPortId);
+      const fromDtype = (fromPort?.dataType ?? "any").toLowerCase();
+      const toDtype = (toPort?.dataType ?? "any").toLowerCase();
+      if (fromDtype !== "any" && toDtype !== "any" && fromDtype !== toDtype) {
+        return false;
+      }
+    }
+
     // No duplicate connections
     for (const conn of connections.values()) {
       if (

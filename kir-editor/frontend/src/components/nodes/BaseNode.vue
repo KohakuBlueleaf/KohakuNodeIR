@@ -5,6 +5,7 @@ import { useGraphStore } from "../../stores/graph.js";
 import { useDrag } from "../../composables/useDrag.js";
 import { useResize } from "../../composables/useResize.js";
 import ControlPort from "../ports/ControlPort.vue";
+import { dtypeColor } from "../../utils/dtypeColors.js";
 
 const CTRL_ROW_H = 18;
 const HEADER_H = 32;
@@ -162,7 +163,10 @@ const nodeStyle = computed(() => ({
           data-port-dir="input"
           @mouseup.stop="onPortMouseUp(node.id, dataInputs[i - 1].id)"
         >
-          <div class="dp__dot dp__dot--data" />
+          <div
+            class="dp__dot dp__dot--data"
+            :style="{ background: dtypeColor(dataInputs[i - 1]?.dataType) }"
+          />
         </div>
         <div v-else class="dp__dot-spacer" />
 
@@ -224,7 +228,10 @@ const nodeStyle = computed(() => ({
             onPortMouseDown(node.id, dataOutputs[i - 1].id, 'data')
           "
         >
-          <div class="dp__dot dp__dot--data" />
+          <div
+            class="dp__dot dp__dot--data"
+            :style="{ background: dtypeColor(dataOutputs[i - 1]?.dataType) }"
+          />
         </div>
         <div v-else class="dp__dot-spacer" />
       </div>
@@ -392,7 +399,8 @@ const nodeStyle = computed(() => ({
     box-shadow 0.12s;
 }
 .dp__dot--data {
-  background: #89b4fa;
+  /* color set dynamically via inline style; fallback for any edge case */
+  background: #9399b2;
 }
 .dp:hover .dp__dot {
   background: #b4d0ff;

@@ -1077,6 +1077,7 @@ mod tests {
                         literal_type: "int".to_string(),
                         line: None,
                     }),
+                    type_annotation: None,
                     metadata: Some(meta_with_id("val_n1")),
                     line: None,
                 }),
@@ -1092,6 +1093,7 @@ mod tests {
                 }),
             ],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -1198,6 +1200,7 @@ mod tests {
                 }),
             ],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -1259,6 +1262,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 

@@ -43,13 +43,17 @@ statement = { simple_stmt | compound_stmt }
 
 simple_stmt = { (assignment | call_stmt | meta_anno | mode_decl) ~ NEWLINE+ }
 
-compound_stmt = { namespace_def | subgraph_def | dataflow_block }
+compound_stmt = { namespace_def | subgraph_def | dataflow_block | typehint_block | try_except_block }
 
 // ============================================================
 // Variable Assignment
 // ============================================================
 
-assignment = { NAME ~ "=" ~ expr }
+// typed_assignment must be tried before plain assignment (it has more tokens).
+assignment = { typed_assignment | plain_assignment }
+
+typed_assignment = { NAME ~ ":" ~ type_expr ~ "=" ~ expr }
+plain_assignment  = { NAME ~ "=" ~ expr }
 
 // ============================================================
 // Expressions
@@ -172,6 +176,48 @@ meta_val = { literal | meta_tuple | identifier }
 // @mode dataflow
 
 mode_decl = { "@mode" ~ NAME }
+
+// ============================================================
+// @typehint block
+// ============================================================
+// @typehint:
+//     (int, float)func_name(str)
+
+typehint_block = {
+    "@typehint" ~ ":" ~ NEWLINE
+    ~ INDENT ~ (blank_line | typehint_entry)+ ~ DEDENT
+}
+
+typehint_entry = { "(" ~ type_list? ~ ")" ~ func_name ~ "(" ~ type_list? ~ ")" ~ NEWLINE }
+
+type_list = { type_expr ~ ("," ~ type_expr)* ~ ","? }
+
+// Union must be tried before atom (longer match).
+type_expr = { type_union | type_atom }
+
+type_union = { type_atom ~ ("|" ~ type_atom)+ }
+
+// Optional must be tried before plain name (it has a trailing "?").
+type_atom = { type_optional | type_any | type_name }
+
+type_optional = { NAME ~ "?" }
+type_name     = { NAME }
+type_any      = { "_" }
+
+// ============================================================
+// @try / @except block
+// ============================================================
+// @try:
+//     statements...
+// @except:
+//     statements...
+
+try_except_block = {
+    "@try" ~ ":" ~ NEWLINE
+    ~ INDENT ~ (blank_line | statement)+ ~ DEDENT
+    ~ "@except" ~ ":" ~ NEWLINE
+    ~ INDENT ~ (blank_line | statement)+ ~ DEDENT
+}
 
 // ============================================================
 // Terminals

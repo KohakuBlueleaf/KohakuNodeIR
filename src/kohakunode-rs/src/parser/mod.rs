@@ -19,7 +19,7 @@ use pest_derive::Parser;
 use crate::ast::{
     Assignment, Branch, DataflowBlock, Expression, FuncCall, Identifier, Jump, KeywordArg, Literal,
     MetaAnnotation, ModeDecl, Namespace, OutputTarget, Parallel, Parameter, Program, Statement,
-    SubgraphDef, Switch, Value,
+    SubgraphDef, Switch, TryExcept, TypeExpr, TypeHintBlock, TypeHintEntry, Value,
 };
 
 // ---------------------------------------------------------------------------
@@ -84,14 +84,18 @@ fn build_program(mut pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Program,
         }
     }
 
-    // Extract mode from ModeDecl statements; collect the rest as body.
+    // Extract mode and typehints from top-level statements; collect the rest as body.
     let mut body: Vec<Statement> = Vec::new();
     let mut pending_meta: Vec<MetaAnnotation> = Vec::new();
+    let mut typehints: Vec<TypeHintEntry> = Vec::new();
 
     for raw in raw_stmts {
         match raw {
             RawStmt::Stmt(Statement::ModeDecl(md)) => {
                 mode = Some(md.mode.clone());
+            }
+            RawStmt::Stmt(Statement::TypeHintBlock(thb)) => {
+                typehints.extend(thb.entries);
             }
             RawStmt::Meta(ma) => {
                 pending_meta.push(ma);
@@ -105,9 +109,16 @@ fn build_program(mut pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Program,
         }
     }
 
+    let typehints_opt = if typehints.is_empty() {
+        None
+    } else {
+        Some(typehints)
+    };
+
     Ok(Program {
         body,
         mode,
+        typehints: typehints_opt,
         line: None,
     })
 }
@@ -166,6 +177,8 @@ fn build_compound_stmt(pair: pest::iterators::Pair<'_, Rule>) -> Result<RawStmt,
         Rule::namespace_def => Ok(RawStmt::Stmt(build_namespace_def(child)?)),
         Rule::subgraph_def => Ok(RawStmt::Stmt(build_subgraph_def(child)?)),
         Rule::dataflow_block => Ok(RawStmt::Stmt(build_dataflow_block(child)?)),
+        Rule::typehint_block => Ok(RawStmt::Stmt(build_typehint_block(child)?)),
+        Rule::try_except_block => Ok(RawStmt::Stmt(build_try_except(child)?)),
         r => Err(ParseError::Internal(format!(
             "unexpected compound_stmt rule: {r:?}"
         ))),
@@ -178,20 +191,65 @@ fn build_compound_stmt(pair: pest::iterators::Pair<'_, Rule>) -> Result<RawStmt,
 
 fn build_assignment(pair: pest::iterators::Pair<'_, Rule>) -> Result<Statement, ParseError> {
     let line = line_of(&pair);
+    // assignment = { typed_assignment | plain_assignment }
+    let child = pair
+        .into_inner()
+        .next()
+        .ok_or_else(|| ParseError::Internal("assignment: missing child".into()))?;
+
+    match child.as_rule() {
+        Rule::typed_assignment => build_typed_assignment(child, line),
+        Rule::plain_assignment => build_plain_assignment(child, line),
+        r => Err(ParseError::Internal(format!(
+            "unexpected assignment child rule: {r:?}"
+        ))),
+    }
+}
+
+fn build_plain_assignment(
+    pair: pest::iterators::Pair<'_, Rule>,
+    line: Option<usize>,
+) -> Result<Statement, ParseError> {
     let mut inner = pair.into_inner();
     let name_pair = inner
         .next()
-        .ok_or_else(|| ParseError::Internal("assignment: missing name".into()))?;
+        .ok_or_else(|| ParseError::Internal("plain_assignment: missing name".into()))?;
     let expr_pair = inner
         .next()
-        .ok_or_else(|| ParseError::Internal("assignment: missing expr".into()))?;
-
+        .ok_or_else(|| ParseError::Internal("plain_assignment: missing expr".into()))?;
     let target = name_pair.as_str().to_string();
     let value = build_expr(expr_pair)?;
-
     Ok(Statement::Assignment(Assignment {
         target,
         value,
+        type_annotation: None,
+        metadata: None,
+        line,
+    }))
+}
+
+fn build_typed_assignment(
+    pair: pest::iterators::Pair<'_, Rule>,
+    line: Option<usize>,
+) -> Result<Statement, ParseError> {
+    // typed_assignment = { NAME ~ ":" ~ type_expr ~ "=" ~ expr }
+    let mut inner = pair.into_inner();
+    let name_pair = inner
+        .next()
+        .ok_or_else(|| ParseError::Internal("typed_assignment: missing name".into()))?;
+    let type_pair = inner
+        .next()
+        .ok_or_else(|| ParseError::Internal("typed_assignment: missing type_expr".into()))?;
+    let expr_pair = inner
+        .next()
+        .ok_or_else(|| ParseError::Internal("typed_assignment: missing expr".into()))?;
+    let target = name_pair.as_str().to_string();
+    let type_annotation = build_type_expr(type_pair)?;
+    let value = build_expr(expr_pair)?;
+    Ok(Statement::Assignment(Assignment {
+        target,
+        value,
+        type_annotation: Some(type_annotation),
         metadata: None,
         line,
     }))
@@ -784,6 +842,198 @@ fn expr_to_value(expr: Expression) -> Value {
 }
 
 // ---------------------------------------------------------------------------
+// @typehint block
+// ---------------------------------------------------------------------------
+
+fn build_typehint_block(pair: pest::iterators::Pair<'_, Rule>) -> Result<Statement, ParseError> {
+    let line = line_of(&pair);
+    let mut entries: Vec<TypeHintEntry> = Vec::new();
+    for child in pair.into_inner() {
+        match child.as_rule() {
+            Rule::typehint_entry => entries.push(build_typehint_entry(child)?),
+            Rule::INDENT | Rule::DEDENT => {}
+            _ => {}
+        }
+    }
+    Ok(Statement::TypeHintBlock(TypeHintBlock { entries, line }))
+}
+
+fn build_typehint_entry(
+    pair: pest::iterators::Pair<'_, Rule>,
+) -> Result<TypeHintEntry, ParseError> {
+    // typehint_entry = { "(" ~ type_list? ~ ")" ~ func_name ~ "(" ~ type_list? ~ ")" ~ NEWLINE }
+    let line = line_of(&pair);
+    let mut input_types: Vec<TypeExpr> = Vec::new();
+    let mut func_name_str = String::new();
+    let mut output_types: Vec<TypeExpr> = Vec::new();
+    let mut seen_func = false;
+
+    for child in pair.into_inner() {
+        match child.as_rule() {
+            Rule::type_list => {
+                let types = build_type_list(child)?;
+                if !seen_func {
+                    input_types = types;
+                } else {
+                    output_types = types;
+                }
+            }
+            Rule::func_name => {
+                func_name_str = build_func_name(child);
+                seen_func = true;
+            }
+            _ => {}
+        }
+    }
+
+    Ok(TypeHintEntry {
+        func_name: func_name_str,
+        input_types,
+        output_types,
+        line,
+    })
+}
+
+fn build_type_list(pair: pest::iterators::Pair<'_, Rule>) -> Result<Vec<TypeExpr>, ParseError> {
+    // type_list = { type_expr ~ ("," ~ type_expr)* ~ ","? }
+    pair.into_inner()
+        .filter(|p| p.as_rule() == Rule::type_expr)
+        .map(build_type_expr)
+        .collect()
+}
+
+fn build_type_expr(pair: pest::iterators::Pair<'_, Rule>) -> Result<TypeExpr, ParseError> {
+    // type_expr = { type_union | type_atom }
+    let line = line_of(&pair);
+    let child = pair
+        .into_inner()
+        .next()
+        .ok_or_else(|| ParseError::Internal("type_expr: empty".into()))?;
+
+    match child.as_rule() {
+        Rule::type_union => {
+            // type_union = { type_atom ~ ("|" ~ type_atom)+ }
+            let atoms: Result<Vec<TypeExpr>, ParseError> = child
+                .into_inner()
+                .filter(|p| p.as_rule() == Rule::type_atom)
+                .map(build_type_atom)
+                .collect();
+            let atoms = atoms?;
+            Ok(TypeExpr {
+                name: atoms.iter().map(|a| a.name.as_str()).collect::<Vec<_>>().join("|"),
+                is_optional: false,
+                union_of: Some(atoms),
+                line,
+            })
+        }
+        Rule::type_atom => build_type_atom(child),
+        r => Err(ParseError::Internal(format!(
+            "unexpected type_expr child: {r:?}"
+        ))),
+    }
+}
+
+fn build_type_atom(pair: pest::iterators::Pair<'_, Rule>) -> Result<TypeExpr, ParseError> {
+    // type_atom = { type_optional | type_any | type_name }
+    let line = line_of(&pair);
+    let child = pair
+        .into_inner()
+        .next()
+        .ok_or_else(|| ParseError::Internal("type_atom: empty".into()))?;
+
+    match child.as_rule() {
+        Rule::type_optional => {
+            // type_optional = { NAME ~ "?" }
+            let name = child
+                .into_inner()
+                .next()
+                .ok_or_else(|| ParseError::Internal("type_optional: missing NAME".into()))?
+                .as_str()
+                .to_string();
+            Ok(TypeExpr {
+                name,
+                is_optional: true,
+                union_of: None,
+                line,
+            })
+        }
+        Rule::type_any => Ok(TypeExpr {
+            name: "_".to_string(),
+            is_optional: false,
+            union_of: None,
+            line,
+        }),
+        Rule::type_name => {
+            let name = child
+                .into_inner()
+                .next()
+                .ok_or_else(|| ParseError::Internal("type_name: missing NAME".into()))?
+                .as_str()
+                .to_string();
+            Ok(TypeExpr {
+                name,
+                is_optional: false,
+                union_of: None,
+                line,
+            })
+        }
+        r => Err(ParseError::Internal(format!(
+            "unexpected type_atom child: {r:?}"
+        ))),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// @try / @except block
+// ---------------------------------------------------------------------------
+
+fn build_try_except(pair: pest::iterators::Pair<'_, Rule>) -> Result<Statement, ParseError> {
+    // try_except_block = {
+    //     "@try" ~ ":" ~ NEWLINE
+    //     ~ INDENT ~ (blank_line | statement)+ ~ DEDENT
+    //     ~ "@except" ~ ":" ~ NEWLINE
+    //     ~ INDENT ~ (blank_line | statement)+ ~ DEDENT
+    // }
+    // After DEDENT there is no structural marker separating try/except children,
+    // so we collect two runs of statements separated by a DEDENT boundary.
+    let line = line_of(&pair);
+    let mut try_raw: Vec<RawStmt> = Vec::new();
+    let mut except_raw: Vec<RawStmt> = Vec::new();
+    let mut in_except = false;
+
+    for child in pair.into_inner() {
+        match child.as_rule() {
+            Rule::DEDENT => {
+                // First DEDENT ends the try body; switch to except.
+                if !in_except {
+                    in_except = true;
+                }
+            }
+            Rule::statement => {
+                let raw = build_statement(child)?;
+                if in_except {
+                    except_raw.push(raw);
+                } else {
+                    try_raw.push(raw);
+                }
+            }
+            Rule::INDENT => {}
+            _ => {}
+        }
+    }
+
+    let try_body = process_body(try_raw);
+    let except_body = process_body(except_raw);
+
+    Ok(Statement::TryExcept(TryExcept {
+        try_body,
+        except_body,
+        metadata: None,
+        line,
+    }))
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -1251,5 +1501,302 @@ mod tests {
         let path = kir_examples_dir().join("mixed_mode.kir");
         let src = fs::read_to_string(&path).unwrap_or_else(|_| panic!("cannot read {path:?}"));
         parse(&src).unwrap_or_else(|e| panic!("mixed_mode.kir failed: {e}"));
+    }
+
+    // -----------------------------------------------------------------------
+    // @typehint block
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_parse_typehint_block_simple() {
+        let src = "@typehint:\n    (int, float)add(float)\n";
+        let prog = parse(src).unwrap();
+        // TypeHintBlock entries are extracted into Program.typehints.
+        let hints = prog.typehints.as_ref().expect("expected typehints");
+        assert_eq!(hints.len(), 1);
+        assert_eq!(hints[0].func_name, "add");
+        assert_eq!(hints[0].input_types.len(), 2);
+        assert_eq!(hints[0].input_types[0].name, "int");
+        assert_eq!(hints[0].input_types[1].name, "float");
+        assert_eq!(hints[0].output_types.len(), 1);
+        assert_eq!(hints[0].output_types[0].name, "float");
+    }
+
+    #[test]
+    fn test_parse_typehint_block_optional_type() {
+        let src = "@typehint:\n    (str?)encode(bytes)\n";
+        let prog = parse(src).unwrap();
+        let hints = prog.typehints.as_ref().expect("expected typehints");
+        assert_eq!(hints[0].input_types[0].name, "str");
+        assert!(hints[0].input_types[0].is_optional);
+    }
+
+    #[test]
+    fn test_parse_typehint_block_union_type() {
+        let src = "@typehint:\n    (int|float)sqrt(float)\n";
+        let prog = parse(src).unwrap();
+        let hints = prog.typehints.as_ref().expect("expected typehints");
+        let inp = &hints[0].input_types[0];
+        assert!(inp.union_of.is_some());
+        let members = inp.union_of.as_ref().unwrap();
+        assert_eq!(members.len(), 2);
+        assert_eq!(members[0].name, "int");
+        assert_eq!(members[1].name, "float");
+    }
+
+    #[test]
+    fn test_parse_typehint_block_any_type() {
+        let src = "@typehint:\n    (_)identity(_)\n";
+        let prog = parse(src).unwrap();
+        let hints = prog.typehints.as_ref().expect("expected typehints");
+        assert_eq!(hints[0].input_types[0].name, "_");
+        assert_eq!(hints[0].output_types[0].name, "_");
+    }
+
+    #[test]
+    fn test_parse_typehint_block_multiple_entries() {
+        let src = "@typehint:\n    (int)negate(int)\n    (str)upper(str)\n";
+        let prog = parse(src).unwrap();
+        let hints = prog.typehints.as_ref().expect("expected typehints");
+        assert_eq!(hints.len(), 2);
+        assert_eq!(hints[0].func_name, "negate");
+        assert_eq!(hints[1].func_name, "upper");
+    }
+
+    #[test]
+    fn test_parse_typehint_block_not_in_body() {
+        // TypeHintBlock statements should not appear in the Program body.
+        let src = "@typehint:\n    (int)negate(int)\nx = 1\n";
+        let prog = parse(src).unwrap();
+        assert_eq!(prog.body.len(), 1, "typehint should be extracted from body");
+        assert!(prog.typehints.is_some());
+    }
+
+    // -----------------------------------------------------------------------
+    // Typed assignment
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_parse_typed_assignment_simple() {
+        let src = "x: int = 42\n";
+        let prog = parse(src).unwrap();
+        match &prog.body[0] {
+            Statement::Assignment(a) => {
+                assert_eq!(a.target, "x");
+                let ann = a.type_annotation.as_ref().expect("expected type_annotation");
+                assert_eq!(ann.name, "int");
+                assert!(!ann.is_optional);
+            }
+            other => panic!("expected Assignment, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_parse_typed_assignment_optional() {
+        let src = "x: str? = None\n";
+        let prog = parse(src).unwrap();
+        match &prog.body[0] {
+            Statement::Assignment(a) => {
+                let ann = a.type_annotation.as_ref().expect("expected type_annotation");
+                assert_eq!(ann.name, "str");
+                assert!(ann.is_optional);
+            }
+            other => panic!("expected Assignment, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_parse_typed_assignment_union() {
+        let src = "x: int|float = 1\n";
+        let prog = parse(src).unwrap();
+        match &prog.body[0] {
+            Statement::Assignment(a) => {
+                let ann = a.type_annotation.as_ref().expect("expected type_annotation");
+                assert!(ann.union_of.is_some());
+                let members = ann.union_of.as_ref().unwrap();
+                assert_eq!(members[0].name, "int");
+                assert_eq!(members[1].name, "float");
+            }
+            other => panic!("expected Assignment, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_parse_plain_assignment_no_annotation() {
+        // Plain assignments must have no type_annotation.
+        let src = "x = 99\n";
+        let prog = parse(src).unwrap();
+        match &prog.body[0] {
+            Statement::Assignment(a) => {
+                assert!(a.type_annotation.is_none());
+            }
+            other => panic!("expected Assignment, got {other:?}"),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // @try/@except block
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_parse_try_except_basic() {
+        let src = "@try:\n    x = 1\n@except:\n    x = 0\n";
+        let prog = parse(src).unwrap();
+        assert_eq!(prog.body.len(), 1);
+        match &prog.body[0] {
+            Statement::TryExcept(te) => {
+                assert_eq!(te.try_body.len(), 1);
+                assert_eq!(te.except_body.len(), 1);
+                match &te.try_body[0] {
+                    Statement::Assignment(a) => assert_eq!(a.target, "x"),
+                    other => panic!("expected Assignment in try_body, got {other:?}"),
+                }
+                match &te.except_body[0] {
+                    Statement::Assignment(a) => assert_eq!(a.target, "x"),
+                    other => panic!("expected Assignment in except_body, got {other:?}"),
+                }
+            }
+            other => panic!("expected TryExcept, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_parse_try_except_with_func_calls() {
+        let src = "@try:\n    (x)risky(y)\n@except:\n    (x)safe(y)\n";
+        let prog = parse(src).unwrap();
+        match &prog.body[0] {
+            Statement::TryExcept(te) => {
+                assert_eq!(te.try_body.len(), 1);
+                assert_eq!(te.except_body.len(), 1);
+                match &te.try_body[0] {
+                    Statement::FuncCall(fc) => assert_eq!(fc.func_name, "risky"),
+                    other => panic!("expected FuncCall in try_body, got {other:?}"),
+                }
+                match &te.except_body[0] {
+                    Statement::FuncCall(fc) => assert_eq!(fc.func_name, "safe"),
+                    other => panic!("expected FuncCall in except_body, got {other:?}"),
+                }
+            }
+            other => panic!("expected TryExcept, got {other:?}"),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Serde roundtrip for new types
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_typehint_entry_serde_roundtrip() {
+        use crate::ast::{TypeExpr, TypeHintEntry};
+
+        let entry = TypeHintEntry {
+            func_name: "add".into(),
+            input_types: vec![
+                TypeExpr {
+                    name: "int".into(),
+                    is_optional: false,
+                    union_of: None,
+                    line: None,
+                },
+                TypeExpr {
+                    name: "float".into(),
+                    is_optional: true,
+                    union_of: None,
+                    line: None,
+                },
+            ],
+            output_types: vec![TypeExpr {
+                name: "float".into(),
+                is_optional: false,
+                union_of: None,
+                line: None,
+            }],
+            line: Some(1),
+        };
+        let json = serde_json::to_string(&entry).unwrap();
+        let parsed: TypeHintEntry = serde_json::from_str(&json).unwrap();
+        assert_eq!(entry, parsed);
+    }
+
+    #[test]
+    fn test_type_expr_union_serde_roundtrip() {
+        use crate::ast::TypeExpr;
+
+        let te = TypeExpr {
+            name: "int|str".into(),
+            is_optional: false,
+            union_of: Some(vec![
+                TypeExpr {
+                    name: "int".into(),
+                    is_optional: false,
+                    union_of: None,
+                    line: None,
+                },
+                TypeExpr {
+                    name: "str".into(),
+                    is_optional: false,
+                    union_of: None,
+                    line: None,
+                },
+            ]),
+            line: None,
+        };
+        let json = serde_json::to_string(&te).unwrap();
+        let parsed: TypeExpr = serde_json::from_str(&json).unwrap();
+        assert_eq!(te, parsed);
+    }
+
+    #[test]
+    fn test_try_except_serde_roundtrip() {
+        use crate::ast::{Assignment, Expression, Identifier, TryExcept};
+
+        let te = TryExcept {
+            try_body: vec![Statement::Assignment(Assignment {
+                target: "x".into(),
+                value: Expression::Identifier(Identifier {
+                    name: "y".into(),
+                    line: None,
+                }),
+                type_annotation: None,
+                metadata: None,
+                line: None,
+            })],
+            except_body: vec![],
+            metadata: None,
+            line: Some(5),
+        };
+        let json = serde_json::to_string(&te).unwrap();
+        let parsed: TryExcept = serde_json::from_str(&json).unwrap();
+        assert_eq!(te, parsed);
+    }
+
+    #[test]
+    fn test_program_typehints_serde_roundtrip() {
+        use crate::ast::{TypeExpr, TypeHintEntry};
+
+        let prog = Program {
+            body: vec![],
+            mode: None,
+            typehints: Some(vec![TypeHintEntry {
+                func_name: "negate".into(),
+                input_types: vec![TypeExpr {
+                    name: "int".into(),
+                    is_optional: false,
+                    union_of: None,
+                    line: None,
+                }],
+                output_types: vec![TypeExpr {
+                    name: "int".into(),
+                    is_optional: false,
+                    union_of: None,
+                    line: None,
+                }],
+                line: None,
+            }]),
+            line: None,
+        };
+        let json = serde_json::to_string(&prog).unwrap();
+        let parsed: Program = serde_json::from_str(&json).unwrap();
+        assert_eq!(prog, parsed);
     }
 }

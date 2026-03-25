@@ -357,8 +357,13 @@ impl VariableAnalyzer {
             Statement::Switch(s) => {
                 self.check_expression_input(&s.value, defined, errors, s.line);
             }
-            // Jump and Parallel have no variable inputs.
-            Statement::Jump(_) | Statement::Parallel(_) | Statement::ModeDecl(_) => {}
+            // Jump, Parallel, ModeDecl, TypeHintBlock, and TryExcept have no variable
+            // inputs (TryExcept bodies are not analysed individually here).
+            Statement::Jump(_)
+            | Statement::Parallel(_)
+            | Statement::ModeDecl(_)
+            | Statement::TypeHintBlock(_)
+            | Statement::TryExcept(_) => {}
         }
     }
 
@@ -484,6 +489,7 @@ mod tests {
                 name: value.into(),
                 line: None,
             }),
+            type_annotation: None,
             metadata: None,
             line,
         })
@@ -497,6 +503,7 @@ mod tests {
                 literal_type: "int".into(),
                 line: None,
             }),
+            type_annotation: None,
             metadata: None,
             line,
         })
@@ -506,6 +513,7 @@ mod tests {
         Program {
             body,
             mode: None,
+            typehints: None,
             line: None,
         }
     }

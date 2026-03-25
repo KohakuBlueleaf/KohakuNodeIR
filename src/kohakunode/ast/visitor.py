@@ -18,6 +18,10 @@ from kohakunode.ast.nodes import (
     Program,
     SubgraphDef,
     Switch,
+    TryExcept,
+    TypeExpr,
+    TypeHintBlock,
+    TypeHintEntry,
     Wildcard,
 )
 
@@ -146,6 +150,18 @@ class ASTVisitor:
     def visit_Parallel(self, node: Parallel) -> None:
         self.visit_children(node)
 
+    def visit_TypeExpr(self, node: TypeExpr) -> None:
+        self.visit_children(node)
+
+    def visit_TypeHintEntry(self, node: TypeHintEntry) -> None:
+        self.visit_children(node)
+
+    def visit_TypeHintBlock(self, node: TypeHintBlock) -> None:
+        self.visit_children(node)
+
+    def visit_TryExcept(self, node: TryExcept) -> None:
+        self.visit_children(node)
+
 
 class ASTTransformer:
     """AST transformer using the *visit_ClassName* dispatch pattern.
@@ -251,6 +267,18 @@ class ASTTransformer:
         return self.generic_visit(node)
 
     def visit_Parallel(self, node: Parallel) -> Parallel:
+        return self.generic_visit(node)
+
+    def visit_TypeExpr(self, node: TypeExpr) -> TypeExpr:
+        return self.generic_visit(node)
+
+    def visit_TypeHintEntry(self, node: TypeHintEntry) -> TypeHintEntry:
+        return self.generic_visit(node)
+
+    def visit_TypeHintBlock(self, node: TypeHintBlock) -> TypeHintBlock:
+        return self.generic_visit(node)
+
+    def visit_TryExcept(self, node: TryExcept) -> TryExcept:
         return self.generic_visit(node)
 
     # ------------------------------------------------------------------

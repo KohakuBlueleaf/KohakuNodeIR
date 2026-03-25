@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, inject } from "vue";
+import { dtypeColor } from "../../utils/dtypeColors.js";
 
 const props = defineProps({
   port: { type: Object, required: true },
@@ -67,7 +68,10 @@ function onMouseUp(e) {
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <div class="data-port__dot" />
+    <div
+      class="data-port__dot"
+      :style="{ background: dtypeColor(port.dataType) }"
+    />
     <span class="data-port__label">{{ port.name }}</span>
   </div>
 </template>
@@ -103,7 +107,8 @@ function onMouseUp(e) {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #89b4fa;
+  /* color set dynamically via inline style; fallback for any edge case */
+  background: #9399b2;
   border: 1.5px solid #1e1e2e;
   transition:
     background 0.12s,

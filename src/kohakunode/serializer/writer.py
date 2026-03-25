@@ -20,6 +20,10 @@ from kohakunode.ast.nodes import (
     Statement,
     SubgraphDef,
     Switch,
+    TryExcept,
+    TypeExpr,
+    TypeHintBlock,
+    TypeHintEntry,
     Wildcard,
 )
 
@@ -45,6 +49,9 @@ class Writer:
         if program.mode is not None:
             lines.append(self._write_mode_decl(ModeDecl(mode=program.mode)))
             lines.append("")
+
+        if program.typehints:
+            lines.extend(self._write_typehint_block_from_entries(program.typehints))
 
         for stmt in program.body:
             lines.extend(self._write_statement(stmt, indent_level=0))
@@ -82,6 +89,10 @@ class Writer:
                 return self._write_subgraph_def(stmt, indent_level)
             case DataflowBlock():
                 return self._write_dataflow_block(stmt, indent_level)
+            case TypeHintBlock():
+                return self._write_typehint_block(stmt, indent_level)
+            case TryExcept():
+                return self._write_try_except(stmt, indent_level)
             case _:
                 raise TypeError(f"Unknown statement type: {type(stmt)!r}")
 
@@ -90,15 +101,70 @@ class Writer:
     # ------------------------------------------------------------------
 
     def _write_assignment(self, node: Assignment, indent_level: int) -> list[str]:
-        """Return metadata lines (if any) followed by ``"    target = value"``."""
+        """Return metadata lines (if any) followed by the assignment line."""
         lines: list[str] = []
         prefix = self._indent_str * indent_level
         if node.metadata:
             for meta in node.metadata:
                 lines.append(self._write_meta(meta, indent_level))
         value_str = self._write_expression(node.value)
-        lines.append(f"{prefix}{node.target} = {value_str}")
+        if node.type_annotation is not None:
+            type_str = self._write_type_expr(node.type_annotation)
+            lines.append(f"{prefix}{node.target}: {type_str} = {value_str}")
+        else:
+            lines.append(f"{prefix}{node.target} = {value_str}")
         return lines
+
+    def _write_typehint_block(
+        self, node: TypeHintBlock, indent_level: int
+    ) -> list[str]:
+        """Return ``"@typehint:"`` line plus indented entries."""
+        prefix = self._indent_str * indent_level
+        lines: list[str] = [f"{prefix}@typehint:"]
+        for entry in node.entries:
+            lines.extend(self._write_typehint_entry(entry, indent_level + 1))
+        return lines
+
+    def _write_typehint_block_from_entries(
+        self, entries: list[TypeHintEntry]
+    ) -> list[str]:
+        """Write a @typehint: block directly from a list of entries (Program.typehints)."""
+        lines: list[str] = ["@typehint:"]
+        for entry in entries:
+            lines.extend(self._write_typehint_entry(entry, indent_level=1))
+        lines.append("")
+        return lines
+
+    def _write_typehint_entry(
+        self, entry: TypeHintEntry, indent_level: int
+    ) -> list[str]:
+        """Return one typehint entry line, e.g. ``"    (int, int)add(int)"``."""
+        prefix = self._indent_str * indent_level
+        inputs_str = ", ".join(self._write_type_expr(t) for t in entry.input_types)
+        outputs_str = ", ".join(self._write_type_expr(t) for t in entry.output_types)
+        return [f"{prefix}({inputs_str}){entry.func_name}({outputs_str})"]
+
+    def _write_try_except(self, node: TryExcept, indent_level: int) -> list[str]:
+        """Return ``"@try:"`` block followed by ``"@except:"`` block."""
+        prefix = self._indent_str * indent_level
+        lines: list[str] = []
+
+        lines.extend(self._write_meta_lines(node.metadata, indent_level))
+        lines.append(f"{prefix}@try:")
+        for stmt in node.try_body:
+            lines.extend(self._write_statement(stmt, indent_level + 1))
+        lines.append(f"{prefix}@except:")
+        for stmt in node.except_body:
+            lines.extend(self._write_statement(stmt, indent_level + 1))
+        return lines
+
+    def _write_type_expr(self, expr: TypeExpr) -> str:
+        """Serialize a TypeExpr to its .kir text form."""
+        if expr.union_of is not None:
+            return " | ".join(self._write_type_expr(t) for t in expr.union_of)
+        if expr.is_optional:
+            return f"{expr.name}?"
+        return expr.name
 
     def _write_func_call(self, node: FuncCall, indent_level: int) -> list[str]:
         """Return metadata lines followed by ``"    (inputs)func_name(outputs)"``."""

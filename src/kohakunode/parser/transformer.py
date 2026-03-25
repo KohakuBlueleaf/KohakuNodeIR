@@ -23,6 +23,10 @@ from kohakunode.ast.nodes import (
     Statement,
     SubgraphDef,
     Switch,
+    TryExcept,
+    TypeExpr,
+    TypeHintBlock,
+    TypeHintEntry,
     Wildcard,
 )
 
@@ -358,11 +362,110 @@ class KirTransformer(lark.Transformer):
     # Assignment                                                           #
     # ------------------------------------------------------------------ #
 
-    def assignment(self, children: list) -> Assignment:
+    def plain_assignment(self, children: list) -> Assignment:
         name_token = children[0]
         value = children[1]
         line = _get_line(name_token)
         return Assignment(target=str(name_token), value=value, line=line)
+
+    def typed_assignment(self, children: list) -> Assignment:
+        name_token = children[0]
+        type_expr = children[1]
+        value = children[2]
+        line = _get_line(name_token)
+        return Assignment(
+            target=str(name_token),
+            value=value,
+            type_annotation=type_expr,
+            line=line,
+        )
+
+    # ------------------------------------------------------------------ #
+    # Type expressions                                                     #
+    # ------------------------------------------------------------------ #
+
+    def type_name(self, children: list) -> TypeExpr:
+        token = children[0]
+        line = _get_line(token)
+        return TypeExpr(name=str(token), line=line)
+
+    def type_any(self, children: list) -> TypeExpr:
+        line = _get_line(children[0]) if children else None
+        return TypeExpr(name="Any", line=line)
+
+    def type_optional(self, children: list) -> TypeExpr:
+        token = children[0]
+        line = _get_line(token)
+        return TypeExpr(name=str(token), is_optional=True, line=line)
+
+    def type_union(self, children: list) -> TypeExpr:
+        # When there is only one child, the grammar's `| type_atom` alternative
+        # is used and lark aliases it directly (no type_union tree node).
+        # This method is only called for the multi-atom case.
+        line = children[0].line if children else None
+        members = [c for c in children if isinstance(c, TypeExpr)]
+        return TypeExpr(name="Any", union_of=members, line=line)
+
+    def type_list(self, children: list) -> list:
+        return [c for c in children if isinstance(c, TypeExpr)]
+
+    # ------------------------------------------------------------------ #
+    # TypeHint block                                                       #
+    # ------------------------------------------------------------------ #
+
+    def typehint_entry(self, children: list) -> TypeHintEntry:
+        # Grammar: LPAR type_list? RPAR NAME LPAR type_list? RPAR _NEWLINE
+        # After transformation: bracket tokens + lists + NAME token
+        name_token: lark.Token | None = None
+        lists: list[list] = []
+        for child in children:
+            if isinstance(child, lark.Token) and str(child) not in {"(", ")"}:
+                name_token = child
+            elif isinstance(child, list):
+                lists.append(child)
+
+        input_types = lists[0] if len(lists) >= 1 else []
+        output_types = lists[1] if len(lists) >= 2 else []
+        func_name = str(name_token) if name_token else ""
+        line = _get_line(name_token) if name_token else None
+        return TypeHintEntry(
+            func_name=func_name,
+            input_types=input_types,
+            output_types=output_types,
+            line=line,
+        )
+
+    def typehint_block(self, children: list) -> TypeHintBlock:
+        entries = [c for c in children if isinstance(c, TypeHintEntry)]
+        line = _get_line(children[0]) if children else None
+        return TypeHintBlock(entries=entries, line=line)
+
+    # ------------------------------------------------------------------ #
+    # @try/@except block                                                   #
+    # ------------------------------------------------------------------ #
+
+    def try_body(self, children: list) -> list:
+        """Return the list of statements from the @try block."""
+        raw = [c for c in children if not isinstance(c, lark.Token) and c is not None]
+        return _process_body(raw)
+
+    def try_except_block(self, children: list) -> TryExcept:
+        # children[0] is the result of try_body (a list of Statements).
+        # The remaining non-Token, non-None children are the @except statements.
+        try_body_stmts: list[Statement] = []
+        except_raw: list[Statement] = []
+
+        for child in children:
+            if child is None or isinstance(child, lark.Token):
+                continue
+            if isinstance(child, list):
+                # This is the result from try_body()
+                try_body_stmts = child
+            elif isinstance(child, Statement):
+                except_raw.append(child)
+
+        except_body = _process_body(except_raw)
+        return TryExcept(try_body=try_body_stmts, except_body=except_body)
 
     # ------------------------------------------------------------------ #
     # Mode declaration                                                     #
@@ -460,8 +563,10 @@ class KirTransformer(lark.Transformer):
     # ------------------------------------------------------------------ #
 
     def start(self, children: list) -> Program:
-        # Extract ModeDecl if present; pass the rest through _process_body.
+        # Extract ModeDecl and TypeHintBlock if present; pass the rest through
+        # _process_body.
         mode: str | None = None
+        typehints: list[TypeHintEntry] | None = None
         raw_stmts: list = []
 
         for child in children:
@@ -469,8 +574,12 @@ class KirTransformer(lark.Transformer):
                 continue
             if isinstance(child, ModeDecl):
                 mode = child.mode
+            elif isinstance(child, TypeHintBlock):
+                if typehints is None:
+                    typehints = []
+                typehints.extend(child.entries)
             else:
                 raw_stmts.append(child)
 
         body = _process_body(raw_stmts)
-        return Program(body=body, mode=mode)
+        return Program(body=body, mode=mode, typehints=typehints)

@@ -76,12 +76,15 @@ simple_stmt : assignment
 compound_stmt : namespace_def
               | subgraph_def
               | dataflow_block
+              | typehint_block
+              | try_except_block
 
 // ============================================================
 // Variable Assignment
 // ============================================================
 
-assignment : NAME "=" expr
+assignment : NAME ":" type_expr "=" expr  -> typed_assignment
+           | NAME "=" expr               -> plain_assignment
 
 // ============================================================
 // Expressions (right-hand side of assignments; call inputs)
@@ -217,6 +220,36 @@ param : NAME "=" expr  -> param_with_default
       | NAME           -> param_plain
 
 def_output_list : NAME ("," NAME)* ","?
+
+// ============================================================
+// TypeHint block
+// ============================================================
+// @typehint:
+//     (int, int)add(int)
+//     (str)to_int(int)
+
+typehint_block : "@typehint" ":" _NEWLINE _INDENT (_NEWLINE | typehint_entry)+ _DEDENT
+
+typehint_entry : LPAR type_list? RPAR NAME LPAR type_list? RPAR _NEWLINE
+
+type_list : type_expr ("," type_expr)* ","?
+
+?type_expr : type_union
+
+?type_union : type_atom ("|" type_atom)+  -> type_union
+            | type_atom
+
+?type_atom : NAME "?"  -> type_optional
+           | WILDCARD  -> type_any
+           | NAME      -> type_name
+
+// ============================================================
+// @try/@except block
+// ============================================================
+
+try_except_block : try_body "@except" ":" _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT
+
+try_body : "@try" ":" _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT
 
 // ============================================================
 // Dataflow block

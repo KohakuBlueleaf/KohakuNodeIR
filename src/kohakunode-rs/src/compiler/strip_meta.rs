@@ -4,7 +4,7 @@
 
 use crate::ast::{
     Assignment, Branch, FuncCall, Jump, Namespace, Parallel, Program, Statement, SubgraphDef,
-    Switch,
+    Switch, TryExcept,
 };
 
 /// Remove all `@meta` annotations from every statement in *program*.
@@ -16,6 +16,7 @@ pub fn strip_meta(program: &Program) -> Program {
     Program {
         body: strip_body(&program.body),
         mode: program.mode.clone(),
+        typehints: program.typehints.clone(),
         line: program.line,
     }
 }
@@ -29,6 +30,7 @@ fn strip_stmt(stmt: &Statement) -> Statement {
         Statement::Assignment(a) => Statement::Assignment(Assignment {
             target: a.target.clone(),
             value: a.value.clone(),
+            type_annotation: a.type_annotation.clone(),
             metadata: None,
             line: a.line,
         }),
@@ -75,7 +77,13 @@ fn strip_stmt(stmt: &Statement) -> Statement {
             body: strip_body(&sg.body),
             line: sg.line,
         }),
-        // ModeDecl and DataflowBlock carry no metadata — pass through unchanged.
+        Statement::TryExcept(t) => Statement::TryExcept(TryExcept {
+            try_body: strip_body(&t.try_body),
+            except_body: strip_body(&t.except_body),
+            metadata: None,
+            line: t.line,
+        }),
+        // ModeDecl, DataflowBlock, TypeHintBlock carry no metadata — pass through unchanged.
         other => other.clone(),
     }
 }
@@ -105,10 +113,12 @@ mod tests {
                     name: "y".into(),
                     line: None,
                 }),
+                type_annotation: None,
                 metadata: Some(dummy_meta()),
                 line: Some(1),
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -134,6 +144,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -158,6 +169,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -177,6 +189,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -196,6 +209,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -221,6 +235,7 @@ mod tests {
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
 
@@ -239,6 +254,7 @@ mod tests {
         let prog = Program {
             body: vec![],
             mode: Some("dataflow".into()),
+            typehints: None,
             line: None,
         };
         let result = strip_meta(&prog);
@@ -254,10 +270,12 @@ mod tests {
                     name: "w".into(),
                     line: None,
                 }),
+                type_annotation: None,
                 metadata: None,
                 line: None,
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         let result = strip_meta(&prog);

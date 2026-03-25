@@ -248,6 +248,7 @@ impl KirGraphCompiler {
                 stmts.push(Statement::Assignment(Assignment {
                     target: var(&node.id, &out),
                     value: expr_lit(lit(&val)),
+                    type_annotation: None,
                     metadata: Some(vec![m]),
                     line: None,
                 }));
@@ -350,6 +351,7 @@ impl KirGraphCompiler {
             return vec![Statement::Assignment(Assignment {
                 target: var(&node.id, &out),
                 value: expr_lit(lit(&val)),
+                type_annotation: None,
                 metadata: Some(vec![m]),
                 line: None,
             })];
@@ -568,6 +570,7 @@ impl KirGraphCompiler {
                                 stmts.push(Statement::Assignment(Assignment {
                                     target: fb_var,
                                     value: ident(init_var),
+                                    type_annotation: None,
                                     metadata: None,
                                     line: None,
                                 }));
@@ -745,6 +748,7 @@ impl KirGraphCompiler {
         Program {
             body,
             mode: None,
+            typehints: None,
             line: None,
         }
     }

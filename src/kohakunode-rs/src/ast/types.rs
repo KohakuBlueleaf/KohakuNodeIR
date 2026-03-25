@@ -6,6 +6,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
 // ---------------------------------------------------------------------------
 // Literal value — dynamically typed
 // ---------------------------------------------------------------------------
@@ -107,6 +111,37 @@ pub struct Parameter {
 }
 
 // ---------------------------------------------------------------------------
+// Type expressions (used by @typehint)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct TypeExpr {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub is_optional: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub union_of: Option<Vec<TypeExpr>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line: Option<usize>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct TypeHintEntry {
+    pub func_name: String,
+    pub input_types: Vec<TypeExpr>,
+    pub output_types: Vec<TypeExpr>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line: Option<usize>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct TypeHintBlock {
+    pub entries: Vec<TypeHintEntry>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line: Option<usize>,
+}
+
+// ---------------------------------------------------------------------------
 // Output target (either a variable name or a wildcard)
 // ---------------------------------------------------------------------------
 
@@ -140,12 +175,26 @@ pub enum Statement {
     Switch(Switch),
     Jump(Jump),
     Parallel(Parallel),
+    TypeHintBlock(TypeHintBlock),
+    TryExcept(TryExcept),
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct TryExcept {
+    pub try_body: Vec<Statement>,
+    pub except_body: Vec<Statement>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Vec<MetaAnnotation>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line: Option<usize>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Assignment {
     pub target: String,
     pub value: Expression,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_annotation: Option<TypeExpr>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Vec<MetaAnnotation>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -247,6 +296,8 @@ pub struct Program {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub typehints: Option<Vec<TypeHintEntry>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line: Option<usize>,
 }
 
@@ -313,10 +364,12 @@ mod tests {
                     literal_type: "int".into(),
                     line: None,
                 }),
+                type_annotation: None,
                 metadata: None,
                 line: Some(1),
             })],
             mode: None,
+            typehints: None,
             line: None,
         };
         let json = serde_json::to_string(&prog).unwrap();
