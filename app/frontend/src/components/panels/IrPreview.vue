@@ -65,32 +65,44 @@ const lineCount   = computed(() => displayText.value.split('\n').length);
 // ---- Syntax highlight ----
 // Regex-based highlighter for KIR syntax
 function highlight(text) {
-  // Escape HTML first
-  let s = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  // Process line-by-line to avoid regex corruption between injected spans
+  return text.split('\n').map(highlightLine).join('\n');
+}
 
-  // Comments (# ...)
-  s = s.replace(/(#[^\n]*)/g, '<span class="ir-comment">$1</span>');
-  // @meta, @mode, @def directives
+function highlightLine(line) {
+  // Escape HTML
+  let s = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Comment lines — wrap entire line and return early
+  if (/^\s*#/.test(s)) {
+    return `<span class="ir-comment">${s}</span>`;
+  }
+
+  // Extract and protect string literals + backtick labels before other highlighting.
+  // Replace them with placeholders, highlight the rest, then restore.
+  const tokens = [];
+  function stash(match, cls) {
+    const id = `\x00${tokens.length}\x00`;
+    tokens.push(`<span class="${cls}">${match}</span>`);
+    return id;
+  }
+
+  // Strings first (double-quoted)
+  s = s.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (m) => stash(m, 'ir-string'));
+  // Backtick labels
+  s = s.replace(/`[^`]*`/g, (m) => stash(m, 'ir-label'));
+
+  // Now safe to highlight without hitting quotes inside span attributes
   s = s.replace(/(@(?:meta|mode|def|dataflow)\b)/g, '<span class="ir-directive">$1</span>');
-  // Backtick-quoted namespace labels
-  s = s.replace(/(`[^`]*`)/g, '<span class="ir-label">$1</span>');
-  // Built-in utilities: branch, switch, jump, parallel
   s = s.replace(/\b(branch|switch|jump|parallel)\b/g, '<span class="ir-keyword">$1</span>');
-  // Python-style booleans and None
   s = s.replace(/\b(True|False|None)\b/g, '<span class="ir-literal">$1</span>');
-  // Namespace labels (word followed by colon at line start or after indent)
-  s = s.replace(/^(\s*\w+)(:)$/gm, '<span class="ir-label">$1$2</span>');
-  // String literals (double-quoted)
-  s = s.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="ir-string">"$1"</span>');
-  // Numbers
+  s = s.replace(/^(\s*\w+)(:)$/g, '<span class="ir-label">$1$2</span>');
   s = s.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="ir-number">$1</span>');
-  // Variable assignments (identifier = ...)
-  s = s.replace(/^(\s*)(v_\w+)(\s*=)/gm, '$1<span class="ir-var">$2</span>$3');
-  // Function call output vars in right parens — highlight variable names
+  s = s.replace(/^(\s*)(\w+)(\s*=)/g, '$1<span class="ir-var">$2</span>$3');
   s = s.replace(/\)([\w.]+)\(/g, ')<span class="ir-func">$1</span>(');
+
+  // Restore stashed tokens
+  s = s.replace(/\x00(\d+)\x00/g, (_, i) => tokens[+i]);
 
   return s;
 }

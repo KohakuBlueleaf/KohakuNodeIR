@@ -149,6 +149,7 @@ _result = {
         "dataOutputs": [{"name": p.port, "type": p.type} for p in n.data_outputs],
         "ctrlInputs": n.ctrl_inputs,
         "ctrlOutputs": n.ctrl_outputs,
+        **({"properties": n.properties} if n.properties else {}),
     } for n in _graph.nodes],
     "edges": [{
         "type": e.type,
