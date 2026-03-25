@@ -6,18 +6,21 @@ import KirCodeEditor from './components/editor/KirCodeEditor.vue';
 import Toolbar from './components/editor/Toolbar.vue';
 import { save, load } from './utils/persist.js';
 import { initWasm } from './parser/wasmParser.js';
+import { useEditorStore } from './stores/editor.js';
+
+const editorStore = useEditorStore();
 
 // ── View mode (persisted) ──
 const viewMode = ref(load('viewMode', 'graph'));
 const codeEditorRef = ref(null);
 let prevViewMode = viewMode.value;
+editorStore.setActiveViewMode(viewMode.value);
 watch(viewMode, (v) => {
   save('viewMode', v);
-  // When switching away from code view, sync editor→graph
+  editorStore.setActiveViewMode(v);
   if (prevViewMode === 'code' && v !== 'code') {
     codeEditorRef.value?.onDeactivate();
   }
-  // When switching to code view, load graph into editor
   if (v === 'code') nextTick(() => codeEditorRef.value?.refreshFromGraph());
   prevViewMode = v;
 });

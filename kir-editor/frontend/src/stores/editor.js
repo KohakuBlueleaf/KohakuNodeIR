@@ -359,6 +359,10 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  // Active view mode ('graph', 'blocks', 'code') — set by App.vue
+  const activeViewMode = ref('graph');
+  function setActiveViewMode(m) { activeViewMode.value = m; }
+
   return {
     // Pan / Zoom
     panX,
@@ -413,5 +417,9 @@ export const useEditorStore = defineStore('editor', () => {
 
     // Control ports visibility
     showCtrlPorts,
+
+    // Active view mode (set by App.vue)
+    activeViewMode,
+    setActiveViewMode,
   };
 });

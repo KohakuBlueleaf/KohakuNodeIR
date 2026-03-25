@@ -29,14 +29,13 @@ export function useKeyboard({ onCancelOperation } = {}) {
   // ---------------------------------------------------------------------------
 
   function isEditingText() {
+    // Skip all shortcuts when code editor view is active
+    if (editorStore.activeViewMode === 'code') return true
     const el = document.activeElement
     if (!el) return false
     const tag = el.tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true
-    // Monaco editor uses a textarea inside a .monaco-editor container
     if (el.closest?.('.monaco-editor')) return true
-    // Code editor view is active (check if .kir-code-editor-root is visible)
-    if (document.querySelector('.kir-code-editor-root')?.offsetParent !== null) return true
     return false
   }
 

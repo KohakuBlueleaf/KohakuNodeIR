@@ -6,7 +6,7 @@ import { useGraphStore } from '../../stores/graph.js';
 import { useHistoryStore } from '../../stores/history.js';
 import { graphToKirgraph, kirgraphToGraph } from '../../compiler/kirgraph.js';
 import { compileGraph } from '../../compiler/graphToIr.js';
-import { autoLayout, graphStoreToLayoutFormat, applyLayoutToStore } from '../../layout/autoLayout.js';
+import { parseKirWithWasm } from '../../parser/wasmParser.js';
 import { executeKirStreaming } from '../../api/backend.js';
 import { detectAndParseAsync } from '../../parser/index.js';
 import { parserResultToGraph } from '../../utils/parserResultToGraph.js';
@@ -241,20 +241,43 @@ function importGraph() {
   input.click();
 }
 
-// ── Auto Layout ────────────────────────────────────────────────────────────────
-function runAutoLayout() {
+// ── Auto Layout (uses WASM Rust layout for consistency with paste) ────────────
+async function runAutoLayout() {
   if (!graph.nodeList.length) {
     ElMessage({ message: 'Graph is empty — nothing to lay out.', type: 'warning', duration: 2000 });
     return;
   }
-  const { nodes: layoutNodes, edges: layoutEdges } = graphStoreToLayoutFormat(
-    graph.nodeList,
-    graph.connectionList,
-  );
-  autoLayout(layoutNodes, layoutEdges);
+
+  // Compile graph → KIR → WASM kir_to_graph + auto_layout → apply positions
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  const kir = await compileGraphToKir(JSON.stringify(kirgraph));
+  if (!kir) {
+    ElMessage({ message: 'Could not compile graph for layout.', type: 'warning', duration: 2000 });
+    return;
+  }
+
+  const result = await parseKirWithWasm(kir);
+  if (!result?.nodes?.length) {
+    ElMessage({ message: 'Layout failed — could not parse compiled KIR.', type: 'warning', duration: 2000 });
+    return;
+  }
+
+  // Apply new positions from WASM layout to existing graph nodes
+  const posMap = new Map(result.nodes.map(n => [n.id, { x: n.x, y: n.y, width: n.width, height: n.height }]));
   graph.beginMove();
-  applyLayoutToStore(layoutNodes, graph);
-  ElMessage({ message: 'Auto layout applied.', type: 'success', duration: 1500 });
+  for (const node of graph.nodeList) {
+    const pos = posMap.get(node.id);
+    if (pos) {
+      const storeNode = graph.nodes.get(node.id);
+      if (storeNode) {
+        storeNode.x = pos.x;
+        storeNode.y = pos.y;
+        storeNode.width = pos.width;
+        storeNode.height = pos.height;
+      }
+    }
+  }
+  ElMessage({ message: 'Auto layout applied (WASM).', type: 'success', duration: 1500 });
 }
 
 // ── Export .kir ────────────────────────────────────────────────────────────────
