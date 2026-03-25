@@ -1,22 +1,21 @@
-# KohakuNodeIR — Backend API Reference
+# KohakuNodeIR -- Backend API Reference
 
-**Version**: 0.1.0-draft
 **Base URL**: `http://localhost:48888`
 
-The backend exposes REST endpoints for node management, KIR execution, and graph compilation/decompilation, plus WebSocket endpoints for streaming execution.
+The KIR Editor backend (FastAPI) exposes REST endpoints for node management, KIR execution, and graph compilation/decompilation, plus WebSocket endpoints for streaming execution.
 
 **REST endpoints:**
-- `POST /api/nodes/register` — register a user-defined node type
-- `GET /api/nodes` — list all registered node types
-- `DELETE /api/nodes/{type_name}` — unregister a node type
-- `POST /api/execute` — execute a KIR source string synchronously
-- `POST /api/execute/kirgraph` — compile `.kirgraph` to L3 and execute
-- `POST /api/compile` — compile `.kirgraph` to KIR text (L2 or L3)
-- `POST /api/decompile` — convert KIR text back to `.kirgraph`
+- `POST /api/nodes/register` -- register a user-defined node type
+- `GET /api/nodes` -- list all registered node types
+- `DELETE /api/nodes/{type_name}` -- unregister a node type
+- `POST /api/execute` -- execute a KIR source string synchronously
+- `POST /api/execute/kirgraph` -- compile `.kirgraph` to L3 and execute
+- `POST /api/compile` -- compile `.kirgraph` to KIR text (L2 or L3)
+- `POST /api/decompile` -- convert KIR text back to `.kirgraph`
 
 **WebSocket endpoints:**
-- `WS /api/ws/execute` — execute KIR with streaming progress events
-- `WS /api/ws/execute/kirgraph` — compile `.kirgraph` and execute with streaming events
+- `WS /api/ws/execute` -- execute KIR with streaming progress events
+- `WS /api/ws/execute/kirgraph` -- compile `.kirgraph` and execute with streaming events
 
 ---
 
@@ -42,7 +41,10 @@ Built-in nodes (`add`, `subtract`, `multiply`, `divide`, `greater_than`, `less_t
   "outputs": [
     { "name": "result", "type": "float" }
   ],
-  "code": "def node_func(value):\n    return value * value"
+  "properties": [
+    { "name": "exponent", "widget": "slider", "default": 2, "options": { "min": 1, "max": 10, "step": 1 } }
+  ],
+  "code": "def node_func(value, exponent=2):\n    return value ** exponent"
 }
 ```
 
@@ -54,9 +56,10 @@ Built-in nodes (`add`, `subtract`, `multiply`, `divide`, `greater_than`, `less_t
 | `description` | string | no | Short description shown in palette |
 | `inputs` | array | no | Input port definitions `[{name, type}]` |
 | `outputs` | array | no | Output port definitions `[{name, type}]` |
+| `properties` | array | no | Property schema definitions (see below) |
 | `code` | string | yes | Python source; must define `node_func` |
 
-The `code` field must contain a Python function named `node_func`. Its parameters must match the declared `inputs` by name. Return values must match the order of `outputs` (single value for one output, tuple for multiple).
+The `code` field must contain a Python function named `node_func`. Its parameters must match the declared `inputs` by name. Return values must match the order of `outputs` (single value for one output, tuple for multiple). Property defaults are injected as keyword arguments.
 
 ```python
 # Single output
@@ -66,7 +69,30 @@ def node_func(value):
 # Multiple outputs
 def node_func(a, b):
     return a + b, a - b
+
+# With property defaults
+def node_func(value, exponent=2):
+    return value ** exponent
 ```
+
+#### Property schema
+
+Each property in the `properties` array defines a configurable parameter with a widget type:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Property name (used as keyword argument to `node_func`) |
+| `widget` | string | Widget type: `"string"`, `"number"`, `"boolean"`, `"select"`, `"slider"` |
+| `default` | any | Default value for the property |
+| `options` | object | Widget-specific options (see table below) |
+
+| Widget | Options |
+|--------|---------|
+| `string` | (none) |
+| `number` | (none) |
+| `boolean` | (none) |
+| `select` | `{ "choices": "option1,option2,option3" }` |
+| `slider` | `{ "min": 0, "max": 100, "step": 1 }` |
 
 **Response** (200):
 
@@ -146,7 +172,7 @@ Unregister a user-defined node type and delete its persisted definition.
 
 Built-in nodes cannot be deleted.
 
-**Path parameter**: `type_name` — the type key to delete.
+**Path parameter**: `type_name` -- the type key to delete.
 
 **Response** (200):
 
@@ -308,7 +334,7 @@ Compile a `.kirgraph` to KIR text without executing. Supports both L2 (with `@me
 
 ### POST /api/decompile
 
-Convert KIR L2 text (with `@meta` annotations) back to a `.kirgraph` JSON object. This is the L2 → L1 direction of the pipeline.
+Convert KIR L2 text (with `@meta` annotations) back to a `.kirgraph` JSON object. This is the L2 -> L1 direction of the pipeline.
 
 **Request body**:
 
@@ -350,7 +376,7 @@ Execute KIR programs with streaming progress. A single WebSocket connection can 
 
 When the Vite dev server is running, use `ws://localhost:5174/api/ws/execute` (proxied).
 
-### Client → Server Messages
+### Client -> Server Messages
 
 #### execute
 
@@ -365,7 +391,7 @@ Run a KIR program.
 
 Any message with an unknown `type` field receives an error response and is otherwise ignored.
 
-### Server → Client Messages
+### Server -> Client Messages
 
 Messages are sent in the following order for a successful run:
 
@@ -422,17 +448,17 @@ Also sent for malformed JSON:
 
 ```
 Client                              Server
-  │                                   │
-  │── {"type":"execute","kir_source"} ──►│
-  │                                   │
-  │◄── {"type":"started"} ────────────│
-  │◄── {"type":"output","value":"..."} (0..N times)
-  │◄── {"type":"variable","name":"...","value":...} (0..N times)
-  │◄── {"type":"completed","variables":{...}} ─────│
-  │                                   │
-  │  (connection stays open)          │
-  │── {"type":"execute",...} ──────────►│
-  │   (another program can be sent)   │
+  |                                   |
+  |-- {"type":"execute","kir_source"} -->|
+  |                                   |
+  |<-- {"type":"started"} ------------|
+  |<-- {"type":"output","value":"..."} (0..N times)
+  |<-- {"type":"variable","name":"...","value":...} (0..N times)
+  |<-- {"type":"completed","variables":{...}} -----|
+  |                                   |
+  |  (connection stays open)          |
+  |-- {"type":"execute",...} ---------->|
+  |   (another program can be sent)   |
 ```
 
 ---
@@ -443,7 +469,7 @@ Compile a `.kirgraph` and execute it with streaming progress. Same event protoco
 
 **Connection**: `ws://localhost:48888/api/ws/execute/kirgraph`
 
-### Client → Server Messages
+### Client -> Server Messages
 
 #### execute
 
@@ -458,7 +484,7 @@ Compile a `.kirgraph` and execute it with streaming progress. Same event protoco
 }
 ```
 
-### Server → Client Messages
+### Server -> Client Messages
 
 Same as `WS /api/ws/execute` with one additional message sent before `started`:
 
@@ -537,27 +563,11 @@ The following node types are always registered and cannot be deleted or overwrit
 
 ---
 
-## Error Handling
-
-All error responses from REST endpoints use standard HTTP status codes with a JSON body:
-
-```json
-{ "detail": "error message here" }
-```
-
-HTTP errors use:
-- `400 Bad Request` — invalid input (bad code, overwriting built-in, etc.)
-- `404 Not Found` — resource does not exist (unknown node type)
-
-Execution errors (syntax errors, runtime errors in KIR) do not produce HTTP 4xx/5xx — they return HTTP 200 with `"success": false` in the body, because the request itself was structurally valid.
-
----
-
 ## Python Engine API
 
 The `kohakunode` package can also be used directly in Python, without the server.
 
-### Quick Execute
+### Quick execute
 
 ```python
 from kohakunode import run, Registry
@@ -569,7 +579,7 @@ store = run("(3, 4)add(sum)", registry=registry)
 print(store.get("sum"))  # 7
 ```
 
-### Full Pipeline
+### Full pipeline
 
 ```python
 from kohakunode import (
@@ -603,7 +613,7 @@ graph = KirGraphDecompiler().decompile(program)
 print(graph.to_json())
 ```
 
-### Error Types
+### Error types
 
 | Exception | When raised |
 |-----------|-------------|
@@ -612,3 +622,19 @@ print(graph.to_json())
 | `KirCompilationError` | Dataflow compiler finds control flow in dataflow mode |
 | `KirRuntimeError` | Interpreter error (undefined function, etc.) |
 | `KirError` | Base class for all above |
+
+---
+
+## Error Handling
+
+All error responses from REST endpoints use standard HTTP status codes with a JSON body:
+
+```json
+{ "detail": "error message here" }
+```
+
+HTTP errors use:
+- `400 Bad Request` -- invalid input (bad code, overwriting built-in, etc.)
+- `404 Not Found` -- resource does not exist (unknown node type)
+
+Execution errors (syntax errors, runtime errors in KIR) do not produce HTTP 4xx/5xx -- they return HTTP 200 with `"success": false` in the body, because the request itself was structurally valid.
