@@ -12,8 +12,11 @@ import { parserResultToGraph } from '../../utils/parserResultToGraph.js';
 const graph = useGraphStore();
 const editorContainer = ref(null);
 let editor = null;
-let ignoreModelChange = false;
-let ignoreGraphChange = false;
+const hideMeta = ref(false);
+
+// When true, the editor content is the source of truth.
+// Graph→editor sync is suppressed; editor→graph sync is active.
+let editorIsSource = false;
 
 // ── Compile graph → KIR text ──
 async function graphToKir() {
@@ -25,54 +28,59 @@ async function graphToKir() {
   const pyKir = await compileGraphToKir(JSON.stringify(kirgraph));
   if (pyKir) return pyKir;
 
-  // Fallback to JS compiler
   const { ir } = compileGraph(nodes, conns);
   return ir;
 }
 
-// ── Sync graph → editor (when graph changes externally) ──
+// ── Sync graph → editor (only when graph changed from node UI, NOT from editor) ──
 let graphSyncTimer = null;
 watch(
   [() => graph.nodeList, () => graph.connectionList],
   () => {
-    if (ignoreGraphChange) return;
+    if (editorIsSource) return;
     clearTimeout(graphSyncTimer);
     graphSyncTimer = setTimeout(async () => {
       const kir = await graphToKir();
       if (editor && kir !== editor.getValue()) {
-        ignoreModelChange = true;
+        // Temporarily mark as source to prevent the setValue triggering editor→graph
+        editorIsSource = true;
         editor.setValue(kir);
-        ignoreModelChange = false;
+        editorIsSource = false;
+        if (hideMeta.value) updateMetaVisibility();
       }
     }, 300);
   },
   { deep: true },
 );
 
-// ── Parse KIR text → graph (when user edits code) ──
+// ── Parse editor content → graph (realtime, does NOT touch editor content) ──
 let parseSyncTimer = null;
 function onEditorChange() {
-  if (ignoreModelChange) return;
+  // Mark editor as source of truth — suppress graph→editor sync
+  editorIsSource = true;
   clearTimeout(parseSyncTimer);
   parseSyncTimer = setTimeout(async () => {
     const text = editor?.getValue();
-    if (!text?.trim()) return;
+    if (!text?.trim()) {
+      editorIsSource = false;
+      return;
+    }
 
     try {
       const result = await detectAndParseAsync(text);
-      if (!result?.nodes?.length) return;
+      if (!result?.nodes?.length) {
+        editorIsSource = false;
+        return;
+      }
 
       const { nodes, connections } = parserResultToGraph(result.nodes, result.edges);
-      ignoreGraphChange = true;
       graph.clear();
       for (const node of nodes) graph.addNode(node);
       for (const conn of connections) {
         graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
       }
-      // Clear error markers
       monaco.editor.setModelMarkers(editor.getModel(), 'kir', []);
     } catch (err) {
-      // Show parse error in editor
       if (editor) {
         monaco.editor.setModelMarkers(editor.getModel(), 'kir', [{
           severity: monaco.MarkerSeverity.Error,
@@ -81,10 +89,64 @@ function onEditorChange() {
           endLineNumber: 1, endColumn: 1,
         }]);
       }
-    } finally {
-      ignoreGraphChange = false;
     }
+    // Keep editorIsSource=true — it stays true until user switches away
+    // from code view or until a graph→editor sync from node UI
   }, 600);
+}
+
+// Called when user switches to this view — refresh from graph if editor wasn't source
+function refreshFromGraph() {
+  if (!editorIsSource) {
+    graphToKir().then((kir) => {
+      if (editor && kir !== editor.getValue()) {
+        editorIsSource = true;
+        editor.setValue(kir);
+        editorIsSource = false;
+        if (hideMeta.value) updateMetaVisibility();
+      }
+    });
+  }
+}
+
+// Reset source flag when editor loses focus (user switched to node/block view)
+function onEditorBlur() {
+  // Small delay — don't immediately reset during tab switches within code view
+  setTimeout(() => {
+    if (!editorContainer.value?.contains(document.activeElement)) {
+      editorIsSource = false;
+    }
+  }, 200);
+}
+
+defineExpose({ refreshFromGraph });
+
+// ── @meta visibility toggle ──
+function updateMetaVisibility() {
+  if (!editor) return;
+  const model = editor.getModel();
+  if (!model) return;
+
+  if (!hideMeta.value) {
+    editor.setHiddenAreas([]);
+    return;
+  }
+
+  // Find all @meta lines and hide them
+  const ranges = [];
+  const lineCount = model.getLineCount();
+  for (let i = 1; i <= lineCount; i++) {
+    const line = model.getLineContent(i);
+    if (/^\s*@meta\b/.test(line)) {
+      ranges.push(new monaco.Range(i, 1, i, 1));
+    }
+  }
+  editor.setHiddenAreas(ranges);
+}
+
+function toggleMeta() {
+  hideMeta.value = !hideMeta.value;
+  updateMetaVisibility();
 }
 
 // ── Lifecycle ──
@@ -110,7 +172,12 @@ onMounted(async () => {
     padding: { top: 8 },
   });
 
-  editor.onDidChangeModelContent(onEditorChange);
+  editor.onDidChangeModelContent(() => {
+    onEditorChange();
+    if (hideMeta.value) updateMetaVisibility();
+  });
+
+  editor.onDidBlurEditorWidget(onEditorBlur);
 });
 
 onBeforeUnmount(() => {
@@ -128,6 +195,14 @@ onBeforeUnmount(() => {
       <span class="kir-code-editor-badge" :class="isWasmReady() ? 'badge--ready' : 'badge--loading'">
         {{ isWasmReady() ? 'WASM' : '...' }}
       </span>
+      <button
+        class="meta-toggle-btn"
+        :class="{ 'meta-toggle-btn--active': hideMeta }"
+        :title="hideMeta ? 'Show @meta annotations' : 'Hide @meta annotations'"
+        @click="toggleMeta"
+      >
+        @meta {{ hideMeta ? 'hidden' : 'visible' }}
+      </button>
       <span class="kir-code-editor-hint">
         Edit KIR directly — changes sync with the node graph
       </span>
@@ -191,8 +266,34 @@ onBeforeUnmount(() => {
   margin-left: auto;
 }
 
+.meta-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid #45475a;
+  background: transparent;
+  color: #a6adc8;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.meta-toggle-btn:hover {
+  background: #313244;
+  color: #cdd6f4;
+}
+
+.meta-toggle-btn--active {
+  color: #f5c2e7;
+  border-color: rgba(245, 194, 231, 0.4);
+  background: rgba(245, 194, 231, 0.08);
+}
+
 .kir-code-editor-body {
   flex: 1;
   min-height: 0;
 }
 </style>
+

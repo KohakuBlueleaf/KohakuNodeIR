@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import NodeEditor from './components/editor/NodeEditor.vue';
 import BlockCanvas from './components/blocks/BlockCanvas.vue';
 import KirCodeEditor from './components/editor/KirCodeEditor.vue';
@@ -9,7 +9,12 @@ import { initWasm } from './parser/wasmParser.js';
 
 // ── View mode (persisted) ──
 const viewMode = ref(load('viewMode', 'graph'));
-watch(viewMode, (v) => save('viewMode', v));
+const codeEditorRef = ref(null);
+watch(viewMode, (v) => {
+  save('viewMode', v);
+  // When switching to code view, refresh editor from graph
+  if (v === 'code') nextTick(() => codeEditorRef.value?.refreshFromGraph());
+});
 
 // ── Shared zoom ──
 const zoom = ref(1);
@@ -79,6 +84,7 @@ onMounted(() => { initWasm(); });
         @update:zoom="zoom = $event"
       />
       <KirCodeEditor
+        ref="codeEditorRef"
         v-show="viewMode === 'code'"
       />
     </div>
