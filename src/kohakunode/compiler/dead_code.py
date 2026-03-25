@@ -69,41 +69,43 @@ def _collect_used_names(stmts: list[Statement]) -> set[str]:
 
 
 def _collect_used_in_expr(expr: Expression, used: set[str]) -> None:
-    if isinstance(expr, Identifier):
-        used.add(expr.name)
-    elif isinstance(expr, KeywordArg):
-        _collect_used_in_expr(expr.value, used)
+    match expr:
+        case Identifier():
+            used.add(expr.name)
+        case KeywordArg():
+            _collect_used_in_expr(expr.value, used)
 
 
 def _collect_used_in_stmt(stmt: Statement, used: set[str]) -> None:
-    if isinstance(stmt, Assignment):
-        _collect_used_in_expr(stmt.value, used)
+    match stmt:
+        case Assignment():
+            _collect_used_in_expr(stmt.value, used)
 
-    elif isinstance(stmt, FuncCall):
-        for inp in stmt.inputs:
-            _collect_used_in_expr(inp, used)
+        case FuncCall():
+            for inp in stmt.inputs:
+                _collect_used_in_expr(inp, used)
 
-    elif isinstance(stmt, Branch):
-        _collect_used_in_expr(stmt.condition, used)
+        case Branch():
+            _collect_used_in_expr(stmt.condition, used)
 
-    elif isinstance(stmt, Switch):
-        _collect_used_in_expr(stmt.value, used)
-        for case_expr, _ in stmt.cases:
-            _collect_used_in_expr(case_expr, used)
+        case Switch():
+            _collect_used_in_expr(stmt.value, used)
+            for case_expr, _ in stmt.cases:
+                _collect_used_in_expr(case_expr, used)
 
-    elif isinstance(stmt, Namespace):
-        for s in stmt.body:
-            _collect_used_in_stmt(s, used)
+        case Namespace():
+            for s in stmt.body:
+                _collect_used_in_stmt(s, used)
 
-    elif isinstance(stmt, SubgraphDef):
-        for s in stmt.body:
-            _collect_used_in_stmt(s, used)
+        case SubgraphDef():
+            for s in stmt.body:
+                _collect_used_in_stmt(s, used)
 
-    elif isinstance(stmt, TryExcept):
-        for s in stmt.try_body:
-            _collect_used_in_stmt(s, used)
-        for s in stmt.except_body:
-            _collect_used_in_stmt(s, used)
+        case TryExcept():
+            for s in stmt.try_body:
+                _collect_used_in_stmt(s, used)
+            for s in stmt.except_body:
+                _collect_used_in_stmt(s, used)
 
 
 def _eliminate_body(stmts: list[Statement]) -> list[Statement]:
@@ -115,47 +117,48 @@ def _eliminate_body(stmts: list[Statement]) -> list[Statement]:
         new_stmts: list[Statement] = []
         changed = False
         for stmt in current:
-            if isinstance(stmt, Assignment):
-                if stmt.target not in used:
-                    # Dead assignment — drop it
-                    changed = True
-                    continue
-                new_stmts.append(stmt)
-            elif isinstance(stmt, Namespace):
-                new_body = _eliminate_body(stmt.body)
-                if new_body is not stmt.body and new_body != stmt.body:
-                    changed = True
-                new_stmts.append(
-                    Namespace(name=stmt.name, body=new_body, line=stmt.line)
-                )
-            elif isinstance(stmt, SubgraphDef):
-                new_body = _eliminate_body(stmt.body)
-                if new_body != stmt.body:
-                    changed = True
-                new_stmts.append(
-                    SubgraphDef(
-                        name=stmt.name,
-                        params=stmt.params,
-                        outputs=stmt.outputs,
-                        body=new_body,
-                        line=stmt.line,
+            match stmt:
+                case Assignment():
+                    if stmt.target not in used:
+                        # Dead assignment — drop it
+                        changed = True
+                        continue
+                    new_stmts.append(stmt)
+                case Namespace():
+                    new_body = _eliminate_body(stmt.body)
+                    if new_body is not stmt.body and new_body != stmt.body:
+                        changed = True
+                    new_stmts.append(
+                        Namespace(name=stmt.name, body=new_body, line=stmt.line)
                     )
-                )
-            elif isinstance(stmt, TryExcept):
-                new_try = _eliminate_body(stmt.try_body)
-                new_except = _eliminate_body(stmt.except_body)
-                if new_try != stmt.try_body or new_except != stmt.except_body:
-                    changed = True
-                new_stmts.append(
-                    TryExcept(
-                        try_body=new_try,
-                        except_body=new_except,
-                        metadata=stmt.metadata,
-                        line=stmt.line,
+                case SubgraphDef():
+                    new_body = _eliminate_body(stmt.body)
+                    if new_body != stmt.body:
+                        changed = True
+                    new_stmts.append(
+                        SubgraphDef(
+                            name=stmt.name,
+                            params=stmt.params,
+                            outputs=stmt.outputs,
+                            body=new_body,
+                            line=stmt.line,
+                        )
                     )
-                )
-            else:
-                new_stmts.append(stmt)
+                case TryExcept():
+                    new_try = _eliminate_body(stmt.try_body)
+                    new_except = _eliminate_body(stmt.except_body)
+                    if new_try != stmt.try_body or new_except != stmt.except_body:
+                        changed = True
+                    new_stmts.append(
+                        TryExcept(
+                            try_body=new_try,
+                            except_body=new_except,
+                            metadata=stmt.metadata,
+                            line=stmt.line,
+                        )
+                    )
+                case _:
+                    new_stmts.append(stmt)
 
         if not changed:
             return new_stmts

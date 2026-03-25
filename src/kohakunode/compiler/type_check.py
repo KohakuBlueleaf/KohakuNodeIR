@@ -148,12 +148,13 @@ def _collect_typehints(program: Program, type_env: dict[str, TypeHintEntry]) -> 
 
 def _infer_expr_type(expr, var_types: dict[str, TypeExpr]) -> TypeExpr | None:
     """Return the :class:`TypeExpr` for *expr*, or ``None`` if unknown."""
-    if isinstance(expr, Identifier):
-        return var_types.get(expr.name)
-    if isinstance(expr, Literal):
-        return TypeExpr(name=expr.literal_type if expr.literal_type else "Any")
-    if isinstance(expr, KeywordArg):
-        return _infer_expr_type(expr.value, var_types)
+    match expr:
+        case Identifier():
+            return var_types.get(expr.name)
+        case Literal():
+            return TypeExpr(name=expr.literal_type if expr.literal_type else "Any")
+        case KeywordArg():
+            return _infer_expr_type(expr.value, var_types)
     return None
 
 
@@ -174,70 +175,71 @@ def _check_stmt(
     var_types: dict[str, TypeExpr],
     errors: list[str],
 ) -> None:
-    if isinstance(stmt, Assignment):
-        # Record variable type from annotation
-        if stmt.type_annotation is not None:
-            var_types[stmt.target] = stmt.type_annotation
-        elif stmt.target not in var_types:
-            # Infer from the RHS if it's a literal or typed variable
-            inferred = _infer_expr_type(stmt.value, var_types)
-            if inferred is not None:
-                var_types[stmt.target] = inferred
+    match stmt:
+        case Assignment():
+            # Record variable type from annotation
+            if stmt.type_annotation is not None:
+                var_types[stmt.target] = stmt.type_annotation
+            elif stmt.target not in var_types:
+                # Infer from the RHS if it's a literal or typed variable
+                inferred = _infer_expr_type(stmt.value, var_types)
+                if inferred is not None:
+                    var_types[stmt.target] = inferred
 
-    elif isinstance(stmt, FuncCall):
-        hint = type_env.get(stmt.func_name)
-        if hint is not None:
-            # Check input count
-            # Positional inputs only (keyword args count as one each)
-            pos_inputs = [inp for inp in stmt.inputs if not isinstance(inp, KeywordArg)]
-            kw_inputs = [inp for inp in stmt.inputs if isinstance(inp, KeywordArg)]
+        case FuncCall():
+            hint = type_env.get(stmt.func_name)
+            if hint is not None:
+                # Check input count
+                # Positional inputs only (keyword args count as one each)
+                pos_inputs = [inp for inp in stmt.inputs if not isinstance(inp, KeywordArg)]
+                kw_inputs = [inp for inp in stmt.inputs if isinstance(inp, KeywordArg)]
 
-            if len(hint.input_types) > 0:
-                if len(stmt.inputs) != len(hint.input_types):
-                    line_info = f" (line {stmt.line})" if stmt.line is not None else ""
-                    errors.append(
-                        f"'{stmt.func_name}'{line_info}: expected "
-                        f"{len(hint.input_types)} input(s), got {len(stmt.inputs)}"
-                    )
-                else:
-                    # Check each input type
-                    for i, (inp, expected_type) in enumerate(
-                        zip(stmt.inputs, hint.input_types)
-                    ):
-                        actual_type = _infer_expr_type(inp, var_types)
-                        if actual_type is not None:
-                            if not _types_compatible(actual_type, expected_type):
-                                line_info = (
-                                    f" (line {stmt.line})" if stmt.line is not None else ""
-                                )
-                                errors.append(
-                                    f"'{stmt.func_name}'{line_info}: input {i} "
-                                    f"expected type '{_type_str(expected_type)}', "
-                                    f"got '{_type_str(actual_type)}'"
-                                )
+                if len(hint.input_types) > 0:
+                    if len(stmt.inputs) != len(hint.input_types):
+                        line_info = f" (line {stmt.line})" if stmt.line is not None else ""
+                        errors.append(
+                            f"'{stmt.func_name}'{line_info}: expected "
+                            f"{len(hint.input_types)} input(s), got {len(stmt.inputs)}"
+                        )
+                    else:
+                        # Check each input type
+                        for i, (inp, expected_type) in enumerate(
+                            zip(stmt.inputs, hint.input_types)
+                        ):
+                            actual_type = _infer_expr_type(inp, var_types)
+                            if actual_type is not None:
+                                if not _types_compatible(actual_type, expected_type):
+                                    line_info = (
+                                        f" (line {stmt.line})" if stmt.line is not None else ""
+                                    )
+                                    errors.append(
+                                        f"'{stmt.func_name}'{line_info}: input {i} "
+                                        f"expected type '{_type_str(expected_type)}', "
+                                        f"got '{_type_str(actual_type)}'"
+                                    )
 
-            # Record output types
-            concrete_outputs = [
-                out for out in stmt.outputs if not isinstance(out, Wildcard)
-            ]
-            for i, out_name in enumerate(concrete_outputs):
-                if i < len(hint.output_types):
-                    var_types[out_name] = hint.output_types[i]
+                # Record output types
+                concrete_outputs = [
+                    out for out in stmt.outputs if not isinstance(out, Wildcard)
+                ]
+                for i, out_name in enumerate(concrete_outputs):
+                    if i < len(hint.output_types):
+                        var_types[out_name] = hint.output_types[i]
 
-    elif isinstance(stmt, Namespace):
-        _check_body(stmt.body, type_env, var_types, errors)
+        case Namespace():
+            _check_body(stmt.body, type_env, var_types, errors)
 
-    elif isinstance(stmt, SubgraphDef):
-        _check_body(stmt.body, type_env, dict(var_types), errors)
+        case SubgraphDef():
+            _check_body(stmt.body, type_env, dict(var_types), errors)
 
-    elif isinstance(stmt, TryExcept):
-        _check_body(stmt.try_body, type_env, var_types, errors)
-        _check_body(stmt.except_body, type_env, var_types, errors)
+        case TryExcept():
+            _check_body(stmt.try_body, type_env, var_types, errors)
+            _check_body(stmt.except_body, type_env, var_types, errors)
 
-    elif isinstance(stmt, TypeHintBlock):
-        # Already collected by _collect_typehints; update env for later stmts
-        for entry in stmt.entries:
-            type_env[entry.func_name] = entry
+        case TypeHintBlock():
+            # Already collected by _collect_typehints; update env for later stmts
+            for entry in stmt.entries:
+                type_env[entry.func_name] = entry
 
 
 def _type_str(t: TypeExpr) -> str:

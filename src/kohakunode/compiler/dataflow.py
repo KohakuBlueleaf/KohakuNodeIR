@@ -109,56 +109,57 @@ class DataflowCompiler(IRPass):
         new_body: list[Statement] = []
 
         for stmt in stmts:
-            if isinstance(stmt, DataflowBlock):
-                found = True
-                block_prog = Program(body=stmt.body)
-                graph = DependencyGraphBuilder().build(block_prog)
-                sorted_stmts = topological_sort(graph, stmt.body)
-                new_body.extend(sorted_stmts)
-            elif isinstance(stmt, Namespace):
-                inner = self._expand_dataflow_blocks(stmt.body)
-                if inner is not stmt.body:
+            match stmt:
+                case DataflowBlock():
                     found = True
-                    new_body.append(
-                        Namespace(name=stmt.name, body=inner, line=stmt.line)
-                    )
-                else:
-                    new_body.append(stmt)
-            elif isinstance(stmt, SubgraphDef):
-                inner = self._expand_dataflow_blocks(stmt.body)
-                if inner is not stmt.body:
-                    found = True
-                    new_body.append(
-                        SubgraphDef(
-                            name=stmt.name,
-                            params=stmt.params,
-                            outputs=stmt.outputs,
-                            body=inner,
-                            line=stmt.line,
+                    block_prog = Program(body=stmt.body)
+                    graph = DependencyGraphBuilder().build(block_prog)
+                    sorted_stmts = topological_sort(graph, stmt.body)
+                    new_body.extend(sorted_stmts)
+                case Namespace():
+                    inner = self._expand_dataflow_blocks(stmt.body)
+                    if inner is not stmt.body:
+                        found = True
+                        new_body.append(
+                            Namespace(name=stmt.name, body=inner, line=stmt.line)
                         )
-                    )
-                else:
-                    new_body.append(stmt)
-            elif isinstance(stmt, TryExcept):
-                try_inner = self._expand_dataflow_blocks(stmt.try_body)
-                except_inner = self._expand_dataflow_blocks(stmt.except_body)
-                if try_inner is not stmt.try_body or except_inner is not stmt.except_body:
-                    found = True
-                    new_body.append(
-                        TryExcept(
-                            try_body=try_inner,
-                            except_body=except_inner,
-                            metadata=stmt.metadata,
-                            line=stmt.line,
+                    else:
+                        new_body.append(stmt)
+                case SubgraphDef():
+                    inner = self._expand_dataflow_blocks(stmt.body)
+                    if inner is not stmt.body:
+                        found = True
+                        new_body.append(
+                            SubgraphDef(
+                                name=stmt.name,
+                                params=stmt.params,
+                                outputs=stmt.outputs,
+                                body=inner,
+                                line=stmt.line,
+                            )
                         )
-                    )
-                else:
+                    else:
+                        new_body.append(stmt)
+                case TryExcept():
+                    try_inner = self._expand_dataflow_blocks(stmt.try_body)
+                    except_inner = self._expand_dataflow_blocks(stmt.except_body)
+                    if try_inner is not stmt.try_body or except_inner is not stmt.except_body:
+                        found = True
+                        new_body.append(
+                            TryExcept(
+                                try_body=try_inner,
+                                except_body=except_inner,
+                                metadata=stmt.metadata,
+                                line=stmt.line,
+                            )
+                        )
+                    else:
+                        new_body.append(stmt)
+                case TypeHintBlock():
+                    # TypeHintBlock is declarative — pass through unchanged.
                     new_body.append(stmt)
-            elif isinstance(stmt, TypeHintBlock):
-                # TypeHintBlock is declarative — pass through unchanged.
-                new_body.append(stmt)
-            else:
-                new_body.append(stmt)
+                case _:
+                    new_body.append(stmt)
 
         if not found:
             return stmts

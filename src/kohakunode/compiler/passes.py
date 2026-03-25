@@ -22,10 +22,11 @@ from kohakunode.errors import KirCompilationError
 def _collect_identifier_names(expr: Expression) -> set[str]:
     """Recursively collect all Identifier names referenced in an expression."""
     names: set[str] = set()
-    if isinstance(expr, Identifier):
-        names.add(expr.name)
-    elif isinstance(expr, KeywordArg):
-        names |= _collect_identifier_names(expr.value)
+    match expr:
+        case Identifier():
+            names.add(expr.name)
+        case KeywordArg():
+            names |= _collect_identifier_names(expr.value)
     return names
 
 
@@ -126,33 +127,34 @@ class DependencyGraphBuilder:
         graph: dict[str, set[str]] = {}
 
         for stmt in program.body:
-            if isinstance(stmt, Assignment):
-                deps = _collect_identifier_names(stmt.value)
-                graph[stmt.target] = deps
+            match stmt:
+                case Assignment():
+                    deps = _collect_identifier_names(stmt.value)
+                    graph[stmt.target] = deps
 
-            elif isinstance(stmt, FuncCall):
-                # Collect all identifier names from inputs
-                input_names: set[str] = set()
-                for inp in stmt.inputs:
-                    input_names |= _collect_identifier_names(inp)
+                case FuncCall():
+                    # Collect all identifier names from inputs
+                    input_names: set[str] = set()
+                    for inp in stmt.inputs:
+                        input_names |= _collect_identifier_names(inp)
 
-                # Collect output names for self-reference exclusion
-                output_names: set[str] = set()
-                for out in stmt.outputs:
-                    if not isinstance(out, Wildcard):
-                        output_names.add(out)
+                    # Collect output names for self-reference exclusion
+                    output_names: set[str] = set()
+                    for out in stmt.outputs:
+                        if not isinstance(out, Wildcard):
+                            output_names.add(out)
 
-                # Map each concrete output name to those inputs,
-                # excluding self-references (e.g., (total, x)add(total) is
-                # an update, not a cycle)
-                for out in stmt.outputs:
-                    if isinstance(out, Wildcard):
-                        continue
-                    graph[out] = input_names - output_names
+                    # Map each concrete output name to those inputs,
+                    # excluding self-references (e.g., (total, x)add(total) is
+                    # an update, not a cycle)
+                    for out in stmt.outputs:
+                        if isinstance(out, Wildcard):
+                            continue
+                        graph[out] = input_names - output_names
 
-            elif isinstance(stmt, Namespace):
-                # Namespaces should not appear in dataflow mode; skip silently.
-                continue
+                case Namespace():
+                    # Namespaces should not appear in dataflow mode; skip silently.
+                    continue
 
         return graph
 
@@ -193,12 +195,13 @@ def topological_sort(
     # to the same statement object.
     var_to_stmt: dict[str, Statement] = {}
     for stmt in statements:
-        if isinstance(stmt, Assignment):
-            var_to_stmt[stmt.target] = stmt
-        elif isinstance(stmt, FuncCall):
-            for out in stmt.outputs:
-                if not isinstance(out, Wildcard):
-                    var_to_stmt[out] = stmt
+        match stmt:
+            case Assignment():
+                var_to_stmt[stmt.target] = stmt
+            case FuncCall():
+                for out in stmt.outputs:
+                    if not isinstance(out, Wildcard):
+                        var_to_stmt[out] = stmt
 
     # Collect the set of all variables that appear in the graph as outputs.
     all_outputs: set[str] = set(graph.keys())

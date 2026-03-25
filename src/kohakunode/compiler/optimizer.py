@@ -160,26 +160,27 @@ def _collect_all_label_refs(stmts: list[Statement]) -> dict[str, int]:
 
     def _walk(body: list[Statement]) -> None:
         for stmt in body:
-            if isinstance(stmt, Jump):
-                counts[stmt.target] = counts.get(stmt.target, 0) + 1
-            elif isinstance(stmt, Branch):
-                counts[stmt.true_label] = counts.get(stmt.true_label, 0) + 1
-                counts[stmt.false_label] = counts.get(stmt.false_label, 0) + 1
-            elif isinstance(stmt, Switch):
-                for _, label in stmt.cases:
-                    counts[label] = counts.get(label, 0) + 1
-                if stmt.default_label:
-                    counts[stmt.default_label] = counts.get(stmt.default_label, 0) + 1
-            elif isinstance(stmt, Parallel):
-                for label in stmt.labels:
-                    counts[label] = counts.get(label, 0) + 1
-            elif isinstance(stmt, Namespace):
-                _walk(stmt.body)
-            elif isinstance(stmt, TryExcept):
-                _walk(stmt.try_body)
-                _walk(stmt.except_body)
-            elif isinstance(stmt, SubgraphDef):
-                _walk(stmt.body)
+            match stmt:
+                case Jump():
+                    counts[stmt.target] = counts.get(stmt.target, 0) + 1
+                case Branch():
+                    counts[stmt.true_label] = counts.get(stmt.true_label, 0) + 1
+                    counts[stmt.false_label] = counts.get(stmt.false_label, 0) + 1
+                case Switch():
+                    for _, label in stmt.cases:
+                        counts[label] = counts.get(label, 0) + 1
+                    if stmt.default_label:
+                        counts[stmt.default_label] = counts.get(stmt.default_label, 0) + 1
+                case Parallel():
+                    for label in stmt.labels:
+                        counts[label] = counts.get(label, 0) + 1
+                case Namespace():
+                    _walk(stmt.body)
+                case TryExcept():
+                    _walk(stmt.try_body)
+                    _walk(stmt.except_body)
+                case SubgraphDef():
+                    _walk(stmt.body)
 
     _walk(stmts)
     return counts
@@ -242,36 +243,37 @@ def _resolve_bool_condition(cond: Expression, constants: dict[str, object]) -> b
 
 
 def _simplify_stmt(stmt: Statement, constants: dict[str, object]) -> Statement:
-    if isinstance(stmt, Branch):
-        resolved = _resolve_bool_condition(stmt.condition, constants)
-        if resolved is True:
-            return Jump(target=stmt.true_label, line=stmt.line)
-        if resolved is False:
-            return Jump(target=stmt.false_label, line=stmt.line)
-    elif isinstance(stmt, Namespace):
-        new_body = _simplify_body(stmt.body, constants)
-        if new_body is not stmt.body:
-            return Namespace(name=stmt.name, body=new_body, line=stmt.line)
-    elif isinstance(stmt, SubgraphDef):
-        new_body = _simplify_body(stmt.body, constants)
-        if new_body is not stmt.body:
-            return SubgraphDef(
-                name=stmt.name,
-                params=stmt.params,
-                outputs=stmt.outputs,
-                body=new_body,
-                line=stmt.line,
-            )
-    elif isinstance(stmt, TryExcept):
-        new_try = _simplify_body(stmt.try_body)
-        new_except = _simplify_body(stmt.except_body)
-        if new_try is not stmt.try_body or new_except is not stmt.except_body:
-            return TryExcept(
-                try_body=new_try,
-                except_body=new_except,
-                metadata=stmt.metadata,
-                line=stmt.line,
-            )
+    match stmt:
+        case Branch():
+            resolved = _resolve_bool_condition(stmt.condition, constants)
+            if resolved is True:
+                return Jump(target=stmt.true_label, line=stmt.line)
+            if resolved is False:
+                return Jump(target=stmt.false_label, line=stmt.line)
+        case Namespace():
+            new_body = _simplify_body(stmt.body, constants)
+            if new_body is not stmt.body:
+                return Namespace(name=stmt.name, body=new_body, line=stmt.line)
+        case SubgraphDef():
+            new_body = _simplify_body(stmt.body, constants)
+            if new_body is not stmt.body:
+                return SubgraphDef(
+                    name=stmt.name,
+                    params=stmt.params,
+                    outputs=stmt.outputs,
+                    body=new_body,
+                    line=stmt.line,
+                )
+        case TryExcept():
+            new_try = _simplify_body(stmt.try_body)
+            new_except = _simplify_body(stmt.except_body)
+            if new_try is not stmt.try_body or new_except is not stmt.except_body:
+                return TryExcept(
+                    try_body=new_try,
+                    except_body=new_except,
+                    metadata=stmt.metadata,
+                    line=stmt.line,
+                )
     return stmt
 
 
@@ -308,22 +310,23 @@ class DeadNamespaceEliminator(IRPass):
 def _collect_reachable_labels(stmts: list[Statement]) -> set[str]:
     labels: set[str] = set()
     for stmt in stmts:
-        if isinstance(stmt, Jump):
-            labels.add(stmt.target)
-        elif isinstance(stmt, Branch):
-            labels.add(stmt.true_label)
-            labels.add(stmt.false_label)
-        elif isinstance(stmt, Switch):
-            for _, lbl in stmt.cases:
-                labels.add(lbl)
-            if stmt.default_label:
-                labels.add(stmt.default_label)
-        elif isinstance(stmt, Parallel):
-            labels.update(stmt.labels)
-        elif isinstance(stmt, Namespace):
-            labels.update(_collect_reachable_labels(stmt.body))
-        elif isinstance(stmt, SubgraphDef):
-            labels.update(_collect_reachable_labels(stmt.body))
+        match stmt:
+            case Jump():
+                labels.add(stmt.target)
+            case Branch():
+                labels.add(stmt.true_label)
+                labels.add(stmt.false_label)
+            case Switch():
+                for _, lbl in stmt.cases:
+                    labels.add(lbl)
+                if stmt.default_label:
+                    labels.add(stmt.default_label)
+            case Parallel():
+                labels.update(stmt.labels)
+            case Namespace():
+                labels.update(_collect_reachable_labels(stmt.body))
+            case SubgraphDef():
+                labels.update(_collect_reachable_labels(stmt.body))
     return labels
 
 
@@ -376,18 +379,19 @@ class CommonSubexprEliminator(IRPass):
 
 def _expr_key(expr: Expression) -> object:
     """Return a hashable key for structural expression equality."""
-    if isinstance(expr, Identifier):
-        return ("id", expr.name)
-    if isinstance(expr, Literal):
-        val = expr.value
-        # Make value hashable for list/dict literals
-        try:
-            hash(val)
-            return ("lit", val, expr.literal_type)
-        except TypeError:
-            return ("lit", str(val), expr.literal_type)
-    if isinstance(expr, KeywordArg):
-        return ("kw", expr.name, _expr_key(expr.value))
+    match expr:
+        case Identifier():
+            return ("id", expr.name)
+        case Literal():
+            val = expr.value
+            # Make value hashable for list/dict literals
+            try:
+                hash(val)
+                return ("lit", val, expr.literal_type)
+            except TypeError:
+                return ("lit", str(val), expr.literal_type)
+        case KeywordArg():
+            return ("kw", expr.name, _expr_key(expr.value))
     return ("other", repr(expr))
 
 
@@ -402,55 +406,56 @@ def _cse_body(stmts: list[Statement]) -> list[Statement]:
     result: list[Statement] = []
 
     for stmt in stmts:
-        if isinstance(stmt, FuncCall):
-            key = _call_key(stmt)
-            concrete_outputs = [
-                out for out in stmt.outputs if not isinstance(out, Wildcard)
-            ]
-            if key in seen and concrete_outputs:
-                first_outputs = seen[key]
-                # Replace with assignments: new_out = first_out
-                for new_name, orig_name in zip(concrete_outputs, first_outputs):
-                    result.append(
-                        Assignment(
-                            target=new_name,
-                            value=Identifier(name=orig_name),
-                            line=stmt.line,
+        match stmt:
+            case FuncCall():
+                key = _call_key(stmt)
+                concrete_outputs = [
+                    out for out in stmt.outputs if not isinstance(out, Wildcard)
+                ]
+                if key in seen and concrete_outputs:
+                    first_outputs = seen[key]
+                    # Replace with assignments: new_out = first_out
+                    for new_name, orig_name in zip(concrete_outputs, first_outputs):
+                        result.append(
+                            Assignment(
+                                target=new_name,
+                                value=Identifier(name=orig_name),
+                                line=stmt.line,
+                            )
                         )
+                else:
+                    if concrete_outputs:
+                        seen[key] = concrete_outputs
+                    result.append(stmt)
+            case Namespace():
+                result.append(
+                    Namespace(
+                        name=stmt.name,
+                        body=_cse_body(stmt.body),
+                        line=stmt.line,
                     )
-            else:
-                if concrete_outputs:
-                    seen[key] = concrete_outputs
+                )
+            case SubgraphDef():
+                result.append(
+                    SubgraphDef(
+                        name=stmt.name,
+                        params=stmt.params,
+                        outputs=stmt.outputs,
+                        body=_cse_body(stmt.body),
+                        line=stmt.line,
+                    )
+                )
+            case TryExcept():
+                result.append(
+                    TryExcept(
+                        try_body=_cse_body(stmt.try_body),
+                        except_body=_cse_body(stmt.except_body),
+                        metadata=stmt.metadata,
+                        line=stmt.line,
+                    )
+                )
+            case _:
                 result.append(stmt)
-        elif isinstance(stmt, Namespace):
-            result.append(
-                Namespace(
-                    name=stmt.name,
-                    body=_cse_body(stmt.body),
-                    line=stmt.line,
-                )
-            )
-        elif isinstance(stmt, SubgraphDef):
-            result.append(
-                SubgraphDef(
-                    name=stmt.name,
-                    params=stmt.params,
-                    outputs=stmt.outputs,
-                    body=_cse_body(stmt.body),
-                    line=stmt.line,
-                )
-            )
-        elif isinstance(stmt, TryExcept):
-            result.append(
-                TryExcept(
-                    try_body=_cse_body(stmt.try_body),
-                    except_body=_cse_body(stmt.except_body),
-                    metadata=stmt.metadata,
-                    line=stmt.line,
-                )
-            )
-        else:
-            result.append(stmt)
 
     return result
 
@@ -489,15 +494,16 @@ class Optimizer(IRPass):
 
         pipeline_passes: list[IRPass] = []
         for name in selected:
-            if name == "parallel_detect":
-                pipeline_passes.append(ParallelPathDetector())
-            elif name == "branch_simplify":
-                pipeline_passes.append(BranchSimplifier())
-                pipeline_passes.append(DeadNamespaceEliminator())
-            elif name == "dead_code":
-                pipeline_passes.append(DeadCodePass())
-            elif name == "cse":
-                pipeline_passes.append(CommonSubexprEliminator())
+            match name:
+                case "parallel_detect":
+                    pipeline_passes.append(ParallelPathDetector())
+                case "branch_simplify":
+                    pipeline_passes.append(BranchSimplifier())
+                    pipeline_passes.append(DeadNamespaceEliminator())
+                case "dead_code":
+                    pipeline_passes.append(DeadCodePass())
+                case "cse":
+                    pipeline_passes.append(CommonSubexprEliminator())
 
         self._pipeline = PassPipeline(pipeline_passes)
 
@@ -524,42 +530,44 @@ def _group_into_blocks(stmts: list[Statement]) -> list[list[Statement]]:
     i = 0
     while i < len(stmts):
         stmt = stmts[i]
-        if isinstance(stmt, (Branch, Switch, Parallel)):
-            # Collect this + all following Namespace siblings that belong to it
-            block = [stmt]
-            # Gather the labels this control node owns
-            owned_labels: set[str] = set()
-            if isinstance(stmt, Branch):
-                owned_labels = {stmt.true_label, stmt.false_label}
-            elif isinstance(stmt, Switch):
-                owned_labels = {label for _, label in stmt.cases}
-                if stmt.default_label:
-                    owned_labels.add(stmt.default_label)
-            elif isinstance(stmt, Parallel):
-                owned_labels = set(stmt.labels)
-            # Consume following namespaces that match
-            j = i + 1
-            while j < len(stmts) and isinstance(stmts[j], Namespace) and stmts[j].name in owned_labels:
-                block.append(stmts[j])
-                j += 1
-            blocks.append(block)
-            i = j
-        elif isinstance(stmt, Jump):
-            # Jump + its target Namespace form ONE block
-            block = [stmt]
-            j = i + 1
-            while j < len(stmts) and isinstance(stmts[j], Namespace) and stmts[j].name == stmt.target:
-                block.append(stmts[j])
-                j += 1
-            blocks.append(block)
-            i = j
-        elif isinstance(stmt, (Namespace, TryExcept, TypeHintBlock)):
-            blocks.append([stmt])
-            i += 1
-        else:
-            # Assignment, FuncCall, etc.
-            blocks.append([stmt])
-            i += 1
+        match stmt:
+            case Branch() | Switch() | Parallel():
+                # Collect this + all following Namespace siblings that belong to it
+                block = [stmt]
+                # Gather the labels this control node owns
+                owned_labels: set[str] = set()
+                match stmt:
+                    case Branch():
+                        owned_labels = {stmt.true_label, stmt.false_label}
+                    case Switch():
+                        owned_labels = {label for _, label in stmt.cases}
+                        if stmt.default_label:
+                            owned_labels.add(stmt.default_label)
+                    case Parallel():
+                        owned_labels = set(stmt.labels)
+                # Consume following namespaces that match
+                j = i + 1
+                while j < len(stmts) and isinstance(stmts[j], Namespace) and stmts[j].name in owned_labels:
+                    block.append(stmts[j])
+                    j += 1
+                blocks.append(block)
+                i = j
+            case Jump():
+                # Jump + its target Namespace form ONE block
+                block = [stmt]
+                j = i + 1
+                while j < len(stmts) and isinstance(stmts[j], Namespace) and stmts[j].name == stmt.target:
+                    block.append(stmts[j])
+                    j += 1
+                blocks.append(block)
+                i = j
+            case Namespace() | TryExcept() | TypeHintBlock():
+                blocks.append([stmt])
+                i += 1
+            case _:
+                # Assignment, FuncCall, etc.
+                blocks.append([stmt])
+                i += 1
     return blocks
 
 
@@ -589,25 +597,27 @@ def _block_inputs(block: list[Statement]) -> set[str]:
 def _stmt_outputs(stmt: Statement) -> set[str]:
     """Return the set of variable names *produced* by *stmt*."""
     outputs: set[str] = set()
-    if isinstance(stmt, Assignment):
-        outputs.add(stmt.target)
-    elif isinstance(stmt, FuncCall):
-        for out in stmt.outputs:
-            if not isinstance(out, Wildcard):
-                outputs.add(out)
+    match stmt:
+        case Assignment():
+            outputs.add(stmt.target)
+        case FuncCall():
+            for out in stmt.outputs:
+                if not isinstance(out, Wildcard):
+                    outputs.add(out)
     return outputs
 
 
 def _stmt_inputs(stmt: Statement) -> set[str]:
     """Return the set of variable names *consumed* by *stmt*."""
     inputs: set[str] = set()
-    if isinstance(stmt, Assignment):
-        inputs |= _collect_identifier_names(stmt.value)
-    elif isinstance(stmt, FuncCall):
-        for inp in stmt.inputs:
-            inputs |= _collect_identifier_names(inp)
-    elif isinstance(stmt, Branch):
-        inputs |= _collect_identifier_names(stmt.condition)
-    elif isinstance(stmt, Switch):
-        inputs |= _collect_identifier_names(stmt.value)
+    match stmt:
+        case Assignment():
+            inputs |= _collect_identifier_names(stmt.value)
+        case FuncCall():
+            for inp in stmt.inputs:
+                inputs |= _collect_identifier_names(inp)
+        case Branch():
+            inputs |= _collect_identifier_names(stmt.condition)
+        case Switch():
+            inputs |= _collect_identifier_names(stmt.value)
     return inputs
