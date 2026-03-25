@@ -29,10 +29,10 @@ from kohakunode.compiler.passes import IRPass, PassPipeline, _collect_identifier
 # ---------------------------------------------------------------------------
 
 _ALL_PASSES: list[str] = [
-    "parallel_detect",
     "branch_simplify",
     "dead_code",
     "cse",
+    "parallel_detect",  # must be LAST — needs clean input from other passes
 ]
 
 # ---------------------------------------------------------------------------
@@ -41,31 +41,18 @@ _ALL_PASSES: list[str] = [
 
 
 class ParallelPathDetector(IRPass):
-    """Detect independent statement sequences and annotate them with metadata.
+    """Detect independent statement groups that a backend could run concurrently.
 
-    Two statements are *independent* when neither produces any variable
-    consumed by the other (directly or transitively through intervening
-    statements).  Independent runs are wrapped in a
-    :class:`~kohakunode.ast.nodes.Parallel` node whose ``labels`` are set to
-    the string ``"__parallel_group__"`` plus an index.
+    Groups consecutive statements into logical "blocks" — a Branch/Switch and
+    its sibling Namespaces form ONE block. Only top-level blocks are considered.
+    If two adjacent blocks share no data dependencies, they're wrapped in a
+    ``Parallel`` node.
 
-    The detector operates on the *flat* top-level body only (no recursion into
-    Namespace / SubgraphDef scopes) so that it cannot misidentify control-flow
-    boundaries as parallelisable.
-
-    Implementation note
-    -------------------
-    This is a conservative union-find approach: each statement starts in its
-    own group.  For every pair of statements (i, j) where i < j, if the
-    *outputs* of statement i appear in the *inputs* of statement j (or vice
-    versa) the two groups are merged.  After merging, groups with more than
-    one member whose statements are not interleaved with dependent statements
-    become candidates for a ``Parallel`` wrapper.
-
-    For simplicity the emitted ``Parallel`` node carries numeric group labels
-    ``"__parallel_group_0"``, ``"__parallel_group_1"``, … and each group's
-    statements are wrapped in a :class:`~kohakunode.ast.nodes.Namespace` with
-    the matching name so that the runtime can dispatch them concurrently.
+    Important constraints:
+    - Namespace children of Branch/Switch/Parallel are NEVER separated from their parent.
+    - Control flow (Jump, Branch, Switch) statements anchor everything that follows.
+    - Only truly independent, adjacent blocks are parallelized.
+    - The pass does NOT recurse into nested scopes.
     """
 
     @property
@@ -73,15 +60,16 @@ class ParallelPathDetector(IRPass):
         return "parallel_detect"
 
     def transform(self, program: Program) -> Program:
-        stmts = program.body
-        if len(stmts) < 2:
+        blocks = _group_into_blocks(program.body)
+        if len(blocks) < 2:
             return program
 
-        outputs_per_stmt = [_stmt_outputs(s) for s in stmts]
-        inputs_per_stmt = [_stmt_inputs(s) for s in stmts]
+        # Compute cumulative outputs/inputs per block
+        block_outputs = [_block_outputs(b) for b in blocks]
+        block_inputs = [_block_inputs(b) for b in blocks]
 
-        # Union-Find
-        parent = list(range(len(stmts)))
+        # Union-Find: merge blocks with data dependencies
+        parent = list(range(len(blocks)))
 
         def find(x: int) -> int:
             while parent[x] != x:
@@ -92,39 +80,48 @@ class ParallelPathDetector(IRPass):
         def union(x: int, y: int) -> None:
             parent[find(x)] = find(y)
 
-        # Merge any two stmts that share a data dependency
-        for i in range(len(stmts)):
-            for j in range(i + 1, len(stmts)):
-                # i produces something j consumes
-                if outputs_per_stmt[i] & inputs_per_stmt[j]:
+        for i in range(len(blocks)):
+            for j in range(i + 1, len(blocks)):
+                if block_outputs[i] & block_inputs[j]:
                     union(i, j)
-                # j produces something i consumes
-                elif outputs_per_stmt[j] & inputs_per_stmt[i]:
+                elif block_outputs[j] & block_inputs[i]:
                     union(i, j)
 
-        # Group statements by root
+        # Group blocks by root
         groups: dict[int, list[int]] = {}
-        for i in range(len(stmts)):
-            root = find(i)
-            groups.setdefault(root, []).append(i)
+        for i in range(len(blocks)):
+            groups.setdefault(find(i), []).append(i)
 
-        # Only transform when there are at least 2 independent groups
-        independent_groups = [idxs for idxs in groups.values() if len(idxs) >= 1]
+        # Check if there are actually independent groups
+        independent_groups = [idxs for idxs in groups.values()]
         if len(independent_groups) < 2:
             return program
 
-        # Assign a label to each group and build namespace wrappers
+        # Check: are the groups actually non-trivially parallelizable?
+        # If one group has almost everything, don't bother.
+        multi_groups = [g for g in independent_groups if any(len(blocks[i]) > 0 for i in g)]
+        if len(multi_groups) < 2:
+            return program
+
+        # Build parallel structure — only wrap if we have 2+ real groups
         group_stmts: list[Statement] = []
         labels: list[str] = []
         for g_idx, idxs in enumerate(independent_groups):
-            label = f"__parallel_group_{g_idx}"
+            # Flatten block statements back
+            body: list[Statement] = []
+            for i in sorted(idxs):
+                body.extend(blocks[i])
+            if not body:
+                continue
+            label = f"__par_{g_idx}"
             labels.append(label)
-            ns_body = [stmts[i] for i in sorted(idxs)]
-            group_stmts.append(Namespace(name=label, body=ns_body))
+            group_stmts.append(Namespace(name=label, body=body))
+
+        if len(labels) < 2:
+            return program
 
         new_body: list[Statement] = list(group_stmts)
         new_body.append(Parallel(labels=labels))
-
         return Program(body=new_body, mode=program.mode, typehints=program.typehints)
 
 
@@ -436,6 +433,70 @@ class Optimizer(IRPass):
 # ---------------------------------------------------------------------------
 # Internal utility: collect outputs / inputs of a statement
 # ---------------------------------------------------------------------------
+
+
+def _group_into_blocks(stmts: list[Statement]) -> list[list[Statement]]:
+    """Group statements into logical blocks.
+
+    A Branch/Switch/Parallel and its immediately following sibling Namespaces
+    form ONE block. Everything else is its own block.
+    """
+    blocks: list[list[Statement]] = []
+    i = 0
+    while i < len(stmts):
+        stmt = stmts[i]
+        if isinstance(stmt, (Branch, Switch, Parallel)):
+            # Collect this + all following Namespace siblings that belong to it
+            block = [stmt]
+            # Gather the labels this control node owns
+            owned_labels: set[str] = set()
+            if isinstance(stmt, Branch):
+                owned_labels = {stmt.true_label, stmt.false_label}
+            elif isinstance(stmt, Switch):
+                owned_labels = {label for _, label in stmt.cases}
+                if stmt.default_label:
+                    owned_labels.add(stmt.default_label)
+            elif isinstance(stmt, Parallel):
+                owned_labels = set(stmt.labels)
+            # Consume following namespaces that match
+            j = i + 1
+            while j < len(stmts) and isinstance(stmts[j], Namespace) and stmts[j].name in owned_labels:
+                block.append(stmts[j])
+                j += 1
+            blocks.append(block)
+            i = j
+        elif isinstance(stmt, (Jump, Namespace, TryExcept, TypeHintBlock)):
+            # These are structural — they anchor and can't be parallelized
+            blocks.append([stmt])
+            i += 1
+        else:
+            # Assignment, FuncCall, etc.
+            blocks.append([stmt])
+            i += 1
+    return blocks
+
+
+def _block_outputs(block: list[Statement]) -> set[str]:
+    """All variable names produced by any statement in the block."""
+    result: set[str] = set()
+    for s in block:
+        result |= _stmt_outputs(s)
+        # Also collect outputs from namespace bodies (they define variables too)
+        if isinstance(s, Namespace):
+            for inner in s.body:
+                result |= _stmt_outputs(inner)
+    return result
+
+
+def _block_inputs(block: list[Statement]) -> set[str]:
+    """All variable names consumed by any statement in the block."""
+    result: set[str] = set()
+    for s in block:
+        result |= _stmt_inputs(s)
+        if isinstance(s, Namespace):
+            for inner in s.body:
+                result |= _stmt_inputs(inner)
+    return result
 
 
 def _stmt_outputs(stmt: Statement) -> set[str]:

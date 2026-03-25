@@ -1,33 +1,24 @@
-__parallel_group_0:
+__par_0:
     debug_mode = True
     (debug_mode)branch(`debug_path`, `prod_path`)
-__parallel_group_1:
     debug_path:
         ("Debug: starting pipeline")log()
-__parallel_group_2:
     prod_path:
         ("Starting pipeline")log()
-__parallel_group_3:
-__parallel_group_4:
-__parallel_group_5:
-__parallel_group_6:
+__par_1:
     x = 10
     y = 20
     (x, y)add(result)
-__parallel_group_7:
-    (data)normalize(norm1)
-    (norm1)process_a(out_a)
-__parallel_group_8:
-    (data)normalize(norm2)
-    (norm2)process_b(out_b)
-__parallel_group_9:
     always_true = True
     (always_true)branch(`compute`, `skip`)
-__parallel_group_10:
     compute:
         (result, 2)multiply(doubled)
         (doubled)print()
-__parallel_group_11:
     skip:
         ("skipped")print()
-()parallel(`__parallel_group_0`, `__parallel_group_1`, `__parallel_group_2`, `__parallel_group_3`, `__parallel_group_4`, `__parallel_group_5`, `__parallel_group_6`, `__parallel_group_7`, `__parallel_group_8`, `__parallel_group_9`, `__parallel_group_10`, `__parallel_group_11`)
+__par_2:
+    (data)normalize(norm1)
+    norm2 = norm1
+    (norm1)process_a(out_a)
+    (norm2)process_b(out_b)
+()parallel(`__par_0`, `__par_1`, `__par_2`)

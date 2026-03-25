@@ -275,9 +275,9 @@ c = 99
         result = ParallelPathDetector().transform(prog)
         nss = _find_all(result, Namespace)
         assert len(nss) == 2
-        # Each namespace name starts with "__parallel_group_"
+        # Each namespace name starts with "__par_"
         for ns in nss:
-            assert ns.name.startswith("__parallel_group_")
+            assert ns.name.startswith("__par_")
 
     def test_pass_name(self) -> None:
         assert ParallelPathDetector().name == "parallel_detect"
