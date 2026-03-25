@@ -23,6 +23,7 @@ y = 20
 
 # ── 3. Common Subexpression Elimination ──
 # Both calls to normalize() have identical inputs → second is replaced.
+data = 42
 (data)normalize(norm1)
 (data)normalize(norm2)
 (norm1)process_a(out_a)

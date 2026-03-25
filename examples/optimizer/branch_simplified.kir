@@ -10,6 +10,7 @@ temp_c = 300
 x = 10
 y = 20
 (x, y)add(result)
+data = 42
 (data)normalize(norm1)
 (data)normalize(norm2)
 (norm1)process_a(out_a)

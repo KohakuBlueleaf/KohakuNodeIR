@@ -17,6 +17,7 @@ __par_1:
     skip:
         ("skipped")print()
 __par_2:
+    data = 42
     (data)normalize(norm1)
     norm2 = norm1
     (norm1)process_a(out_a)
