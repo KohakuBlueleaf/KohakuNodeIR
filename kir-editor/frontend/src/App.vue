@@ -10,10 +10,16 @@ import { initWasm } from './parser/wasmParser.js';
 // ── View mode (persisted) ──
 const viewMode = ref(load('viewMode', 'graph'));
 const codeEditorRef = ref(null);
+let prevViewMode = viewMode.value;
 watch(viewMode, (v) => {
   save('viewMode', v);
-  // When switching to code view, refresh editor from graph
+  // When switching away from code view, sync editor→graph
+  if (prevViewMode === 'code' && v !== 'code') {
+    codeEditorRef.value?.onDeactivate();
+  }
+  // When switching to code view, load graph into editor
   if (v === 'code') nextTick(() => codeEditorRef.value?.refreshFromGraph());
+  prevViewMode = v;
 });
 
 // ── Shared zoom ──

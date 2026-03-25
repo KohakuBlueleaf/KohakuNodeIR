@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import * as monaco from 'monaco-editor';
 import { registerKirLanguage } from '../../editor/kirLanguage.js';
 import { useGraphStore } from '../../stores/graph.js';
@@ -14,9 +14,9 @@ const editorContainer = ref(null);
 let editor = null;
 const hideMeta = ref(false);
 
-// When true, the editor content is the source of truth.
-// Graph→editor sync is suppressed; editor→graph sync is active.
-let editorIsSource = false;
+// Track whether the code editor is the active view
+let isActiveView = false;
+let suppressGraphWatch = false;
 
 // ── Compile graph → KIR text ──
 async function graphToKir() {
@@ -32,20 +32,17 @@ async function graphToKir() {
   return ir;
 }
 
-// ── Sync graph → editor (only when graph changed from node UI, NOT from editor) ──
+// ── Sync graph → editor (only when node UI changes while code view is active) ──
 let graphSyncTimer = null;
 watch(
   [() => graph.nodeList, () => graph.connectionList],
   () => {
-    if (editorIsSource) return;
+    if (!isActiveView || suppressGraphWatch) return;
     clearTimeout(graphSyncTimer);
     graphSyncTimer = setTimeout(async () => {
       const kir = await graphToKir();
       if (editor && kir !== editor.getValue()) {
-        // Temporarily mark as source to prevent the setValue triggering editor→graph
-        editorIsSource = true;
         editor.setValue(kir);
-        editorIsSource = false;
         if (hideMeta.value) updateMetaVisibility();
       }
     }, 300);
@@ -53,73 +50,55 @@ watch(
   { deep: true },
 );
 
-// ── Parse editor content → graph (realtime, does NOT touch editor content) ──
-let parseSyncTimer = null;
-function onEditorChange() {
-  // Mark editor as source of truth — suppress graph→editor sync
-  editorIsSource = true;
-  clearTimeout(parseSyncTimer);
-  parseSyncTimer = setTimeout(async () => {
-    const text = editor?.getValue();
-    if (!text?.trim()) {
-      editorIsSource = false;
-      return;
+// ── Sync editor → graph: only on explicit action (Sync button) ──
+async function syncToGraph() {
+  const text = editor?.getValue();
+  if (!text?.trim()) return;
+
+  try {
+    const result = await detectAndParseAsync(text);
+    if (!result?.nodes?.length) return;
+
+    const { nodes, connections } = parserResultToGraph(result.nodes, result.edges);
+    suppressGraphWatch = true;
+    graph.clear();
+    for (const node of nodes) graph.addNode(node);
+    for (const conn of connections) {
+      graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
     }
-
-    try {
-      const result = await detectAndParseAsync(text);
-      if (!result?.nodes?.length) {
-        editorIsSource = false;
-        return;
-      }
-
-      const { nodes, connections } = parserResultToGraph(result.nodes, result.edges);
-      graph.clear();
-      for (const node of nodes) graph.addNode(node);
-      for (const conn of connections) {
-        graph.addConnection(conn.fromNodeId, conn.fromPortId, conn.toNodeId, conn.toPortId, conn.portType);
-      }
-      monaco.editor.setModelMarkers(editor.getModel(), 'kir', []);
-    } catch (err) {
-      if (editor) {
-        monaco.editor.setModelMarkers(editor.getModel(), 'kir', [{
-          severity: monaco.MarkerSeverity.Error,
-          message: err.message || 'Parse error',
-          startLineNumber: 1, startColumn: 1,
-          endLineNumber: 1, endColumn: 1,
-        }]);
-      }
+    monaco.editor.setModelMarkers(editor.getModel(), 'kir', []);
+  } catch (err) {
+    if (editor) {
+      monaco.editor.setModelMarkers(editor.getModel(), 'kir', [{
+        severity: monaco.MarkerSeverity.Error,
+        message: err.message || 'Parse error',
+        startLineNumber: 1, startColumn: 1,
+        endLineNumber: 1, endColumn: 1,
+      }]);
     }
-    // Keep editorIsSource=true — it stays true until user switches away
-    // from code view or until a graph→editor sync from node UI
-  }, 600);
-}
-
-// Called when user switches to this view — refresh from graph if editor wasn't source
-function refreshFromGraph() {
-  if (!editorIsSource) {
-    graphToKir().then((kir) => {
-      if (editor && kir !== editor.getValue()) {
-        editorIsSource = true;
-        editor.setValue(kir);
-        editorIsSource = false;
-        if (hideMeta.value) updateMetaVisibility();
-      }
-    });
+  } finally {
+    suppressGraphWatch = false;
   }
 }
 
-// Reset source flag when editor loses focus (user switched to node/block view)
-function onEditorBlur() {
-  // Small delay — don't immediately reset during tab switches within code view
-  setTimeout(() => {
-    if (!editorContainer.value?.contains(document.activeElement)) {
-      editorIsSource = false;
+// Called when switching TO code view — load current graph into editor
+function refreshFromGraph() {
+  isActiveView = true;
+  graphToKir().then((kir) => {
+    if (editor && kir !== editor.getValue()) {
+      editor.setValue(kir);
+      if (hideMeta.value) updateMetaVisibility();
     }
-  }, 200);
+  });
 }
 
-defineExpose({ refreshFromGraph });
+// Called when switching AWAY from code view — sync editor content to graph
+function onDeactivate() {
+  isActiveView = false;
+  syncToGraph();
+}
+
+defineExpose({ refreshFromGraph, onDeactivate });
 
 // ── @meta visibility toggle ──
 function updateMetaVisibility() {
@@ -173,16 +152,12 @@ onMounted(async () => {
   });
 
   editor.onDidChangeModelContent(() => {
-    onEditorChange();
     if (hideMeta.value) updateMetaVisibility();
   });
-
-  editor.onDidBlurEditorWidget(onEditorBlur);
 });
 
 onBeforeUnmount(() => {
   clearTimeout(graphSyncTimer);
-  clearTimeout(parseSyncTimer);
   editor?.dispose();
   editor = null;
 });
@@ -203,8 +178,11 @@ onBeforeUnmount(() => {
       >
         @meta {{ hideMeta ? 'hidden' : 'visible' }}
       </button>
+      <button class="sync-btn" title="Apply code changes to node graph" @click="syncToGraph">
+        Sync to Graph
+      </button>
       <span class="kir-code-editor-hint">
-        Edit KIR directly — changes sync with the node graph
+        Edit KIR freely — click "Sync to Graph" or switch views to apply
       </span>
     </div>
     <div ref="editorContainer" class="kir-code-editor-body" />
@@ -282,6 +260,25 @@ onBeforeUnmount(() => {
 
 .meta-toggle-btn:hover {
   background: #313244;
+  color: #cdd6f4;
+}
+
+.sync-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid rgba(137, 180, 250, 0.4);
+  background: rgba(137, 180, 250, 0.08);
+  color: #89b4fa;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.sync-btn:hover {
+  background: rgba(137, 180, 250, 0.2);
   color: #cdd6f4;
 }
 
