@@ -6,8 +6,9 @@ pub mod compiler;
 
 pub mod parser;
 
+pub mod kirgraph;
+
 // Placeholder modules — implemented in later phases
-// pub mod kirgraph;
 // pub mod layout;
 pub mod analyzer;
 
