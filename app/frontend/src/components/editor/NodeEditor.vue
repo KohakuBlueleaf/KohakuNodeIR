@@ -124,22 +124,22 @@ function openNodeDefEditor(def) {
               <span>Properties</span>
             </div>
             <div class="prop-bottom-body" :style="{ height: propBottomH + 'px' }">
-              <PropertyPanel :horizontal="true" />
+              <PropertyPanel />
             </div>
           </div>
         </template>
       </div>
 
-      <!-- Right panel: IR right or Properties right -->
+      <!-- Right panel: IR (when open + right) or Properties (when IR bottom) -->
       <aside class="panel panel-right">
         <div class="drag-edge drag-edge--left" @pointerdown="onResizeRight" />
 
-        <!-- IR Preview — right position -->
+        <!-- IR Preview — right position (only when open) -->
         <template v-if="irOpen && irPosition === 'right'">
           <div class="ir-preview-header ir-preview-header--right" @click="emit('update:irOpen', !irOpen)">
             <span>IR Preview</span>
             <span class="ir-header-actions">
-              <button class="ir-pos-btn" title="Move IR to bottom (Properties goes right)"
+              <button class="ir-pos-btn" title="Move IR to bottom, Properties to right"
                 @click.stop="toggleIrPosition">⇤</button>
               <span class="ir-toggle-icon">✕</span>
             </span>
@@ -149,16 +149,24 @@ function openNodeDefEditor(def) {
           </div>
         </template>
 
-        <!-- Properties — right position (when IR is at bottom or closed) -->
-        <template v-else-if="propPosition === 'right'">
+        <!-- Properties — right position (when IR is at bottom or IR is closed) -->
+        <!-- When irPosition === 'right' and IR is closed, show an empty panel or placeholder -->
+        <template v-else-if="irPosition === 'bottom'">
           <div class="panel-title">Properties</div>
           <PropertyPanel />
         </template>
 
-        <!-- IR closed and IR position is right: show open prompt -->
-        <template v-else-if="!irOpen && irPosition === 'right'">
-          <div class="panel-title">Properties</div>
-          <PropertyPanel />
+        <!-- irPosition === 'right' but IR is closed: show IR closed state -->
+        <template v-else>
+          <div class="ir-preview-header ir-preview-header--right" @click="emit('update:irOpen', true)">
+            <span>IR Preview</span>
+            <span class="ir-header-actions">
+              <button class="ir-pos-btn" title="Move IR to bottom, Properties to right"
+                @click.stop="toggleIrPosition">⇤</button>
+              <span class="ir-toggle-icon">▶</span>
+            </span>
+          </div>
+          <div class="panel-empty-hint">Click header to open IR preview</div>
         </template>
       </aside>
     </div>
@@ -235,6 +243,17 @@ function openNodeDefEditor(def) {
   border-top: 1px solid #313244;
 }
 .ir-preview-body--right { flex: 1; height: auto; border-top: none; }
+
+.panel-empty-hint {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #45475a;
+  padding: 16px;
+  text-align: center;
+}
 
 /* ── Properties bottom strip ── */
 .prop-bottom-wrapper {

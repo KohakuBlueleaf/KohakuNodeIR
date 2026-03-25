@@ -6,7 +6,7 @@ import { useEditorStore } from '../../stores/editor.js';
 import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
 
 const props = defineProps({
-  // When true, render a compact horizontal layout (used when panel is at bottom)
+  // Compact horizontal layout for the bottom strip position
   horizontal: { type: Boolean, default: false },
 });
 
@@ -133,7 +133,7 @@ function deleteNode() {
 </script>
 
 <template>
-  <div class="prop-root" :class="{ 'prop-root--horizontal': horizontal }">
+  <div class="prop-root">
 
     <!-- ── Nothing selected ── -->
     <div v-if="selectedCount === 0" class="prop-empty">
@@ -143,7 +143,6 @@ function deleteNode() {
 
     <!-- ── Multiple nodes selected ── -->
     <div v-else-if="selectedCount > 1" class="prop-multi">
-      <div v-if="!horizontal" class="prop-section-title">Selection</div>
       <div class="prop-multi-info">
         <span class="i-carbon-assembly-cluster prop-multi-icon" />
         <span>{{ selectedCount }} nodes selected</span>
@@ -156,8 +155,8 @@ function deleteNode() {
       </div>
     </div>
 
-    <!-- ── Single node selected ── -->
-    <div v-else-if="singleNode" class="prop-scroll" :class="{ 'prop-scroll--h': horizontal }">
+    <!-- ── Single node selected — auto-wrapping layout ── -->
+    <div v-else-if="singleNode" class="prop-scroll">
 
       <!-- Header: name + type badge -->
       <div class="prop-header">
@@ -356,6 +355,173 @@ function deleteNode() {
   overflow: hidden;
   font-size: 12px;
   color: #cdd6f4;
+}
+
+/* ---- Horizontal (bottom strip) root ---- */
+.prop-root--horizontal {
+  flex-direction: row;
+  align-items: center;
+}
+
+/* ---- Horizontal single-node row ---- */
+.prop-h-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 100%;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+}
+.prop-h-row::-webkit-scrollbar {
+  height: 3px;
+}
+.prop-h-row::-webkit-scrollbar-track {
+  background: transparent;
+}
+.prop-h-row::-webkit-scrollbar-thumb {
+  background: #313244;
+  border-radius: 2px;
+}
+
+.prop-h-name-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.prop-h-name-input {
+  width: 140px;
+  flex-shrink: 0;
+}
+.prop-h-name-input :deep(.el-input__wrapper) {
+  background: #1e1e2e;
+  box-shadow: none;
+  border: 1px solid #313244;
+  border-radius: 4px;
+}
+.prop-h-name-input :deep(.el-input__wrapper:hover),
+.prop-h-name-input :deep(.el-input__wrapper.is-focus) {
+  border-color: #585b70;
+  box-shadow: none;
+}
+.prop-h-name-input :deep(.el-input__inner) {
+  color: #cdd6f4;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.prop-h-divider {
+  width: 1px;
+  height: 20px;
+  background: #313244;
+  flex-shrink: 0;
+}
+
+.prop-h-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6c7086;
+  flex-shrink: 0;
+}
+
+.prop-h-count {
+  font-size: 11px;
+  color: #a6adc8;
+  min-width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.prop-h-hint {
+  font-size: 10px;
+  color: #45475a;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.prop-h-select {
+  width: 80px;
+  flex-shrink: 0;
+}
+.prop-h-select :deep(.el-select__wrapper) {
+  background: #1e1e2e;
+  box-shadow: none;
+  border: 1px solid #313244;
+  border-radius: 4px;
+}
+.prop-h-select :deep(.el-select__wrapper:hover),
+.prop-h-select :deep(.el-select__wrapper.is-focused) {
+  border-color: #585b70;
+  box-shadow: none;
+}
+.prop-h-select :deep(.el-select__selected-item) {
+  color: #cdd6f4;
+  font-size: 11px;
+}
+
+.prop-h-input {
+  width: 120px;
+  flex-shrink: 0;
+}
+.prop-h-input :deep(.el-input__wrapper) {
+  background: #1e1e2e;
+  box-shadow: none;
+  border: 1px solid #313244;
+  border-radius: 4px;
+}
+.prop-h-input :deep(.el-input__wrapper:hover),
+.prop-h-input :deep(.el-input__wrapper.is-focus) {
+  border-color: #585b70;
+  box-shadow: none;
+}
+.prop-h-input :deep(.el-input__inner) {
+  color: #cdd6f4;
+  font-size: 11px;
+}
+
+.prop-h-debug-val {
+  font-size: 11px;
+  color: #585b70;
+  font-family: ui-monospace, monospace;
+  min-width: 32px;
+  flex-shrink: 0;
+}
+
+.prop-h-spacer {
+  flex: 1;
+}
+
+/* ---- Horizontal empty/multi overrides ---- */
+.prop-empty--h {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 12px;
+  flex: 1;
+}
+.prop-empty--h p {
+  margin: 0;
+  font-size: 11px;
+}
+.prop-empty-icon--h {
+  font-size: 16px;
+}
+
+.prop-multi--h {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  flex: 1;
+}
+.prop-multi--h .prop-section-title {
+  display: none;
 }
 
 /* ---- Empty / multi states ---- */
