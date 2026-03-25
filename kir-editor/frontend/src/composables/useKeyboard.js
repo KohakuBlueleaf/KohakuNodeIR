@@ -35,6 +35,8 @@ export function useKeyboard({ onCancelOperation } = {}) {
     if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true
     // Monaco editor uses a textarea inside a .monaco-editor container
     if (el.closest?.('.monaco-editor')) return true
+    // Code editor view is active (check if .kir-code-editor-root is visible)
+    if (document.querySelector('.kir-code-editor-root')?.offsetParent !== null) return true
     return false
   }
 
