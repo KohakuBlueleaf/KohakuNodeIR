@@ -23,7 +23,11 @@
                 { "include": "#label-ref" },
                 { "include": "#switch-arrow" },
                 { "include": "#keyword-arg" },
-                { "include": "#wildcard" }
+                { "include": "#wildcard" },
+                {
+                    "match": "\\b[a-zA-Z_]\\w*\\b",
+                    "name": "variable.other.kir"
+                }
             ]
         },
 
