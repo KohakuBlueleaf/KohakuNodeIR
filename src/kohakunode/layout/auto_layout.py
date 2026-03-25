@@ -172,6 +172,137 @@ def _bfs_ctrl_chain(
     return grid, placed
 
 
+FOLD_TYPES = {"branch", "merge", "switch", "parallel"}
+
+
+def _fold_grid(
+    grid: dict[str, tuple[int, int]],
+    node_map: dict[str, "KGNode"],
+) -> None:
+    """Fold the grid to target roughly 3:2 (col:row) aspect ratio.
+
+    Strategy:
+    1. Measure current grid dimensions
+    2. If too tall: split long columns vertically, concat halves horizontally
+       - Prefer splitting at control flow nodes (branch, merge, switch, parallel)
+    3. If too wide: split long rows horizontally, concat halves vertically
+       - Higher threshold (rows can be wider than columns are tall)
+    """
+    if not grid:
+        return
+
+    # Measure current dimensions
+    max_col = max(c for c, _ in grid.values())
+    min_col = min(c for c, _ in grid.values())
+    max_row = max(r for _, r in grid.values())
+    min_row = min(r for _, r in grid.values())
+    width = max_col - min_col + 1
+    height = max_row - min_row + 1
+
+    if height <= 8 and width <= 12:
+        return  # Already compact enough
+
+    # Target aspect ratio: prefer wider than tall (3:2)
+    # If height > width * 2, fold columns
+    if height > max(8, width * 2):
+        _fold_columns(grid, node_map, height)
+
+    # Recompute after column folding
+    if grid:
+        max_row = max(r for _, r in grid.values())
+        min_row = min(r for _, r in grid.values())
+        max_col = max(c for c, _ in grid.values())
+        min_col = min(c for c, _ in grid.values())
+        width = max_col - min_col + 1
+        height = max_row - min_row + 1
+
+    # If width > height * 3, fold rows (higher threshold)
+    if width > max(12, height * 3):
+        _fold_rows(grid, node_map, width)
+
+
+def _fold_columns(
+    grid: dict[str, tuple[int, int]],
+    node_map: dict[str, "KGNode"],
+    total_height: int,
+) -> None:
+    """Split tall columns: take the bottom half and place it as a new column to the right."""
+    # Group nodes by column
+    col_nodes: dict[int, list[tuple[str, int]]] = {}
+    for nid, (c, r) in grid.items():
+        col_nodes.setdefault(c, []).append((nid, r))
+
+    # Process each column
+    col_offset = 0  # How many new columns we've added
+    max_existing_col = max(c for c, _ in grid.values())
+
+    for col in sorted(col_nodes.keys()):
+        nodes = sorted(col_nodes[col], key=lambda x: x[1])
+        if len(nodes) <= 8:
+            continue
+
+        # Find best split point — prefer control flow nodes near the middle
+        mid = len(nodes) // 2
+        best_split = mid
+
+        # Search around the middle for a control flow fold point
+        for offset in range(len(nodes) // 4):
+            for candidate in [mid + offset, mid - offset]:
+                if 0 < candidate < len(nodes):
+                    nid = nodes[candidate][0]
+                    node = node_map.get(nid)
+                    if node and node.type in FOLD_TYPES:
+                        best_split = candidate
+                        break
+            else:
+                continue
+            break
+
+        # Split: top half stays, bottom half moves to new column
+        top_half = nodes[:best_split]
+        bottom_half = nodes[best_split:]
+
+        if not bottom_half:
+            continue
+
+        # Place bottom half in a new column to the right of everything
+        max_existing_col += 1
+        new_col = max_existing_col
+        base_row = top_half[0][1] if top_half else 0  # Align top of new column
+
+        for i, (nid, _old_row) in enumerate(bottom_half):
+            grid[nid] = (new_col, base_row + i)
+
+
+def _fold_rows(
+    grid: dict[str, tuple[int, int]],
+    node_map: dict[str, "KGNode"],
+    total_width: int,
+) -> None:
+    """Split wide rows: take the right half and place it as new rows below."""
+    # Group nodes by row
+    row_nodes: dict[int, list[tuple[str, int]]] = {}
+    for nid, (c, r) in grid.items():
+        row_nodes.setdefault(r, []).append((nid, c))
+
+    max_existing_row = max(r for _, r in grid.values())
+
+    for row in sorted(row_nodes.keys()):
+        nodes = sorted(row_nodes[row], key=lambda x: x[1])
+        if len(nodes) <= 12:
+            continue
+
+        mid = len(nodes) // 2
+        right_half = nodes[mid:]
+
+        max_existing_row += 1
+        new_row = max_existing_row
+        base_col = nodes[0][1]
+
+        for i, (nid, _old_col) in enumerate(right_half):
+            grid[nid] = (base_col + i, new_row)
+
+
 def _place_data_sources(
     needs_ids: set[str],
     placed: set[str],
@@ -333,6 +464,9 @@ def auto_layout(graph: KirGraph) -> KirGraph:
     grid, placed = _bfs_ctrl_chain(
         ctrl_roots, ctrl_nodes, needs_ids, ctrl_adj, node_rank, node_order
     )
+
+    # Fold the grid to target a reasonable aspect ratio
+    _fold_grid(grid, node_map)
 
     _place_data_sources(needs_ids, placed, grid, data_adj)
     _place_data_consumers(needs_ids, placed, grid, data_rev)
