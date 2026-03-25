@@ -28,7 +28,7 @@ KohakuNodeIR is a portable IR language and toolchain for node-based visual progr
   └──────────────────────────────────────────────────────────────┘
 ```
 
-The `app/` directory contains an **example** full-stack application (Vue 3 node editor + FastAPI execution server) demonstrating how to build on top of the core. It is not part of the core toolchain.
+The `kir-editor/` directory contains an **example** full-stack application (Vue 3 node editor + FastAPI execution server) demonstrating how to build on top of the core. It is not part of the core toolchain.
 
 ---
 
@@ -469,11 +469,11 @@ Variable naming convention `{node_id}_{port_name}` (e.g., `add1_result`) is what
 
 ---
 
-## Appendix: Example Full-Stack App (`app/`)
+## Appendix: Example Full-Stack App (`kir-editor/`)
 
-The `app/` directory contains an **example** application showing how to build a full node editor + execution server on top of the core `kohakunode` library. It is **not** part of the core toolchain.
+The `kir-editor/` directory contains an **example** application showing how to build a full node editor + execution server on top of the core `kohakunode` library. It is **not** part of the core toolchain.
 
-- **`app/frontend/`** — Vue 3 node editor (Vite, Pinia, Element Plus, UnoCSS). Compiles graphs to `.kirgraph` JSON or KIR text, communicates with the backend via REST/WebSocket.
-- **`app/backend/`** — FastAPI server. Exposes endpoints for executing KIR programs, compiling/decompiling between L1↔L2, and managing user-defined node types.
+- **`kir-editor/frontend/`** — Vue 3 node editor (Vite, Pinia, Element Plus, UnoCSS). Compiles graphs to `.kirgraph` JSON or KIR text, communicates with the backend via REST/WebSocket.
+- **`kir-editor/backend/`** — FastAPI server. Exposes endpoints for executing KIR programs, compiling/decompiling between L1↔L2, and managing user-defined node types.
 
-See `app/` source and `docs/api.md` for details.
+See `kir-editor/` source and `docs/api.md` for details.

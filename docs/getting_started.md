@@ -33,16 +33,16 @@ pip install -e .
 
 This installs the `kohakunode` package in editable mode. The backend server depends on it.
 
-Install backend dependencies from `app/backend/requirements.txt`:
+Install backend dependencies from `kir-editor/backend/requirements.txt`:
 
 ```bash
-pip install -r app/backend/requirements.txt
+pip install -r kir-editor/backend/requirements.txt
 ```
 
 ### 3. Install frontend dependencies
 
 ```bash
-cd app/frontend
+cd kir-editor/frontend
 npm install
 cd ../..
 ```
@@ -56,7 +56,7 @@ You need two processes: the backend server and the frontend dev server.
 ### Start the backend
 
 ```bash
-cd app/backend
+cd kir-editor/backend
 python main.py
 ```
 
@@ -74,7 +74,7 @@ INFO:     Uvicorn running on http://0.0.0.0:48888
 In a separate terminal:
 
 ```bash
-cd app/frontend
+cd kir-editor/frontend
 npm run dev
 ```
 
@@ -432,9 +432,9 @@ The source graph is `source.kirgraph`. Compiled outputs are `compiled_l2.kir` an
 
 ## Troubleshooting
 
-**Backend not reachable**: Check that `python main.py` is running in `app/backend/` and that port `48888` is not blocked by a firewall. Check the terminal for startup errors (e.g., missing `kohakunode` package — run `pip install -e .` from the project root).
+**Backend not reachable**: Check that `python main.py` is running in `kir-editor/backend/` and that port `48888` is not blocked by a firewall. Check the terminal for startup errors (e.g., missing `kohakunode` package — run `pip install -e .` from the project root).
 
-**Frontend can't connect**: The Vite proxy requires the backend to be on port `48888`. If you changed the backend port, update the `proxy` in `app/frontend/vite.config.js`.
+**Frontend can't connect**: The Vite proxy requires the backend to be on port `48888`. If you changed the backend port, update the `proxy` in `kir-editor/frontend/vite.config.js`.
 
 **"Function '...' is not registered"**: The KIR program references a function not in the backend registry. Register it via `POST /api/nodes/register` or add it to `builtin_nodes.py`.
 

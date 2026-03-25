@@ -1,0 +1,919 @@
+<script setup>
+import { ref, computed, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useGraphStore } from '../../stores/graph.js';
+import { compileGraph } from '../../compiler/graphToIr.js';
+import { graphToKirgraph } from '../../compiler/kirgraph.js';
+import { executeKirStreaming } from '../../api/backend.js';
+import { compileGraphToKir, compileGraphToKirL3, isWasmReady } from '../../parser/wasmParser.js';
+
+const graph = useGraphStore();
+
+// ---- Panel tab: 'kir-l2' | 'kir-l3' | 'kirgraph' ----
+const activeTab = ref('kir-l2');
+
+// ---- Reactive IR text (L2) ----
+const irText = ref('');
+const compileErrors = ref([]);
+
+// 'wasm' | 'js' | 'loading'
+const compilerSource = ref('loading');
+
+// ---- Reactive IR text (L3) ----
+const irTextL3 = ref('');
+const irTextL3Status = ref('idle'); // 'idle' | 'loading' | 'ready' | 'unavailable'
+
+// Recompute L2 whenever the graph changes.
+// Tries the WASM Rust compiler first; falls back to the JS compiler.
+watch(
+  [() => graph.nodeList, () => graph.connectionList],
+  async ([nodes, conns]) => {
+    if (!nodes.length) {
+      irText.value = '';
+      compileErrors.value = [];
+      compilerSource.value = 'wasm';
+      return;
+    }
+
+    const kirgraph = graphToKirgraph(nodes, conns);
+    const pyKir = await compileGraphToKir(JSON.stringify(kirgraph));
+
+    if (pyKir !== null) {
+      irText.value = pyKir;
+      compileErrors.value = [];
+      compilerSource.value = 'wasm';
+    } else {
+      // WASM not ready — fall back to JS compiler
+      const { ir, errors } = compileGraph(nodes, conns);
+      irText.value = ir;
+      compileErrors.value = errors;
+      compilerSource.value = isWasmReady() ? 'js' : 'loading';
+    }
+  },
+  { immediate: true, deep: true },
+);
+
+// Recompute L3 whenever the graph changes (only if L3 tab is active or has been visited).
+watch(
+  [() => graph.nodeList, () => graph.connectionList],
+  async ([nodes, conns]) => {
+    if (!nodes.length) {
+      irTextL3.value = '';
+      irTextL3Status.value = 'idle';
+      return;
+    }
+    // Only recompute if we've already loaded L3 once (tab was visited)
+    if (irTextL3Status.value === 'idle') return;
+
+    irTextL3Status.value = 'loading';
+    const kirgraph = graphToKirgraph(nodes, conns);
+    const l3 = await compileGraphToKirL3(JSON.stringify(kirgraph));
+    if (l3 !== null) {
+      irTextL3.value = l3;
+      irTextL3Status.value = 'ready';
+    } else {
+      irTextL3Status.value = 'unavailable';
+    }
+  },
+  { deep: true },
+);
+
+// Lazy-load L3 when the tab is first selected
+async function ensureL3() {
+  if (irTextL3Status.value !== 'idle') return;
+  if (!graph.nodeList.length) { irTextL3Status.value = 'idle'; return; }
+  irTextL3Status.value = 'loading';
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  const l3 = await compileGraphToKirL3(JSON.stringify(kirgraph));
+  if (l3 !== null) {
+    irTextL3.value = l3;
+    irTextL3Status.value = 'ready';
+  } else {
+    irTextL3Status.value = 'unavailable';
+  }
+}
+
+function selectTab(tab) {
+  activeTab.value = tab;
+  if (tab === 'kir-l3') ensureL3();
+}
+
+// ---- Reactive kirgraph JSON ----
+const kirgraphJson = computed(() => {
+  const kg = graphToKirgraph(graph.nodeList, graph.connectionList);
+  return JSON.stringify(kg, null, 2);
+});
+
+// ---- Active display text ----
+const displayText = computed(() => {
+  if (activeTab.value === 'kirgraph') return kirgraphJson.value;
+  if (activeTab.value === 'kir-l3') return irTextL3Status.value === 'ready' ? irTextL3.value : '';
+  return irText.value;
+});
+
+// ---- Line count for gutter ----
+const lineCount = computed(() => {
+  const t = displayText.value;
+  return t ? t.split('\n').length : 0;
+});
+
+// ---- Syntax highlight ----
+// Regex-based highlighter for KIR syntax
+function highlight(text) {
+  // Process line-by-line to avoid regex corruption between injected spans
+  return text.split('\n').map(highlightLine).join('\n');
+}
+
+function highlightLine(line) {
+  // Escape HTML
+  let s = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Comment lines — wrap entire line and return early
+  if (/^\s*#/.test(s)) {
+    return `<span class="ir-comment">${s}</span>`;
+  }
+
+  // Extract and protect string literals + backtick labels before other highlighting.
+  // Replace them with placeholders, highlight the rest, then restore.
+  const tokens = [];
+  function stash(match, cls) {
+    const id = `\x00T${tokens.length}T\x00`;
+    tokens.push(`<span class="${cls}">${match}</span>`);
+    return id;
+  }
+
+  // Strings first (double-quoted)
+  s = s.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (m) => stash(m, 'ir-string'));
+  // Backtick labels
+  s = s.replace(/`[^`]*`/g, (m) => stash(m, 'ir-label'));
+
+  // Now safe to highlight without hitting quotes inside span attributes
+  s = s.replace(/(@(?:meta|mode|def|dataflow)\b)/g, '<span class="ir-directive">$1</span>');
+  s = s.replace(/\b(branch|switch|jump|parallel)\b/g, '<span class="ir-keyword">$1</span>');
+  s = s.replace(/\b(True|False|None)\b/g, '<span class="ir-literal">$1</span>');
+  s = s.replace(/^(\s*\w+)(:)$/g, '<span class="ir-label">$1$2</span>');
+  s = s.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="ir-number">$1</span>');
+  s = s.replace(/^(\s*)(\w+)(\s*=)/g, '$1<span class="ir-var">$2</span>$3');
+  s = s.replace(/\)([\w.]+)\(/g, ')<span class="ir-func">$1</span>(');
+
+  // Restore stashed tokens
+  s = s.replace(/\x00T(\d+)T\x00/g, (_, i) => tokens[+i]);
+
+  return s;
+}
+
+// JSON syntax highlighter for the KirGraph tab
+function highlightJson(text) {
+  let s = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // String values (before keys so keys get re-highlighted below)
+  s = s.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="ir-string">"$1"</span>');
+  // JSON keys: a string followed by a colon
+  s = s.replace(
+    /(<span class="ir-string">"([^"]*)"<\/span>)(\s*:)/g,
+    '<span class="json-key">"$2"</span>$3',
+  );
+  // Numbers
+  s = s.replace(/\b(-?\d+(\.\d+)?([eE][+-]?\d+)?)\b/g, '<span class="ir-number">$1</span>');
+  // Booleans / null
+  s = s.replace(/\b(true|false|null)\b/g, '<span class="ir-literal">$1</span>');
+
+  return s;
+}
+
+const highlightedIR = computed(() => {
+  if (activeTab.value === 'kirgraph') return highlightJson(kirgraphJson.value);
+  if (activeTab.value === 'kir-l3') {
+    return irTextL3Status.value === 'ready' ? highlight(irTextL3.value) : '';
+  }
+  return highlight(irText.value);
+});
+
+// ---- Copy to clipboard ----
+async function copyToClipboard() {
+  let text = '';
+  let label = 'IR';
+  if (activeTab.value === 'kirgraph') {
+    text = kirgraphJson.value;
+    label = 'KirGraph JSON';
+  } else if (activeTab.value === 'kir-l3') {
+    text = irTextL3.value;
+    label = 'KIR L3';
+  } else {
+    text = irText.value;
+    label = 'KIR L2';
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    ElMessage({ message: `${label} copied to clipboard.`, type: 'success', duration: 1500 });
+  } catch {
+    ElMessage({ message: 'Copy failed — check browser permissions.', type: 'error', duration: 2000 });
+  }
+}
+
+// ---- Execute with WebSocket live output ----
+const isExecuting = ref(false);
+const execOutput = ref('');
+const execError = ref('');
+const execVariables = ref({});
+const showExecOutput = ref(false);
+const varsCollapsed = ref(true);
+
+// Active WS cancel handle — allows stopping mid-run
+let _cancelExec = null;
+
+async function execute() {
+  if (isExecuting.value) {
+    // Cancel the current run
+    _cancelExec?.();
+    _cancelExec = null;
+    isExecuting.value = false;
+    return;
+  }
+
+  if (!graph.nodeList.length) {
+    ElMessage({ message: 'Graph is empty — nothing to execute.', type: 'warning', duration: 2000 });
+    return;
+  }
+
+  // Use L2 KIR text for execution (same path as Toolbar.vue runGraph)
+  // Try WASM first; fall back to JS compiler
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  let kir = await compileGraphToKir(JSON.stringify(kirgraph));
+  if (!kir) {
+    const { ir: jsIr } = compileGraph(graph.nodeList, graph.connectionList);
+    kir = jsIr;
+  }
+
+  isExecuting.value = true;
+  execOutput.value = '';
+  execError.value = '';
+  execVariables.value = {};
+  showExecOutput.value = true;
+
+  const { cancel, ws } = executeKirStreaming(kir, {
+    onStarted() {
+      execOutput.value += '[ Execution started ]\n';
+    },
+    onOutput(text) {
+      execOutput.value += text;
+      // Ensure output ends with newline for readability
+      if (text && !text.endsWith('\n')) execOutput.value += '\n';
+    },
+    onError(msg) {
+      execError.value = msg;
+      isExecuting.value = false;
+    },
+    onVariable(name, value) {
+      execVariables.value = { ...execVariables.value, [name]: value };
+    },
+    onCompleted(variables) {
+      execVariables.value = variables;
+      isExecuting.value = false;
+      _cancelExec = null;
+      ElMessage({ message: 'Execution completed.', type: 'success', duration: 1500 });
+    },
+  });
+
+  _cancelExec = cancel;
+
+  ws.onerror = () => {
+    execError.value = 'WebSocket error — is the backend running on port 48888?';
+    isExecuting.value = false;
+    _cancelExec = null;
+  };
+
+  ws.onclose = (event) => {
+    isExecuting.value = false;
+    _cancelExec = null;
+    if (event.code !== 1000 && !execError.value) {
+      execError.value = `Connection closed unexpectedly (code ${event.code}).`;
+    }
+  };
+}
+
+// ---- Resizable split between code and exec output ----
+const execOutputH = ref(140);
+
+function onResizeExecOutput(e) {
+  e.preventDefault();
+  const startY = e.clientY;
+  const startH = execOutputH.value;
+  const onMove = (ev) => {
+    const delta = startY - ev.clientY;
+    execOutputH.value = Math.max(60, Math.min(400, startH + delta));
+  };
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
+  document.body.style.cursor = 'row-resize';
+  document.body.style.userSelect = 'none';
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+}
+</script>
+
+<template>
+  <div class="ir-root">
+
+    <!-- Toolbar row 1: tabs + badge -->
+    <div class="ir-toolbar ir-toolbar--row1">
+      <div class="ir-tab-group" role="tablist">
+        <button
+          class="ir-tab-btn"
+          :class="{ active: activeTab === 'kir-l2' }"
+          role="tab"
+          :aria-selected="activeTab === 'kir-l2'"
+          title="Show compiled KIR L2 output (with @meta annotations)"
+          @click="selectTab('kir-l2')"
+        >KIR L2</button>
+        <button
+          class="ir-tab-btn"
+          :class="{ active: activeTab === 'kir-l3' }"
+          role="tab"
+          :aria-selected="activeTab === 'kir-l3'"
+          title="Show optimized KIR L3 output (stripped, requires WASM)"
+          @click="selectTab('kir-l3')"
+        >KIR L3</button>
+        <button
+          class="ir-tab-btn"
+          :class="{ active: activeTab === 'kirgraph' }"
+          role="tab"
+          :aria-selected="activeTab === 'kirgraph'"
+          title="Show .kirgraph JSON (L1 IR)"
+          @click="selectTab('kirgraph')"
+        >KirGraph JSON</button>
+      </div>
+
+      <!-- Compiler source badge (KIR L2 tab only) -->
+      <span
+        v-if="activeTab === 'kir-l2'"
+        class="ir-compiler-badge"
+        :class="`ir-compiler-badge--${compilerSource}`"
+        :title="compilerSource === 'wasm' ? 'Compiled by WASM (Rust KirGraphCompiler)' : compilerSource === 'loading' ? 'WASM loading — showing JS fallback' : 'Compiled by JS fallback compiler'"
+      >
+        {{ compilerSource === 'wasm' ? 'WASM' : compilerSource === 'loading' ? '...' : 'JS' }}
+      </span>
+
+      <!-- L3 status badge -->
+      <span
+        v-if="activeTab === 'kir-l3'"
+        class="ir-compiler-badge"
+        :class="irTextL3Status === 'ready' ? 'ir-compiler-badge--python' : irTextL3Status === 'loading' ? 'ir-compiler-badge--loading' : 'ir-compiler-badge--js'"
+        :title="irTextL3Status === 'ready' ? 'Compiled by WASM full pipeline' : irTextL3Status === 'loading' ? 'Compiling…' : 'WASM required for L3'"
+      >
+        {{ irTextL3Status === 'ready' ? 'WASM' : irTextL3Status === 'loading' ? '...' : 'N/A' }}
+      </span>
+
+      <span class="ir-stats ir-stats--right">
+        {{ graph.nodeList.length }} node{{ graph.nodeList.length !== 1 ? 's' : '' }},
+        {{ graph.connectionList.length }} conn{{ graph.connectionList.length !== 1 ? 's' : '' }}
+      </span>
+    </div>
+
+    <!-- Toolbar row 2: actions -->
+    <div class="ir-toolbar ir-toolbar--row2">
+      <button class="ir-action-btn" title="Copy to clipboard" @click="copyToClipboard">
+        <span class="i-carbon-copy" />
+        Copy
+      </button>
+      <button
+        class="ir-action-btn ir-action-btn--exec"
+        :class="{ 'ir-action-btn--exec-running': isExecuting }"
+        :title="isExecuting ? 'Click to cancel execution' : 'Execute graph on backend (uses L2 KIR)'"
+        @click="execute"
+      >
+        <span :class="isExecuting ? 'i-carbon-stop-filled' : 'i-carbon-play'" />
+        {{ isExecuting ? 'Stop' : 'Execute' }}
+      </button>
+    </div>
+
+    <!-- Compilation errors banner (KIR L2 tab only) -->
+    <div v-if="activeTab === 'kir-l2' && compileErrors.length > 0" class="ir-errors">
+      <div v-for="(err, i) in compileErrors" :key="i" class="ir-error-line">
+        {{ err }}
+      </div>
+    </div>
+
+    <!-- Code display -->
+    <div class="ir-code-wrapper" :class="{ 'ir-code-wrapper--with-output': showExecOutput }">
+      <template v-if="activeTab === 'kir-l3' && irTextL3Status !== 'ready'">
+        <div class="ir-placeholder">
+          <template v-if="irTextL3Status === 'loading'">
+            <span class="i-carbon-circle-dash exec-spin ir-placeholder-icon" />
+            Compiling L3…
+          </template>
+          <template v-else-if="irTextL3Status === 'unavailable'">
+            <span class="i-carbon-warning ir-placeholder-icon" />
+            WASM required for KIR L3 compilation
+          </template>
+          <template v-else>
+            <span class="i-carbon-code ir-placeholder-icon" />
+            Select this tab to compile L3
+          </template>
+        </div>
+      </template>
+      <template v-else>
+        <!-- Line gutter -->
+        <div class="ir-gutter" aria-hidden="true">
+          <div v-for="n in lineCount" :key="n" class="ir-gutter-line">{{ n }}</div>
+        </div>
+        <!-- Highlighted code -->
+        <pre class="ir-code" v-html="highlightedIR" />
+      </template>
+    </div>
+
+    <!-- Execution output panel (resizable) -->
+    <template v-if="showExecOutput">
+      <!-- Resize handle -->
+      <div class="exec-resize-handle" @pointerdown="onResizeExecOutput" />
+      <div class="exec-output-panel" :style="{ height: execOutputH + 'px' }">
+        <div class="exec-output-header">
+          <span class="exec-output-title">
+            <span :class="isExecuting ? 'i-carbon-circle-dash exec-spin' : 'i-carbon-checkmark'" />
+            {{ isExecuting ? 'Executing…' : 'Execution Output' }}
+          </span>
+          <button class="exec-close-btn" title="Close output" @click="showExecOutput = false">✕</button>
+        </div>
+        <div v-if="execError" class="exec-error">{{ execError }}</div>
+        <pre class="exec-output-body">{{ execOutput || (isExecuting ? '(waiting for output…)' : '(no output)') }}</pre>
+        <!-- Variable results (collapsible) -->
+        <div v-if="!isExecuting && Object.keys(execVariables).length > 0" class="exec-vars">
+          <div class="exec-vars-header" @click="varsCollapsed = !varsCollapsed">
+            <span class="exec-vars-chevron" :class="{ 'exec-vars-chevron--open': !varsCollapsed }">&#9654;</span>
+            <span class="exec-vars-title">Variables ({{ Object.keys(execVariables).length }})</span>
+          </div>
+          <div v-if="!varsCollapsed" class="exec-vars-body">
+            <div
+              v-for="(val, key) in execVariables"
+              :key="key"
+              class="exec-var-row"
+            >
+              <span class="exec-var-name">{{ key }}</span>
+              <span class="exec-var-eq">=</span>
+              <span class="exec-var-val">{{ typeof val === 'object' ? JSON.stringify(val) : String(val) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+  </div>
+</template>
+
+<style scoped>
+.ir-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #11111b;
+  overflow: hidden;
+  font-size: 12px;
+  color: #cdd6f4;
+}
+
+/* ---- Toolbar rows ---- */
+.ir-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: #181825;
+  flex-shrink: 0;
+}
+.ir-toolbar--row1 {
+  border-bottom: 1px solid #1e1e2e;
+  padding-bottom: 4px;
+}
+.ir-toolbar--row2 {
+  border-bottom: 1px solid #313244;
+  padding-top: 4px;
+}
+
+.ir-stats--right {
+  margin-left: auto;
+  font-size: 10px;
+  color: #45475a;
+}
+
+.ir-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  color: #a6adc8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.ir-action-btn:hover:not(:disabled) {
+  background: #313244;
+  border-color: #585b70;
+  color: #cdd6f4;
+}
+.ir-action-btn--exec {
+  color: #a6e3a1;
+  border-color: rgba(166, 227, 161, 0.4);
+}
+.ir-action-btn--exec:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.ir-action-btn--exec-running {
+  color: #f9e2af;
+  border-color: rgba(249, 226, 175, 0.5);
+  animation: exec-pulse 1.2s ease-in-out infinite;
+}
+@keyframes exec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+
+.ir-compiler-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+  cursor: default;
+  min-width: 28px;
+}
+.ir-compiler-badge--python {
+  color: #a6e3a1;
+  border-color: rgba(166, 227, 161, 0.4);
+  background: rgba(166, 227, 161, 0.08);
+}
+.ir-compiler-badge--js {
+  color: #f9e2af;
+  border-color: rgba(249, 226, 175, 0.4);
+  background: rgba(249, 226, 175, 0.08);
+}
+.ir-compiler-badge--loading {
+  color: #6c7086;
+  border-color: rgba(108, 112, 134, 0.4);
+  background: transparent;
+}
+
+/* ---- Tab group ---- */
+.ir-tab-group {
+  display: flex;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ir-tab-btn {
+  padding: 3px 10px;
+  background: transparent;
+  border: none;
+  color: #6c7086;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.ir-tab-btn + .ir-tab-btn {
+  border-left: 1px solid #45475a;
+}
+.ir-tab-btn:hover:not(.active) {
+  background: #313244;
+  color: #a6adc8;
+}
+.ir-tab-btn.active {
+  background: #313244;
+  color: #cdd6f4;
+  font-weight: 600;
+}
+
+/* ---- Errors banner ---- */
+.ir-errors {
+  background: rgba(243, 139, 168, 0.1);
+  border-bottom: 1px solid rgba(243, 139, 168, 0.3);
+  padding: 6px 14px;
+  flex-shrink: 0;
+}
+.ir-error-line {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 11px;
+  color: #f38ba8;
+  line-height: 1.5;
+}
+
+/* ---- Code wrapper ---- */
+.ir-code-wrapper {
+  flex: 1;
+  display: flex;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* ---- Placeholder (L3 not loaded) ---- */
+.ir-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #45475a;
+  font-size: 12px;
+  padding: 20px;
+}
+.ir-placeholder-icon {
+  font-size: 16px;
+}
+.ir-code-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.ir-code-wrapper::-webkit-scrollbar-track {
+  background: #11111b;
+}
+.ir-code-wrapper::-webkit-scrollbar-thumb {
+  background: #313244;
+  border-radius: 3px;
+}
+.ir-code-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #45475a;
+}
+
+/* ---- Gutter ---- */
+.ir-gutter {
+  flex-shrink: 0;
+  padding: 10px 0;
+  background: #11111b;
+  border-right: 1px solid #1e1e2e;
+  user-select: none;
+  text-align: right;
+}
+.ir-gutter-line {
+  padding: 0 10px 0 14px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.65;
+  color: #313244;
+  min-height: 1.65em;
+}
+
+/* ---- Code ---- */
+.ir-code {
+  margin: 0;
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.65;
+  color: #cdd6f4;
+  background: transparent;
+  white-space: pre;
+  tab-size: 2;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Syntax colours ---- */
+.ir-code :deep(.ir-comment) {
+  color: #585b70;
+  font-style: italic;
+}
+.ir-code :deep(.ir-directive) {
+  color: #f5c2e7;
+  font-weight: 700;
+}
+.ir-code :deep(.ir-keyword) {
+  color: #cba6f7;
+  font-weight: 600;
+}
+.ir-code :deep(.ir-label) {
+  color: #89dceb;
+  font-weight: 600;
+}
+.ir-code :deep(.ir-literal) {
+  color: #fab387;
+  font-weight: 600;
+}
+.ir-code :deep(.ir-func) {
+  color: #89b4fa;
+}
+.ir-code :deep(.ir-var) {
+  color: #a6e3a1;
+}
+.ir-code :deep(.ir-string) {
+  color: #a6e3a1;
+}
+.ir-code :deep(.ir-number) {
+  color: #fab387;
+}
+.ir-code :deep(.json-key) {
+  color: #89b4fa;
+}
+
+/* ---- Execution output resize handle ---- */
+.exec-resize-handle {
+  flex-shrink: 0;
+  height: 6px;
+  background: transparent;
+  border-top: 1px solid #313244;
+  cursor: row-resize;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 10;
+}
+.exec-resize-handle:hover {
+  background: rgba(137, 180, 250, 0.2);
+}
+.exec-resize-handle:active {
+  background: rgba(137, 180, 250, 0.35);
+}
+
+/* ---- Execution output panel ---- */
+.exec-output-panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #0d0d17;
+  overflow: hidden;
+}
+
+.exec-output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: #181825;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+}
+
+.exec-output-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6c7086;
+}
+
+.exec-close-btn {
+  background: transparent;
+  border: none;
+  color: #585b70;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: color 0.1s, background 0.1s;
+}
+.exec-close-btn:hover {
+  color: #cdd6f4;
+  background: #313244;
+}
+
+.exec-error {
+  padding: 4px 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10px;
+  color: #f38ba8;
+  background: rgba(243, 139, 168, 0.08);
+  border-bottom: 1px solid rgba(243, 139, 168, 0.2);
+  flex-shrink: 0;
+}
+
+.exec-output-body {
+  margin: 0;
+  padding: 6px 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #a6e3a1;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  flex: 1;
+  min-height: 0;
+}
+.exec-output-body::-webkit-scrollbar {
+  width: 4px;
+}
+.exec-output-body::-webkit-scrollbar-track {
+  background: #0d0d17;
+}
+.exec-output-body::-webkit-scrollbar-thumb {
+  background: #313244;
+  border-radius: 2px;
+}
+
+@keyframes exec-spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.exec-spin {
+  display: inline-block;
+  animation: exec-spin-anim 1s linear infinite;
+}
+
+/* ---- Variable results (collapsible) ---- */
+.exec-vars {
+  border-top: 1px solid #1e1e2e;
+  background: #0d0d17;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 50%;
+}
+
+.exec-vars-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+.exec-vars-header:hover {
+  background: #181825;
+}
+
+.exec-vars-chevron {
+  font-size: 8px;
+  color: #585b70;
+  transition: transform 0.15s;
+  display: inline-block;
+}
+.exec-vars-chevron--open {
+  transform: rotate(90deg);
+}
+
+.exec-vars-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #45475a;
+}
+
+.exec-vars-body {
+  padding: 0 12px 6px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.exec-vars-body::-webkit-scrollbar {
+  width: 4px;
+}
+.exec-vars-body::-webkit-scrollbar-track {
+  background: #0d0d17;
+}
+.exec-vars-body::-webkit-scrollbar-thumb {
+  background: #313244;
+  border-radius: 2px;
+}
+
+.exec-var-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.exec-var-name {
+  color: #89b4fa;
+  min-width: 80px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exec-var-eq {
+  color: #585b70;
+}
+
+.exec-var-val {
+  color: #a6e3a1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+</style>

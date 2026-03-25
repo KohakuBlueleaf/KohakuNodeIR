@@ -128,7 +128,7 @@ run(l3, registry=registry)
 | `docs/` | Language spec, architecture, API reference |
 | `examples/` | Runnable `.kir` programs and pipeline demos |
 | `editors/vscode/` | VS Code syntax highlighting extension |
-| `app/` | Example full-stack app (Vue 3 node editor + FastAPI server) |
+| `kir-editor/` | Example full-stack app (Vue 3 node editor + FastAPI server) |
 
 ### Python engine (`src/kohakunode/`)
 

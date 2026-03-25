@@ -84,7 +84,7 @@ def node_func(a, b):
 { "detail": "User code for 'my_squarer' must define a function named 'node_func'" }
 ```
 
-The definition is persisted to `app/backend/node_defs/{type}.json` and survives server restarts.
+The definition is persisted to `kir-editor/backend/node_defs/{type}.json` and survives server restarts.
 
 ---
 
