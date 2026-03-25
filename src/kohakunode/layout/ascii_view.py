@@ -297,8 +297,16 @@ class _GraphBuilder:
         nid = _meta_id(stmt) or self._gen_id("switch")
         pos = _meta_pos(stmt)
         cout = [label for _, label in stmt.cases]
+        # Store case value→label mapping so compiler can reconstruct switch syntax
+        case_map = {}
+        for case_expr, label in stmt.cases:
+            if isinstance(case_expr, Literal):
+                case_map[label] = case_expr.value
+            else:
+                case_map[label] = str(case_expr)
         if stmt.default_label:
             cout.append(stmt.default_label)
+            case_map[stmt.default_label] = "_default_"
         self.nodes.append(
             KGNode(
                 id=nid,
@@ -308,7 +316,7 @@ class _GraphBuilder:
                 data_outputs=[],
                 ctrl_inputs=["in"],
                 ctrl_outputs=cout,
-                properties={},
+                properties={"cases": case_map},
                 meta={"pos": pos},
             )
         )
@@ -504,8 +512,29 @@ class _GraphBuilder:
     def _resolve_jump_wires(self) -> None:
         for from_id, from_port, target_label in self._jump_wires:
             target_first = self._ns_first_node.get(target_label)
-            if target_first and from_id:
+            if not target_first:
+                continue
+            if from_id:
                 self._ctrl_edge(from_id, from_port, target_first, "in")
+            else:
+                # Jump from nowhere (initial loop entry with no preceding ctrl).
+                # Create a synthetic entry node so merge synthesis detects the
+                # convergence (initial entry + back-edge → 2 incoming ctrl).
+                entry_id = self._gen_id("entry")
+                self.nodes.append(
+                    KGNode(
+                        id=entry_id,
+                        type="value",
+                        name="_entry",
+                        data_inputs=[],
+                        data_outputs=[],
+                        ctrl_inputs=[],
+                        ctrl_outputs=["out"],
+                        properties={},
+                        meta={"pos": [0, 0]},
+                    )
+                )
+                self._ctrl_edge(entry_id, "out", target_first, "in")
 
 
 def _synthesize_merge_nodes(nodes: list[KGNode], edges: list[KGEdge]) -> None:

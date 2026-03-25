@@ -76,6 +76,9 @@ class KirGraphCompiler:
 
         self._visited: set[str] = set()
 
+        # Build loop body info and feedback variable map
+        self._build_loop_info()
+
         # Partition unconnected nodes into:
         # - independent: only depend on other unconnected or external (value nodes)
         # - dependent: depend on at least one ctrl-connected node
@@ -116,9 +119,57 @@ class KirGraphCompiler:
                     stack.append(src_node)
         return False
 
+    # ── Loop body detection ──
+
+    def _build_loop_info(self) -> None:
+        """Identify which nodes are inside loop bodies and build feedback map.
+
+        A node is "inside a loop" if it's reachable from a merge node's ctrl output.
+        The feedback map maps (node_id, input_port) → output_var_name when the input
+        crosses the loop boundary from an initial value to a loop-updating node.
+        """
+        self._loop_body_nodes: set[str] = set()
+        self._feedback_vars: dict[tuple[str, str], str] = {}
+
+        # Find all merge nodes and their loop bodies
+        merge_ids = [n.id for n in self._nodes.values() if n.type == "merge"]
+        for merge_id in merge_ids:
+            # Nodes reachable from merge via ctrl (the loop body)
+            body = self._reachable(merge_id)
+            body.discard(merge_id)
+            self._loop_body_nodes |= body
+
+        if not self._loop_body_nodes:
+            return
+
+        # For each node inside a loop, check if its data inputs come from
+        # outside the loop (initial values). If the node also outputs a variable,
+        # use that output name for the input on subsequent iterations.
+        for nid in self._loop_body_nodes:
+            node = self._nodes.get(nid)
+            if not node or not node.data_outputs:
+                continue
+            conn = self._data_in.get(nid, {})
+            for in_port, (src_node, src_port) in conn.items():
+                if src_node not in self._loop_body_nodes and src_node not in merge_ids:
+                    # Input crosses loop boundary (from initial value to loop body)
+                    # Find the corresponding output port — use index matching
+                    in_idx = next(
+                        (i for i, p in enumerate(node.data_inputs) if p.port == in_port),
+                        -1,
+                    )
+                    if in_idx >= 0 and in_idx < len(node.data_outputs):
+                        out_port = node.data_outputs[in_idx].port
+                        self._feedback_vars[(nid, in_port)] = _var(nid, out_port)
+
     # ── Data input resolution ──
 
     def _input(self, node: KGNode, port: str) -> Expression:
+        # Check if this input should use a feedback variable (loop self-reference)
+        fb = self._feedback_vars.get((node.id, port))
+        if fb:
+            return Identifier(name=fb)
+
         conn = self._data_in.get(node.id, {})
         if port in conn:
             return Identifier(name=_var(conn[port][0], conn[port][1]))
@@ -212,7 +263,7 @@ class KirGraphCompiler:
         cases, dl, labels = [], None, []
         for port in node.ctrl_outputs:
             label = f"{node.id}_{port}"
-            if port == "default":
+            if cp.get(port) == "_default_" or port == "default":
                 dl = label
             elif port in cp:
                 cases.append((_lit(cp[port]), label))
@@ -276,6 +327,20 @@ class KirGraphCompiler:
                 merge_meta = _meta(node)
                 self._visited.add(cur)
                 next_id = self._next(node)
+
+                # Emit initialization assignments for feedback variables.
+                # These bridge the initial value → loop variable before the first iteration.
+                for (nid, in_port), fb_var in self._feedback_vars.items():
+                    conn = self._data_in.get(nid, {})
+                    if in_port in conn:
+                        src_node, src_port = conn[in_port]
+                        init_var = _var(src_node, src_port)
+                        if init_var != fb_var:
+                            stmts.append(Assignment(
+                                target=fb_var,
+                                value=Identifier(name=init_var),
+                            ))
+
                 inner = self._walk(next_id) if next_id else []
                 stmts.append(Jump(target=ns_label, metadata=[merge_meta]))
                 stmts.append(Namespace(name=ns_label, body=inner))

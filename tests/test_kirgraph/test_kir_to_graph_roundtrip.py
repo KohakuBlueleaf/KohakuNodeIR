@@ -79,8 +79,10 @@ def _make_registry() -> Registry:
 def _execute_kir(source: str, registry: Registry) -> dict:
     """Execute KIR and return the variable store as a dict."""
     try:
-        store = run(source, registry=registry)
-        return {k: v for k, v in store.items()}
+        interp = __import__("kohakunode.engine.interpreter", fromlist=["Interpreter"]).Interpreter(registry)
+        prog = parse(source)
+        store = interp.run(prog)
+        return dict(store._store) if hasattr(store, "_store") else {}
     except Exception as e:
         return {"__error__": str(e)}
 
