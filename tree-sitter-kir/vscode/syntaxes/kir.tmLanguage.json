@@ -49,6 +49,18 @@
                     "name": "keyword.control.directive.kir"
                 },
                 {
+                    "match": "(@typehint)\\s*:",
+                    "name": "keyword.control.directive.kir"
+                },
+                {
+                    "match": "(@try)\\s*:",
+                    "name": "keyword.control.directive.kir"
+                },
+                {
+                    "match": "(@except)\\s*:",
+                    "name": "keyword.control.directive.kir"
+                },
+                {
                     "match": "(@meta)\\b",
                     "name": "keyword.control.directive.kir"
                 },
@@ -114,11 +126,26 @@
         },
 
         "assignment": {
-            "match": "^(\\s*)(\\w+)(\\s*=)(?!=\\>)",
-            "captures": {
-                "2": { "name": "variable.other.assignment.kir" },
-                "3": { "name": "keyword.operator.assignment.kir" }
-            }
+            "patterns": [
+                {
+                    "comment": "Typed assignment: name: type = expr",
+                    "match": "^(\\s*)(\\w+)(\\s*:\\s*)(\\w+(?:\\s*\\?|(?:\\s*\\|\\s*\\w+)*))(\\s*=)(?!=\\>)",
+                    "captures": {
+                        "2": { "name": "variable.other.assignment.kir" },
+                        "3": { "name": "punctuation.separator.colon.kir" },
+                        "4": { "name": "entity.name.type.kir" },
+                        "5": { "name": "keyword.operator.assignment.kir" }
+                    }
+                },
+                {
+                    "comment": "Plain assignment: name = expr",
+                    "match": "^(\\s*)(\\w+)(\\s*=)(?!=\\>)",
+                    "captures": {
+                        "2": { "name": "variable.other.assignment.kir" },
+                        "3": { "name": "keyword.operator.assignment.kir" }
+                    }
+                }
+            ]
         },
 
         "switch-arrow": {

@@ -57,13 +57,90 @@ module.exports = grammar({
       choice($.assignment, $.call_stmt, $.meta_annotation, $.mode_decl),
 
     _compound_stmt: ($) =>
-      choice($.namespace_def, $.subgraph_def, $.dataflow_block),
+      choice(
+        $.namespace_def,
+        $.subgraph_def,
+        $.dataflow_block,
+        $.typehint_block,
+        $.try_except_block
+      ),
 
     // -------------------------------------------------------------------------
-    // Assignment:  name = expr
+    // Assignment:  name = expr  OR  name: type = expr
     // -------------------------------------------------------------------------
     assignment: ($) =>
-      seq(field("name", $.identifier), "=", field("value", $._expr)),
+      choice(
+        seq(
+          field("name", $.identifier),
+          ":",
+          field("type", $.type_expr),
+          "=",
+          field("value", $._expr)
+        ),
+        seq(field("name", $.identifier), "=", field("value", $._expr))
+      ),
+
+    // -------------------------------------------------------------------------
+    // Type expressions
+    // -------------------------------------------------------------------------
+    type_expr: ($) => choice($.type_union, $._type_atom),
+
+    type_union: ($) =>
+      seq($._type_atom, repeat1(seq("|", $._type_atom))),
+
+    _type_atom: ($) =>
+      choice($.type_optional, $.type_any, $.type_name),
+
+    type_optional: ($) => seq($.identifier, "?"),
+    type_name: ($) => $.identifier,
+    type_any: ($) => "_",
+
+    // -------------------------------------------------------------------------
+    // @typehint block
+    // -------------------------------------------------------------------------
+    typehint_block: ($) =>
+      seq(
+        "@typehint",
+        ":",
+        $._newline,
+        $._indent,
+        repeat1(choice($.typehint_entry, $._newline)),
+        $._dedent
+      ),
+
+    typehint_entry: ($) =>
+      seq(
+        "(",
+        optional($.type_list),
+        ")",
+        field("name", $.func_name),
+        "(",
+        optional($.type_list),
+        ")",
+        $._newline
+      ),
+
+    type_list: ($) =>
+      seq($.type_expr, repeat(seq(",", $.type_expr)), optional(",")),
+
+    // -------------------------------------------------------------------------
+    // @try / @except block
+    // -------------------------------------------------------------------------
+    try_except_block: ($) =>
+      seq(
+        "@try",
+        ":",
+        $._newline,
+        $._indent,
+        repeat1(choice($.statement, $._newline)),
+        $._dedent,
+        "@except",
+        ":",
+        $._newline,
+        $._indent,
+        repeat1(choice($.statement, $._newline)),
+        $._dedent
+      ),
 
     // -------------------------------------------------------------------------
     // Expressions

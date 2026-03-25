@@ -52,6 +52,23 @@
 ; ── @dataflow keyword ─────────────────────────────────────────────────────────
 (dataflow_block "@dataflow" @keyword)
 
+; ── @typehint keyword ────────────────────────────────────────────────────────
+(typehint_block "@typehint" @keyword)
+(typehint_entry name: (func_name (identifier) @function))
+
+; ── @try / @except keywords ──────────────────────────────────────────────────
+(try_except_block "@try" @keyword.control)
+(try_except_block "@except" @keyword.control)
+
+; ── Type expressions ─────────────────────────────────────────────────────────
+(type_name (identifier) @type)
+(type_optional (identifier) @type)
+(type_any) @type.builtin
+"|" @operator
+
+; ── Typed assignment type annotation ─────────────────────────────────────────
+(assignment type: (type_expr) @type)
+
 ; ── @mode keyword ─────────────────────────────────────────────────────────────
 (mode_decl "@mode" @keyword)
 (mode_decl mode: (identifier) @constant)
