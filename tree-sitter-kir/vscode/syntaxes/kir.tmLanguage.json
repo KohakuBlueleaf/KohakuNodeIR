@@ -7,7 +7,6 @@
         { "include": "#comment" },
         { "include": "#subgraph-def" },
         { "include": "#directive" },
-        { "include": "#typehint-entry" },
         { "include": "#namespace-label" },
         { "include": "#input-args" },
         { "include": "#builtin-call" },
@@ -51,8 +50,16 @@
                     "name": "keyword.control.directive.kir"
                 },
                 {
-                    "match": "(@typehint)\\s*:",
-                    "name": "keyword.control.directive.kir"
+                    "comment": "@typehint block: entries inside are type declarations, not calls",
+                    "begin": "(@typehint)\\s*:",
+                    "beginCaptures": {
+                        "1": { "name": "keyword.control.directive.kir" }
+                    },
+                    "end": "(?=^\\S)",
+                    "patterns": [
+                        { "include": "#typehint-entry" },
+                        { "include": "#comment" }
+                    ]
                 },
                 {
                     "match": "(@try)\\s*:",
