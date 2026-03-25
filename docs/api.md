@@ -1,573 +1,43 @@
-# KohakuNodeIR -- Backend API Reference
+# KohakuNodeIR -- API Reference
 
-**Base URL**: `http://localhost:48888`
-
-The KIR Editor backend (FastAPI) exposes REST endpoints for node management, KIR execution, and graph compilation/decompilation, plus WebSocket endpoints for streaming execution.
-
-**REST endpoints:**
-- `POST /api/nodes/register` -- register a user-defined node type
-- `GET /api/nodes` -- list all registered node types
-- `DELETE /api/nodes/{type_name}` -- unregister a node type
-- `POST /api/execute` -- execute a KIR source string synchronously
-- `POST /api/execute/kirgraph` -- compile `.kirgraph` to L3 and execute
-- `POST /api/compile` -- compile `.kirgraph` to KIR text (L2 or L3)
-- `POST /api/decompile` -- convert KIR text back to `.kirgraph`
-
-**WebSocket endpoints:**
-- `WS /api/ws/execute` -- execute KIR with streaming progress events
-- `WS /api/ws/execute/kirgraph` -- compile `.kirgraph` and execute with streaming events
+This document covers the **kohakunode Python library API** (primary), the **kohakunode-rs Rust crate API**, and the **KIR Editor REST/WebSocket endpoints** (development tool).
 
 ---
 
-## REST Endpoints
+## Python API (kohakunode)
 
-### POST /api/nodes/register
+The `kohakunode` package is the reference implementation of KIR. Install it with `uv pip install -e .` from the project root.
 
-Register a new user-defined node type, or update an existing one.
+### Parsing
 
-Built-in nodes (`add`, `subtract`, `multiply`, `divide`, `greater_than`, `less_than`, `equal`, `and_node`, `not_node`, `concat`, `format_string`, `read_file`, `write_file`, `store`, `load`, `identity`, `to_int`, `to_float`, `to_string`) cannot be overwritten.
+#### `parse(source: str) -> Program`
 
-**Request body**:
-
-```json
-{
-  "name": "My Squarer",
-  "type": "my_squarer",
-  "category": "math",
-  "description": "Squares a number.",
-  "inputs": [
-    { "name": "value", "type": "float" }
-  ],
-  "outputs": [
-    { "name": "result", "type": "float" }
-  ],
-  "properties": [
-    { "name": "exponent", "widget": "slider", "default": 2, "options": { "min": 1, "max": 10, "step": 1 } }
-  ],
-  "code": "def node_func(value, exponent=2):\n    return value ** exponent"
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | yes | Human-readable display name |
-| `type` | string | yes | Unique type key used in KIR function calls |
-| `category` | string | no | UI category (default: `"custom"`) |
-| `description` | string | no | Short description shown in palette |
-| `inputs` | array | no | Input port definitions `[{name, type}]` |
-| `outputs` | array | no | Output port definitions `[{name, type}]` |
-| `properties` | array | no | Property schema definitions (see below) |
-| `code` | string | yes | Python source; must define `node_func` |
-
-The `code` field must contain a Python function named `node_func`. Its parameters must match the declared `inputs` by name. Return values must match the order of `outputs` (single value for one output, tuple for multiple). Property defaults are injected as keyword arguments.
+Parse a KIR source string and return the root `Program` AST node.
 
 ```python
-# Single output
-def node_func(value):
-    return value * value
+from kohakunode import parse
 
-# Multiple outputs
-def node_func(a, b):
-    return a + b, a - b
-
-# With property defaults
-def node_func(value, exponent=2):
-    return value ** exponent
+program = parse("x = 10\n(x, 2)multiply(result)")
+print(program.body)  # list of Statement nodes
 ```
 
-#### Property schema
+Raises `KirSyntaxError` if the source contains invalid syntax.
 
-Each property in the `properties` array defines a configurable parameter with a widget type:
+#### `parse_file(path: str | Path) -> Program`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Property name (used as keyword argument to `node_func`) |
-| `widget` | string | Widget type: `"string"`, `"number"`, `"boolean"`, `"select"`, `"slider"` |
-| `default` | any | Default value for the property |
-| `options` | object | Widget-specific options (see table below) |
+Read a `.kir` file and parse it. Convenience wrapper around `parse()`.
 
-| Widget | Options |
-|--------|---------|
-| `string` | (none) |
-| `number` | (none) |
-| `boolean` | (none) |
-| `select` | `{ "choices": "option1,option2,option3" }` |
-| `slider` | `{ "min": 0, "max": 100, "step": 1 }` |
+```python
+from kohakunode import parse_file
 
-**Response** (200):
-
-```json
-{ "success": true, "type": "my_squarer" }
+program = parse_file("examples/kir_basics/hello_world.kir")
 ```
 
-**Error** (400):
+### Execution
 
-```json
-{ "detail": "Cannot overwrite built-in node 'add'" }
-```
+#### `run(source, registry=None, validate=True) -> VariableStore`
 
-```json
-{ "detail": "User code for 'my_squarer' must define a function named 'node_func'" }
-```
-
-The definition is persisted to `kir-editor/backend/node_defs/{type}.json` and survives server restarts.
-
----
-
-### GET /api/nodes
-
-List all registered node types, including built-ins and user-defined nodes.
-
-**Request**: No body.
-
-**Response** (200):
-
-```json
-[
-  {
-    "name": "add",
-    "type": "add",
-    "category": "builtin",
-    "description": "",
-    "inputs": [
-      { "name": "a", "type": "any" },
-      { "name": "b", "type": "any" }
-    ],
-    "outputs": [
-      { "name": "result", "type": "any" }
-    ],
-    "builtin": true
-  },
-  {
-    "name": "My Squarer",
-    "type": "my_squarer",
-    "category": "math",
-    "description": "Squares a number.",
-    "inputs": [{ "name": "value", "type": "float" }],
-    "outputs": [{ "name": "result", "type": "float" }],
-    "builtin": false
-  }
-]
-```
-
-Each entry has the following fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Display name |
-| `type` | string | Type key (used as function name in KIR) |
-| `category` | string | `"builtin"` for built-ins, user-defined category otherwise |
-| `description` | string | Short description |
-| `inputs` | array | `[{name, type}]` |
-| `outputs` | array | `[{name, type}]` |
-| `builtin` | boolean | Whether this is a protected built-in |
-
-The frontend's node palette fetches this endpoint on startup to populate the available node types.
-
----
-
-### DELETE /api/nodes/{type_name}
-
-Unregister a user-defined node type and delete its persisted definition.
-
-Built-in nodes cannot be deleted.
-
-**Path parameter**: `type_name` -- the type key to delete.
-
-**Response** (200):
-
-```json
-{ "success": true, "type": "my_squarer" }
-```
-
-**Error** (400):
-
-```json
-{ "detail": "Cannot delete built-in node 'add'" }
-```
-
-**Error** (404):
-
-```json
-{ "detail": "Node type 'nonexistent' is not registered" }
-```
-
----
-
-### POST /api/execute
-
-Parse and execute a KIR source string synchronously. Returns after execution completes.
-
-**Request body**:
-
-```json
-{
-  "kir_source": "x = 10\ny = 20\n(x, y)add(sum)\n(sum)print()"
-}
-```
-
-**Response** (200, success):
-
-```json
-{
-  "success": true,
-  "variables": {
-    "x": 10,
-    "y": 20,
-    "sum": 30
-  },
-  "output": [
-    { "type": "output", "value": "30" }
-  ]
-}
-```
-
-**Response** (200, failure):
-
-```json
-{
-  "success": false,
-  "error": "Function 'unknown_func' is not registered",
-  "output": []
-}
-```
-
-Note: HTTP status is always 200. The `success` field in the body indicates whether execution succeeded. Partial output captured before the error is included in `output`.
-
-**Response fields**:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | boolean | Whether execution completed without error |
-| `variables` | object | Final variable store snapshot (JSON-serializable values only; non-serializable values appear as their `repr()`) |
-| `output` | array | Ordered list of output events from `print` and `display` calls |
-| `error` | string | Error message (only present when `success` is false) |
-
-**Output event object**:
-
-```json
-{ "type": "output", "value": "some string" }
-```
-
-The `display` built-in produces `repr()` of its argument. The `print` built-in produces `str()`.
-
----
-
-### POST /api/execute/kirgraph
-
-Compile a `.kirgraph` (L1) to L3 KIR and execute it in one step. Combines `KirGraphCompiler`, `DataflowCompiler`, `StripMetaPass`, and `ExecutionSession`.
-
-**Request body**:
-
-```json
-{
-  "kirgraph": {
-    "version": "0.1.0",
-    "nodes": [ ... ],
-    "edges": [ ... ]
-  }
-}
-```
-
-**Response** (200, success):
-
-```json
-{
-  "success": true,
-  "variables": { "x": 10, "sum": 30 },
-  "output": [{ "type": "output", "value": "30" }],
-  "kir_source": "x = 10\n..."
-}
-```
-
-The response includes a `kir_source` field containing the compiled L3 KIR text, so the frontend can inspect what was executed.
-
-**Response** (400):
-
-```json
-{ "detail": "Compilation error: ..." }
-```
-
----
-
-### POST /api/compile
-
-Compile a `.kirgraph` to KIR text without executing. Supports both L2 (with `@meta`) and L3 (stripped) output.
-
-**Request body**:
-
-```json
-{
-  "kirgraph": {
-    "version": "0.1.0",
-    "nodes": [ ... ],
-    "edges": [ ... ]
-  },
-  "level": 3
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kirgraph` | object | yes | A valid `.kirgraph` JSON object |
-| `level` | int | no | `2` = L2 with `@meta` (default for round-tripping), `3` = L3 pure sequential (default: `3`) |
-
-**Response** (200):
-
-```json
-{ "kir_text": "val_a_value = 10\n...", "level": 3 }
-```
-
-**Error** (400):
-
-```json
-{ "detail": "Compilation error: ..." }
-```
-
-**Error** (422):
-
-```json
-{ "detail": "level must be 2 or 3, got 1" }
-```
-
----
-
-### POST /api/decompile
-
-Convert KIR L2 text (with `@meta` annotations) back to a `.kirgraph` JSON object. This is the L2 -> L1 direction of the pipeline.
-
-**Request body**:
-
-```json
-{
-  "kir_source": "@meta node_id=\"val_a\" pos=(100, 100)\nval_a_value = 10\n..."
-}
-```
-
-L2 KIR with `@meta node_id=...` annotations is required for accurate round-tripping. L3 KIR (stripped of `@meta`) will still parse but will produce incomplete graph topology.
-
-**Response** (200):
-
-```json
-{
-  "kirgraph": {
-    "version": "0.1.0",
-    "nodes": [ ... ],
-    "edges": [ ... ]
-  }
-}
-```
-
-**Error** (400):
-
-```json
-{ "detail": "Decompilation error: ..." }
-```
-
----
-
-## WebSocket Endpoints
-
-### WS /api/ws/execute
-
-Execute KIR programs with streaming progress. A single WebSocket connection can run multiple programs sequentially.
-
-**Connection**: `ws://localhost:48888/api/ws/execute`
-
-When the Vite dev server is running, use `ws://localhost:5174/api/ws/execute` (proxied).
-
-### Client -> Server Messages
-
-#### execute
-
-Run a KIR program.
-
-```json
-{
-  "type": "execute",
-  "kir_source": "x = 10\n(x, 2)multiply(result)\n(result)print()"
-}
-```
-
-Any message with an unknown `type` field receives an error response and is otherwise ignored.
-
-### Server -> Client Messages
-
-Messages are sent in the following order for a successful run:
-
-#### started
-
-Sent immediately after the `execute` message is received, before execution begins.
-
-```json
-{ "type": "started" }
-```
-
-#### output
-
-One message per `print` or `display` call, in execution order.
-
-```json
-{ "type": "output", "value": "20" }
-```
-
-#### variable
-
-One message per variable in the final store, sent after all output events.
-
-```json
-{ "type": "variable", "name": "result", "value": 20 }
-```
-
-#### completed
-
-Sent after all variable messages. Includes the full variable snapshot for convenience.
-
-```json
-{
-  "type": "completed",
-  "variables": { "x": 10, "result": 20 }
-}
-```
-
-#### error
-
-Sent instead of `completed` when execution fails. May appear after some `output` messages if print was called before the error.
-
-```json
-{ "type": "error", "message": "Function 'foo' is not registered" }
-```
-
-Also sent for malformed JSON:
-
-```json
-{ "type": "error", "message": "Invalid JSON" }
-```
-
-### WebSocket Event Flow Diagram
-
-```
-Client                              Server
-  |                                   |
-  |-- {"type":"execute","kir_source"} -->|
-  |                                   |
-  |<-- {"type":"started"} ------------|
-  |<-- {"type":"output","value":"..."} (0..N times)
-  |<-- {"type":"variable","name":"...","value":...} (0..N times)
-  |<-- {"type":"completed","variables":{...}} -----|
-  |                                   |
-  |  (connection stays open)          |
-  |-- {"type":"execute",...} ---------->|
-  |   (another program can be sent)   |
-```
-
----
-
-### WS /api/ws/execute/kirgraph
-
-Compile a `.kirgraph` and execute it with streaming progress. Same event protocol as `WS /api/ws/execute`, with an additional `compiled` event.
-
-**Connection**: `ws://localhost:48888/api/ws/execute/kirgraph`
-
-### Client -> Server Messages
-
-#### execute
-
-```json
-{
-  "type": "execute",
-  "kirgraph": {
-    "version": "0.1.0",
-    "nodes": [ ... ],
-    "edges": [ ... ]
-  }
-}
-```
-
-### Server -> Client Messages
-
-Same as `WS /api/ws/execute` with one additional message sent before `started`:
-
-#### compiled
-
-Sent after successful compilation, before execution begins.
-
-```json
-{ "type": "compiled", "kir_source": "val_a_value = 10\n..." }
-```
-
-After `compiled`, the server sends `started`, then the standard `output`, `variable`, and `completed` (or `error`) sequence.
-
-On compilation failure:
-
-```json
-{ "type": "error", "message": "Compilation error: ..." }
-```
-
----
-
-## Built-in Node Types
-
-The following node types are always registered and cannot be deleted or overwritten:
-
-### Math
-
-| Type | Inputs | Outputs | Description |
-|------|--------|---------|-------------|
-| `add` | `a`, `b` | `result` | `a + b` |
-| `subtract` | `a`, `b` | `result` | `a - b` |
-| `multiply` | `a`, `b` | `result` | `a * b` |
-| `divide` | `a`, `b` | `result` | `a / b` (returns 0 if `b == 0`) |
-
-### Comparison
-
-| Type | Inputs | Outputs | Description |
-|------|--------|---------|-------------|
-| `greater_than` | `a`, `b` | `result` | `a > b` |
-| `less_than` | `a`, `b` | `result` | `a < b` |
-| `equal` | `a`, `b` | `result` | `a == b` |
-| `and_node` | `a`, `b` | `result` | `bool(a) and bool(b)` |
-| `not_node` | `value` | `result` | `not bool(value)` |
-
-### String
-
-| Type | Inputs | Outputs | Description |
-|------|--------|---------|-------------|
-| `concat` | `a`, `b` | `result` | `str(a) + str(b)` |
-| `format_string` | `template`, `value` | `result` | `str(template).format(value)` |
-
-### File I/O
-
-| Type | Inputs | Outputs | Description |
-|------|--------|---------|-------------|
-| `read_file` | `path` | `data` | Read UTF-8 file, return string |
-| `write_file` | `path`, `data` | (none) | Write `str(data)` to file |
-
-### Type Conversion
-
-| Type | Inputs | Outputs | Description |
-|------|--------|---------|-------------|
-| `to_int` | `value` | `result` | `int(value)` |
-| `to_float` | `value` | `result` | `float(value)` |
-| `to_string` | `value` | `result` | `str(value)` |
-
-### Utility
-
-| Type | Inputs | Outputs | Description |
-|------|--------|---------|-------------|
-| `identity` | `value` | `result` | Pass-through (returns input unchanged) |
-| `store` | `value` | `value` | Identity (used in store/load pattern) |
-| `load` | `value` | `value` | Identity (used in store/load pattern) |
-| `print` | `value` | (none) | Print `str(value)` (output captured by server) |
-| `display` | `value` | `pass` | Print `repr(value)`, pass value through |
-
----
-
-## Python Engine API
-
-The `kohakunode` package can also be used directly in Python, without the server.
-
-### Quick execute
+One-shot: parse and execute a KIR source string.
 
 ```python
 from kohakunode import run, Registry
@@ -579,18 +49,206 @@ store = run("(3, 4)add(sum)", registry=registry)
 print(store.get("sum"))  # 7
 ```
 
-### Full pipeline
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `source` | `str` | required | KIR source string |
+| `registry` | `Registry \| None` | `None` | Pre-populated function registry. A fresh empty one is created when `None`. |
+| `validate` | `bool` | `True` | Run semantic validation before compilation |
+
+**Returns:** `VariableStore` -- the interpreter's variable store after execution.
+
+#### `run_file(path, registry=None, validate=True) -> VariableStore`
+
+One-shot: read a `.kir` file, parse it, and execute it. Same parameters as `run()` except `path` replaces `source`.
+
+#### `Executor(registry=None, validate=True)`
+
+Class that holds shared state across multiple runs. Use when you want to reuse the same registry for multiple programs.
+
+```python
+from kohakunode import Executor
+
+executor = Executor()
+executor.register("square", lambda x: x * x, output_names=["result"])
+
+store = executor.execute_source("(5)square(y)")
+print(store.get("y"))  # 25
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `execute(program: Program) -> VariableStore` | Execute a parsed AST |
+| `execute_source(source: str) -> VariableStore` | Parse and execute a source string |
+| `execute_file(path) -> VariableStore` | Read, parse, and execute a file |
+| `register(name, func, **kwargs) -> Executor` | Register a function (returns self for chaining) |
+| `register_decorator(**kwargs)` | Returns a decorator that registers the decorated function |
+
+### Registry
+
+#### `Registry()`
+
+Maps function names to `FunctionSpec` objects. Input names and defaults are inferred from the function signature when not provided explicitly.
+
+```python
+from kohakunode import Registry
+
+registry = Registry()
+
+# Basic registration
+registry.register("add", lambda a, b: a + b, output_names=["result"])
+
+# With explicit input names and defaults
+registry.register("scale", lambda x, factor: x * factor,
+                   input_names=["x", "factor"],
+                   output_names=["result"],
+                   defaults={"factor": 1.0})
+
+# Decorator style
+@registry.register_decorator(output_names=["result"])
+def multiply(a, b):
+    return a * b
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `register(name, func, input_names=None, output_names=None, defaults=None) -> FunctionSpec` | Register a callable |
+| `register_decorator(name=None, output_names=None)` | Returns a decorator for registration |
+| `lookup(name) -> FunctionSpec` | Look up a function (raises `KirRuntimeError` if not found) |
+| `has(name) -> bool` | Check if a function is registered |
+| `unregister(name)` | Remove a registered function |
+| `list_functions() -> list[str]` | List all registered function names (sorted) |
+| `clear()` | Remove all registered functions |
+
+#### `FunctionSpec`
+
+Dataclass holding a registered function's metadata:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `str` | Function name as used in KIR |
+| `func` | `Callable` | The Python callable |
+| `input_names` | `list[str]` | Parameter names |
+| `output_names` | `list[str]` | Output variable names |
+| `defaults` | `dict[str, Any]` | Default values for parameters |
+
+### Validation
+
+#### `validate(program: Program) -> ValidationResult`
+
+Run all analyzers and return results. Never raises -- issues are collected into errors and warnings.
+
+#### `validate_or_raise(program: Program) -> ValidationResult`
+
+Same as `validate()`, but raises `KirAnalysisError` if any errors are found. Warnings are still returned in the result.
+
+`ValidationResult` fields: `errors`, `warnings`, `is_valid`, `all_issues`.
+
+### Compiler Passes
+
+#### `DataflowCompiler().transform(program: Program) -> Program`
+
+Expand `@dataflow:` blocks by topologically sorting their statements and inlining them into the parent body. Also handles `@mode dataflow` (whole-file dataflow). This is the L2 -> L3 compilation step.
+
+#### `StripMetaPass().transform(program: Program) -> Program`
+
+Remove all `@meta` annotations from the AST. Optional -- use when you don't need round-tripping metadata.
+
+### Serializer
+
+#### `Writer().write(program: Program) -> str`
+
+Serialize a `Program` AST back to KIR source text.
+
+```python
+from kohakunode import parse, Writer
+
+program = parse("x = 10\n(x, 2)add(result)")
+text = Writer().write(program)
+print(text)  # x = 10\n(x, 2)add(result)\n
+```
+
+#### `read(path) -> Program`
+
+Read a `.kir` file and return a `Program` AST. Wraps file I/O with `KirSyntaxError` on failure.
+
+#### `read_string(source: str) -> Program`
+
+Parse a KIR source string. Convenience alias for `parse()` available from the serializer module.
+
+### KirGraph (L1 IR)
+
+#### `KirGraph`
+
+Dataclass representing the Level 1 graph topology.
+
+```python
+from kohakunode import KirGraph
+
+# Load from JSON
+graph = KirGraph.from_json(open("my_graph.kirgraph").read())
+
+# Serialize to JSON
+json_str = graph.to_json()
+
+# Access nodes and edges
+for node in graph.nodes:      # list[KGNode]
+    print(node.id, node.type)
+for edge in graph.edges:      # list[KGEdge]
+    print(edge.from_node, "->", edge.to_node)
+```
+
+**Methods:** `from_json(text)`, `to_json()`, `from_dict(d)`, `to_dict()`.
+
+#### `KirGraphCompiler().compile(graph: KirGraph) -> Program`
+
+Compile a KirGraph (L1) to a Program AST (L2). Determines execution order, generates variable names, and emits `@meta` annotations.
+
+#### `KirGraphDecompiler().decompile(program: Program) -> KirGraph`
+
+Reconstruct a KirGraph (L1) from a Program AST (L2). Requires `@meta node_id=...` annotations for accurate round-tripping.
+
+### Layout
+
+#### `kir_to_graph(source: str) -> KirGraph`
+
+Parse KIR source and extract a `KirGraph` by walking the AST, tracking variable definitions and usages to wire data edges. Synthesizes merge nodes where needed.
+
+```python
+from kohakunode.layout.ascii_view import kir_to_graph
+
+graph = kir_to_graph(open("program.kir").read())
+```
+
+#### `auto_layout(graph: KirGraph) -> KirGraph`
+
+Assign node positions using Fischer-style BFS layout. Returns a new `KirGraph` with updated `meta.pos` and `meta.size` fields.
+
+```python
+from kohakunode.layout.auto_layout import auto_layout
+
+positioned = auto_layout(graph)
+```
+
+### Full Pipeline Example
 
 ```python
 from kohakunode import (
-    parse, validate_or_raise, DataflowCompiler, StripMetaPass,
-    Executor, Registry, KirGraphCompiler, KirGraph
+    parse, DataflowCompiler, StripMetaPass,
+    Executor, Registry, KirGraphCompiler, KirGraph, Writer
 )
 
 # Load a .kirgraph and compile to L2 KIR
 graph = KirGraph.from_json(open("graph.kirgraph").read())
-compiler = KirGraphCompiler()
-program = compiler.compile(graph)   # L2 Program AST
+program = KirGraphCompiler().compile(graph)
+
+# Write L2 to text
+l2_text = Writer().write(program)
 
 # Compile to L3 (expand @dataflow:, strip @meta)
 program = DataflowCompiler().transform(program)
@@ -598,43 +256,161 @@ program = StripMetaPass().transform(program)
 
 # Execute
 registry = Registry()
-# ... register functions ...
+registry.register("add", lambda a, b: a + b, output_names=["result"])
 executor = Executor(registry=registry)
 store = executor.execute(program)
 ```
 
-### Decompile L2 back to L1
-
-```python
-from kohakunode import KirGraphDecompiler, parse
-
-program = parse(open("compiled_l2.kir").read())
-graph = KirGraphDecompiler().decompile(program)
-print(graph.to_json())
-```
-
-### Error types
+### Error Types
 
 | Exception | When raised |
 |-----------|-------------|
-| `KirSyntaxError` | Parser encounters invalid syntax |
-| `KirAnalysisError` | Validator finds semantic errors |
-| `KirCompilationError` | Dataflow compiler finds control flow in dataflow mode |
-| `KirRuntimeError` | Interpreter error (undefined function, etc.) |
-| `KirError` | Base class for all above |
+| `KirError` | Base class for all KohakuNodeIR errors |
+| `KirSyntaxError` | Parser encounters invalid syntax. Has `line`, `column`, `source_line` attributes. |
+| `KirAnalysisError` | Validator finds semantic errors. Has `line`, `node_context` attributes. |
+| `KirCompilationError` | Dataflow compiler finds issues (e.g., control flow in dataflow mode) |
+| `KirRuntimeError` | Interpreter error (undefined function, etc.). Has `line`, `function_name` attributes. |
 
 ---
 
-## Error Handling
+## Rust API (kohakunode-rs)
 
-All error responses from REST endpoints use standard HTTP status codes with a JSON body:
+The Rust crate `kohakunode-rs` provides the same core pipeline as a PyO3 native module or as WASM. All functions use a **JSON bridge** -- they accept and return JSON strings rather than exposing full Rust types to Python/JS.
 
-```json
-{ "detail": "error message here" }
+### PyO3 Functions
+
+Available via `import kohakunode_rs` after building with maturin.
+
+| Function | Input | Output | Description |
+|----------|-------|--------|-------------|
+| `parse_kir(text)` | KIR source `str` | Program AST JSON `str` | Parse KIR to AST |
+| `compile_dataflow(program_json)` | Program JSON `str` | Program JSON `str` | Expand `@dataflow:` blocks |
+| `strip_meta(program_json)` | Program JSON `str` | Program JSON `str` | Remove `@meta` annotations |
+| `compile_kirgraph(kirgraph_json)` | KirGraph JSON `str` | Program JSON `str` | L1 -> L2 compilation |
+
+The `layout` and `serializer` PyO3 bindings are defined but not yet registered in the root module. The following functions exist in the Rust source and are available via WASM:
+
+| Function | Input | Output | Description |
+|----------|-------|--------|-------------|
+| `kir_to_graph(source)` | KIR source | KirGraph JSON | Extract graph from `.kir` |
+| `auto_layout(graph_json)` | KirGraph JSON | KirGraph JSON | Assign node positions |
+| `score_layout(graph_json)` | KirGraph JSON | `f64` | Layout quality score |
+| `optimize_layout(graph_json, n)` | KirGraph JSON + iterations | KirGraph JSON | Improve layout |
+| `write_kir(program_json)` | Program JSON | KIR text | Serialize AST to KIR |
+| `decompile(program_json)` | Program JSON | KirGraph JSON | L2 -> L1 decompilation |
+
+### WASM Exports
+
+The WASM module exports all of the above functions. They are used by the KIR Editor frontend for in-browser parsing, compilation, and layout. See the WASM exports table in [architecture.md](architecture.md) for the complete list.
+
+```javascript
+import init, { parse_kir, compile_kirgraph, write_kir } from './wasm/kohakunode_rs.js';
+
+await init();
+const ast_json = parse_kir("x = 10\n(x, 2)add(result)");
 ```
 
-HTTP errors use:
-- `400 Bad Request` -- invalid input (bad code, overwriting built-in, etc.)
-- `404 Not Found` -- resource does not exist (unknown node type)
+---
 
-Execution errors (syntax errors, runtime errors in KIR) do not produce HTTP 4xx/5xx -- they return HTTP 200 with `"success": false` in the body, because the request itself was structurally valid.
+## KIR Editor API (Development Tool)
+
+The KIR Editor backend (`kir-editor/backend/`) is a FastAPI application that wraps the `kohakunode` Python engine. These endpoints are for the editor UI, not for general library use.
+
+**Base URL**: `http://localhost:48888`
+
+### REST Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/nodes/register` | Register a user-defined node type |
+| `GET` | `/api/nodes` | List all registered node types |
+| `DELETE` | `/api/nodes/{type_name}` | Unregister a user-defined node type |
+| `POST` | `/api/execute` | Execute a KIR source string synchronously |
+| `POST` | `/api/execute/kirgraph` | Compile `.kirgraph` to L3 and execute |
+| `POST` | `/api/compile` | Compile `.kirgraph` to KIR text (L2 or L3) |
+| `POST` | `/api/decompile` | Convert KIR L2 text back to `.kirgraph` |
+
+### WebSocket Endpoints
+
+| Path | Description |
+|------|-------------|
+| `WS /api/ws/execute` | Execute KIR with streaming progress events |
+| `WS /api/ws/execute/kirgraph` | Compile `.kirgraph` and execute with streaming |
+
+### POST /api/execute
+
+**Request:**
+
+```json
+{ "kir_source": "x = 10\ny = 20\n(x, y)add(sum)\n(sum)print()" }
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "variables": { "x": 10, "y": 20, "sum": 30 },
+  "output": [{ "type": "output", "value": "30" }]
+}
+```
+
+HTTP status is always 200. The `success` field indicates whether execution succeeded. On failure, an `error` field contains the error message.
+
+### POST /api/compile
+
+**Request:**
+
+```json
+{
+  "kirgraph": { "version": "0.1.0", "nodes": [...], "edges": [...] },
+  "level": 3
+}
+```
+
+`level` is `2` (L2 with `@meta`) or `3` (L3 pure sequential, default).
+
+**Response:** `{ "kir_text": "...", "level": 3 }`
+
+### POST /api/nodes/register
+
+Register a custom node type. The `code` field must define a Python function named `node_func`.
+
+```json
+{
+  "name": "Square", "type": "square", "category": "math",
+  "inputs": [{ "name": "value", "type": "float" }],
+  "outputs": [{ "name": "result", "type": "float" }],
+  "code": "def node_func(value):\n    return value * value"
+}
+```
+
+Properties can define typed widgets (`string`, `number`, `boolean`, `select`, `slider`) with options.
+
+### WebSocket Event Protocol
+
+```
+Client                              Server
+  |-- {"type":"execute","kir_source":...} -->|
+  |<-- {"type":"started"} ------------------|
+  |<-- {"type":"output","value":"..."} ------ (0..N)
+  |<-- {"type":"variable","name":"...","value":...} (0..N)
+  |<-- {"type":"completed","variables":{...}} |
+```
+
+On error, a `{"type":"error","message":"..."}` is sent instead of `completed`.
+
+The `/api/ws/execute/kirgraph` endpoint adds a `{"type":"compiled","kir_source":"..."}` event before `started`.
+
+### Built-in Node Types
+
+The following are always registered and cannot be deleted:
+
+| Category | Types |
+|----------|-------|
+| Math | `add`, `subtract`, `multiply`, `divide` |
+| Comparison | `greater_than`, `less_than`, `equal`, `and_node`, `not_node` |
+| String | `concat`, `format_string` |
+| File I/O | `read_file`, `write_file` |
+| Conversion | `to_int`, `to_float`, `to_string` |
+| Utility | `identity`, `store`, `load`, `print`, `display` |

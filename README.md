@@ -1,274 +1,225 @@
 # KohakuNodeIR
 
-A visual node-based programming system built around the KIR intermediate representation. `.kir` files act as a portable interchange layer: any UI that can emit `.kir` can run on any conforming backend. The format handles both **control-flow** graphs (sequential, branch, loop) and **data-flow** graphs (dependency-ordered) in one unified syntax, and you can mix them freely in the same file.
+<!-- TODO: banner image -->
+
+**A text-based intermediate representation for visual programming.**
+
+<!-- TODO: badges (build, license, pypi, Python version) -->
+
+KIR is a language that sits between visual programming editors and execution engines.
+It captures both control flow and dataflow in one file, round-trips cleanly between
+text and graph representations, and runs on any conforming backend.
+
+<!-- TODO: editor screenshot showing the three-view interface -->
 
 ---
 
-## The language in 30 seconds
+## What is KIR?
+
+KIR (Kohaku Intermediate Representation) is a text IR designed for visual programming
+systems — both node-based editors and block-based (Scratch-like) environments. It
+solves a common problem: visual editors produce graph structures, but you need a
+serializable, diff-friendly, human-readable format to store, version, and execute them.
+
+A `.kir` file can express:
+- **Sequential control flow** — statements execute top to bottom
+- **Branching and looping** — `branch`, `switch`, `jump`, `parallel`
+- **Dataflow** — `@dataflow:` blocks where execution order is determined by data dependencies
+- **Mixed mode** — control flow and dataflow in the same program
+
+The same `.kir` file can be viewed as a node graph, as nested blocks, or as plain text.
+Any editor that emits `.kir` can target any engine that consumes it — the IR is the
+contract between them.
+
+## Language Features
+
+- **Mixed control-flow and data-flow** — combine sequential execution with
+  dependency-ordered blocks in one file
+- **Scoped `@dataflow:` blocks** — opt into dataflow ordering for specific sections
+  while keeping the rest sequential
+- **Namespaces** — labeled scopes (`label:`) for jump targets and structure
+- **`@def` subgraph definitions** — reusable parameterized subgraphs, like functions
+- **Control-flow primitives** — `branch` (if/else), `switch` (multi-case),
+  `jump` (goto/loop), `parallel` (concurrent branches)
+- **`@meta` annotations** — attach node positions, IDs, and sizes to statements;
+  these survive text↔graph roundtrips so your layout is preserved
+- **Three-level IR pipeline** — L1 (JSON graph) → L2 (text with @meta) → L3
+  (clean sequential, engine-ready)
+- **Function-call syntax** — `(inputs)func_name(outputs)` is concise and
+  maps directly to node wiring
+
+## The Language in 30 Seconds
 
 ```kir
-# Function call: (inputs)name(outputs)
-x = 10
-y = 20
-(x, y)add(sum)
-(sum, 3)multiply(product)
-(product)print_val()
-```
-
-```kir
-# Control flow: namespaces are skipped until entered via branch/jump/switch/parallel
-counter = 0
-()jump(`loop`)
-loop:
-    (counter, 1)add(counter)
-    (counter, 10)less_than(keep_going)
-    (keep_going)branch(`loop`, `done`)
-    done:
-```
-
-```kir
-# Mixed: @dataflow: blocks are topologically sorted at compile time
+# Dataflow block: order determined by data dependencies, not line order
 @dataflow:
     (10)to_float(limit)
     (0)to_float(counter)
 
+# Sequential control flow: explicit loop
 ()jump(`loop`)
 loop:
     (counter, 1)add(counter)
-    (counter, limit)less_than(keep)
-    (keep)branch(`loop`, `done`)
+    (counter, limit)less_than(keep_going)
+    (keep_going)branch(`loop`, `done`)
     done:
-
-@dataflow:
-    (counter)to_string(s)
-    ("Counted to: ", s)concat(msg)
-    (msg)print()
+        (counter)to_string(s)
+        ("Counted to: ", s)concat(msg)
+        (msg)print()
 ```
+
+Key syntax patterns:
+- **Assignment**: `x = 42`
+- **Function call**: `(a, b)add(result)` — inputs on left, outputs on right
+- **Label reference**: `` `loop` `` — backtick-quoted reference to a namespace
+- **Metadata**: `@meta node_id="n1" pos=(100, 200)` — preserved through roundtrips
+- **Dataflow scope**: `@dataflow:` block auto-orders by data dependencies
+
+See the full [Language Specification](docs/spec.md) for details.
 
 ---
 
-## Three-level IR pipeline
+## Three-Level IR Pipeline
 
-```
-.kirgraph (JSON)         .kir L2 (text)              .kir L3 (text)
-----------------         --------------              --------------
-nodes + edges            @dataflow: blocks           pure sequential
-UI-native format         @meta annotations           no @dataflow:
-no execution order       round-trippable to L1       engine-ready
+KIR uses three representations at different stages:
 
-     L1 -> L2: KirGraphCompiler
-     L2 -> L3: DataflowCompiler + StripMetaPass
-     L2 -> L1: KirGraphDecompiler  (reads @meta, reconstructs topology)
-```
+| Level | Format | Purpose | Example |
+|-------|--------|---------|---------|
+| **L1** | `.kirgraph` (JSON) | Visual editors native format — flat list of nodes and edges | `{"nodes": [...], "edges": [...]}` |
+| **L2** | `.kir` (text) | Human-readable IR with `@meta` annotations — round-trip safe | `@meta node_id="n1" pos=(100,200)` |
+| **L3** | `.kir` (text) | Pure sequential — metadata stripped, dataflow expanded | Ready for execution |
 
-L2 is the pivot format. The `@meta node_id="..." pos=(x, y)` annotations emitted by the compiler let any tool reconstruct the full visual graph from the text IR -- no side-channel needed.
+Compilation: L1 → L2 → L3. Decompilation: L2 → L1. The `@meta` annotations in L2
+are what make this round-trip possible — they carry the graph layout information
+through the text representation.
 
 ---
 
-## Project structure
+## Implementations
 
-| Directory | Purpose |
-|---|---|
-| `src/kohakunode/` | Python library -- IR parser, compiler, executor, layout system |
-| `src/kohakunode-rs/` | Rust core -- parser, compiler, layout, serializer. Builds as a PyO3 native module or as WASM via wasm-bindgen |
-| `src/kohakunode_utils/` | ComfyUI workflow import/export utilities |
-| `kir-editor/` | Full-stack visual editor: Vue 3 node editor frontend + FastAPI backend |
-| `tree-sitter-kir/` | Tree-sitter grammar for KIR, plus a VS Code syntax highlighting extension |
-| `docs/` | Language spec, architecture, API reference |
-| `examples/` | Runnable `.kir` programs and pipeline demos |
-| `scripts/` | Build scripts (e.g., `build-wasm.sh`) |
+| Package | Language | Role |
+|---------|----------|------|
+| **kohakunode** | Python | Reference implementation — Lark parser, AST, compiler passes, interpreter, layout engine |
+| **kohakunode-rs** | Rust | Fast reimplementation — pest parser, compiler, layout, serializer. Builds as PyO3 native module or WASM for browsers |
 
-The three main components:
+Both implementations produce identical output for the same input — the Python
+version is the ground truth, and the Rust version must match exactly.
 
-1. **Python library** (`src/kohakunode/`) -- the IR engine: Lark-based parser, dataflow compiler, interpreter, KirGraph schema, layout system. Installable as `pip install -e .`.
-
-2. **Rust core + WASM** (`src/kohakunode-rs/`) -- a Rust reimplementation of the parser, compiler, layout, and serializer. Compiles to a native Python extension via PyO3/maturin, or to WebAssembly via wasm-bindgen for in-browser use. The WASM build replaces the former Pyodide approach and provides the frontend with instant KIR parsing, compilation, and layout without a server round-trip.
-
-3. **KIR Editor** (`kir-editor/`) -- a Vue 3 node editor (Vite, Pinia, Element Plus, UnoCSS) backed by a FastAPI execution server. The frontend uses the WASM module for live IR preview and validation, and communicates with the backend via REST/WebSocket for execution and node management.
-
----
-
-## Quick start
-
-### Prerequisites
-
-| Requirement | Minimum version |
-|---|---|
-| Python | 3.10 |
-| Node.js | 18 |
-| Rust | 1.70 (for WASM build) |
-
-### 1. Install the Python engine
+### Quick Start (Python)
 
 ```bash
-git clone https://github.com/KohakuBlueLeaf/KohakuNodeIR.git
+git clone https://github.com/KohakuBlueleaf/KohakuNodeIR.git
 cd KohakuNodeIR
-uv venv .venv && source .venv/bin/activate
-uv pip install -e ".[dev]"
+pip install -e .
 ```
-
-### 2. Build the WASM module
-
-```bash
-bash scripts/build-wasm.sh
-```
-
-This compiles the Rust crate to `wasm32-unknown-unknown` and runs `wasm-bindgen` to produce JS glue in `kir-editor/frontend/src/wasm/`.
-
-### 3. Install frontend dependencies
-
-```bash
-cd kir-editor/frontend && npm install
-```
-
-### 4. Run the editor
-
-Start the backend (from the project root):
-
-```bash
-cd kir-editor && uvicorn backend.main:app --port 48888
-```
-
-Start the frontend dev server (in a second terminal):
-
-```bash
-cd kir-editor/frontend && npm run dev
-```
-
-Open `http://localhost:5174` in your browser.
-
----
-
-## Key features
-
-### Code node
-
-A new node type with an embedded Monaco editor for writing inline KIR code directly in the graph. The WASM parser validates syntax in real time, underlining errors as you type.
-
-### Custom node system
-
-Define new node types through the Node Definition Editor in the UI or via the REST API. Custom nodes support **property schemas** with typed widgets:
-
-- **string** -- text input
-- **number** -- numeric input
-- **boolean** -- checkbox
-- **select** -- dropdown with custom choices
-- **slider** -- range slider with min/max/step
-
-Property defaults are persisted to disk and synced between the frontend and backend.
-
-### Output panel
-
-The IR Preview panel shows live-compiled KIR L2, L3, and KirGraph JSON tabs. The execution output includes a **collapsible Variables accordion** that lists the final variable store after each run.
-
----
-
-## Python API
 
 ```python
-from kohakunode import Registry, run
-from kohakunode import KirGraph, KirGraphCompiler, DataflowCompiler
+from kohakunode import Registry, Executor
 
-# Execute a .kir program
+# Register custom functions
 registry = Registry()
-registry.register("add",      lambda a, b: a + b,   output_names=["result"])
-registry.register("multiply", lambda a, b: a * b,   output_names=["result"])
-registry.register("print_val", lambda x: print(x),  output_names=[])
+registry.register("add", lambda a, b: a + b, output_names=["result"])
+registry.register("print_val", lambda x: print(x), output_names=[])
 
-store = run("x = 10\ny = 20\n(x, y)add(sum)\n(sum)print_val()", registry=registry)
+# Execute KIR source
+executor = Executor(registry=registry)
+store = executor.execute_source("""
+x = 10
+y = 20
+(x, y)add(sum)
+(sum)print_val()
+""")
+# Output: 30
+```
 
-# Full L1 -> L2 -> L3 pipeline
-graph = KirGraph.from_file("examples/kirgraph_pipeline/source.kirgraph")
-l2    = KirGraphCompiler().compile(graph)   # L1 -> L2 (.kir with @dataflow: + @meta)
-l3    = DataflowCompiler().transform(l2)    # L2 -> L3 (pure sequential)
-run(l3, registry=registry)
+### Optional: Rust Acceleration
+
+```bash
+cd src/kohakunode-rs
+maturin develop --release   # installs kohakunode_rs as Python module
+```
+
+Once installed, `import kohakunode_rs` provides the same functions as the Python
+library but runs significantly faster. The Python library auto-detects it via
+`kohakunode._rust.HAS_RUST`.
+
+---
+
+## Tools
+
+These are utilities built on top of the KIR language and libraries:
+
+### KIR Editor (`kir-editor/`)
+
+A full-stack visual editor for building and running KIR programs. Three views of
+the same program:
+- **Node Graph** — drag-and-drop visual wiring
+- **Blocks** — Scratch-like nested block view
+- **Code** — Monaco editor with KIR syntax highlighting
+
+The frontend uses WASM-compiled `kohakunode-rs` for instant in-browser parsing
+and compilation (no server round-trip for editing). The backend (FastAPI) handles
+execution and custom node registration.
+
+```bash
+# Build WASM module
+bash scripts/build-wasm.sh
+
+# Start backend (port 48888)
+cd kir-editor && uvicorn backend.main:app --port 48888
+
+# Start frontend (port 5174, separate terminal)
+cd kir-editor/frontend && npm install && npm run dev
+```
+
+### Tree-sitter Grammar (`tree-sitter-kir/`)
+
+Syntax highlighting for `.kir` files. Includes a VS Code extension:
+
+```bash
+ln -s $(pwd)/tree-sitter-kir/vscode ~/.vscode/extensions/kir-language
 ```
 
 ---
 
-## Language reference
+## Project Structure
 
-### Function calls and assignments
-
-```kir
-x = 42
-(x, "label")process(result, _)    # _ discards an output
-(x, mode="fast")compute(out)      # keyword arguments
 ```
-
-### Control flow
-
-```kir
-# branch
-(cond)branch(`on_true`, `on_false`)
-
-# switch
-(status)switch(0=>`idle`, 1=>`running`, _=>`error`)
-
-# loop (jump + branch back)
-()jump(`loop`)
-loop:
-    (counter, 1)add(counter)
-    (counter, 10)less_than(keep)
-    (keep)branch(`loop`, `done`)
-    done:
-
-# parallel (order between branches unspecified; both complete before resuming)
-()parallel(`task_a`, `task_b`)
-task_a:
-    (data)process_a(result_a)
-task_b:
-    (data)process_b(result_b)
+KohakuNodeIR/
+├── src/
+│   ├── kohakunode/          # Python library: parser, compiler, executor, layout
+│   ├── kohakunode-rs/       # Rust core: parser, compiler, layout (PyO3 + WASM)
+│   └── kohakunode_utils/    # ComfyUI workflow import/export
+├── kir-editor/              # Visual editor (Vue 3 frontend + FastAPI backend)
+│   ├── frontend/            # Vue 3 + Vite + Monaco + WASM
+│   └── backend/             # FastAPI execution server
+├── tree-sitter-kir/         # Tree-sitter grammar + VS Code extension
+├── docs/                    # Language spec, architecture, API reference
+├── examples/                # Runnable .kir programs and pipeline demos
+├── tests/                   # Python test suite
+└── scripts/                 # Build scripts (WASM, etc.)
 ```
-
-### Dataflow
-
-```kir
-# @dataflow: block -- topologically sorted at compile time, inlined in L3
-@dataflow:
-    (product)finalize(output)
-    (x, y)multiply(product)
-    ()generate(y)
-
-# @mode dataflow -- whole-file toposort (no control flow allowed)
-@mode dataflow
-(b, c)add(a)
-(c)generate(c)
-```
-
-### Subgraphs
-
-```kir
-@def (a, b)clamp(result):
-    (a, b)min_val(lo)
-    (a, b)max_val(hi)
-    (lo, hi)add(sum)
-    (sum, 2)divide(result)
-
-(x, y)clamp(avg)
-```
-
-### Round-trip metadata
-
-```kir
-@meta node_id="n01" pos=(120, 300) size=[180, 120]
-(x)process(y)
-```
-
-`@meta` lines are ignored by the executor and used by `KirGraphDecompiler` to reconstruct the full visual graph from L2 text.
-
----
 
 ## Documentation
 
-- [Language Specification](docs/spec.md)
-- [KirGraph Format](docs/kirgraph_spec.md)
-- [Architecture](docs/architecture.md)
-- [API Reference](docs/api.md) -- backend REST and WebSocket endpoints
-- [Getting Started](docs/getting_started.md) -- editor setup and first graph
+| Document | Description |
+|----------|-------------|
+| [Language Specification](docs/spec.md) | Full KIR syntax, KirGraph JSON format, and IR pipeline rules |
+| [Architecture](docs/architecture.md) | System design, component relationships, execution model |
+| [API Reference](docs/api.md) | kohakunode Python API, kohakunode-rs Rust/WASM API |
+| [Getting Started](docs/getting_started.md) | Installation, first program, editor setup |
+| [Examples](examples/) | 10+ runnable programs: basics, pipelines, ComfyUI conversion |
+| [Layout Research](docs/layout_research.md) | Auto-layout algorithm design and academic references |
 
----
+## Contributing
+
+<!-- TODO: CONTRIBUTING.md -->
+
+Contributions welcome. Please open an issue before starting significant work so
+we can discuss the approach.
 
 ## License
 
-Apache 2.0. Author: [KohakuBlueLeaf](https://kblueleaf.net/)
+[Apache 2.0](LICENSE)
+
+Author: [KohakuBlueLeaf](https://kblueleaf.net/)
