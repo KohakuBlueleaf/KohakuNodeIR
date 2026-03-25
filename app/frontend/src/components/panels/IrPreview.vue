@@ -4,28 +4,29 @@ import { ElMessage } from 'element-plus';
 import { useGraphStore } from '../../stores/graph.js';
 import { compileGraph } from '../../compiler/graphToIr.js';
 import { graphToKirgraph } from '../../compiler/kirgraph.js';
-import { executeKirgraphStreaming } from '../../api/backend.js';
-import { compileGraphToKir, isPyodideReady } from '../../parser/pyodideParser.js';
+import { executeKirStreaming } from '../../api/backend.js';
+import { compileGraphToKir, compileGraphToKirL3, isPyodideReady } from '../../parser/pyodideParser.js';
 
 const graph = useGraphStore();
 
-// ---- Panel tab: 'kir' | 'kirgraph' ----
-const activeTab = ref('kir');
+// ---- Panel tab: 'kir-l2' | 'kir-l3' | 'kirgraph' ----
+const activeTab = ref('kir-l2');
 
-// ---- Compilation mode ----
-const mode = ref('controlflow');
-
-// ---- Reactive IR text ----
+// ---- Reactive IR text (L2) ----
 const irText = ref('');
 const compileErrors = ref([]);
 
 // 'python' | 'js' | 'loading'
 const compilerSource = ref('loading');
 
-// Recompute whenever the graph changes or mode changes.
+// ---- Reactive IR text (L3) ----
+const irTextL3 = ref('');
+const irTextL3Status = ref('idle'); // 'idle' | 'loading' | 'ready' | 'unavailable'
+
+// Recompute L2 whenever the graph changes.
 // Tries the Pyodide Python compiler first; falls back to the JS compiler.
 watch(
-  [() => graph.nodeList, () => graph.connectionList, mode],
+  [() => graph.nodeList, () => graph.connectionList],
   async ([nodes, conns]) => {
     if (!nodes.length) {
       irText.value = '';
@@ -52,15 +53,69 @@ watch(
   { immediate: true, deep: true },
 );
 
+// Recompute L3 whenever the graph changes (only if L3 tab is active or has been visited).
+watch(
+  [() => graph.nodeList, () => graph.connectionList],
+  async ([nodes, conns]) => {
+    if (!nodes.length) {
+      irTextL3.value = '';
+      irTextL3Status.value = 'idle';
+      return;
+    }
+    // Only recompute if we've already loaded L3 once (tab was visited)
+    if (irTextL3Status.value === 'idle') return;
+
+    irTextL3Status.value = 'loading';
+    const kirgraph = graphToKirgraph(nodes, conns);
+    const l3 = await compileGraphToKirL3(JSON.stringify(kirgraph));
+    if (l3 !== null) {
+      irTextL3.value = l3;
+      irTextL3Status.value = 'ready';
+    } else {
+      irTextL3Status.value = 'unavailable';
+    }
+  },
+  { deep: true },
+);
+
+// Lazy-load L3 when the tab is first selected
+async function ensureL3() {
+  if (irTextL3Status.value !== 'idle') return;
+  if (!graph.nodeList.length) { irTextL3Status.value = 'idle'; return; }
+  irTextL3Status.value = 'loading';
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  const l3 = await compileGraphToKirL3(JSON.stringify(kirgraph));
+  if (l3 !== null) {
+    irTextL3.value = l3;
+    irTextL3Status.value = 'ready';
+  } else {
+    irTextL3Status.value = 'unavailable';
+  }
+}
+
+function selectTab(tab) {
+  activeTab.value = tab;
+  if (tab === 'kir-l3') ensureL3();
+}
+
 // ---- Reactive kirgraph JSON ----
 const kirgraphJson = computed(() => {
   const kg = graphToKirgraph(graph.nodeList, graph.connectionList);
   return JSON.stringify(kg, null, 2);
 });
 
+// ---- Active display text ----
+const displayText = computed(() => {
+  if (activeTab.value === 'kirgraph') return kirgraphJson.value;
+  if (activeTab.value === 'kir-l3') return irTextL3Status.value === 'ready' ? irTextL3.value : '';
+  return irText.value;
+});
+
 // ---- Line count for gutter ----
-const displayText = computed(() => activeTab.value === 'kirgraph' ? kirgraphJson.value : irText.value);
-const lineCount   = computed(() => displayText.value.split('\n').length);
+const lineCount = computed(() => {
+  const t = displayText.value;
+  return t ? t.split('\n').length : 0;
+});
 
 // ---- Syntax highlight ----
 // Regex-based highlighter for KIR syntax
@@ -82,7 +137,7 @@ function highlightLine(line) {
   // Replace them with placeholders, highlight the rest, then restore.
   const tokens = [];
   function stash(match, cls) {
-    const id = `\x00${tokens.length}\x00`;
+    const id = `\x00T${tokens.length}T\x00`;
     tokens.push(`<span class="${cls}">${match}</span>`);
     return id;
   }
@@ -102,7 +157,7 @@ function highlightLine(line) {
   s = s.replace(/\)([\w.]+)\(/g, ')<span class="ir-func">$1</span>(');
 
   // Restore stashed tokens
-  s = s.replace(/\x00(\d+)\x00/g, (_, i) => tokens[+i]);
+  s = s.replace(/\x00T(\d+)T\x00/g, (_, i) => tokens[+i]);
 
   return s;
 }
@@ -129,18 +184,30 @@ function highlightJson(text) {
   return s;
 }
 
-const highlightedIR = computed(() =>
-  activeTab.value === 'kirgraph'
-    ? highlightJson(kirgraphJson.value)
-    : highlight(irText.value),
-);
+const highlightedIR = computed(() => {
+  if (activeTab.value === 'kirgraph') return highlightJson(kirgraphJson.value);
+  if (activeTab.value === 'kir-l3') {
+    return irTextL3Status.value === 'ready' ? highlight(irTextL3.value) : '';
+  }
+  return highlight(irText.value);
+});
 
 // ---- Copy to clipboard ----
 async function copyToClipboard() {
-  const text = activeTab.value === 'kirgraph' ? kirgraphJson.value : irText.value;
+  let text = '';
+  let label = 'IR';
+  if (activeTab.value === 'kirgraph') {
+    text = kirgraphJson.value;
+    label = 'KirGraph JSON';
+  } else if (activeTab.value === 'kir-l3') {
+    text = irTextL3.value;
+    label = 'KIR L3';
+  } else {
+    text = irText.value;
+    label = 'KIR L2';
+  }
   try {
     await navigator.clipboard.writeText(text);
-    const label = activeTab.value === 'kirgraph' ? 'KirGraph JSON' : 'IR';
     ElMessage({ message: `${label} copied to clipboard.`, type: 'success', duration: 1500 });
   } catch {
     ElMessage({ message: 'Copy failed — check browser permissions.', type: 'error', duration: 2000 });
@@ -157,7 +224,7 @@ const showExecOutput = ref(false);
 // Active WS cancel handle — allows stopping mid-run
 let _cancelExec = null;
 
-function execute() {
+async function execute() {
   if (isExecuting.value) {
     // Cancel the current run
     _cancelExec?.();
@@ -166,12 +233,18 @@ function execute() {
     return;
   }
 
-  // Build kirgraph from the current canvas — let the backend compile it
-  // (this path is more reliable than the frontend compiler for execution)
-  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
   if (!graph.nodeList.length) {
     ElMessage({ message: 'Graph is empty — nothing to execute.', type: 'warning', duration: 2000 });
     return;
+  }
+
+  // Use L2 KIR text for execution (same path as Toolbar.vue runGraph)
+  // Try Pyodide first; fall back to JS compiler
+  const kirgraph = graphToKirgraph(graph.nodeList, graph.connectionList);
+  let kir = await compileGraphToKir(JSON.stringify(kirgraph));
+  if (!kir) {
+    const { ir: jsIr } = compileGraph(graph.nodeList, graph.connectionList);
+    kir = jsIr;
   }
 
   isExecuting.value = true;
@@ -180,12 +253,9 @@ function execute() {
   execVariables.value = {};
   showExecOutput.value = true;
 
-  const { cancel, ws } = executeKirgraphStreaming(kirgraph, {
+  const { cancel, ws } = executeKirStreaming(kir, {
     onStarted() {
       execOutput.value += '[ Execution started ]\n';
-    },
-    onCompiled(kirSrc) {
-      // Silently received — available for debugging if needed
     },
     onOutput(text) {
       execOutput.value += text;
@@ -224,127 +294,169 @@ function execute() {
   };
 }
 
-// ---- Toggle KIR mode ----
-function toggleMode() {
-  mode.value = mode.value === 'controlflow' ? 'dataflow' : 'controlflow';
+// ---- Resizable split between code and exec output ----
+const execOutputH = ref(140);
+
+function onResizeExecOutput(e) {
+  e.preventDefault();
+  const startY = e.clientY;
+  const startH = execOutputH.value;
+  const onMove = (ev) => {
+    const delta = startY - ev.clientY;
+    execOutputH.value = Math.max(60, Math.min(400, startH + delta));
+  };
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
+  document.body.style.cursor = 'row-resize';
+  document.body.style.userSelect = 'none';
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
 }
 </script>
 
 <template>
   <div class="ir-root">
 
-    <!-- Toolbar -->
-    <div class="ir-toolbar">
-      <span class="ir-toolbar-label">
-        <span class="i-carbon-code ir-toolbar-icon" />
-        IR Output
-      </span>
-      <span class="ir-stats">
-        {{ graph.nodeList.length }} node{{ graph.nodeList.length !== 1 ? 's' : '' }},
-        {{ graph.connectionList.length }} connection{{ graph.connectionList.length !== 1 ? 's' : '' }}
-      </span>
-      <div class="ir-toolbar-actions">
-        <!-- Tab switcher -->
-        <div class="ir-tab-group" role="tablist">
-          <button
-            class="ir-tab-btn"
-            :class="{ active: activeTab === 'kir' }"
-            role="tab"
-            :aria-selected="activeTab === 'kir'"
-            title="Show compiled KIR output"
-            @click="activeTab = 'kir'"
-          >KIR</button>
-          <button
-            class="ir-tab-btn"
-            :class="{ active: activeTab === 'kirgraph' }"
-            role="tab"
-            :aria-selected="activeTab === 'kirgraph'"
-            title="Show .kirgraph JSON (L1 IR)"
-            @click="activeTab = 'kirgraph'"
-          >KirGraph JSON</button>
-        </div>
-
-        <!-- KIR mode toggle (only shown on KIR tab) -->
+    <!-- Toolbar row 1: tabs + badge -->
+    <div class="ir-toolbar ir-toolbar--row1">
+      <div class="ir-tab-group" role="tablist">
         <button
-          v-if="activeTab === 'kir'"
-          class="ir-action-btn ir-mode-btn"
-          :title="`Mode: ${mode} (click to toggle)`"
-          @click="toggleMode"
-        >
-          {{ mode === 'controlflow' ? 'CF' : 'DF' }}
-        </button>
-
-        <!-- Compiler source indicator (KIR tab only) -->
-        <span
-          v-if="activeTab === 'kir'"
-          class="ir-compiler-badge"
-          :class="`ir-compiler-badge--${compilerSource}`"
-          :title="compilerSource === 'python' ? 'Compiled by Python (KirGraphCompiler)' : compilerSource === 'loading' ? 'Pyodide loading — showing JS fallback' : 'Compiled by JS fallback compiler'"
-        >
-          {{ compilerSource === 'python' ? 'Py' : compilerSource === 'loading' ? '...' : 'JS' }}
-        </span>
-
-        <button class="ir-action-btn" title="Copy to clipboard" @click="copyToClipboard">
-          <span class="i-carbon-copy" />
-          Copy
-        </button>
+          class="ir-tab-btn"
+          :class="{ active: activeTab === 'kir-l2' }"
+          role="tab"
+          :aria-selected="activeTab === 'kir-l2'"
+          title="Show compiled KIR L2 output (with @meta annotations)"
+          @click="selectTab('kir-l2')"
+        >KIR L2</button>
         <button
-          class="ir-action-btn ir-action-btn--exec"
-          :class="{ 'ir-action-btn--exec-running': isExecuting }"
-          :title="isExecuting ? 'Click to cancel execution' : 'Execute graph on backend'"
-          @click="execute"
-        >
-          <span :class="isExecuting ? 'i-carbon-stop-filled' : 'i-carbon-play'" />
-          {{ isExecuting ? 'Stop' : 'Execute' }}
-        </button>
+          class="ir-tab-btn"
+          :class="{ active: activeTab === 'kir-l3' }"
+          role="tab"
+          :aria-selected="activeTab === 'kir-l3'"
+          title="Show optimized KIR L3 output (stripped, requires Pyodide)"
+          @click="selectTab('kir-l3')"
+        >KIR L3</button>
+        <button
+          class="ir-tab-btn"
+          :class="{ active: activeTab === 'kirgraph' }"
+          role="tab"
+          :aria-selected="activeTab === 'kirgraph'"
+          title="Show .kirgraph JSON (L1 IR)"
+          @click="selectTab('kirgraph')"
+        >KirGraph JSON</button>
       </div>
+
+      <!-- Compiler source badge (KIR L2 tab only) -->
+      <span
+        v-if="activeTab === 'kir-l2'"
+        class="ir-compiler-badge"
+        :class="`ir-compiler-badge--${compilerSource}`"
+        :title="compilerSource === 'python' ? 'Compiled by Python (KirGraphCompiler)' : compilerSource === 'loading' ? 'Pyodide loading — showing JS fallback' : 'Compiled by JS fallback compiler'"
+      >
+        {{ compilerSource === 'python' ? 'Py' : compilerSource === 'loading' ? '...' : 'JS' }}
+      </span>
+
+      <!-- L3 status badge -->
+      <span
+        v-if="activeTab === 'kir-l3'"
+        class="ir-compiler-badge"
+        :class="irTextL3Status === 'ready' ? 'ir-compiler-badge--python' : irTextL3Status === 'loading' ? 'ir-compiler-badge--loading' : 'ir-compiler-badge--js'"
+        :title="irTextL3Status === 'ready' ? 'Compiled by Python full pipeline' : irTextL3Status === 'loading' ? 'Compiling…' : 'Pyodide required for L3'"
+      >
+        {{ irTextL3Status === 'ready' ? 'Py' : irTextL3Status === 'loading' ? '...' : 'N/A' }}
+      </span>
+
+      <span class="ir-stats ir-stats--right">
+        {{ graph.nodeList.length }} node{{ graph.nodeList.length !== 1 ? 's' : '' }},
+        {{ graph.connectionList.length }} conn{{ graph.connectionList.length !== 1 ? 's' : '' }}
+      </span>
     </div>
 
-    <!-- Compilation errors banner (KIR tab only) -->
-    <div v-if="activeTab === 'kir' && compileErrors.length > 0" class="ir-errors">
+    <!-- Toolbar row 2: actions -->
+    <div class="ir-toolbar ir-toolbar--row2">
+      <button class="ir-action-btn" title="Copy to clipboard" @click="copyToClipboard">
+        <span class="i-carbon-copy" />
+        Copy
+      </button>
+      <button
+        class="ir-action-btn ir-action-btn--exec"
+        :class="{ 'ir-action-btn--exec-running': isExecuting }"
+        :title="isExecuting ? 'Click to cancel execution' : 'Execute graph on backend (uses L2 KIR)'"
+        @click="execute"
+      >
+        <span :class="isExecuting ? 'i-carbon-stop-filled' : 'i-carbon-play'" />
+        {{ isExecuting ? 'Stop' : 'Execute' }}
+      </button>
+    </div>
+
+    <!-- Compilation errors banner (KIR L2 tab only) -->
+    <div v-if="activeTab === 'kir-l2' && compileErrors.length > 0" class="ir-errors">
       <div v-for="(err, i) in compileErrors" :key="i" class="ir-error-line">
         {{ err }}
       </div>
     </div>
 
     <!-- Code display -->
-    <div class="ir-code-wrapper">
-      <!-- Line gutter -->
-      <div class="ir-gutter" aria-hidden="true">
-        <div v-for="n in lineCount" :key="n" class="ir-gutter-line">{{ n }}</div>
-      </div>
-      <!-- Highlighted code -->
-      <pre
-        class="ir-code"
-        v-html="highlightedIR"
-      />
+    <div class="ir-code-wrapper" :class="{ 'ir-code-wrapper--with-output': showExecOutput }">
+      <template v-if="activeTab === 'kir-l3' && irTextL3Status !== 'ready'">
+        <div class="ir-placeholder">
+          <template v-if="irTextL3Status === 'loading'">
+            <span class="i-carbon-circle-dash exec-spin ir-placeholder-icon" />
+            Compiling L3…
+          </template>
+          <template v-else-if="irTextL3Status === 'unavailable'">
+            <span class="i-carbon-warning ir-placeholder-icon" />
+            Pyodide required for KIR L3 compilation
+          </template>
+          <template v-else>
+            <span class="i-carbon-code ir-placeholder-icon" />
+            Select this tab to compile L3
+          </template>
+        </div>
+      </template>
+      <template v-else>
+        <!-- Line gutter -->
+        <div class="ir-gutter" aria-hidden="true">
+          <div v-for="n in lineCount" :key="n" class="ir-gutter-line">{{ n }}</div>
+        </div>
+        <!-- Highlighted code -->
+        <pre class="ir-code" v-html="highlightedIR" />
+      </template>
     </div>
 
-    <!-- Execution output panel -->
-    <div v-if="showExecOutput" class="exec-output-panel">
-      <div class="exec-output-header">
-        <span class="exec-output-title">
-          <span :class="isExecuting ? 'i-carbon-circle-dash exec-spin' : 'i-carbon-checkmark'" />
-          {{ isExecuting ? 'Executing…' : 'Execution Output' }}
-        </span>
-        <button class="exec-close-btn" title="Close output" @click="showExecOutput = false">✕</button>
-      </div>
-      <div v-if="execError" class="exec-error">{{ execError }}</div>
-      <pre class="exec-output-body">{{ execOutput || (isExecuting ? '(waiting for output…)' : '(no output)') }}</pre>
-      <!-- Variable results table -->
-      <div v-if="!isExecuting && Object.keys(execVariables).length > 0" class="exec-vars">
-        <div class="exec-vars-title">Variables</div>
-        <div
-          v-for="(val, key) in execVariables"
-          :key="key"
-          class="exec-var-row"
-        >
-          <span class="exec-var-name">{{ key }}</span>
-          <span class="exec-var-eq">=</span>
-          <span class="exec-var-val">{{ typeof val === 'object' ? JSON.stringify(val) : String(val) }}</span>
+    <!-- Execution output panel (resizable) -->
+    <template v-if="showExecOutput">
+      <!-- Resize handle -->
+      <div class="exec-resize-handle" @pointerdown="onResizeExecOutput" />
+      <div class="exec-output-panel" :style="{ height: execOutputH + 'px' }">
+        <div class="exec-output-header">
+          <span class="exec-output-title">
+            <span :class="isExecuting ? 'i-carbon-circle-dash exec-spin' : 'i-carbon-checkmark'" />
+            {{ isExecuting ? 'Executing…' : 'Execution Output' }}
+          </span>
+          <button class="exec-close-btn" title="Close output" @click="showExecOutput = false">✕</button>
+        </div>
+        <div v-if="execError" class="exec-error">{{ execError }}</div>
+        <pre class="exec-output-body">{{ execOutput || (isExecuting ? '(waiting for output…)' : '(no output)') }}</pre>
+        <!-- Variable results table -->
+        <div v-if="!isExecuting && Object.keys(execVariables).length > 0" class="exec-vars">
+          <div class="exec-vars-title">Variables</div>
+          <div
+            v-for="(val, key) in execVariables"
+            :key="key"
+            class="exec-var-row"
+          >
+            <span class="exec-var-name">{{ key }}</span>
+            <span class="exec-var-eq">=</span>
+            <span class="exec-var-val">{{ typeof val === 'object' ? JSON.stringify(val) : String(val) }}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
 
   </div>
 </template>
@@ -360,43 +472,28 @@ function toggleMode() {
   color: #cdd6f4;
 }
 
-/* ---- Toolbar ---- */
+/* ---- Toolbar rows ---- */
 .ir-toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 5px 12px;
+  gap: 8px;
+  padding: 4px 10px;
   background: #181825;
-  border-bottom: 1px solid #313244;
   flex-shrink: 0;
 }
-
-.ir-toolbar-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #6c7086;
+.ir-toolbar--row1 {
+  border-bottom: 1px solid #1e1e2e;
+  padding-bottom: 4px;
 }
-.ir-toolbar-icon {
-  font-size: 13px;
-  color: #89b4fa;
+.ir-toolbar--row2 {
+  border-bottom: 1px solid #313244;
+  padding-top: 4px;
 }
 
-.ir-stats {
-  font-size: 11px;
-  color: #45475a;
-  margin-left: 4px;
-}
-
-.ir-toolbar-actions {
+.ir-stats--right {
   margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-size: 10px;
+  color: #45475a;
 }
 
 .ir-action-btn {
@@ -435,19 +532,6 @@ function toggleMode() {
   50% { opacity: 0.6; }
 }
 
-.ir-mode-btn {
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  color: #f9e2af;
-  border-color: rgba(249, 226, 175, 0.4);
-  min-width: 32px;
-  justify-content: center;
-}
-.ir-mode-btn:hover {
-  background: rgba(249, 226, 175, 0.1);
-  border-color: rgba(249, 226, 175, 0.6);
-}
 
 .ir-compiler-badge {
   display: inline-flex;
@@ -529,6 +613,21 @@ function toggleMode() {
   display: flex;
   overflow: auto;
   min-height: 0;
+}
+
+/* ---- Placeholder (L3 not loaded) ---- */
+.ir-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #45475a;
+  font-size: 12px;
+  padding: 20px;
+}
+.ir-placeholder-icon {
+  font-size: 16px;
 }
 .ir-code-wrapper::-webkit-scrollbar {
   width: 6px;
@@ -615,14 +714,30 @@ function toggleMode() {
   color: #89b4fa;
 }
 
+/* ---- Execution output resize handle ---- */
+.exec-resize-handle {
+  flex-shrink: 0;
+  height: 6px;
+  background: transparent;
+  border-top: 1px solid #313244;
+  cursor: row-resize;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 10;
+}
+.exec-resize-handle:hover {
+  background: rgba(137, 180, 250, 0.2);
+}
+.exec-resize-handle:active {
+  background: rgba(137, 180, 250, 0.35);
+}
+
 /* ---- Execution output panel ---- */
 .exec-output-panel {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid #313244;
   background: #0d0d17;
-  max-height: 140px;
   overflow: hidden;
 }
 

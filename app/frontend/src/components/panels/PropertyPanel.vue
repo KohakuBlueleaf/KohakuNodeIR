@@ -5,6 +5,11 @@ import { useGraphStore } from '../../stores/graph.js';
 import { useEditorStore } from '../../stores/editor.js';
 import { useNodeRegistryStore } from '../../stores/nodeRegistry.js';
 
+const props = defineProps({
+  // When true, render a compact horizontal layout (used when panel is at bottom)
+  horizontal: { type: Boolean, default: false },
+});
+
 const graph = useGraphStore();
 const editor = useEditorStore();
 const registry = useNodeRegistryStore();
@@ -128,7 +133,7 @@ function deleteNode() {
 </script>
 
 <template>
-  <div class="prop-root">
+  <div class="prop-root" :class="{ 'prop-root--horizontal': horizontal }">
 
     <!-- ── Nothing selected ── -->
     <div v-if="selectedCount === 0" class="prop-empty">
@@ -138,7 +143,7 @@ function deleteNode() {
 
     <!-- ── Multiple nodes selected ── -->
     <div v-else-if="selectedCount > 1" class="prop-multi">
-      <div class="prop-section-title">Selection</div>
+      <div v-if="!horizontal" class="prop-section-title">Selection</div>
       <div class="prop-multi-info">
         <span class="i-carbon-assembly-cluster prop-multi-icon" />
         <span>{{ selectedCount }} nodes selected</span>
@@ -152,7 +157,7 @@ function deleteNode() {
     </div>
 
     <!-- ── Single node selected ── -->
-    <div v-else-if="singleNode" class="prop-scroll">
+    <div v-else-if="singleNode" class="prop-scroll" :class="{ 'prop-scroll--h': horizontal }">
 
       <!-- Header: name + type badge -->
       <div class="prop-header">

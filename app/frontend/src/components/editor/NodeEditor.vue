@@ -12,8 +12,15 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:zoom', 'update:irOpen']);
 
-// ── IR Preview position ──
-const irPosition = ref('bottom');
+// ── IR/Properties positions ──
+// Default: IR = right, Properties = bottom
+// Toggle: IR = bottom, Properties = right
+const irPosition = ref('right');
+
+// irPosition === 'right'   → IR right,   Properties bottom
+// irPosition === 'bottom'  → IR bottom,  Properties right
+const propPosition = computed(() => irPosition.value === 'right' ? 'bottom' : 'right');
+
 function toggleIrPosition() {
   irPosition.value = irPosition.value === 'bottom' ? 'right' : 'bottom';
   emit('update:irOpen', true);
@@ -21,21 +28,27 @@ function toggleIrPosition() {
 
 // ── Resizable widths/heights ──
 const paletteW = ref(240);
-const rightW = ref(280);
+const propRightW = ref(280);
 const irRightW = ref(400);
 const irBottomH = ref(220);
+const propBottomH = ref(160);
 
-const effectiveRightW = computed(() =>
-  props.irOpen && irPosition.value === 'right' ? irRightW.value : rightW.value
-);
+// Right panel width: depends on what's on the right
+const effectiveRightW = computed(() => {
+  if (!props.irOpen) return propRightW.value;
+  return irPosition.value === 'right' ? irRightW.value : propRightW.value;
+});
 
 // ── Drag-to-resize ──
 function onResizePalette(e) { resize(e, paletteW, 'x', 160, 500, 1); }
+
 function onResizeRight(e) {
-  const target = props.irOpen && irPosition.value === 'right' ? irRightW : rightW;
+  const target = props.irOpen && irPosition.value === 'right' ? irRightW : propRightW;
   resize(e, target, 'x', 180, 700, -1);
 }
+
 function onResizeIrBottom(e) { resize(e, irBottomH, 'y', 80, 600, -1); }
+function onResizePropBottom(e) { resize(e, propBottomH, 'y', 80, 400, -1); }
 
 function resize(e, target, axis, min, max, dir) {
   e.preventDefault();
@@ -79,21 +92,20 @@ function openNodeDefEditor(def) {
         <div class="drag-edge drag-edge--right" @pointerdown="onResizePalette" />
       </aside>
 
-      <!-- Centre -->
+      <!-- Centre: canvas + optional bottom panel -->
       <div class="center-column">
         <main class="canvas-area">
           <EditorCanvas :zoom="zoom" @update:zoom="emit('update:zoom', $event)" />
         </main>
 
-        <!-- IR Preview — bottom -->
+        <!-- IR Preview — bottom position -->
         <template v-if="irPosition === 'bottom'">
           <div class="ir-preview-wrapper" :class="{ open: irOpen }">
-            <!-- Resize handle on top edge -->
             <div v-if="irOpen" class="drag-edge drag-edge--top" @pointerdown="onResizeIrBottom" />
             <div class="ir-preview-header" @click="emit('update:irOpen', !irOpen)">
               <span>IR Preview</span>
               <span class="ir-header-actions">
-                <button class="ir-pos-btn" title="Move to right side"
+                <button class="ir-pos-btn" title="Move IR to right (Properties goes right)"
                   @click.stop="toggleIrPosition">⇥</button>
                 <span class="ir-toggle-icon">{{ irOpen ? '▼' : '▲' }}</span>
               </span>
@@ -103,17 +115,31 @@ function openNodeDefEditor(def) {
             </div>
           </div>
         </template>
+
+        <!-- Properties — bottom position (when IR is on the right) -->
+        <template v-if="propPosition === 'bottom'">
+          <div class="prop-bottom-wrapper">
+            <div class="drag-edge drag-edge--top" @pointerdown="onResizePropBottom" />
+            <div class="prop-bottom-header">
+              <span>Properties</span>
+            </div>
+            <div class="prop-bottom-body" :style="{ height: propBottomH + 'px' }">
+              <PropertyPanel :horizontal="true" />
+            </div>
+          </div>
+        </template>
       </div>
 
-      <!-- Right panel -->
+      <!-- Right panel: IR right or Properties right -->
       <aside class="panel panel-right">
-        <!-- Resize handle on left edge -->
         <div class="drag-edge drag-edge--left" @pointerdown="onResizeRight" />
+
+        <!-- IR Preview — right position -->
         <template v-if="irOpen && irPosition === 'right'">
           <div class="ir-preview-header ir-preview-header--right" @click="emit('update:irOpen', !irOpen)">
             <span>IR Preview</span>
             <span class="ir-header-actions">
-              <button class="ir-pos-btn" title="Move to bottom"
+              <button class="ir-pos-btn" title="Move IR to bottom (Properties goes right)"
                 @click.stop="toggleIrPosition">⇤</button>
               <span class="ir-toggle-icon">✕</span>
             </span>
@@ -122,7 +148,15 @@ function openNodeDefEditor(def) {
             <IrPreview />
           </div>
         </template>
-        <template v-else>
+
+        <!-- Properties — right position (when IR is at bottom or closed) -->
+        <template v-else-if="propPosition === 'right'">
+          <div class="panel-title">Properties</div>
+          <PropertyPanel />
+        </template>
+
+        <!-- IR closed and IR position is right: show open prompt -->
+        <template v-else-if="!irOpen && irPosition === 'right'">
           <div class="panel-title">Properties</div>
           <PropertyPanel />
         </template>
@@ -201,4 +235,19 @@ function openNodeDefEditor(def) {
   border-top: 1px solid #313244;
 }
 .ir-preview-body--right { flex: 1; height: auto; border-top: none; }
+
+/* ── Properties bottom strip ── */
+.prop-bottom-wrapper {
+  position: relative;
+  background: #181825; border-top: 1px solid #313244; flex-shrink: 0;
+}
+.prop-bottom-header {
+  display: flex; align-items: center;
+  padding: 4px 14px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: #6c7086;
+  user-select: none; flex-shrink: 0;
+}
+.prop-bottom-body {
+  overflow: hidden; display: flex; flex-direction: column;
+}
 </style>

@@ -209,6 +209,45 @@ Writer().write(program)
 }
 
 /**
+ * Compile a .kirgraph JSON object to L3 KIR text using the full Python
+ * pipeline: KirGraphCompiler → DataflowCompiler → StripMetaPass → Writer.
+ *
+ * @param {string} kirgraphJson - JSON.stringify()'d kirgraph object
+ * @returns {Promise<string|null>} L3 KIR text, or null if Pyodide is not ready
+ */
+export async function compileGraphToKirL3(kirgraphJson) {
+  if (!ready) {
+    const ok = await initPyodide();
+    if (!ok) return null;
+  }
+
+  try {
+    pyodide.globals.set('_kirgraph_json_str_l3', kirgraphJson);
+
+    const kirText = await pyodide.runPythonAsync(`
+import json
+from kohakunode.kirgraph.schema import KirGraph
+from kohakunode.kirgraph.compiler import KirGraphCompiler
+from kohakunode.compiler.dataflow import DataflowCompiler
+from kohakunode.compiler.strip_meta import StripMetaPass
+from kohakunode.serializer.writer import Writer
+
+kg_dict = json.loads(_kirgraph_json_str_l3)
+graph = KirGraph.from_dict(kg_dict)
+program = KirGraphCompiler().compile(graph)
+program = DataflowCompiler().transform(program)
+program = StripMetaPass().transform(program)
+Writer().write(program)
+`);
+
+    return kirText;
+  } catch (err) {
+    console.error('[pyodideParser] compileGraphToKirL3 error:', err);
+    return null;
+  }
+}
+
+/**
  * Parse KIR text using Python and return a plain-JS AST object.
  * Returns null on failure.
  *
