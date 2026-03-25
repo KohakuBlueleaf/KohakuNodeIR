@@ -23,6 +23,10 @@ from kohakunode.ast.nodes import (
     Program,
     Statement,
     Switch,
+    TryExcept,
+    TypeExpr,
+    TypeHintBlock,
+    TypeHintEntry,
 )
 from kohakunode.kirgraph.schema import KGEdge, KGNode, KGPort, KirGraph
 
@@ -102,6 +106,39 @@ class KirGraphDecompiler:
             edges=list(self._edges),
         )
 
+    def decompile_with_typehints(self, program: Program) -> tuple[KirGraph, TypeHintBlock | None]:
+        """Decompile and also reconstruct a TypeHintBlock from non-'any' port types.
+
+        Returns (KirGraph, TypeHintBlock | None). The TypeHintBlock is None when
+        all ports are untyped (type == "any").
+        """
+        graph = self.decompile(program)
+        typehint_block = self._collect_typehints()
+        return graph, typehint_block
+
+    def _collect_typehints(self) -> TypeHintBlock | None:
+        """Scan all nodes for ports with non-'any' types and build a TypeHintBlock."""
+        # Group by func_name (== node.type for non-primitive nodes).
+        entries: dict[str, TypeHintEntry] = {}
+        for node in self._nodes.values():
+            if node.type in ("value", "branch", "switch", "parallel", "merge", "try_except"):
+                continue
+            has_typed = any(p.type != "any" for p in node.data_inputs) or any(
+                p.type != "any" for p in node.data_outputs
+            )
+            if not has_typed:
+                continue
+            func_name = node.type
+            if func_name not in entries:
+                entries[func_name] = TypeHintEntry(
+                    func_name=func_name,
+                    input_types=[TypeExpr(name=p.type) for p in node.data_inputs],
+                    output_types=[TypeExpr(name=p.type) for p in node.data_outputs],
+                )
+        if not entries:
+            return None
+        return TypeHintBlock(entries=list(entries.values()))
+
     # ------------------------------------------------------------------
     # First pass: node creation + control edges
     # ------------------------------------------------------------------
@@ -127,6 +164,10 @@ class KirGraphDecompiler:
                 self._walk_statements(
                     stmt.body, prev_node_id=None, in_namespace=False, in_dataflow=True
                 )
+                continue
+
+            if isinstance(stmt, TypeHintBlock):
+                # Declarative metadata — no graph nodes to create.
                 continue
 
             if isinstance(stmt, Namespace):
@@ -252,6 +293,9 @@ class KirGraphDecompiler:
             elif isinstance(stmt, Parallel):
                 self._handle_parallel_namespaces(stmt, node_id, stmts)
                 last_id = None
+            elif isinstance(stmt, TryExcept):
+                self._handle_try_except_bodies(stmt, node_id)
+                last_id = node_id
             else:
                 last_id = node_id
 
@@ -273,6 +317,8 @@ class KirGraphDecompiler:
                 return self._create_switch_node(stmt, node_id, meta)
             case Parallel():
                 return self._create_parallel_node(stmt, node_id, meta)
+            case TryExcept():
+                return self._create_try_except_node(stmt, node_id, meta)
             case Jump():
                 # Jump is a control primitive, not a node.
                 return None
@@ -467,6 +513,53 @@ class KirGraphDecompiler:
         self._nodes[node_id] = node
         return node_id
 
+    def _create_try_except_node(
+        self,
+        stmt: TryExcept,
+        node_id: str | None,
+        meta_data: dict[str, Any] | None,
+    ) -> str:
+        """Create a try_except node from a TryExcept statement."""
+        if node_id is None:
+            node_id = self._gen_id("try_except")
+
+        node = KGNode(
+            id=node_id,
+            type="try_except",
+            name="Try/Except",
+            data_inputs=[],
+            data_outputs=[],
+            ctrl_inputs=["in"],
+            ctrl_outputs=["try", "except"],
+            meta=self._build_meta(meta_data),
+        )
+        self._nodes[node_id] = node
+        return node_id
+
+    def _handle_try_except_bodies(
+        self,
+        stmt: TryExcept,
+        try_except_node_id: str,
+    ) -> None:
+        """Wire try_body and except_body into the try_except node's ctrl outputs."""
+        for port, body in [("try", stmt.try_body), ("except", stmt.except_body)]:
+            if not body:
+                continue
+            first_id = self._walk_statements(
+                body, prev_node_id=None, in_namespace=True
+            )
+            if first_id:
+                self._ensure_ctrl_ports(first_id, ctrl_in="in")
+                self._edges.append(
+                    KGEdge(
+                        type="control",
+                        from_node=try_except_node_id,
+                        from_port=port,
+                        to_node=first_id,
+                        to_port="in",
+                    )
+                )
+
     # ------------------------------------------------------------------
     # Control-flow namespace handling
     # ------------------------------------------------------------------
@@ -593,6 +686,12 @@ class KirGraphDecompiler:
                 continue
             if isinstance(stmt, Namespace):
                 self._resolve_data_edges(stmt.body, known_ids)
+                continue
+            if isinstance(stmt, TryExcept):
+                self._resolve_data_edges(stmt.try_body, known_ids)
+                self._resolve_data_edges(stmt.except_body, known_ids)
+                continue
+            if isinstance(stmt, TypeHintBlock):
                 continue
 
             meta = _extract_meta(stmt)

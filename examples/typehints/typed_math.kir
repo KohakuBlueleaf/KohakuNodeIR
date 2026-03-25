@@ -1,0 +1,12 @@
+@typehint:
+    (int, int)add(int)
+    (int, int)multiply(int)
+    (int)to_string(str)
+    (str)print(_)
+
+x: int = 10
+y: int = 20
+(x, y)add(sum)
+(sum, 3)multiply(product)
+(product)to_string(text)
+(text)print()

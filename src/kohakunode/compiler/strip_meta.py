@@ -11,6 +11,8 @@ from kohakunode.ast.nodes import (
     Statement,
     SubgraphDef,
     Switch,
+    TryExcept,
+    TypeHintBlock,
 )
 from kohakunode.compiler.passes import IRPass
 
@@ -88,5 +90,15 @@ class StripMetaPass(IRPass):
                     body=self._strip_body(stmt.body),
                     line=stmt.line,
                 )
+            case TryExcept():
+                return TryExcept(
+                    try_body=self._strip_body(stmt.try_body),
+                    except_body=self._strip_body(stmt.except_body),
+                    metadata=None,
+                    line=stmt.line,
+                )
+            case TypeHintBlock():
+                # TypeHintBlock is declarative metadata, not executable — pass through.
+                return stmt
             case _:
                 return stmt

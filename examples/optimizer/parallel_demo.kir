@@ -1,0 +1,4 @@
+# These two are independent -- optimizer can detect parallel
+(data)process_a(result_a)
+(data)process_b(result_b)
+(result_a, result_b)combine(final)

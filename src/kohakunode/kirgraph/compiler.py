@@ -18,8 +18,10 @@ from kohakunode.ast.nodes import (
     Program,
     Statement,
     Switch,
+    TryExcept,
+    TypeHintEntry,
 )
-from kohakunode.kirgraph.schema import KGNode, KirGraph
+from kohakunode.kirgraph.schema import KGNode, KGPort, KirGraph
 
 
 def _var(node_id: str, port: str) -> str:
@@ -54,8 +56,13 @@ def _meta(node: KGNode) -> MetaAnnotation:
 class KirGraphCompiler:
     """Compile .kirgraph (L1) → KIR Program AST (L2)."""
 
-    def compile(self, graph: KirGraph) -> Program:
+    def compile(self, graph: KirGraph, typehints: list[TypeHintEntry] | None = None) -> Program:
         self._nodes: dict[str, KGNode] = {n.id: n for n in graph.nodes}
+        # Build func_name → TypeHintEntry lookup for port type annotation.
+        self._typehint_map: dict[str, TypeHintEntry] = {}
+        if typehints:
+            for entry in typehints:
+                self._typehint_map[entry.func_name] = entry
 
         # Adjacency
         self._ctrl_out: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
@@ -216,7 +223,10 @@ class KirGraphCompiler:
                 stmts.extend(self._emit_switch(node, m))
             case "parallel":
                 stmts.extend(self._emit_parallel(node, m))
+            case "try_except":
+                stmts.extend(self._emit_try_except(node, m))
             case _:
+                self._apply_typehint_to_ports(node)
                 inputs = [self._input(node, p.port) for p in node.data_inputs]
                 outputs = [_var(node.id, p.port) for p in node.data_outputs]
                 stmts.append(
@@ -271,11 +281,32 @@ class KirGraphCompiler:
             return [
                 Assignment(target=_var(node.id, out), value=_lit(val), metadata=[m])
             ]
+        self._apply_typehint_to_ports(node)
         inputs = [self._input(node, p.port) for p in node.data_inputs]
         outputs = [_var(node.id, p.port) for p in node.data_outputs]
         return [
             FuncCall(inputs=inputs, func_name=node.type, outputs=outputs, metadata=[m])
         ]
+
+    def _apply_typehint_to_ports(self, node: KGNode) -> None:
+        """Set KGPort.type from the typehint map for this node's function name."""
+        entry = self._typehint_map.get(node.type)
+        if entry is None:
+            return
+        for i, port in enumerate(node.data_inputs):
+            if i < len(entry.input_types):
+                te = entry.input_types[i]
+                port.type = te.name + ("?" if te.is_optional else "")
+        for i, port in enumerate(node.data_outputs):
+            if i < len(entry.output_types):
+                te = entry.output_types[i]
+                port.type = te.name + ("?" if te.is_optional else "")
+
+    def _emit_try_except(self, node: KGNode, m: MetaAnnotation) -> list[Statement]:
+        """Emit a try_except graph node as a TryExcept AST statement."""
+        try_stmts = self._chain_from_port(node.id, "try")
+        except_stmts = self._chain_from_port(node.id, "except")
+        return [TryExcept(try_body=try_stmts, except_body=except_stmts, metadata=[m])]
 
     def _emit_branch(self, node: KGNode, m: MetaAnnotation) -> list[Statement]:
         cond = self._input(node, "condition")

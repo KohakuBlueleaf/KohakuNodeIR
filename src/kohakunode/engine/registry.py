@@ -3,6 +3,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from kohakunode.ast.nodes import TypeExpr, TypeHintEntry
 from kohakunode.errors import KirRuntimeError
 
 
@@ -13,6 +14,8 @@ class FunctionSpec:
     input_names: list[str]
     output_names: list[str]
     defaults: dict[str, Any] = field(default_factory=dict)
+    input_types: list[str] | None = field(default=None)
+    output_types: list[str] | None = field(default=None)
 
 
 def _introspect(func: Callable) -> tuple[list[str], dict[str, Any]]:
@@ -44,6 +47,8 @@ class Registry:
         input_names: list[str] | None = None,
         output_names: list[str] | None = None,
         defaults: dict[str, Any] | None = None,
+        input_types: list[str] | None = None,
+        output_types: list[str] | None = None,
     ) -> FunctionSpec:
         if name in self._funcs:
             raise KirRuntimeError(
@@ -64,6 +69,8 @@ class Registry:
             input_names=input_names,
             output_names=output_names if output_names is not None else [],
             defaults=defaults,
+            input_types=input_types,
+            output_types=output_types,
         )
         self._funcs[name] = spec
         return spec
@@ -93,6 +100,27 @@ class Registry:
 
     def clear(self) -> None:
         self._funcs.clear()
+
+    def generate_typehints(self) -> list[TypeHintEntry]:
+        """Build TypeHintEntry objects for all functions that have type info."""
+        entries: list[TypeHintEntry] = []
+        for spec in self._funcs.values():
+            if spec.input_types is None and spec.output_types is None:
+                continue
+            input_exprs = [
+                TypeExpr(name=t) for t in (spec.input_types or [])
+            ]
+            output_exprs = [
+                TypeExpr(name=t) for t in (spec.output_types or [])
+            ]
+            entries.append(
+                TypeHintEntry(
+                    func_name=spec.name,
+                    input_types=input_exprs,
+                    output_types=output_exprs,
+                )
+            )
+        return entries
 
     def register_decorator(
         self,

@@ -8,6 +8,8 @@ from kohakunode.ast.nodes import (
     Statement,
     SubgraphDef,
     Switch,
+    TryExcept,
+    TypeHintBlock,
 )
 from kohakunode.compiler.passes import DependencyGraphBuilder, IRPass, topological_sort
 from kohakunode.errors import KirCompilationError
@@ -137,6 +139,24 @@ class DataflowCompiler(IRPass):
                     )
                 else:
                     new_body.append(stmt)
+            elif isinstance(stmt, TryExcept):
+                try_inner = self._expand_dataflow_blocks(stmt.try_body)
+                except_inner = self._expand_dataflow_blocks(stmt.except_body)
+                if try_inner is not stmt.try_body or except_inner is not stmt.except_body:
+                    found = True
+                    new_body.append(
+                        TryExcept(
+                            try_body=try_inner,
+                            except_body=except_inner,
+                            metadata=stmt.metadata,
+                            line=stmt.line,
+                        )
+                    )
+                else:
+                    new_body.append(stmt)
+            elif isinstance(stmt, TypeHintBlock):
+                # TypeHintBlock is declarative — pass through unchanged.
+                new_body.append(stmt)
             else:
                 new_body.append(stmt)
 

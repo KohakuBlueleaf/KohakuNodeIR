@@ -17,6 +17,8 @@ from kohakunode.ast.nodes import (
     Statement,
     SubgraphDef,
     Switch,
+    TryExcept,
+    TypeHintBlock,
     Wildcard,
 )
 from kohakunode.engine.backend import DefaultBackend, ExecutionBackend, NodeInvocation
@@ -133,6 +135,10 @@ class Interpreter:
             case DataflowBlock():
                 self._run_body(stmt.body)
             case ModeDecl():
+                pass
+            case TryExcept():
+                self._execute_try_except(stmt)
+            case TypeHintBlock():
                 pass
             case _:
                 raise KirRuntimeError(
@@ -316,6 +322,19 @@ class Interpreter:
                 )
 
         return results
+
+    # ------------------------------------------------------------------
+    # Try/except execution
+    # ------------------------------------------------------------------
+
+    def _execute_try_except(self, stmt: TryExcept) -> None:
+        """Execute a @try/@except block, catching any Python exception."""
+        try:
+            for s in stmt.try_body:
+                self._execute_statement(s)
+        except Exception:
+            for s in stmt.except_body:
+                self._execute_statement(s)
 
     # ------------------------------------------------------------------
     # Helper: run a body to completion
