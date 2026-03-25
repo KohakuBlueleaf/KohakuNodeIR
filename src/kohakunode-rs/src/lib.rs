@@ -8,8 +8,7 @@ pub mod parser;
 
 pub mod kirgraph;
 
-// Placeholder modules — implemented in later phases
-// pub mod layout;
+pub mod layout;
 pub mod analyzer;
 
 #[cfg(feature = "pyo3")]
