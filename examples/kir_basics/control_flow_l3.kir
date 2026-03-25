@@ -1,0 +1,14 @@
+n = 5
+result = 1
+counter = 1
+()jump(`loop`)
+loop:
+    (result, counter)multiply(result)
+    (counter, 1)add(counter)
+    (counter, n)less_equal(keep_going)
+    (keep_going)branch(`continue_loop`, `done`)
+    continue_loop:
+        ()jump(`loop`)
+    done:
+(n, result)format_factorial(msg)
+(msg)print_val()

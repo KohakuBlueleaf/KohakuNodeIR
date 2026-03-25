@@ -1,0 +1,20 @@
+(1)to_float(step)
+(10)to_float(limit)
+counter = 0
+total = 0
+()jump(`loop`)
+loop:
+    (counter, step)add(counter)
+    (counter, counter)multiply(squared)
+    (total, squared)add(total)
+    (counter, limit)less_than(keep_going)
+    (keep_going)branch(`continue`, `done`)
+    continue:
+        ()jump(`loop`)
+    done:
+(counter)to_string(count_str)
+(total)to_string(total_str)
+("Sum of squares 1..", count_str)concat(prefix)
+(prefix, " = ")concat(mid)
+(mid, total_str)concat(message)
+(message)print()

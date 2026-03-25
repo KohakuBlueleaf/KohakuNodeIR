@@ -1,0 +1,6 @@
+x = 10
+y = 20
+(x, y)add(sum)
+(sum, 3)multiply(product)
+(product)to_string(text)
+(text)print()

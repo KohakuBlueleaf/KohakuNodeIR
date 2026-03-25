@@ -7,11 +7,12 @@
     val_i_value = 0
     @meta node_id="val_total" pos=(100, 520) size=[160, 100]
     val_total_value = 0
+inc_i_result = val_i_value
 @meta node_id="merge_loop" pos=(340, -20) size=[140, 100]
 ()jump(`ns_merge_loop`)
 ns_merge_loop:
     @meta node_id="inc_i" pos=(320, 100) size=[180, 120]
-    (val_i_value, val_step_value)add(inc_i_result)
+    (inc_i_result, val_step_value)add(inc_i_result)
     @dataflow:
         @meta node_id="square" pos=(520, 100) size=[180, 120]
         (inc_i_result, inc_i_result)multiply(square_result)

@@ -1,0 +1,9 @@
+data = "input_data"
+()parallel(`process_a`, `process_b`)
+process_a:
+    (data, " + processed_A")concat(result_a)
+    (result_a)print()
+process_b:
+    (data, " + processed_B")concat(result_b)
+    (result_b)print()
+("Both branches done")print()
