@@ -25,6 +25,7 @@ const irPosition = ref('bottom');
 
 function toggleIrPosition() {
   irPosition.value = irPosition.value === 'bottom' ? 'right' : 'bottom';
+  emit('update:irOpen', true);
 }
 
 // ── NodeDefEditor dialog ───────────────────────────────────────────────────────
