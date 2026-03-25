@@ -170,7 +170,15 @@ class _GraphBuilder:
             elif isinstance(inp, Literal):
                 default = inp.value
             d_in.append(KGPort(port=pname, default=default))
-        d_out = [KGPort(port=str(o)) for o in stmt.outputs if str(o) != "_"]
+        # Strip {node_id}_ prefix from output port names to keep them clean
+        prefix = f"{nid}_"
+        d_out = []
+        for o in stmt.outputs:
+            oname = str(o)
+            if oname == "_":
+                continue
+            port_name = oname[len(prefix):] if oname.startswith(prefix) else oname
+            d_out.append(KGPort(port=port_name))
         self.nodes.append(
             KGNode(
                 id=nid,
@@ -186,8 +194,10 @@ class _GraphBuilder:
         )
         self._wire_data_inputs(stmt, nid, d_in)
         for o in stmt.outputs:
-            if str(o) != "_":
-                self._var_source[str(o)] = (nid, str(o))
+            oname = str(o)
+            if oname != "_":
+                port_name = oname[len(prefix):] if oname.startswith(prefix) else oname
+                self._var_source[oname] = (nid, port_name)
         return nid
 
     # ------------------------------------------------------------------
@@ -199,6 +209,13 @@ class _GraphBuilder:
         stmt: Assignment,
         first_node_in_scope: str | None,
     ) -> str | None:
+        # If the RHS is an identifier that we already know the source of,
+        # just alias the variable (no new node). This handles feedback
+        # initialization like `add_5_counter = value_3_value`.
+        if isinstance(stmt.value, Identifier) and stmt.value.name in self._var_source:
+            self._var_source[stmt.target] = self._var_source[stmt.value.name]
+            return first_node_in_scope
+
         nid = _meta_id(stmt) or self._gen_id("value")
         pos = _meta_pos(stmt)
         val = stmt.value.value if isinstance(stmt.value, Literal) else None

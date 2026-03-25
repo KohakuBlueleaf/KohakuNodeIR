@@ -202,6 +202,8 @@ impl GraphBuilder {
             }
         }
 
+        // Strip {node_id}_ prefix from output port names to keep them clean
+        let prefix = format!("{}_", nid);
         let d_out: Vec<KGPort> = stmt
             .outputs
             .iter()
@@ -210,7 +212,13 @@ impl GraphBuilder {
                     crate::ast::OutputTarget::Name(n) => n.clone(),
                     crate::ast::OutputTarget::Wildcard => "_".to_string(),
                 };
-                if s != "_" { Some(KGPort::new(s)) } else { None }
+                if s == "_" { return None; }
+                let port_name = if s.starts_with(&prefix) {
+                    s[prefix.len()..].to_string()
+                } else {
+                    s
+                };
+                Some(KGPort::new(port_name))
             })
             .collect();
 
@@ -237,7 +245,12 @@ impl GraphBuilder {
         for o in &stmt.outputs {
             if let crate::ast::OutputTarget::Name(n) = o {
                 if n != "_" {
-                    self.var_source.insert(n.clone(), (nid.clone(), n.clone()));
+                    let port_name = if n.starts_with(&prefix) {
+                        n[prefix.len()..].to_string()
+                    } else {
+                        n.clone()
+                    };
+                    self.var_source.insert(n.clone(), (nid.clone(), port_name));
                 }
             }
         }
@@ -254,6 +267,15 @@ impl GraphBuilder {
         stmt: &Assignment,
         first_node_in_scope: Option<String>,
     ) -> Option<String> {
+        // If the RHS is an identifier we already know, just alias the variable.
+        // This handles feedback initialization like `add_5_counter = value_3_value`.
+        if let Expression::Identifier(ident) = &stmt.value {
+            if let Some(source) = self.var_source.get(&ident.name).cloned() {
+                self.var_source.insert(stmt.target.clone(), source);
+                return first_node_in_scope;
+            }
+        }
+
         let nid = meta_id(&stmt.metadata)
             .unwrap_or_else(|| self.gen_id("value"));
         let pos = meta_pos(&stmt.metadata);
