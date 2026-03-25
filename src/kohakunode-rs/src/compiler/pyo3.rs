@@ -16,7 +16,7 @@ use crate::ast::Program;
 ///
 /// # Errors
 /// Raises `ValueError` on a dependency cycle or control-flow in dataflow mode.
-#[pyfunction]
+#[pyfunction(name = "compile_dataflow")]
 pub fn py_compile_dataflow(program_json: &str) -> PyResult<String> {
     let program: Program = serde_json::from_str(program_json)
         .map_err(|e| PyValueError::new_err(format!("JSON parse error: {e}")))?;
@@ -31,7 +31,7 @@ pub fn py_compile_dataflow(program_json: &str) -> PyResult<String> {
 /// Python binding for `strip_meta`.
 ///
 /// Accepts and returns a JSON-serialised `Program` string.
-#[pyfunction]
+#[pyfunction(name = "strip_meta")]
 pub fn py_strip_meta(program_json: &str) -> PyResult<String> {
     let program: Program = serde_json::from_str(program_json)
         .map_err(|e| PyValueError::new_err(format!("JSON parse error: {e}")))?;

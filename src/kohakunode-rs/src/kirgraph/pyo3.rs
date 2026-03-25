@@ -12,7 +12,7 @@ use crate::kirgraph::{compiler, KirGraph};
 ///
 /// # Errors
 /// Raises `ValueError` on JSON parse failure.
-#[pyfunction]
+#[pyfunction(name = "compile_kirgraph")]
 pub fn py_compile_kirgraph(kirgraph_json: &str) -> PyResult<String> {
     let graph: KirGraph = KirGraph::from_json(kirgraph_json)
         .map_err(|e| PyValueError::new_err(format!("KirGraph JSON parse error: {e}")))?;

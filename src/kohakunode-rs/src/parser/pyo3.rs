@@ -18,3 +18,9 @@ pub fn parse_kir(text: &str) -> PyResult<String> {
         .map_err(|e| PyValueError::new_err(format!("JSON serialization error: {e}")))?;
     Ok(json)
 }
+
+/// Register parser functions into the Python module.
+pub fn register_parser_fns(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(parse_kir, m)?)?;
+    Ok(())
+}
