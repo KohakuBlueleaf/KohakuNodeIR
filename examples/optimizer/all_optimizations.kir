@@ -1,0 +1,40 @@
+# KIR Optimizer Demo — all optimization passes
+#
+# This file demonstrates what the L4 optimizer does.
+# Run with: python examples/optimizer/demo.py
+
+# ── 1. Branch Simplification ──
+# Compile-time constant condition → only the taken arm survives.
+debug_mode = True
+(debug_mode)branch(`debug_path`, `prod_path`)
+debug_path:
+    ("Debug: starting pipeline")log()
+prod_path:
+    ("Starting pipeline")log()
+
+# ── 2. Dead Code Elimination ──
+# These assignments are never used → removed.
+temp_a = 100
+temp_b = 200
+temp_c = 300
+x = 10
+y = 20
+(x, y)add(result)
+
+# ── 3. Common Subexpression Elimination ──
+# Both calls to normalize() have identical inputs → second is replaced.
+(data)normalize(norm1)
+(data)normalize(norm2)
+(norm1)process_a(out_a)
+(norm2)process_b(out_b)
+
+# ── 4. Combined: branch + dead code ──
+# After branch simplification removes the false arm,
+# dead code elimination removes the unreachable namespace.
+always_true = True
+(always_true)branch(`compute`, `skip`)
+compute:
+    (result, 2)multiply(doubled)
+    (doubled)print()
+skip:
+    ("skipped")print()
