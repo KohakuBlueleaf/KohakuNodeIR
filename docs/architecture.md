@@ -142,6 +142,21 @@ The `Executor` class orchestrates the full pipeline (validate, compile, interpre
 
 The `VariableStore` is a flat dictionary -- all variables live in one scope regardless of nesting depth.
 
+### 3.4 Pluggable execution backend
+
+The interpreter does not call registered functions directly. Instead, it delegates every function invocation to an `ExecutionBackend`. The default backend (`DefaultBackend`) preserves the original behavior -- a direct `func(**kwargs)` call. Users can substitute their own backend to add caching, logging, per-node persistent state, distributed dispatch, or any other execution strategy, without modifying the interpreter or the registered functions.
+
+```
+Interpreter                ExecutionBackend
+    |                            |
+    |-- on_node_enter(inv) ----->|
+    |-- invoke(inv) ------------>|-- spec.func(**kwargs)
+    |<--- result ----------------|
+    |-- on_node_exit(inv, r, e)->|
+```
+
+Built-in backends: `DefaultBackend` (direct call), `CachingBackend` (memoization by input hash). Pass a backend via `Executor(backend=MyBackend())` or `run(source, backend=MyBackend())`.
+
 ---
 
 ## 4. kohakunode-rs (Rust)

@@ -19,6 +19,7 @@ from kohakunode.analyzer.validator import validate_or_raise
 from kohakunode.ast.nodes import Program
 from kohakunode.compiler.dataflow import DataflowCompiler
 from kohakunode.engine.context import VariableStore
+from kohakunode.engine.backend import ExecutionBackend
 from kohakunode.engine.interpreter import Interpreter
 from kohakunode.engine.registry import Registry
 from kohakunode.parser.parser import parse, parse_file
@@ -42,9 +43,11 @@ class Executor:
         self,
         registry: Registry | None = None,
         validate: bool = True,
+        backend: ExecutionBackend | None = None,
     ) -> None:
         self.registry: Registry = registry if registry is not None else Registry()
         self.validate: bool = validate
+        self.backend: ExecutionBackend | None = backend
         self._compiler: DataflowCompiler = DataflowCompiler()
 
     # ------------------------------------------------------------------
@@ -80,7 +83,7 @@ class Executor:
 
         program = self._compiler.transform(program)
 
-        interpreter = Interpreter(self.registry)
+        interpreter = Interpreter(self.registry, backend=self.backend)
         interpreter.run(program)
         return interpreter.context.variables
 
@@ -162,6 +165,7 @@ def run(
     source: str,
     registry: Registry | None = None,
     validate: bool = True,
+    backend: ExecutionBackend | None = None,
 ) -> VariableStore:
     """Parse and execute a KIR source string in a single call.
 
@@ -181,13 +185,16 @@ def run(
     VariableStore
         The variable store after execution.
     """
-    return Executor(registry=registry, validate=validate).execute_source(source)
+    return Executor(
+        registry=registry, validate=validate, backend=backend
+    ).execute_source(source)
 
 
 def run_file(
     path: str | pathlib.Path,
     registry: Registry | None = None,
     validate: bool = True,
+    backend: ExecutionBackend | None = None,
 ) -> VariableStore:
     """Parse and execute a KIR source file in a single call.
 
@@ -207,4 +214,6 @@ def run_file(
     VariableStore
         The variable store after execution.
     """
-    return Executor(registry=registry, validate=validate).execute_file(path)
+    return Executor(registry=registry, validate=validate, backend=backend).execute_file(
+        path
+    )

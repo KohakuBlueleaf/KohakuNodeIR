@@ -19,6 +19,7 @@ from kohakunode.ast.nodes import (
     Switch,
     Wildcard,
 )
+from kohakunode.engine.backend import DefaultBackend, ExecutionBackend, NodeInvocation
 from kohakunode.engine.builtins import (
     execute_branch,
     execute_jump,
@@ -33,11 +34,24 @@ from kohakunode.errors import KirRuntimeError
 _SKIP_TYPES = (Namespace, SubgraphDef, ModeDecl)
 
 
+def _extract_metadata(node: FuncCall) -> dict[str, Any]:
+    """Merge all @meta annotations on a FuncCall into a single dict."""
+    if not node.metadata:
+        return {}
+    merged: dict[str, Any] = {}
+    for meta in node.metadata:
+        merged.update(meta.data)
+    return merged
+
+
 class Interpreter:
     """Core interpreter that walks and executes a KohakuNodeIR AST."""
 
-    def __init__(self, registry: Registry) -> None:
+    def __init__(
+        self, registry: Registry, backend: ExecutionBackend | None = None
+    ) -> None:
         self.registry = registry
+        self.backend = backend if backend is not None else DefaultBackend()
         self.context = ExecutionContext()
         self.subgraphs: dict[str, SubgraphDef] = {}
         self._last_jump_containing_idx: int = -1
@@ -199,7 +213,26 @@ class Interpreter:
             if param_name not in call_kwargs and param_name in spec.defaults:
                 call_kwargs[param_name] = spec.defaults[param_name]
 
-        result = spec.func(**call_kwargs)
+        # Build invocation
+        invocation = NodeInvocation(
+            spec=spec,
+            call_kwargs=call_kwargs,
+            node=node,
+            metadata=_extract_metadata(node),
+        )
+
+        # Delegate to backend with lifecycle hooks
+        self.backend.on_node_enter(invocation)
+        result = None
+        error = None
+        try:
+            result = self.backend.invoke(invocation)
+        except Exception as exc:
+            error = exc
+            raise
+        finally:
+            self.backend.on_node_exit(invocation, result, error)
+
         self._assign_outputs(node.outputs, result, node.func_name, node.line)
 
     def _assign_outputs(

@@ -63,7 +63,7 @@ print(store.get("sum"))  # 7
 
 One-shot: read a `.kir` file, parse it, and execute it. Same parameters as `run()` except `path` replaces `source`.
 
-#### `Executor(registry=None, validate=True)`
+#### `Executor(registry=None, validate=True, backend=None)`
 
 Class that holds shared state across multiple runs. Use when you want to reuse the same registry for multiple programs.
 
@@ -260,6 +260,97 @@ registry.register("add", lambda a, b: a + b, output_names=["result"])
 executor = Executor(registry=registry)
 store = executor.execute(program)
 ```
+
+### Execution Backends
+
+The interpreter delegates function dispatch to a pluggable **ExecutionBackend**. This lets you intercept, wrap, or replace how registered functions are called -- without modifying the interpreter or your node functions. Use cases include logging, caching, state management, profiling, and distributed execution.
+
+#### `ExecutionBackend` (ABC)
+
+The abstract base class. Subclass it and override `invoke`:
+
+```python
+from kohakunode import ExecutionBackend, NodeInvocation
+
+class MyBackend(ExecutionBackend):
+    def invoke(self, invocation: NodeInvocation):
+        # call the function and return its result
+        return invocation.spec.func(**invocation.call_kwargs)
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `invoke(invocation) -> Any` | **(abstract)** Call the function and return its result |
+| `on_node_enter(invocation)` | Called before `invoke`. Override for side effects (logging, timing, etc.) |
+| `on_node_exit(invocation, result, error)` | Called after `invoke` (or after error). Override for cleanup or metrics. |
+
+#### `NodeInvocation`
+
+A frozen dataclass passed to every backend method. Contains everything needed to invoke a function:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `spec` | `FunctionSpec` | The registered function's metadata (name, func, input_names, etc.) |
+| `call_kwargs` | `dict[str, Any]` | The resolved keyword arguments to pass to the function |
+| `node` | `FuncCall` | The AST node for this call |
+| `metadata` | `dict[str, Any]` | Merged `@meta` annotation data (e.g., `node_id`, `pos`) |
+
+**Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `node_id` | `str \| None` | Shorthand for `metadata.get("node_id")` |
+
+#### `DefaultBackend`
+
+The built-in backend. Calls `invocation.spec.func(**invocation.call_kwargs)` directly. This is what runs when you don't specify a backend -- it preserves the original behavior.
+
+#### `CachingBackend`
+
+Caches results keyed by `(func_name, input_hash)`. Skips execution when inputs are identical to a previous call.
+
+```python
+from kohakunode import CachingBackend, Executor, Registry
+
+executor = Executor(registry=registry, backend=CachingBackend())
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `invoke(invocation)` | Return cached result if inputs match, otherwise execute and cache |
+| `invalidate(func_name=None)` | Clear the cache. If `func_name` is given, only clear that function's entries. |
+
+#### Passing a backend
+
+Pass a backend instance to `Executor` or the module-level `run()`/`run_file()` functions:
+
+```python
+from kohakunode import Executor, run
+
+# Via Executor
+executor = Executor(registry=registry, backend=MyBackend())
+store = executor.execute_source("(x, y)add(sum)")
+
+# Via run()
+store = run("(x, y)add(sum)", registry=registry, backend=MyBackend())
+```
+
+#### Quick example: 5-line logging backend
+
+```python
+class PrintBackend(ExecutionBackend):
+    def invoke(self, invocation):
+        print(f"calling {invocation.spec.name}({invocation.call_kwargs})")
+        result = invocation.spec.func(**invocation.call_kwargs)
+        print(f"  -> {result}")
+        return result
+```
+
+See [`examples/custom_backend/`](../examples/custom_backend/) for full examples including a timing logger, caching demo, and stateful backend.
 
 ### Error Types
 

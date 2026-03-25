@@ -39,6 +39,10 @@ from kohakunode.parser.parser import parse_file
 # Engine
 # ---------------------------------------------------------------------------
 
+from kohakunode.engine.backend import CachingBackend
+from kohakunode.engine.backend import DefaultBackend
+from kohakunode.engine.backend import ExecutionBackend
+from kohakunode.engine.backend import NodeInvocation
 from kohakunode.engine.context import VariableStore
 from kohakunode.engine.executor import Executor
 from kohakunode.engine.executor import run
@@ -124,6 +128,11 @@ __all__ = [
     # Parser
     "parse",
     "parse_file",
+    # Engine — backends
+    "CachingBackend",
+    "DefaultBackend",
+    "ExecutionBackend",
+    "NodeInvocation",
     # Engine
     "Executor",
     "FunctionSpec",
