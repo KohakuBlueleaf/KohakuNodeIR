@@ -1,0 +1,32 @@
+{
+  "name": "kir-language",
+  "displayName": "KohakuNodeIR (.kir)",
+  "description": "Syntax highlighting for KohakuNodeIR IR files",
+  "version": "0.1.0",
+  "publisher": "KohakuBlueLeaf",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KohakuBlueleaf/KohakuNodeIR"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "kir",
+        "aliases": ["KohakuNodeIR", "KIR", "kir"],
+        "extensions": [".kir"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "kir",
+        "scopeName": "source.kir",
+        "path": "./syntaxes/kir.tmLanguage.json"
+      }
+    ]
+  }
+}

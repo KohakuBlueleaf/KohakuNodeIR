@@ -1,0 +1,206 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "KohakuNodeIR",
+  "scopeName": "source.kir",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#meta-annotation" },
+    { "include": "#dataflow-block" },
+    { "include": "#mode-decl" },
+    { "include": "#subgraph-def" },
+    { "include": "#namespace-label" },
+    { "include": "#call-stmt" },
+    { "include": "#assignment" },
+    { "include": "#expression" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "#.*$",
+      "name": "comment.line.number-sign.kir"
+    },
+
+    "meta-annotation": {
+      "begin": "(@meta)\\b",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "storage.type.annotation.kir" }
+      },
+      "patterns": [
+        {
+          "match": "(\\w+)\\s*=",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.kir" }
+          }
+        },
+        { "include": "#string" },
+        { "include": "#number" },
+        { "include": "#constants" },
+        {
+          "match": "[\\w.]+",
+          "name": "variable.other.kir"
+        }
+      ]
+    },
+
+    "dataflow-block": {
+      "match": "(@dataflow)\\s*:",
+      "captures": {
+        "1": { "name": "keyword.control.dataflow.kir" }
+      }
+    },
+
+    "mode-decl": {
+      "match": "(@mode)\\s+(\\w+)",
+      "captures": {
+        "1": { "name": "keyword.control.mode.kir" },
+        "2": { "name": "constant.language.mode.kir" }
+      }
+    },
+
+    "subgraph-def": {
+      "match": "(@def)\\s+",
+      "captures": {
+        "1": { "name": "keyword.control.def.kir" }
+      }
+    },
+
+    "namespace-label": {
+      "match": "^(\\s*)(\\w+)(:)\\s*$",
+      "captures": {
+        "2": { "name": "entity.name.label.kir" },
+        "3": { "name": "punctuation.separator.colon.kir" }
+      }
+    },
+
+    "call-stmt": {
+      "begin": "\\(",
+      "end": "$",
+      "patterns": [
+        { "include": "#call-body" }
+      ]
+    },
+
+    "call-body": {
+      "patterns": [
+        { "include": "#control-keyword" },
+        { "include": "#func-name" },
+        { "include": "#label-ref" },
+        { "include": "#switch-case" },
+        { "include": "#kwarg" },
+        { "include": "#expression" },
+        {
+          "match": "[(),]",
+          "name": "punctuation.separator.kir"
+        }
+      ]
+    },
+
+    "control-keyword": {
+      "match": "\\b(branch|switch|jump|parallel)\\b",
+      "name": "keyword.control.flow.kir"
+    },
+
+    "func-name": {
+      "match": "\\)\\s*(\\w[\\w.]*)\\s*\\(",
+      "captures": {
+        "1": { "name": "entity.name.function.kir" }
+      }
+    },
+
+    "assignment": {
+      "match": "^(\\s*)(\\w+)\\s*(=)\\s*",
+      "captures": {
+        "2": { "name": "variable.other.assignment.kir" },
+        "3": { "name": "keyword.operator.assignment.kir" }
+      },
+      "patterns": [
+        { "include": "#expression" }
+      ]
+    },
+
+    "expression": {
+      "patterns": [
+        { "include": "#string" },
+        { "include": "#number" },
+        { "include": "#constants" },
+        { "include": "#label-ref" },
+        { "include": "#wildcard" },
+        { "include": "#kwarg" },
+        { "include": "#identifier" }
+      ]
+    },
+
+    "string": {
+      "patterns": [
+        {
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "name": "string.quoted.triple.kir"
+        },
+        {
+          "begin": "\"",
+          "end": "\"",
+          "name": "string.quoted.double.kir",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.kir"
+            }
+          ]
+        }
+      ]
+    },
+
+    "number": {
+      "patterns": [
+        {
+          "match": "\\b\\d+\\.\\d+([eE][+-]?\\d+)?\\b",
+          "name": "constant.numeric.float.kir"
+        },
+        {
+          "match": "\\b\\d+\\b",
+          "name": "constant.numeric.integer.kir"
+        }
+      ]
+    },
+
+    "constants": {
+      "match": "\\b(True|False|None)\\b",
+      "name": "constant.language.kir"
+    },
+
+    "label-ref": {
+      "match": "`([^`]*)`",
+      "name": "entity.name.label.reference.kir",
+      "captures": {
+        "1": { "name": "entity.name.label.kir" }
+      }
+    },
+
+    "switch-case": {
+      "match": "(=>)\\s*(`[^`]*`)",
+      "captures": {
+        "1": { "name": "keyword.operator.arrow.kir" },
+        "2": { "name": "entity.name.label.reference.kir" }
+      }
+    },
+
+    "wildcard": {
+      "match": "\\b_\\b",
+      "name": "constant.language.wildcard.kir"
+    },
+
+    "kwarg": {
+      "match": "(\\w+)\\s*(=)(?!=)",
+      "captures": {
+        "1": { "name": "variable.parameter.kir" },
+        "2": { "name": "keyword.operator.assignment.kir" }
+      }
+    },
+
+    "identifier": {
+      "match": "\\b\\w+\\b",
+      "name": "variable.other.kir"
+    }
+  }
+}
