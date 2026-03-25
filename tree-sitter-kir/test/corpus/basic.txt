@@ -1,0 +1,766 @@
+================================================================================
+Hello World — minimal call, no inputs, no outputs
+================================================================================
+
+("Hello, World!")print()
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (string)
+      (func_name (identifier))
+    )
+  )
+)
+
+================================================================================
+Simple assignment
+================================================================================
+
+x = 10
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (integer)
+    )
+  )
+)
+
+================================================================================
+Assignment with float
+================================================================================
+
+threshold = 0.5
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (float)
+    )
+  )
+)
+
+================================================================================
+Assignment with boolean True
+================================================================================
+
+flag = True
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (boolean)
+    )
+  )
+)
+
+================================================================================
+Assignment with boolean False
+================================================================================
+
+flag = False
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (boolean)
+    )
+  )
+)
+
+================================================================================
+Assignment with None
+================================================================================
+
+result = None
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (none)
+    )
+  )
+)
+
+================================================================================
+Assignment with string
+================================================================================
+
+greeting = "Hello"
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (string)
+    )
+  )
+)
+
+================================================================================
+Basic math — two inputs, one output
+================================================================================
+
+x = 10
+y = 20
+(x, y)add(sum)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment name: (identifier) value: (integer))
+  )
+  (statement
+    (assignment name: (identifier) value: (integer))
+  )
+  (statement
+    (call_stmt
+      (call_in_list
+        (identifier)
+        (identifier)
+      )
+      (func_name (identifier))
+      (call_out_list
+        (out_name (identifier))
+      )
+    )
+  )
+)
+
+================================================================================
+Call with multiple outputs
+================================================================================
+
+(filtered)compute_stats(mean, std, count)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (call_in_list
+        (identifier)
+      )
+      (func_name (identifier))
+      (call_out_list
+        (out_name (identifier))
+        (out_name (identifier))
+        (out_name (identifier))
+      )
+    )
+  )
+)
+
+================================================================================
+Keyword argument
+================================================================================
+
+(cleaned, threshold=0.5)filter_outliers(filtered)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (call_in_list
+        (identifier)
+        (kwarg
+          key: (identifier)
+          value: (float)
+        )
+      )
+      (func_name (identifier))
+      (call_out_list
+        (out_name (identifier))
+      )
+    )
+  )
+)
+
+================================================================================
+Wildcard output
+================================================================================
+
+(x, y)process(result, _)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (call_in_list
+        (identifier)
+        (identifier)
+      )
+      (func_name (identifier))
+      (call_out_list
+        (out_name (identifier))
+        (out_wildcard)
+      )
+    )
+  )
+)
+
+================================================================================
+jump statement
+================================================================================
+
+()jump(`loop`)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (func_name (identifier))
+      (call_out_list
+        (out_label_ref (label_ref))
+      )
+    )
+  )
+)
+
+================================================================================
+branch statement
+================================================================================
+
+(is_negative)branch(`handle_negative`, `check_positive`)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (call_in_list
+        (identifier)
+      )
+      (func_name (identifier))
+      (call_out_list
+        (out_label_ref (label_ref))
+        (out_label_ref (label_ref))
+      )
+    )
+  )
+)
+
+================================================================================
+switch statement with default
+================================================================================
+
+(day)switch(1=>`monday`, 2=>`tuesday`, _=>`other`)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (call_in_list
+        (identifier)
+      )
+      (func_name (identifier))
+      (call_out_list
+        (out_switch_case (integer) (label_ref))
+        (out_switch_case (integer) (label_ref))
+        (out_switch_default (label_ref))
+      )
+    )
+  )
+)
+
+================================================================================
+parallel statement
+================================================================================
+
+()parallel(`process_a`, `process_b`)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (func_name (identifier))
+      (call_out_list
+        (out_label_ref (label_ref))
+        (out_label_ref (label_ref))
+      )
+    )
+  )
+)
+
+================================================================================
+Namespace with body
+================================================================================
+
+loop:
+    (result, counter)multiply(result)
+    (counter, 1)add(counter)
+
+--------------------------------------------------------------------------------
+
+(program
+  (namespace_def
+    name: (identifier)
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (identifier))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (integer))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+  )
+)
+
+================================================================================
+Empty namespace
+================================================================================
+
+done:
+
+--------------------------------------------------------------------------------
+
+(program
+  (namespace_def
+    name: (identifier)
+  )
+)
+
+================================================================================
+Nested namespaces (branch inside loop)
+================================================================================
+
+loop:
+    (keep_going)branch(`continue_loop`, `done`)
+    continue_loop:
+        ()jump(`loop`)
+    done:
+
+--------------------------------------------------------------------------------
+
+(program
+  (namespace_def
+    name: (identifier)
+    (statement
+      (call_stmt
+        (call_in_list (identifier))
+        (func_name (identifier))
+        (call_out_list
+          (out_label_ref (label_ref))
+          (out_label_ref (label_ref))
+        )
+      )
+    )
+    (namespace_def
+      name: (identifier)
+      (statement
+        (call_stmt
+          (func_name (identifier))
+          (call_out_list (out_label_ref (label_ref)))
+        )
+      )
+    )
+    (namespace_def
+      name: (identifier)
+    )
+  )
+)
+
+================================================================================
+Subgraph definition
+================================================================================
+
+@def (a, b)clamp(result):
+    (a, b)min_val(lo)
+    (lo, b)max_val(hi)
+
+--------------------------------------------------------------------------------
+
+(program
+  (subgraph_def
+    (param_list
+      (param name: (identifier))
+      (param name: (identifier))
+    )
+    name: (identifier)
+    (def_output_list
+      (identifier)
+    )
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (identifier))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (identifier))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+  )
+)
+
+================================================================================
+Subgraph with default parameter value
+================================================================================
+
+@def (x, scale=1.0)normalize(out):
+    (x, scale)multiply(out)
+
+--------------------------------------------------------------------------------
+
+(program
+  (subgraph_def
+    (param_list
+      (param name: (identifier))
+      (param name: (identifier) default: (float))
+    )
+    name: (identifier)
+    (def_output_list
+      (identifier)
+    )
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (identifier))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+  )
+)
+
+================================================================================
+Dataflow block
+================================================================================
+
+@dataflow:
+    (10)to_float(limit)
+    (1)to_float(step)
+
+--------------------------------------------------------------------------------
+
+(program
+  (dataflow_block
+    (statement
+      (call_stmt
+        (call_in_list (integer))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+    (statement
+      (call_stmt
+        (call_in_list (integer))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+  )
+)
+
+================================================================================
+Mode declaration
+================================================================================
+
+@mode dataflow
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (mode_decl
+      mode: (identifier)
+    )
+  )
+)
+
+================================================================================
+Meta annotation — single pair
+================================================================================
+
+@meta pos=100
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (meta_annotation
+      (meta_pair key: (identifier) value: (integer))
+    )
+  )
+)
+
+================================================================================
+Meta annotation — multiple pairs including tuple
+================================================================================
+
+@meta id=my_node pos=(120, 300)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (meta_annotation
+      (meta_pair key: (identifier) value: (identifier))
+      (meta_pair
+        key: (identifier)
+        value: (meta_tuple (integer) (integer))
+      )
+    )
+  )
+)
+
+================================================================================
+Line comment is ignored
+================================================================================
+
+# This is a comment
+x = 1
+
+--------------------------------------------------------------------------------
+
+(program
+  (comment)
+  (statement
+    (assignment name: (identifier) value: (integer))
+  )
+)
+
+================================================================================
+Empty list literal
+================================================================================
+
+items = []
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (list_lit)
+    )
+  )
+)
+
+================================================================================
+List literal with values
+================================================================================
+
+items = [1, 2, 3]
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (list_lit (integer) (integer) (integer))
+    )
+  )
+)
+
+================================================================================
+Empty dict literal
+================================================================================
+
+cfg = {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (dict_lit)
+    )
+  )
+)
+
+================================================================================
+Dict literal with pairs
+================================================================================
+
+cfg = {"key": "value"}
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (assignment
+      name: (identifier)
+      value: (dict_lit
+        (dict_pair (string) (string))
+      )
+    )
+  )
+)
+
+================================================================================
+Dotted function name
+================================================================================
+
+(image_processing.blur)transform(out)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (call_stmt
+      (call_in_list (identifier))
+      (func_name (identifier) (identifier))
+      (call_out_list (out_name (identifier)))
+    )
+  )
+)
+
+================================================================================
+Full loop example (control_flow.kir)
+================================================================================
+
+n = 5
+result = 1
+counter = 1
+
+()jump(`loop`)
+loop:
+    (result, counter)multiply(result)
+    (counter, 1)add(counter)
+    (counter, n)less_equal(keep_going)
+    (keep_going)branch(`continue_loop`, `done`)
+    continue_loop:
+        ()jump(`loop`)
+    done:
+
+(n, result)format_factorial(msg)
+(msg)print_val()
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement (assignment name: (identifier) value: (integer)))
+  (statement (assignment name: (identifier) value: (integer)))
+  (statement (assignment name: (identifier) value: (integer)))
+  (statement
+    (call_stmt
+      (func_name (identifier))
+      (call_out_list (out_label_ref (label_ref)))
+    )
+  )
+  (namespace_def
+    name: (identifier)
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (identifier))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (integer))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (identifier))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+    (statement
+      (call_stmt
+        (call_in_list (identifier))
+        (func_name (identifier))
+        (call_out_list
+          (out_label_ref (label_ref))
+          (out_label_ref (label_ref))
+        )
+      )
+    )
+    (namespace_def
+      name: (identifier)
+      (statement
+        (call_stmt
+          (func_name (identifier))
+          (call_out_list (out_label_ref (label_ref)))
+        )
+      )
+    )
+    (namespace_def name: (identifier))
+  )
+  (statement
+    (call_stmt
+      (call_in_list (identifier) (identifier))
+      (func_name (identifier))
+      (call_out_list (out_name (identifier)))
+    )
+  )
+  (statement
+    (call_stmt
+      (call_in_list (identifier))
+      (func_name (identifier))
+      (call_out_list (out_name (identifier)))
+    )
+  )
+)
+
+================================================================================
+Dataflow block inside loop (mixed_mode pattern)
+================================================================================
+
+@dataflow:
+    (counter, counter)multiply(squared)
+    (total, squared)add(total)
+
+--------------------------------------------------------------------------------
+
+(program
+  (dataflow_block
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (identifier))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+    (statement
+      (call_stmt
+        (call_in_list (identifier) (identifier))
+        (func_name (identifier))
+        (call_out_list (out_name (identifier)))
+      )
+    )
+  )
+)

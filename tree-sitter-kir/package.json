@@ -1,0 +1,17 @@
+{
+  "name": "tree-sitter-kir",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for KohakuNodeIR (.kir files)",
+  "main": "bindings/node",
+  "keywords": ["tree-sitter", "parser", "kir"],
+  "dependencies": {
+    "nan": "^2.18.0"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.24"
+  },
+  "scripts": {
+    "build": "tree-sitter generate",
+    "test": "tree-sitter test"
+  }
+}

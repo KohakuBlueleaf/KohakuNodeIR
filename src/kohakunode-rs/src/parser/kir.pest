@@ -1,0 +1,223 @@
+// ============================================================
+// Kohaku Node IR — pest PEG Grammar
+// Version: 0.1.0
+//
+// Indentation is handled by a preprocessor (indentation.rs)
+// that inserts explicit INDENT and DEDENT marker tokens before
+// this grammar sees the text.  After preprocessing, the input
+// contains the literal strings "INDENT\n" and "DEDENT\n" in
+// place of the indentation changes that Lark's Indenter would
+// normally emit.
+//
+// Design mirrors the Lark grammar (kir.lark) 1:1.
+// ============================================================
+
+// ============================================================
+// Whitespace / comments — silently consumed between tokens
+// ============================================================
+
+WHITESPACE = _{ " " | "\t" }
+COMMENT    = _{ "#" ~ (!NEWLINE ~ ANY)* }
+
+NEWLINE = _{ "\r\n" | "\n" }
+
+// Inserted by the indentation preprocessor
+INDENT = { "INDENT" ~ NEWLINE }
+DEDENT = { "DEDENT" ~ NEWLINE }
+
+// A blank line (after preprocessing, blank lines that were not
+// part of indentation changes remain as bare newlines).
+blank_line = _{ NEWLINE }
+
+// ============================================================
+// Entry point
+// ============================================================
+
+program = { SOI ~ (blank_line | statement)* ~ EOI }
+
+// ============================================================
+// Statements
+// ============================================================
+
+statement = { simple_stmt | compound_stmt }
+
+simple_stmt = { (assignment | call_stmt | meta_anno | mode_decl) ~ NEWLINE+ }
+
+compound_stmt = { namespace_def | subgraph_def | dataflow_block }
+
+// ============================================================
+// Variable Assignment
+// ============================================================
+
+assignment = { NAME ~ "=" ~ expr }
+
+// ============================================================
+// Expressions
+// ============================================================
+
+expr = { literal | identifier }
+
+identifier = { NAME }
+
+// ============================================================
+// Literals
+// ============================================================
+
+literal = { float_lit | int_lit | bool_lit | none_lit | string_lit | list_lit | dict_lit }
+
+int_lit   = { INT }
+float_lit = { FLOAT }
+bool_lit  = { TRUE | FALSE }
+none_lit  = { NONE }
+string_lit = { STRING }
+
+list_lit = { "[" ~ "]" | "[" ~ expr ~ ("," ~ expr)* ~ ","? ~ "]" }
+
+dict_lit = { "{" ~ "}" | "{" ~ dict_pair ~ ("," ~ dict_pair)* ~ ","? ~ "}" }
+
+dict_pair = { expr ~ ":" ~ expr }
+
+// Tuple literal — only valid in @meta values
+meta_tuple = { "(" ~ meta_val ~ "," ~ meta_val ~ ("," ~ meta_val)* ~ ","? ~ ")" }
+
+// ============================================================
+// Unified call statement
+// ============================================================
+// Syntax:  (input_args)func_name(output_args)
+
+call_stmt = { "(" ~ call_in_list? ~ ")" ~ func_name ~ "(" ~ call_out_list? ~ ")" }
+
+func_name = { NAME ~ ("." ~ NAME)* }
+
+call_in_list = { call_in_item ~ ("," ~ call_in_item)* ~ ","? }
+
+call_in_item = { kwarg | expr }
+
+kwarg = { NAME ~ "=" ~ expr }
+
+call_out_list = { call_out_item ~ ("," ~ call_out_item)* ~ ","? }
+
+// Order matters: switch variants must be tried before plain out_wildcard/out_name;
+// out_wildcard must appear before out_name so bare "_" is not consumed as a NAME.
+call_out_item = { out_switch_default | out_switch_case | out_label_ref | out_wildcard | out_name }
+
+out_name          = { NAME }
+out_wildcard      = { WILDCARD }
+out_label_ref     = { label_ref }
+out_switch_case   = { expr ~ "=>" ~ label_ref }
+out_switch_default = { WILDCARD ~ "=>" ~ label_ref }
+
+// ============================================================
+// Label reference:  `identifier`
+// ============================================================
+
+label_ref = { LABEL_REF }
+
+// ============================================================
+// Namespace definition
+// ============================================================
+// Two alternatives:
+//   namespace_body  — NAME ":" NEWLINE INDENT body DEDENT
+//   namespace_empty — NAME ":" NEWLINE  (no INDENT/DEDENT follows)
+
+namespace_def = { namespace_body | namespace_empty }
+
+namespace_body  = { NAME ~ ":" ~ NEWLINE ~ INDENT ~ (blank_line | statement)+ ~ DEDENT }
+namespace_empty = { NAME ~ ":" ~ NEWLINE }
+
+// ============================================================
+// Subgraph definition
+// ============================================================
+// @def (params)name(outputs):
+//     body
+
+subgraph_def = {
+    "@def" ~ "(" ~ param_list? ~ ")" ~ NAME ~ "(" ~ def_output_list? ~ ")" ~ ":" ~ NEWLINE
+    ~ INDENT ~ (blank_line | statement)+ ~ DEDENT
+}
+
+param_list = { param ~ ("," ~ param)* ~ ","? }
+
+param = { param_with_default | param_plain }
+param_with_default = { NAME ~ "=" ~ expr }
+param_plain        = { NAME }
+
+def_output_list = { NAME ~ ("," ~ NAME)* ~ ","? }
+
+// ============================================================
+// Dataflow block
+// ============================================================
+// @dataflow:
+//     statements...
+
+dataflow_block = {
+    "@dataflow" ~ ":" ~ NEWLINE
+    ~ INDENT ~ (blank_line | statement)+ ~ DEDENT
+}
+
+// ============================================================
+// Metadata annotation
+// ============================================================
+// @meta key=value key2=value2 ...
+
+meta_anno = { "@meta" ~ meta_pair+ }
+
+meta_pair = { NAME ~ "=" ~ meta_val }
+
+meta_val = { literal | meta_tuple | identifier }
+
+// ============================================================
+// Mode declaration
+// ============================================================
+// @mode dataflow
+
+mode_decl = { "@mode" ~ NAME }
+
+// ============================================================
+// Terminals
+// ============================================================
+
+// Reserved words — must appear before NAME in alternatives
+TRUE     = { "True" }
+FALSE    = { "False" }
+NONE     = { "None" }
+WILDCARD = { "_" ~ !ASCII_ALPHANUMERIC ~ !"_" }
+
+// General identifier
+// NOTE: TRUE/FALSE/NONE are NOT reserved at the lexer level; they are
+// handled by ordering in the literal rule (bool_lit / none_lit appear
+// before identifier in expr).
+NAME = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+// Backtick-quoted label reference
+LABEL_REF = @{ "`" ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* ~ "`" }
+
+// ---- Numeric literals ----
+// FLOAT must be tried before INT (ordering in literal rule handles this).
+
+FLOAT = @{
+    ("+" | "-")? ~ (
+        ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+        | "." ~ ASCII_DIGIT+ ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+        | ASCII_DIGIT+ ~ ^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+
+    )
+}
+
+INT = @{
+    ("+" | "-")? ~ (
+        "0" ~ ^"x" ~ ASCII_HEX_DIGIT+   // hex
+        | "0" ~ ^"o" ~ ASCII_OCT_DIGIT+  // octal
+        | "0" ~ ^"b" ~ ASCII_BIN_DIGIT+  // binary
+        | ASCII_DIGIT+                    // decimal
+    )
+}
+
+// ---- String literals ----
+// Triple-quoted variants must appear before single-quoted variants.
+
+STRING = @{
+    "\"\"\"" ~ (("\\" ~ ANY) | (!"\"\"\"" ~ ANY))* ~ "\"\"\""
+    | "'''" ~ (("\\" ~ ANY) | (!"'''" ~ ANY))* ~ "'''"
+    | "\"" ~ (("\\" ~ ANY) | (!"\"" ~ !"\n" ~ ANY))* ~ "\""
+    | "'" ~ (("\\" ~ ANY) | (!"'" ~ !"\n" ~ ANY))* ~ "'"
+}
