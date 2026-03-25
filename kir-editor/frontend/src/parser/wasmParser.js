@@ -55,6 +55,57 @@ export function isWasmReady() {
 export const isPyodideReady = isWasmReady;
 
 /**
+ * Convert KirGraph JSON (Rust serde format) to the viewer format
+ * that parserResultToGraph expects.
+ *
+ * KirGraph node: { id, type, name, data_inputs: [{port,type,default?}], data_outputs, ctrl_inputs: [str], ctrl_outputs, properties, meta }
+ * Viewer node:   { id, type, name, x, y, width, height, dataInputs: [{name,type,default?}], dataOutputs, ctrlInputs: [str], ctrlOutputs, properties }
+ *
+ * KirGraph edge: { type, from: {node,port}, to: {node,port} }
+ * Viewer edge:   { type, fromNode, fromPort, toNode, toPort }
+ */
+function kirgraphToViewer(kg) {
+  const nodes = (kg.nodes ?? []).map((n) => {
+    const meta = n.meta ?? {};
+    const pos = meta.pos ?? [0, 0];
+    const size = meta.size ?? [180, 100];
+    // pos/size can be Value arrays — extract numbers
+    const x = Array.isArray(pos) ? (pos[0] ?? 0) : 0;
+    const y = Array.isArray(pos) ? (pos[1] ?? 0) : 0;
+    const width = Array.isArray(size) ? (size[0] ?? 180) : 180;
+    const height = Array.isArray(size) ? (size[1] ?? 100) : 100;
+
+    return {
+      id: n.id,
+      type: n.type,
+      name: n.name,
+      x, y, width, height,
+      dataInputs: (n.data_inputs ?? []).map((p) => {
+        const o = { name: p.port, type: p.type ?? 'any' };
+        if (p.default != null) o.default = p.default;
+        return o;
+      }),
+      dataOutputs: (n.data_outputs ?? []).map((p) => ({
+        name: p.port, type: p.type ?? 'any',
+      })),
+      ctrlInputs: n.ctrl_inputs ?? [],
+      ctrlOutputs: n.ctrl_outputs ?? [],
+      ...(n.properties && Object.keys(n.properties).length ? { properties: n.properties } : {}),
+    };
+  });
+
+  const edges = (kg.edges ?? []).map((e) => ({
+    type: e.type,
+    fromNode: e.from?.node ?? '',
+    fromPort: e.from?.port ?? '',
+    toNode: e.to?.node ?? '',
+    toPort: e.to?.port ?? '',
+  }));
+
+  return { nodes, edges };
+}
+
+/**
  * Parse KIR text and return { nodes, edges } for the graph viewer.
  * Uses kir_to_graph + auto_layout from the WASM module.
  *
@@ -70,7 +121,8 @@ export async function parseKirWithWasm(kirText) {
   try {
     const graphJson = kir_to_graph(kirText);
     const laidOut = auto_layout(graphJson);
-    return JSON.parse(laidOut);
+    const kg = JSON.parse(laidOut);
+    return kirgraphToViewer(kg);
   } catch (err) {
     console.error('[wasmParser] Parse error:', err);
     return null;

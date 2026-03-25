@@ -29,8 +29,13 @@ export function useKeyboard({ onCancelOperation } = {}) {
   // ---------------------------------------------------------------------------
 
   function isEditingText() {
-    const tag = document.activeElement?.tagName
-    return tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable
+    const el = document.activeElement
+    if (!el) return false
+    const tag = el.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true
+    // Monaco editor uses a textarea inside a .monaco-editor container
+    if (el.closest?.('.monaco-editor')) return true
+    return false
   }
 
   // ---------------------------------------------------------------------------
