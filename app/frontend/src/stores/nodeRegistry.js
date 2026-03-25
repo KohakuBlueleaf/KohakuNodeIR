@@ -1,5 +1,6 @@
 import { reactive, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { save, load } from '../utils/persist.js';
 
 // ---- ID helpers ----
 let _portCounter = 0;
@@ -377,7 +378,29 @@ export const useNodeRegistryStore = defineStore('nodeRegistry', () => {
   function registerNodeType(definition) {
     if (!definition.type) throw new Error('NodeDefinition must have a type field.');
     registry.set(definition.type, definition);
+    _persistUserTypes();
   }
+
+  /** Save user-defined (non-builtin) types to localStorage. */
+  function _persistUserTypes() {
+    const builtinTypes = new Set(BUILT_IN_DEFINITIONS.map(d => d.type));
+    const userDefs = [];
+    for (const [type, def] of registry) {
+      if (!builtinTypes.has(type)) userDefs.push(def);
+    }
+    save('userNodeTypes', userDefs);
+  }
+
+  /** Load user-defined types from localStorage on store init. */
+  function _loadUserTypes() {
+    const saved = load('userNodeTypes', []);
+    for (const def of saved) {
+      if (def.type && !registry.has(def.type)) {
+        registry.set(def.type, def);
+      }
+    }
+  }
+  _loadUserTypes();
 
   /**
    * Look up a node type definition by type key.

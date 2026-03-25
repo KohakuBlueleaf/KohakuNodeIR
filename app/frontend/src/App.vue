@@ -1,18 +1,20 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import NodeEditor from './components/editor/NodeEditor.vue';
 import BlockCanvas from './components/blocks/BlockCanvas.vue';
 import Toolbar from './components/editor/Toolbar.vue';
+import { save, load } from './utils/persist.js';
 
-// ── View mode ──────────────────────────────────────────────────────────────────
-// 'graph' = node graph editor, 'blocks' = Scratch-style block view
-const viewMode = ref('graph');
+// ── View mode (persisted) ──
+const viewMode = ref(load('viewMode', 'graph'));
+watch(viewMode, (v) => save('viewMode', v));
 
-// ── Shared zoom (passed into whichever view is visible) ────────────────────────
+// ── Shared zoom ──
 const zoom = ref(1);
 
-// ── IR preview open state (NodeEditor owns the panel; Toolbar triggers it) ────
-const irOpen = ref(false);
+// ── IR preview open state (persisted) ──
+const irOpen = ref(load('irOpen', false));
+watch(irOpen, (v) => save('irOpen', v));
 </script>
 
 <template>

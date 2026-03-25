@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import EditorCanvas from './EditorCanvas.vue';
 import NodePalette from '../panels/NodePalette.vue';
 import PropertyPanel from '../panels/PropertyPanel.vue';
 import NodeDefEditor from '../panels/NodeDefEditor.vue';
 import IrPreview from '../panels/IrPreview.vue';
+import { save, load } from '../../utils/persist.js';
 
 const props = defineProps({
   zoom: { type: Number, default: 1 },
@@ -12,13 +13,8 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:zoom', 'update:irOpen']);
 
-// ── IR/Properties positions ──
-// Default: IR = right, Properties = bottom
-// Toggle: IR = bottom, Properties = right
-const irPosition = ref('right');
-
-// irPosition === 'right'   → IR right,   Properties bottom
-// irPosition === 'bottom'  → IR bottom,  Properties right
+// ── IR/Properties positions (persisted) ──
+const irPosition = ref(load('irPosition', 'right'));
 const propPosition = computed(() => irPosition.value === 'right' ? 'bottom' : 'right');
 
 function toggleIrPosition() {
@@ -26,12 +22,20 @@ function toggleIrPosition() {
   emit('update:irOpen', true);
 }
 
-// ── Resizable widths/heights ──
-const paletteW = ref(240);
-const propRightW = ref(280);
-const irRightW = ref(400);
-const irBottomH = ref(220);
-const propBottomH = ref(160);
+watch(irPosition, (v) => save('irPosition', v));
+
+// ── Resizable widths/heights (persisted) ──
+const paletteW = ref(load('paletteW', 240));
+const propRightW = ref(load('propRightW', 280));
+const irRightW = ref(load('irRightW', 400));
+const irBottomH = ref(load('irBottomH', 220));
+const propBottomH = ref(load('propBottomH', 160));
+
+watch(paletteW, (v) => save('paletteW', v));
+watch(propRightW, (v) => save('propRightW', v));
+watch(irRightW, (v) => save('irRightW', v));
+watch(irBottomH, (v) => save('irBottomH', v));
+watch(propBottomH, (v) => save('propBottomH', v));
 
 // Right panel width: depends on what's on the right
 const effectiveRightW = computed(() => {
