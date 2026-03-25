@@ -7,7 +7,9 @@
         { "include": "#comment" },
         { "include": "#subgraph-def" },
         { "include": "#directive" },
+        { "include": "#typehint-entry" },
         { "include": "#namespace-label" },
+        { "include": "#input-args" },
         { "include": "#builtin-call" },
         { "include": "#function-call" },
         { "include": "#assignment" },
@@ -86,6 +88,36 @@
             "captures": {
                 "2": { "name": "entity.name.tag.namespace.kir" },
                 "3": { "name": "punctuation.separator.colon.kir" }
+            }
+        },
+
+        "input-args": {
+            "comment": "Input argument list: (x, y, 42, \"hello\") before )func_name(",
+            "begin": "(\\()(?=[^)]*\\)[a-zA-Z_])",
+            "beginCaptures": {
+                "1": { "name": "punctuation.paren.open.kir" }
+            },
+            "end": "(?=\\))",
+            "patterns": [
+                { "include": "#expression" },
+                {
+                    "match": "\\b([a-zA-Z_]\\w*)\\b",
+                    "name": "variable.other.kir"
+                }
+            ]
+        },
+
+        "typehint-entry": {
+            "comment": "Inside @typehint block: (type, type)func_name(type)",
+            "match": "^(\\s*)(\\()([^)]*)(\\))([a-zA-Z_]\\w*)(\\()([^)]*)(\\))\\s*$",
+            "captures": {
+                "2": { "name": "punctuation.paren.open.kir" },
+                "3": { "name": "entity.name.type.kir" },
+                "4": { "name": "punctuation.paren.close.kir" },
+                "5": { "name": "entity.name.function.kir" },
+                "6": { "name": "punctuation.paren.open.kir" },
+                "7": { "name": "entity.name.type.kir" },
+                "8": { "name": "punctuation.paren.close.kir" }
             }
         },
 
