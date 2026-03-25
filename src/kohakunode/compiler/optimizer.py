@@ -145,36 +145,115 @@ class BranchSimplifier(IRPass):
 
     def transform(self, program: Program) -> Program:
         new_body = _simplify_body(program.body)
+        # Inline trivial jump→namespace pairs:
+        # ()jump(`label`) immediately followed by label: body,
+        # AND no other reference to `label` anywhere in the program → inline body
+        new_body = _inline_trivial_jumps(new_body)
         if new_body is program.body:
             return program
         return Program(body=new_body, mode=program.mode, typehints=program.typehints)
 
 
-def _simplify_body(stmts: list[Statement]) -> list[Statement]:
+def _collect_all_label_refs(stmts: list[Statement]) -> dict[str, int]:
+    """Count how many times each label is referenced across all statements."""
+    counts: dict[str, int] = {}
+
+    def _walk(body: list[Statement]) -> None:
+        for stmt in body:
+            if isinstance(stmt, Jump):
+                counts[stmt.target] = counts.get(stmt.target, 0) + 1
+            elif isinstance(stmt, Branch):
+                counts[stmt.true_label] = counts.get(stmt.true_label, 0) + 1
+                counts[stmt.false_label] = counts.get(stmt.false_label, 0) + 1
+            elif isinstance(stmt, Switch):
+                for _, label in stmt.cases:
+                    counts[label] = counts.get(label, 0) + 1
+                if stmt.default_label:
+                    counts[stmt.default_label] = counts.get(stmt.default_label, 0) + 1
+            elif isinstance(stmt, Parallel):
+                for label in stmt.labels:
+                    counts[label] = counts.get(label, 0) + 1
+            elif isinstance(stmt, Namespace):
+                _walk(stmt.body)
+            elif isinstance(stmt, TryExcept):
+                _walk(stmt.try_body)
+                _walk(stmt.except_body)
+            elif isinstance(stmt, SubgraphDef):
+                _walk(stmt.body)
+
+    _walk(stmts)
+    return counts
+
+
+def _inline_trivial_jumps(stmts: list[Statement]) -> list[Statement]:
+    """Inline jump→namespace pairs where the jump is immediately followed by
+    its target namespace AND no other statement references that label."""
+    ref_counts = _collect_all_label_refs(stmts)
+
+    result: list[Statement] = []
+    i = 0
+    while i < len(stmts):
+        stmt = stmts[i]
+        # Check: Jump immediately followed by its target Namespace
+        if (
+            isinstance(stmt, Jump)
+            and i + 1 < len(stmts)
+            and isinstance(stmts[i + 1], Namespace)
+            and stmts[i + 1].name == stmt.target
+            and ref_counts.get(stmt.target, 0) == 1  # only this one reference
+        ):
+            # Safe to inline: replace jump + namespace with just the body
+            result.extend(stmts[i + 1].body)
+            i += 2  # skip both jump and namespace
+        else:
+            result.append(stmt)
+            i += 1
+
+    return result
+
+
+def _simplify_body(stmts: list[Statement], constants: dict[str, object] | None = None) -> list[Statement]:
+    if constants is None:
+        constants = {}
+    # First pass: collect constant assignments (name = Literal)
+    for stmt in stmts:
+        if isinstance(stmt, Assignment) and isinstance(stmt.value, Literal):
+            constants[stmt.target] = stmt.value.value
+    # Second pass: simplify
     result: list[Statement] = []
     changed = False
     for stmt in stmts:
-        simplified = _simplify_stmt(stmt)
+        simplified = _simplify_stmt(stmt, constants)
         if simplified is not stmt:
             changed = True
         result.append(simplified)
     return result if changed else stmts
 
 
-def _simplify_stmt(stmt: Statement) -> Statement:
+def _resolve_bool_condition(cond: Expression, constants: dict[str, object]) -> bool | None:
+    """Try to resolve a condition to a bool. Returns None if not resolvable."""
+    if isinstance(cond, Literal) and cond.literal_type == "bool":
+        return cond.value
+    if isinstance(cond, Identifier) and cond.name in constants:
+        val = constants[cond.name]
+        if isinstance(val, bool):
+            return val
+    return None
+
+
+def _simplify_stmt(stmt: Statement, constants: dict[str, object]) -> Statement:
     if isinstance(stmt, Branch):
-        cond = stmt.condition
-        if isinstance(cond, Literal) and cond.literal_type == "bool":
-            if cond.value is True:
-                return Jump(target=stmt.true_label, line=stmt.line)
-            if cond.value is False:
-                return Jump(target=stmt.false_label, line=stmt.line)
+        resolved = _resolve_bool_condition(stmt.condition, constants)
+        if resolved is True:
+            return Jump(target=stmt.true_label, line=stmt.line)
+        if resolved is False:
+            return Jump(target=stmt.false_label, line=stmt.line)
     elif isinstance(stmt, Namespace):
-        new_body = _simplify_body(stmt.body)
+        new_body = _simplify_body(stmt.body, constants)
         if new_body is not stmt.body:
             return Namespace(name=stmt.name, body=new_body, line=stmt.line)
     elif isinstance(stmt, SubgraphDef):
-        new_body = _simplify_body(stmt.body)
+        new_body = _simplify_body(stmt.body, constants)
         if new_body is not stmt.body:
             return SubgraphDef(
                 name=stmt.name,
@@ -465,8 +544,16 @@ def _group_into_blocks(stmts: list[Statement]) -> list[list[Statement]]:
                 j += 1
             blocks.append(block)
             i = j
-        elif isinstance(stmt, (Jump, Namespace, TryExcept, TypeHintBlock)):
-            # These are structural — they anchor and can't be parallelized
+        elif isinstance(stmt, Jump):
+            # Jump + its target Namespace form ONE block
+            block = [stmt]
+            j = i + 1
+            while j < len(stmts) and isinstance(stmts[j], Namespace) and stmts[j].name == stmt.target:
+                block.append(stmts[j])
+                j += 1
+            blocks.append(block)
+            i = j
+        elif isinstance(stmt, (Namespace, TryExcept, TypeHintBlock)):
             blocks.append([stmt])
             i += 1
         else:

@@ -51,7 +51,7 @@ def _find_all(prog: Program, cls) -> list:
 
 class TestBranchSimplifier:
     def test_literal_true_becomes_jump_to_true_label(self) -> None:
-        """(True)branch(`yes`, `no`) → ()jump(`yes`)."""
+        """(True)branch(`yes`, `no`) → inlined yes body (jump+namespace eliminated)."""
         src = """\
 (True)branch(`yes`, `no`)
 yes:
@@ -61,9 +61,11 @@ no:
 """
         prog = parse(src)
         result = BranchSimplifier().transform(prog)
-        jumps = _find_all(result, Jump)
-        assert len(jumps) >= 1
-        assert jumps[0].target == "yes"
+        # After simplification + trivial jump inlining:
+        # Branch → Jump → inlined body. No Jump or Branch should remain.
+        # The body should contain `result = 1` (from the yes arm).
+        assignments = [s for s in result.body if isinstance(s, Assignment)]
+        assert any(a.target == "result" for a in assignments)
         # No Branch nodes remain
         branches = _find_all(result, Branch)
         assert len(branches) == 0
@@ -86,9 +88,9 @@ no:
         assert len(branches) == 0
 
     def test_dynamic_branch_not_simplified(self) -> None:
-        """Branch with non-literal condition is not modified."""
+        """Branch with truly dynamic condition (from function output) is not modified."""
         src = """\
-cond = True
+(x, y)compare(cond)
 (cond)branch(`yes`, `no`)
 yes:
     result = 1
@@ -97,7 +99,7 @@ no:
 """
         prog = parse(src)
         result = BranchSimplifier().transform(prog)
-        # cond is a variable, not a literal → branch remains
+        # cond comes from a function call, not a literal → branch remains
         branches = _find_all(result, Branch)
         assert len(branches) == 1
 
@@ -387,7 +389,7 @@ no:
         assert Optimizer().name == "optimizer"
 
     def test_branch_simplify_then_dead_namespace(self) -> None:
-        """branch_simplify + dead_namespace removes false arm namespace."""
+        """branch_simplify + dead_namespace + inline: constant True branch → just taken body."""
         src = """\
 (True)branch(`taken`, `not_taken`)
 taken:
@@ -397,11 +399,13 @@ not_taken:
 """
         prog = parse(src)
         result = Optimizer(passes=["branch_simplify"]).transform(prog)
-        # After simplification, (True)branch → jump(`taken`)
-        # not_taken should be removed by DeadNamespaceEliminator (included with branch_simplify)
+        # After simplification: (True)branch → jump(`taken`) → inline taken body
+        # not_taken removed, taken namespace inlined to just `x = 1`
         ns_names = {s.name for s in result.body if isinstance(s, Namespace)}
-        assert "taken" in ns_names
         assert "not_taken" not in ns_names
+        # The body should contain x = 1 (inlined from taken:)
+        assignments = [s for s in result.body if isinstance(s, Assignment)]
+        assert any(a.target == "x" for a in assignments)
 
     def test_full_optimizer_pipeline(self) -> None:
         """End-to-end: full pipeline produces a valid Program."""

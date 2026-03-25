@@ -1,21 +1,11 @@
 __par_0:
-    debug_mode = True
-    (debug_mode)branch(`debug_path`, `prod_path`)
-    debug_path:
-        ("Debug: starting pipeline")log()
-    prod_path:
-        ("Starting pipeline")log()
+    ("Debug: starting pipeline")log()
 __par_1:
     x = 10
     y = 20
     (x, y)add(result)
-    always_true = True
-    (always_true)branch(`compute`, `skip`)
-    compute:
-        (result, 2)multiply(doubled)
-        (doubled)print()
-    skip:
-        ("skipped")print()
+    (result, 2)multiply(doubled)
+    (doubled)print()
 __par_2:
     data = 42
     (data)normalize(norm1)
