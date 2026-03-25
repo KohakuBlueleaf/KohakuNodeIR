@@ -114,20 +114,6 @@ const BUILT_IN_DEFINITIONS = [
     },
     properties: { value: 0, valueType: 'int' },
   },
-  {
-    type: 'code',
-    name: 'Code',
-    category: 'Advanced',
-    description: 'Inline KIR code block. Write KIR directly in the graph.',
-    dataPorts: { inputs: [], outputs: [] },
-    controlPorts: {
-      inputs: [{ id: 'cp-in', name: 'in' }],
-      outputs: [{ id: 'cp-out', name: 'out' }],
-    },
-    properties: { code: '' },
-    minWidth: 280,
-    minHeight: 240,
-  },
   // ── Store / Load (remote data connections) ──
   {
     type: 'store',

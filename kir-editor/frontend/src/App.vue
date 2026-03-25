@@ -1,9 +1,11 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import NodeEditor from './components/editor/NodeEditor.vue';
 import BlockCanvas from './components/blocks/BlockCanvas.vue';
+import KirCodeEditor from './components/editor/KirCodeEditor.vue';
 import Toolbar from './components/editor/Toolbar.vue';
 import { save, load } from './utils/persist.js';
+import { initWasm } from './parser/wasmParser.js';
 
 // ── View mode (persisted) ──
 const viewMode = ref(load('viewMode', 'graph'));
@@ -15,6 +17,9 @@ const zoom = ref(1);
 // ── IR preview open state (persisted) ──
 const irOpen = ref(load('irOpen', false));
 watch(irOpen, (v) => save('irOpen', v));
+
+// ── Init WASM on startup ──
+onMounted(() => { initWasm(); });
 </script>
 
 <template>
@@ -48,6 +53,15 @@ watch(irOpen, (v) => save('irOpen', v));
         <span class="view-btn-icon">&#x2BC1;</span>
         Blocks
       </button>
+      <button
+        class="view-btn"
+        :class="{ 'view-btn--active': viewMode === 'code' }"
+        title="KIR code editor"
+        @click="viewMode = 'code'"
+      >
+        <span class="view-btn-icon">&#x2774;</span>
+        Code
+      </button>
     </div>
 
     <!-- ── Views ── -->
@@ -63,6 +77,9 @@ watch(irOpen, (v) => save('irOpen', v));
         v-show="viewMode === 'blocks'"
         :zoom="zoom"
         @update:zoom="zoom = $event"
+      />
+      <KirCodeEditor
+        v-show="viewMode === 'code'"
       />
     </div>
 

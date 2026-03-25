@@ -253,9 +253,6 @@ function emitNode(node, idx, indent, enclosingLoopLabel = null, emitted = null) 
     case 'parallel':
       lines.push(...emitParallelNode(node, idx, pad, indent, enclosingLoopLabel, emitted))
       break
-    case 'code':
-      lines.push(...emitCodeNode(node, pad))
-      break
     default:
       // Generic function call: math, comparison, string, file, display, user-defined
       lines.push(...emitFunctionNode(node, idx, pad))
@@ -308,15 +305,6 @@ function emitFunctionNode(node, idx, pad) {
   const outputStr = outputVars.join(', ')
 
   return [`${pad}(${inputStr})${funcName}(${outputStr})`]
-}
-
-/**
- * Code node: inline the user's KIR code at the current indentation level.
- */
-function emitCodeNode(node, pad) {
-  const code = (node.properties?.code ?? '').trim()
-  if (!code) return [`${pad}# empty code block`]
-  return code.split('\n').map(line => `${pad}${line}`)
 }
 
 /**

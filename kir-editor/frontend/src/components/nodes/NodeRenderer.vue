@@ -7,7 +7,6 @@ import MergeNode from './MergeNode.vue'
 import SwitchNode from './SwitchNode.vue'
 import ParallelNode from './ParallelNode.vue'
 import ValueNode from './ValueNode.vue'
-import CodeNode from './CodeNode.vue'
 
 const props = defineProps({ node: { type: Object, required: true } })
 const graph = useGraphStore()
@@ -16,7 +15,6 @@ const HEADER_COLORS = {
   branch: '#3d2f1e',
   switch: '#2d2040',
   parallel: '#1e3d2f',
-  code: '#1e2d3d',
 }
 
 let _cnt = 0
@@ -72,7 +70,6 @@ function removeBranch(payload) {
       <SwitchNode v-else-if="node.type === 'switch'" :node="node" @add-case="addCase" @remove-case="removeCase" />
       <ParallelNode v-else-if="node.type === 'parallel'" :node="node" @add-branch="addBranch" @remove-branch="removeBranch" />
       <ValueNode v-else-if="node.type === 'value'" :node="node" />
-      <CodeNode v-else-if="node.type === 'code'" :node="node" />
       <!-- User-defined types: render as function -->
       <FunctionNode v-else :node="node" />
     </template>
