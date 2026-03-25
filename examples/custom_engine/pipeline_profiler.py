@@ -248,14 +248,12 @@ model_path = "models/sales_v1.pkl"
 (report, saved_path)LogExperiment(log_entry)
 """
 
-# ---------------------------------------------------------------------------
-# Run with profiling
-# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    # Run with profiling
+    backend = ProfilingBackend()
+    store = Executor(registry=registry, backend=backend, validate=False).execute_source(
+        KIR_SOURCE
+    )
 
-backend = ProfilingBackend()
-store = Executor(registry=registry, backend=backend, validate=False).execute_source(
-    KIR_SOURCE
-)
-
-print(f"Pipeline complete: {store.get('log_entry')}")
-backend.print_report()
+    print(f"Pipeline complete: {store.get('log_entry')}")
+    backend.print_report()

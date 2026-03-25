@@ -33,18 +33,19 @@ registry = Registry()
 registry.register("counter", counter, input_names=["state"], output_names=["count"])
 registry.register("print_val", lambda x: print(f"  count = {x}"), output_names=[])
 
-backend = StatefulBackend()
-executor = Executor(registry=registry, backend=backend, validate=False)
+if __name__ == "__main__":
+    backend = StatefulBackend()
+    executor = Executor(registry=registry, backend=backend, validate=False)
 
-source = """\
+    source = """\
 @meta node_id="c1"
 ()counter(n)
 (n)print_val()
 """
 
-print("Run 1:")
-executor.execute_source(source)
-print("Run 2:")
-executor.execute_source(source)
-print("Run 3:")
-executor.execute_source(source)
+    print("Run 1:")
+    executor.execute_source(source)
+    print("Run 2:")
+    executor.execute_source(source)
+    print("Run 3:")
+    executor.execute_source(source)

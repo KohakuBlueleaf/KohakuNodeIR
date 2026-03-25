@@ -163,25 +163,25 @@ title = "US Sales Report"
 (stats, title)FormatReport(report)
 """
 
-print("Distributed execution demo")
-print("-" * 55)
-store = Executor(registry=registry, backend=backend, validate=False).execute_source(
-    KIR_SOURCE
-)
+if __name__ == "__main__":
+    print("Distributed execution demo")
+    print("-" * 55)
+    store = Executor(registry=registry, backend=backend, validate=False).execute_source(
+        KIR_SOURCE
+    )
 
-print(f"\n  Final report: {store.get('report')}")
-backend.print_dispatch_summary()
+    print(f"\n  Final report: {store.get('report')}")
+    backend.print_dispatch_summary()
 
-# Show what the serialized payload looks like
-print(f"\n{'=' * 55}")
-print("  Example serialized payload (what goes over the wire):")
-print(f"{'=' * 55}")
-from kohakunode import NodeInvocation  # noqa: E402
+    # Show what the serialized payload looks like
+    print(f"\n{'=' * 55}")
+    print("  Example serialized payload (what goes over the wire):")
+    print(f"{'=' * 55}")
 
-sample = NodeInvocation(
-    spec=registry.lookup("FetchData"),
-    call_kwargs={"url": "https://data.example.com/sales.csv"},
-    node=None,  # type: ignore[arg-type]
-    metadata={"node_id": "fetch1"},
-)
-print(backend._serialize(sample))
+    sample = NodeInvocation(
+        spec=registry.lookup("FetchData"),
+        call_kwargs={"url": "https://data.example.com/sales.csv"},
+        node=None,  # type: ignore[arg-type]
+        metadata={"node_id": "fetch1"},
+    )
+    print(backend._serialize(sample))

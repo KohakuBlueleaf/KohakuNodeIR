@@ -39,16 +39,17 @@ def save_csv(data, path):
     print(f"  [save_csv] Saved {len(data)} rows to {path}")
 
 
-exe = Executor()
-exe.register("load_csv", load_csv, output_names=["data"])
-exe.register("clean_data", clean_data, output_names=["cleaned"])
-exe.register("filter_outliers", filter_outliers, output_names=["filtered"])
-exe.register("compute_stats", compute_stats, output_names=["mean", "std", "count"])
-exe.register("greater_than", lambda a, b: a > b, output_names=["result"])
-exe.register("normalize", normalize, output_names=["normalized"])
-exe.register("save_csv", save_csv, output_names=[])
-exe.register("print_val", lambda v: print(f"  {v}"), output_names=[])
+if __name__ == "__main__":
+    exe = Executor()
+    exe.register("load_csv", load_csv, output_names=["data"])
+    exe.register("clean_data", clean_data, output_names=["cleaned"])
+    exe.register("filter_outliers", filter_outliers, output_names=["filtered"])
+    exe.register("compute_stats", compute_stats, output_names=["mean", "std", "count"])
+    exe.register("greater_than", lambda a, b: a > b, output_names=["result"])
+    exe.register("normalize", normalize, output_names=["normalized"])
+    exe.register("save_csv", save_csv, output_names=[])
+    exe.register("print_val", lambda v: print(f"  {v}"), output_names=[])
 
-print("Running data pipeline:")
-kir_path = Path(__file__).parent / "data_pipeline.kir"
-exe.execute_file(kir_path)
+    print("Running data pipeline:")
+    kir_path = Path(__file__).parent / "data_pipeline.kir"
+    exe.execute_file(kir_path)

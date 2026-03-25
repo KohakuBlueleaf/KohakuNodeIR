@@ -289,25 +289,26 @@ out_path = "output.jpg"
 (img, out_path)SaveImage(status)
 """
 
-# -- Run twice to demonstrate caching --
+if __name__ == "__main__":
+    # -- Run twice to demonstrate caching --
 
-executor = Executor(registry=registry, backend=backend, validate=False)
+    executor = Executor(registry=registry, backend=backend, validate=False)
 
-print("Run 1: All nodes execute (cold cache)")
-store1 = executor.execute_source(KIR_SOURCE)
-backend.print_log("Run 1")
-print(f"  Result: {store1.get('status')}")
+    print("Run 1: All nodes execute (cold cache)")
+    store1 = executor.execute_source(KIR_SOURCE)
+    backend.print_log("Run 1")
+    print(f"  Result: {store1.get('status')}")
 
-print("\nRun 2: Unchanged nodes cached, RandomSeed forces re-execution")
-print("        (noise and save re-execute because their inputs changed)")
-store2 = executor.execute_source(KIR_SOURCE)
-backend.print_log("Run 2")
-print(f"  Result: {store2.get('status')}")
+    print("\nRun 2: Unchanged nodes cached, RandomSeed forces re-execution")
+    print("        (noise and save re-execute because their inputs changed)")
+    store2 = executor.execute_source(KIR_SOURCE)
+    backend.print_log("Run 2")
+    print(f"  Result: {store2.get('status')}")
 
-# -- Demonstrate VALIDATE_INPUTS --
+    # -- Demonstrate VALIDATE_INPUTS --
 
-print("\nRun 3: Invalid resize dimensions (validation error)")
-BAD_SOURCE = """\
+    print("\nRun 3: Invalid resize dimensions (validation error)")
+    BAD_SOURCE = """\
 path = "photo.jpg"
 width = -1
 height = 0
@@ -319,12 +320,12 @@ height = 0
 (img, width, height)Resize(img)
 """
 
-try:
-    executor.execute_source(BAD_SOURCE)
-except ValueError as e:
-    print(f"  Caught: {e}")
-    backend.print_log("Run 3")
+    try:
+        executor.execute_source(BAD_SOURCE)
+    except ValueError as e:
+        print(f"  Caught: {e}")
+        backend.print_log("Run 3")
 
-# -- Show persistent node state --
+    # -- Show persistent node state --
 
-print(f"\nNode state for 'seed': {backend.get_node_state('seed')}")
+    print(f"\nNode state for 'seed': {backend.get_node_state('seed')}")

@@ -30,17 +30,20 @@ registry = Registry()
 registry.register("add", lambda a, b: a + b, output_names=["result"])
 registry.register("multiply", lambda a, b: a * b, output_names=["result"])
 
-backend = LoggingBackend()
-store = Executor(registry=registry, backend=backend, validate=False).execute_source("""
+if __name__ == "__main__":
+    backend = LoggingBackend()
+    store = Executor(registry=registry, backend=backend, validate=False).execute_source(
+        """
 x = 10
 y = 20
 (x, y)add(sum)
 (sum, 3)multiply(product)
-""")
-
-print(f"product = {store.get('product')}")
-for entry in backend.log:
-    print(
-        f"  {entry['func']}({entry['args']}) = {entry['result']}"
-        f" ({entry['elapsed_ms']:.2f}ms)"
+"""
     )
+
+    print(f"product = {store.get('product')}")
+    for entry in backend.log:
+        print(
+            f"  {entry['func']}({entry['args']}) = {entry['result']}"
+            f" ({entry['elapsed_ms']:.2f}ms)"
+        )

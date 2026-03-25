@@ -31,7 +31,8 @@ def convert_workflow(path: Path, prefix: str) -> None:
     else:
         node_count = len(raw)
         link_count = sum(
-            1 for v in raw.values()
+            1
+            for v in raw.values()
             if isinstance(v, dict)
             for inp_v in v.get("inputs", {}).values()
             if isinstance(inp_v, list) and len(inp_v) == 2
@@ -70,9 +71,10 @@ def convert_workflow(path: Path, prefix: str) -> None:
     print()
 
 
-# Convert all workflows
-convert_workflow(HERE / "example_workflow.json", "converted")
-convert_workflow(HERE / "example_workflow2.json", "converted2")
-convert_workflow(HERE / "example_workflow2-api.json", "converted2_api")
+if __name__ == "__main__":
+    # Convert all workflows
+    convert_workflow(HERE / "example_workflow.json", "converted")
+    convert_workflow(HERE / "example_workflow2.json", "converted2")
+    convert_workflow(HERE / "example_workflow2-api.json", "converted2_api")
 
-print(f"All files saved to: {HERE}")
+    print(f"All files saved to: {HERE}")

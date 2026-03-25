@@ -24,22 +24,23 @@ x = 10
 (message)print()
 """
 
-prog = parse(source)
-writer = Writer()
+if __name__ == "__main__":
+    prog = parse(source)
+    writer = Writer()
 
-print("=" * 60)
-print("BEFORE (as written — @dataflow: block, any order)")
-print("=" * 60)
-print(writer.write(prog))
+    print("=" * 60)
+    print("BEFORE (as written — @dataflow: block, any order)")
+    print("=" * 60)
+    print(writer.write(prog))
 
-compiler = DataflowCompiler()
-compiled = compiler.transform(prog)
+    compiler = DataflowCompiler()
+    compiled = compiler.transform(prog)
 
-print("=" * 60)
-print("AFTER (compiled — topologically sorted, no @dataflow:)")
-print("=" * 60)
-print(writer.write(compiled))
+    print("=" * 60)
+    print("AFTER (compiled — topologically sorted, no @dataflow:)")
+    print("=" * 60)
+    print(writer.write(compiled))
 
-print("=" * 60)
-print("Notice: (2)to_float(y) moved before (x,y)multiply(product)")
-print("because multiply depends on y, which to_float produces.")
+    print("=" * 60)
+    print("Notice: (2)to_float(y) moved before (x,y)multiply(product)")
+    print("because multiply depends on y, which to_float produces.")

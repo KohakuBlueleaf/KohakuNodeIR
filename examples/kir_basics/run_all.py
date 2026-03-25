@@ -27,8 +27,12 @@ def make_registry():
     reg.register("to_string", lambda v: str(v), output_names=["result"])
     # string
     reg.register("concat", lambda a, b: str(a) + str(b), output_names=["result"])
-    reg.register("format_string", lambda t, v: str(t).format(v), output_names=["result"])
-    reg.register("format_factorial", lambda n, r: f"{n}! = {r}", output_names=["result"])
+    reg.register(
+        "format_string", lambda t, v: str(t).format(v), output_names=["result"]
+    )
+    reg.register(
+        "format_factorial", lambda n, r: f"{n}! = {r}", output_names=["result"]
+    )
     # output — two aliases used across examples
     reg.register("print", lambda v: print(f"    {v}"), output_names=[])
     reg.register("print_val", lambda v: print(f"    {v}"), output_names=[])
@@ -52,9 +56,11 @@ def make_registry():
         "compute_stats",
         lambda data: (
             sum(data) / len(data) if data else 0,
-            (sum((x - sum(data) / len(data)) ** 2 for x in data) / len(data)) ** 0.5
-            if data
-            else 0,
+            (
+                (sum((x - sum(data) / len(data)) ** 2 for x in data) / len(data)) ** 0.5
+                if data
+                else 0
+            ),
             len(data),
         ),
         output_names=["mean", "std", "count"],
@@ -74,14 +80,15 @@ def make_registry():
     return reg
 
 
-kir_files = sorted(HERE.glob("*.kir"))
-for kir in kir_files:
-    print(f"── {kir.name} ──")
-    try:
-        reg = make_registry()
-        exe = Executor(registry=reg, validate=False)
-        store = exe.execute_file(kir)
-        print(f"  OK ({len(store.snapshot())} vars)")
-    except Exception as e:
-        print(f"  ERROR: {e}")
-    print()
+if __name__ == "__main__":
+    kir_files = sorted(HERE.glob("*.kir"))
+    for kir in kir_files:
+        print(f"── {kir.name} ──")
+        try:
+            reg = make_registry()
+            exe = Executor(registry=reg, validate=False)
+            store = exe.execute_file(kir)
+            print(f"  OK ({len(store.snapshot())} vars)")
+        except Exception as e:
+            print(f"  ERROR: {e}")
+        print()
