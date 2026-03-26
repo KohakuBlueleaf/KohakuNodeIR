@@ -1,15 +1,11 @@
-__par_0:
-    ("Debug: starting pipeline")log()
-__par_1:
-    x = 10
-    y = 20
-    (x, y)add(result)
-    (result, 2)multiply(doubled)
-    (doubled)print()
-__par_2:
-    data = 42
-    (data)normalize(norm1)
-    norm2 = norm1
-    (norm1)process_a(out_a)
-    (norm2)process_b(out_b)
-()parallel(`__par_0`, `__par_1`, `__par_2`)
+("Debug: starting pipeline")log()
+x = 10
+y = 20
+(x, y)add(result)
+data = 42
+(data)normalize(norm1)
+norm2 = norm1
+(norm1)process_a(out_a)
+(norm2)process_b(out_b)
+(result, 2)multiply(doubled)
+(doubled)print()
