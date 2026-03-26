@@ -119,14 +119,14 @@ print("    unused_setup removed, sum_copy replaced with sum_copy = sum.")
 # 5. Full pipeline example
 # ---------------------------------------------------------------------------
 
-kir_file = Path(__file__).parent / "all_optimizations.kir"
+kir_file = Path(__file__).parent / "no_opt.kir"
 if kir_file.exists():
     prog = parse(kir_file.read_text(encoding="utf-8"))
-    show("5. FILE: all_optimizations.kir — before", w.write(prog))
+    show("5. FILE: no_opt.kir — before", w.write(prog))
 
     opt = Optimizer()
     result = opt.transform(prog)
-    show("5. FILE: all_optimizations.kir — after", w.write(result))
+    show("5. FILE: no_opt.kir — after", w.write(result))
 
 
 if __name__ == "__main__":
