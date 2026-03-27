@@ -1,7 +1,5 @@
 """Configurable L3 Sanitizer that composes compiler passes."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 from kohakunode.ast.nodes import Program

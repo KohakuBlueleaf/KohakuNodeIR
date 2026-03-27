@@ -1,7 +1,5 @@
 """L4 optimizer: ParallelPathDetector, BranchSimplifier, DeadCodeEliminator, CSE."""
 
-from __future__ import annotations
-
 from kohakunode.ast.nodes import (
     Assignment,
     Branch,
@@ -99,7 +97,9 @@ class ParallelPathDetector(IRPass):
 
         # Check: are the groups actually non-trivially parallelizable?
         # If one group has almost everything, don't bother.
-        multi_groups = [g for g in independent_groups if any(len(blocks[i]) > 0 for i in g)]
+        multi_groups = [
+            g for g in independent_groups if any(len(blocks[i]) > 0 for i in g)
+        ]
         if len(multi_groups) < 2:
             return program
 
@@ -170,7 +170,9 @@ def _collect_all_label_refs(stmts: list[Statement]) -> dict[str, int]:
                     for _, label in stmt.cases:
                         counts[label] = counts.get(label, 0) + 1
                     if stmt.default_label:
-                        counts[stmt.default_label] = counts.get(stmt.default_label, 0) + 1
+                        counts[stmt.default_label] = (
+                            counts.get(stmt.default_label, 0) + 1
+                        )
                 case Parallel():
                     for label in stmt.labels:
                         counts[label] = counts.get(label, 0) + 1
@@ -213,7 +215,9 @@ def _inline_trivial_jumps(stmts: list[Statement]) -> list[Statement]:
     return result
 
 
-def _simplify_body(stmts: list[Statement], constants: dict[str, object] | None = None) -> list[Statement]:
+def _simplify_body(
+    stmts: list[Statement], constants: dict[str, object] | None = None
+) -> list[Statement]:
     if constants is None:
         constants = {}
     # First pass: collect constant assignments (name = Literal)
@@ -231,7 +235,9 @@ def _simplify_body(stmts: list[Statement], constants: dict[str, object] | None =
     return result if changed else stmts
 
 
-def _resolve_bool_condition(cond: Expression, constants: dict[str, object]) -> bool | None:
+def _resolve_bool_condition(
+    cond: Expression, constants: dict[str, object]
+) -> bool | None:
     """Try to resolve a condition to a bool. Returns None if not resolvable."""
     if isinstance(cond, Literal) and cond.literal_type == "bool":
         return cond.value
@@ -547,7 +553,11 @@ def _group_into_blocks(stmts: list[Statement]) -> list[list[Statement]]:
                         owned_labels = set(stmt.labels)
                 # Consume following namespaces that match
                 j = i + 1
-                while j < len(stmts) and isinstance(stmts[j], Namespace) and stmts[j].name in owned_labels:
+                while (
+                    j < len(stmts)
+                    and isinstance(stmts[j], Namespace)
+                    and stmts[j].name in owned_labels
+                ):
                     block.append(stmts[j])
                     j += 1
                 blocks.append(block)
@@ -556,7 +566,11 @@ def _group_into_blocks(stmts: list[Statement]) -> list[list[Statement]]:
                 # Jump + its target Namespace form ONE block
                 block = [stmt]
                 j = i + 1
-                while j < len(stmts) and isinstance(stmts[j], Namespace) and stmts[j].name == stmt.target:
+                while (
+                    j < len(stmts)
+                    and isinstance(stmts[j], Namespace)
+                    and stmts[j].name == stmt.target
+                ):
                     block.append(stmts[j])
                     j += 1
                 blocks.append(block)

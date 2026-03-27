@@ -56,7 +56,9 @@ def _meta(node: KGNode) -> MetaAnnotation:
 class KirGraphCompiler:
     """Compile .kirgraph (L1) → KIR Program AST (L2)."""
 
-    def compile(self, graph: KirGraph, typehints: list[TypeHintEntry] | None = None) -> Program:
+    def compile(
+        self, graph: KirGraph, typehints: list[TypeHintEntry] | None = None
+    ) -> Program:
         self._nodes: dict[str, KGNode] = {n.id: n for n in graph.nodes}
         # Build func_name → TypeHintEntry lookup for port type annotation.
         self._typehint_map: dict[str, TypeHintEntry] = {}

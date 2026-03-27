@@ -14,6 +14,7 @@ from kohakunode.ast.nodes import (
     TryExcept,
     TypeHintBlock,
 )
+from kohakunode._rust_bridge import rust_strip_meta
 from kohakunode.compiler.passes import IRPass
 
 
@@ -30,8 +31,6 @@ class StripMetaPass(IRPass):
 
     def transform(self, program: Program) -> Program:
         # Try Rust implementation first
-        from kohakunode._rust_bridge import rust_strip_meta
-
         result = rust_strip_meta(program)
         if result is not None:
             return result

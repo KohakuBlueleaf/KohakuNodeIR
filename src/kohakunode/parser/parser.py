@@ -11,6 +11,7 @@ import lark
 import lark.exceptions
 import lark.indenter
 
+from kohakunode._rust_bridge import rust_parse
 from kohakunode.ast.nodes import Program
 from kohakunode.errors import KirSyntaxError
 from kohakunode.parser.transformer import KirTransformer
@@ -70,8 +71,6 @@ def parse(source: str) -> Program:
         KirSyntaxError: if the source contains a syntax error.
     """
     # Try Rust parser first
-    from kohakunode._rust_bridge import rust_parse
-
     result = rust_parse(source)
     if result is not None:
         return result

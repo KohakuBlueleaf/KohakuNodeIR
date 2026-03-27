@@ -11,6 +11,7 @@ from kohakunode.ast.nodes import (
     TryExcept,
     TypeHintBlock,
 )
+from kohakunode._rust_bridge import rust_compile_dataflow
 from kohakunode.compiler.passes import DependencyGraphBuilder, IRPass, topological_sort
 from kohakunode.errors import KirCompilationError
 
@@ -72,8 +73,6 @@ class DataflowCompiler(IRPass):
             dataflow program body.
         """
         # Try Rust implementation first
-        from kohakunode._rust_bridge import rust_compile_dataflow
-
         result = rust_compile_dataflow(program)
         if result is not None:
             return result
@@ -151,7 +150,10 @@ class DataflowCompiler(IRPass):
                 case TryExcept():
                     try_inner = self._expand_dataflow_blocks(stmt.try_body)
                     except_inner = self._expand_dataflow_blocks(stmt.except_body)
-                    if try_inner is not stmt.try_body or except_inner is not stmt.except_body:
+                    if (
+                        try_inner is not stmt.try_body
+                        or except_inner is not stmt.except_body
+                    ):
                         found = True
                         new_body.append(
                             TryExcept(

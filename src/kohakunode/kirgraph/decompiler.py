@@ -106,7 +106,9 @@ class KirGraphDecompiler:
             edges=list(self._edges),
         )
 
-    def decompile_with_typehints(self, program: Program) -> tuple[KirGraph, TypeHintBlock | None]:
+    def decompile_with_typehints(
+        self, program: Program
+    ) -> tuple[KirGraph, TypeHintBlock | None]:
         """Decompile and also reconstruct a TypeHintBlock from non-'any' port types.
 
         Returns (KirGraph, TypeHintBlock | None). The TypeHintBlock is None when
@@ -121,7 +123,14 @@ class KirGraphDecompiler:
         # Group by func_name (== node.type for non-primitive nodes).
         entries: dict[str, TypeHintEntry] = {}
         for node in self._nodes.values():
-            if node.type in ("value", "branch", "switch", "parallel", "merge", "try_except"):
+            if node.type in (
+                "value",
+                "branch",
+                "switch",
+                "parallel",
+                "merge",
+                "try_except",
+            ):
                 continue
             has_typed = any(p.type != "any" for p in node.data_inputs) or any(
                 p.type != "any" for p in node.data_outputs
@@ -545,9 +554,7 @@ class KirGraphDecompiler:
         for port, body in [("try", stmt.try_body), ("except", stmt.except_body)]:
             if not body:
                 continue
-            first_id = self._walk_statements(
-                body, prev_node_id=None, in_namespace=True
-            )
+            first_id = self._walk_statements(body, prev_node_id=None, in_namespace=True)
             if first_id:
                 self._ensure_ctrl_ports(first_id, ctrl_in="in")
                 self._edges.append(

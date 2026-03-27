@@ -107,12 +107,8 @@ class Registry:
         for spec in self._funcs.values():
             if spec.input_types is None and spec.output_types is None:
                 continue
-            input_exprs = [
-                TypeExpr(name=t) for t in (spec.input_types or [])
-            ]
-            output_exprs = [
-                TypeExpr(name=t) for t in (spec.output_types or [])
-            ]
+            input_exprs = [TypeExpr(name=t) for t in (spec.input_types or [])]
+            output_exprs = [TypeExpr(name=t) for t in (spec.output_types or [])]
             entries.append(
                 TypeHintEntry(
                     func_name=spec.name,

@@ -191,12 +191,16 @@ def _check_stmt(
             if hint is not None:
                 # Check input count
                 # Positional inputs only (keyword args count as one each)
-                pos_inputs = [inp for inp in stmt.inputs if not isinstance(inp, KeywordArg)]
+                pos_inputs = [
+                    inp for inp in stmt.inputs if not isinstance(inp, KeywordArg)
+                ]
                 kw_inputs = [inp for inp in stmt.inputs if isinstance(inp, KeywordArg)]
 
                 if len(hint.input_types) > 0:
                     if len(stmt.inputs) != len(hint.input_types):
-                        line_info = f" (line {stmt.line})" if stmt.line is not None else ""
+                        line_info = (
+                            f" (line {stmt.line})" if stmt.line is not None else ""
+                        )
                         errors.append(
                             f"'{stmt.func_name}'{line_info}: expected "
                             f"{len(hint.input_types)} input(s), got {len(stmt.inputs)}"
@@ -210,7 +214,9 @@ def _check_stmt(
                             if actual_type is not None:
                                 if not _types_compatible(actual_type, expected_type):
                                     line_info = (
-                                        f" (line {stmt.line})" if stmt.line is not None else ""
+                                        f" (line {stmt.line})"
+                                        if stmt.line is not None
+                                        else ""
                                     )
                                     errors.append(
                                         f"'{stmt.func_name}'{line_info}: input {i} "

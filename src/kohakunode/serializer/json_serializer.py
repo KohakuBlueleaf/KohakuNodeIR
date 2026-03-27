@@ -52,7 +52,11 @@ def program_to_dict(prog: Program) -> dict:
 def _stmt(stmt: Statement) -> dict:
     match stmt:
         case Assignment():
-            d = {"type": "Assignment", "target": stmt.target, "value": _expr(stmt.value)}
+            d = {
+                "type": "Assignment",
+                "target": stmt.target,
+                "value": _expr(stmt.value),
+            }
             if stmt.type_annotation:
                 d["type_annotation"] = _type_expr(stmt.type_annotation)
             if stmt.metadata:
@@ -112,7 +116,11 @@ def _stmt(stmt: Statement) -> dict:
                 d["line"] = stmt.line
             return d
         case Namespace():
-            d = {"type": "Namespace", "name": stmt.name, "body": [_stmt(s) for s in stmt.body]}
+            d = {
+                "type": "Namespace",
+                "name": stmt.name,
+                "body": [_stmt(s) for s in stmt.body],
+            }
             if stmt.line is not None:
                 d["line"] = stmt.line
             return d
@@ -138,7 +146,10 @@ def _stmt(stmt: Statement) -> dict:
                 d["line"] = stmt.line
             return d
         case TypeHintBlock():
-            d = {"type": "TypeHintBlock", "entries": [_typehint_entry(e) for e in stmt.entries]}
+            d = {
+                "type": "TypeHintBlock",
+                "entries": [_typehint_entry(e) for e in stmt.entries],
+            }
             if stmt.line is not None:
                 d["line"] = stmt.line
             return d
@@ -163,7 +174,11 @@ def _expr(expr) -> dict:
             d["line"] = expr.line
         return d
     if isinstance(expr, Literal):
-        d = {"type": "Literal", "value": _value(expr.value), "literal_type": expr.literal_type}
+        d = {
+            "type": "Literal",
+            "value": _value(expr.value),
+            "literal_type": expr.literal_type,
+        }
         if expr.line is not None:
             d["line"] = expr.line
         return d
@@ -234,7 +249,11 @@ def dict_to_program(d: dict) -> Program:
     return Program(
         body=[_dict_to_stmt(s) for s in d.get("body", [])],
         mode=d.get("mode"),
-        typehints=[_dict_to_typehint_entry(e) for e in d["typehints"]] if d.get("typehints") else None,
+        typehints=(
+            [_dict_to_typehint_entry(e) for e in d["typehints"]]
+            if d.get("typehints")
+            else None
+        ),
         line=d.get("line"),
     )
 
@@ -246,8 +265,16 @@ def _dict_to_stmt(d: dict) -> Statement:
             return Assignment(
                 target=d["target"],
                 value=_dict_to_expr(d["value"]),
-                type_annotation=_dict_to_type_expr(d["type_annotation"]) if d.get("type_annotation") else None,
-                metadata=[_dict_to_meta(m) for m in d["metadata"]] if d.get("metadata") else None,
+                type_annotation=(
+                    _dict_to_type_expr(d["type_annotation"])
+                    if d.get("type_annotation")
+                    else None
+                ),
+                metadata=(
+                    [_dict_to_meta(m) for m in d["metadata"]]
+                    if d.get("metadata")
+                    else None
+                ),
                 line=d.get("line"),
             )
         case "FuncCall":
@@ -255,7 +282,11 @@ def _dict_to_stmt(d: dict) -> Statement:
                 func_name=d["func_name"],
                 inputs=[_dict_to_expr(e) for e in d.get("inputs", [])],
                 outputs=[_dict_to_output(o) for o in d.get("outputs", [])],
-                metadata=[_dict_to_meta(m) for m in d["metadata"]] if d.get("metadata") else None,
+                metadata=(
+                    [_dict_to_meta(m) for m in d["metadata"]]
+                    if d.get("metadata")
+                    else None
+                ),
                 line=d.get("line"),
             )
         case "Branch":
@@ -263,7 +294,11 @@ def _dict_to_stmt(d: dict) -> Statement:
                 condition=_dict_to_expr(d["condition"]),
                 true_label=d["true_label"],
                 false_label=d["false_label"],
-                metadata=[_dict_to_meta(m) for m in d["metadata"]] if d.get("metadata") else None,
+                metadata=(
+                    [_dict_to_meta(m) for m in d["metadata"]]
+                    if d.get("metadata")
+                    else None
+                ),
                 line=d.get("line"),
             )
         case "Switch":
@@ -271,19 +306,31 @@ def _dict_to_stmt(d: dict) -> Statement:
                 value=_dict_to_expr(d["value"]),
                 cases=[(_dict_to_expr(c[0]), c[1]) for c in d.get("cases", [])],
                 default_label=d.get("default_label"),
-                metadata=[_dict_to_meta(m) for m in d["metadata"]] if d.get("metadata") else None,
+                metadata=(
+                    [_dict_to_meta(m) for m in d["metadata"]]
+                    if d.get("metadata")
+                    else None
+                ),
                 line=d.get("line"),
             )
         case "Jump":
             return Jump(
                 target=d["target"],
-                metadata=[_dict_to_meta(m) for m in d["metadata"]] if d.get("metadata") else None,
+                metadata=(
+                    [_dict_to_meta(m) for m in d["metadata"]]
+                    if d.get("metadata")
+                    else None
+                ),
                 line=d.get("line"),
             )
         case "Parallel":
             return Parallel(
                 labels=d.get("labels", []),
-                metadata=[_dict_to_meta(m) for m in d["metadata"]] if d.get("metadata") else None,
+                metadata=(
+                    [_dict_to_meta(m) for m in d["metadata"]]
+                    if d.get("metadata")
+                    else None
+                ),
                 line=d.get("line"),
             )
         case "Namespace":
@@ -316,7 +363,11 @@ def _dict_to_stmt(d: dict) -> Statement:
             return TryExcept(
                 try_body=[_dict_to_stmt(s) for s in d.get("try_body", [])],
                 except_body=[_dict_to_stmt(s) for s in d.get("except_body", [])],
-                metadata=[_dict_to_meta(m) for m in d["metadata"]] if d.get("metadata") else None,
+                metadata=(
+                    [_dict_to_meta(m) for m in d["metadata"]]
+                    if d.get("metadata")
+                    else None
+                ),
                 line=d.get("line"),
             )
     return Assignment(target="_unknown", line=d.get("line"))
@@ -328,9 +379,15 @@ def _dict_to_expr(d: dict) -> Expression:
         case "Identifier":
             return Identifier(name=d["name"], line=d.get("line"))
         case "Literal":
-            return Literal(value=d.get("value"), literal_type=d.get("literal_type", "none"), line=d.get("line"))
+            return Literal(
+                value=d.get("value"),
+                literal_type=d.get("literal_type", "none"),
+                line=d.get("line"),
+            )
         case "KeywordArg":
-            return KeywordArg(name=d["name"], value=_dict_to_expr(d["value"]), line=d.get("line"))
+            return KeywordArg(
+                name=d["name"], value=_dict_to_expr(d["value"]), line=d.get("line")
+            )
         case "LabelRef":
             return LabelRef(name=d["name"], line=d.get("line"))
         case "Wildcard":
@@ -361,7 +418,11 @@ def _dict_to_type_expr(d: dict) -> TypeExpr:
     return TypeExpr(
         name=d.get("name", "Any"),
         is_optional=d.get("is_optional", False),
-        union_of=[_dict_to_type_expr(u) for u in d["union_of"]] if d.get("union_of") else None,
+        union_of=(
+            [_dict_to_type_expr(u) for u in d["union_of"]]
+            if d.get("union_of")
+            else None
+        ),
     )
 
 
