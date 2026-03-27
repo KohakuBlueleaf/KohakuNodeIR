@@ -71,6 +71,14 @@ class DataflowCompiler(IRPass):
             If any control-flow construct is found inside a whole-file
             dataflow program body.
         """
+        # Try Rust implementation first
+        from kohakunode._rust_bridge import rust_compile_dataflow
+
+        result = rust_compile_dataflow(program)
+        if result is not None:
+            return result
+
+        # Fall back to Python implementation
         # Handle @mode dataflow (whole-file) as before.
         if program.mode == "dataflow":
             for stmt in program.body:

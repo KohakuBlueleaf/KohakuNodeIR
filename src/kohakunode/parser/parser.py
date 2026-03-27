@@ -63,9 +63,20 @@ def _get_parser() -> lark.Lark:
 def parse(source: str) -> Program:
     """Parse a KIR source string and return the root Program AST node.
 
+    Uses the Rust parser (kohakunode_rs) when available for speed,
+    falling back to the Python Lark parser.
+
     Raises:
         KirSyntaxError: if the source contains a syntax error.
     """
+    # Try Rust parser first
+    from kohakunode._rust_bridge import rust_parse
+
+    result = rust_parse(source)
+    if result is not None:
+        return result
+
+    # Fall back to Python Lark parser
     # Ensure source ends with a newline — the grammar requires newline-terminated
     # statements, so a missing trailing newline would cause a parse error.
     if source and not source.endswith("\n"):

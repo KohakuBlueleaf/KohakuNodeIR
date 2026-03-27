@@ -29,6 +29,14 @@ class StripMetaPass(IRPass):
         return "strip_meta"
 
     def transform(self, program: Program) -> Program:
+        # Try Rust implementation first
+        from kohakunode._rust_bridge import rust_strip_meta
+
+        result = rust_strip_meta(program)
+        if result is not None:
+            return result
+
+        # Fall back to Python
         new_body = self._strip_body(program.body)
         return Program(body=new_body, mode=program.mode)
 
