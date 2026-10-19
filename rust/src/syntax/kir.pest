@@ -1,0 +1,143 @@
+// KIR v2 grammar over the indenter-marked text (indenter.rs inserts the NL,
+// INDENT and DEDENT markers; every other newline is whitespace).
+//
+// Keywords and directives end at a word boundary, and `True`, `False`,
+// `None` and `_` are never names. A keyword rule is a lookahead on an atomic
+// token followed by the plain text, so it checks the boundary without
+// producing a pair and without skipping whitespace inside the check.
+
+WHITESPACE = _{ " " | "\t" | "\r\n" | "\n" }
+COMMENT    = _{ "#" ~ (!("\r" | "\n" | NL) ~ ANY)* }
+
+NL     = _{ "\u{E000}" }
+INDENT = _{ "\u{E001}" }
+DEDENT = _{ "\u{E002}" }
+
+file      = { SOI ~ (NL | statement)* ~ EOI }
+statement = _{ simple ~ NL+ | compound }
+simple    = _{ use_decl | meta | hint | mode | call | assignment }
+compound  = _{ namespace | subgraph | dataflow | try_block | typehint_block }
+
+// ---------------------------------------------------------------- simple
+
+use_decl = { USE ~ string ~ (AS ~ name)? }
+
+assignment = { name ~ (":" ~ type_expr)? ~ "=" ~ expr }
+
+call      = { "(" ~ in_list? ~ ")" ~ func_name ~ "(" ~ out_list? ~ ")" }
+func_name = { name ~ ("." ~ name)* }
+
+in_list = { in_item ~ ("," ~ in_item)* ~ ","? }
+in_item = _{ kwarg | posarg }
+kwarg   = { name ~ "=" ~ expr }
+posarg  = { expr }
+
+out_list    = { out_item ~ ("," ~ out_item)* ~ ","? }
+out_item    = _{ out_default | out_discard | out_case | out_label | out_name }
+out_default = { WILDCARD ~ "=>" ~ label }
+out_discard = { WILDCARD }
+out_case    = { expr ~ "=>" ~ label }
+out_label   = { label }
+out_name    = { name }
+
+meta       = { META ~ pair+ }
+hint       = { HINT ~ pair+ }
+pair       = { name ~ "=" ~ pair_value }
+pair_value = _{ literal | name | tuple }
+// Python tuple syntax: `()`, `(x,)`, `(x, y)`.
+tuple = {
+    "(" ~ ")"
+  | "(" ~ pair_value ~ ("," ~ pair_value)+ ~ ","? ~ ")"
+  | "(" ~ pair_value ~ "," ~ ")"
+}
+
+mode = { MODE ~ name }
+
+// ---------------------------------------------------------------- compound
+
+namespace = { name ~ ":" ~ NL ~ (INDENT ~ (NL | statement)+ ~ DEDENT)? }
+
+subgraph   = { DEF ~ "(" ~ param_list? ~ ")" ~ name ~ "(" ~ def_outs? ~ ")" ~ ":" ~ block }
+param_list = { param ~ ("," ~ param)* ~ ","? }
+param      = { name ~ (":" ~ type_expr)? ~ ("=" ~ expr)? }
+def_outs   = { def_out ~ ("," ~ def_out)* ~ ","? }
+def_out    = { name ~ (":" ~ type_expr)? }
+
+dataflow = { DATAFLOW ~ ":" ~ block }
+
+try_block = { TRY ~ ":" ~ block ~ EXCEPT ~ name? ~ ":" ~ block }
+
+typehint_block = { TYPEHINT ~ ":" ~ NL ~ INDENT ~ (NL | typehint_entry)+ ~ DEDENT }
+typehint_entry = { "(" ~ type_list? ~ ")" ~ func_name ~ "(" ~ type_list? ~ ")" ~ NL }
+type_list      = { type_expr ~ ("," ~ type_expr)* ~ ","? }
+
+block = { NL ~ INDENT ~ (NL | statement)+ ~ DEDENT }
+
+// ---------------------------------------------------------------- types
+
+type_expr = { type_atom ~ ("|" ~ type_atom)* }
+type_atom = _{ type_any | type_none | type_ref }
+type_any  = @{ "_" ~ !ident_char }
+type_none = @{ "None" ~ !ident_char }
+type_ref  = { name ~ type_args? ~ type_opt? }
+type_args = { "[" ~ type_expr ~ ("," ~ type_expr)* ~ "]" }
+type_opt  = { "?" }
+
+// ---------------------------------------------------------------- values
+
+expr    = _{ literal | name }
+literal = _{ float | int | true_lit | false_lit | none_lit | string | list_lit | dict_lit }
+
+list_lit  = { "[" ~ (literal ~ ("," ~ literal)* ~ ","?)? ~ "]" }
+dict_lit  = { "{" ~ (dict_pair ~ ("," ~ dict_pair)* ~ ","?)? ~ "}" }
+dict_pair = { literal ~ ":" ~ literal }
+
+// ---------------------------------------------------------------- tokens
+
+ident_char = _{ ASCII_ALPHANUMERIC | "_" }
+name_chars = _{ (ASCII_ALPHA | "_") ~ ident_char* }
+name       = @{ !(("True" | "False" | "None" | "_") ~ !ident_char) ~ name_chars }
+label      = @{ "`" ~ name_chars ~ "`" }
+
+true_lit  = @{ "True" ~ !ident_char }
+false_lit = @{ "False" ~ !ident_char }
+none_lit  = @{ "None" ~ !ident_char }
+
+wildcard_tok = @{ "_" ~ !ident_char }
+as_tok       = @{ "as" ~ !ident_char }
+use_tok      = @{ "@use" ~ !ident_char }
+def_tok      = @{ "@def" ~ !ident_char }
+meta_tok     = @{ "@meta" ~ !ident_char }
+hint_tok     = @{ "@hint" ~ !ident_char }
+mode_tok     = @{ "@mode" ~ !ident_char }
+dataflow_tok = @{ "@dataflow" ~ !ident_char }
+try_tok      = @{ "@try" ~ !ident_char }
+except_tok   = @{ "@except" ~ !ident_char }
+typehint_tok = @{ "@typehint" ~ !ident_char }
+
+WILDCARD = _{ &wildcard_tok ~ "_" }
+AS       = _{ &as_tok ~ "as" }
+USE      = _{ &use_tok ~ "@use" }
+DEF      = _{ &def_tok ~ "@def" }
+META     = _{ &meta_tok ~ "@meta" }
+HINT     = _{ &hint_tok ~ "@hint" }
+MODE     = _{ &mode_tok ~ "@mode" }
+DATAFLOW = _{ &dataflow_tok ~ "@dataflow" }
+TRY      = _{ &try_tok ~ "@try" }
+EXCEPT   = _{ &except_tok ~ "@except" }
+TYPEHINT = _{ &typehint_tok ~ "@typehint" }
+
+sign     = _{ "+" | "-" }
+digits   = _{ ASCII_DIGIT+ }
+exponent = _{ ("e" | "E") ~ sign? ~ digits }
+float    = @{ sign? ~ ((digits ~ "." ~ ASCII_DIGIT* | "." ~ digits) ~ exponent? | digits ~ exponent) }
+int      = @{
+    sign? ~ ("0" ~ ("x" | "X") ~ ASCII_HEX_DIGIT+
+           | "0" ~ ("o" | "O") ~ ASCII_OCT_DIGIT+
+           | "0" ~ ("b" | "B") ~ ASCII_BIN_DIGIT+
+           | digits)
+}
+
+// The indenter writes every string literal as `"xx..x"` (same byte length) and
+// the transformer decodes the source text under it.
+string = @{ "\"" ~ "x"* ~ "\"" }

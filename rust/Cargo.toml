@@ -1,0 +1,33 @@
+[package]
+name = "kohakunode-rs"
+version = "0.2.0"
+edition = "2021"
+description = "Rust core of KIR v2 (Kohaku Node IR): parser, writer, checker, lowering, hashes, graph conversion"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "kohakunode_rs"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["unicode-names"]
+# `\N{name}` escapes in string literals (adds the Unicode name table, about 500 KB).
+unicode-names = ["dep:unicode_names2"]
+python = ["dep:pyo3"]
+wasm = ["dep:wasm-bindgen"]
+
+[dependencies]
+indexmap = "2"
+num-bigint = "0.4"
+num-traits = "0.2"
+pest = "2.7"
+pest_derive = "2.7"
+sha2 = "0.10"
+unicode_names2 = { version = "4", optional = true }
+pyo3 = { version = "0.27", optional = true, features = ["extension-module"] }
+wasm-bindgen = { version = "0.2", optional = true }
+
+[profile.release]
+lto = true
+codegen-units = 1
