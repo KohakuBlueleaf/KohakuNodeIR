@@ -8,7 +8,7 @@ from pathlib import Path
 
 from lark import Lark, Token, Transformer, v_args
 from lark.exceptions import UnexpectedInput, VisitError
-from lark.indenter import Indenter
+from lark.indenter import DedentError, Indenter
 
 from kohakunode.errors import KirSyntaxError
 from kohakunode.syntax.ast import (
@@ -47,6 +47,17 @@ class _KirIndenter(Indenter):
     INDENT_type = "_INDENT"
     DEDENT_type = "_DEDENT"
     tab_len = 4
+
+    def handle_NL(self, token):
+        try:
+            yield from super().handle_NL(token)
+        except DedentError:
+            indent = token.rsplit("\n", 1)[1].expandtabs(self.tab_len)
+            raise KirSyntaxError(
+                "unindent does not match any outer indentation level",
+                token.end_line,
+                len(indent) + 1,
+            ) from None
 
 
 @lru_cache(maxsize=1)
@@ -377,7 +388,8 @@ _FIRST_CODE = re.compile(r"(?:[\t ]*(?:#[^\r\n]*)?\r?\n)*([\t ]*)")
 
 
 def parse(source: str) -> Program:
-    """Parse KIR source text."""
+    """Parse KIR source text. Line endings are \\n, \\r\\n or a lone \\r, as in Python."""
+    source = source.replace("\r\n", "\n").replace("\r", "\n")
     if not source.endswith("\n"):
         source += "\n"
     lead = _FIRST_CODE.match(source)

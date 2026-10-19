@@ -99,6 +99,10 @@ def test_comment_lines_do_not_indent():
     for bad in ("    x = 1\n", "\n\n    x = 1\n", "# c\n  x = 1\n"):
         with pytest.raises(KirSyntaxError):
             parse(bad)
+    with pytest.raises(KirSyntaxError) as exc:
+        parse("ns:\n    x = 1\n  y = 2\n")
+    assert (exc.value.line, exc.value.column) == (3, 3)
+    assert parse("# c\rx = 1\r\ny = 2").body == parse("# c\nx = 1\ny = 2\n").body
 
 
 def test_literal_edges():
