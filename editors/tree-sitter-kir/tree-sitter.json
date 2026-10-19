@@ -1,0 +1,33 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "kir",
+      "camelcase": "Kir",
+      "title": "KIR",
+      "scope": "source.kir",
+      "path": ".",
+      "file-types": ["kir"],
+      "highlights": "queries/highlights.scm",
+      "locals": "queries/locals.scm",
+      "injection-regex": "^kir$"
+    }
+  ],
+  "metadata": {
+    "version": "0.2.0",
+    "license": "Apache-2.0",
+    "description": "Tree-sitter grammar for KIR v2 (Kohaku Node IR)",
+    "authors": [{ "name": "KohakuBlueLeaf" }],
+    "links": {
+      "repository": "https://github.com/KohakuBlueleaf/KohakuNodeIR"
+    }
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "node": false,
+    "python": false,
+    "rust": false,
+    "swift": false
+  }
+}

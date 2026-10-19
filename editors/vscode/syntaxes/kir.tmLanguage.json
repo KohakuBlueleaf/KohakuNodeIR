@@ -1,0 +1,384 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "KIR",
+  "scopeName": "source.kir",
+  "fileTypes": ["kir"],
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#use" },
+    { "include": "#mode" },
+    { "include": "#attributes" },
+    { "include": "#subgraph" },
+    { "include": "#typehint" },
+    { "include": "#block-directive" },
+    { "include": "#namespace" },
+    { "include": "#typed-assignment" },
+    { "include": "#assignment" },
+    { "include": "#call-inputs" },
+    { "include": "#builtin-outputs" },
+    { "include": "#call-outputs" },
+    { "include": "#expression" }
+  ],
+  "repository": {
+    "comment": {
+      "patterns": [
+        {
+          "match": "^\\s*(##.*)$",
+          "captures": { "1": { "name": "comment.block.documentation.kir" } }
+        },
+        {
+          "match": "#.*$",
+          "name": "comment.line.number-sign.kir"
+        }
+      ]
+    },
+
+    "use": {
+      "match": "(@use)\\s+(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')(?:\\s+(as)\\s+([A-Za-z_][A-Za-z0-9_]*))?(?![A-Za-z0-9_])",
+      "captures": {
+        "1": { "name": "keyword.control.directive.kir" },
+        "2": { "name": "string.quoted.kir" },
+        "3": { "name": "keyword.other.as.kir" },
+        "4": { "name": "entity.name.namespace.kir" }
+      }
+    },
+
+    "mode": {
+      "match": "(@mode)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": { "name": "keyword.control.directive.kir" },
+        "2": { "name": "constant.other.mode.kir" }
+      }
+    },
+
+    "attributes": {
+      "begin": "(@meta|@hint)(?![A-Za-z0-9_])",
+      "beginCaptures": { "1": { "name": "keyword.control.directive.kir" } },
+      "end": "(?=#)|$",
+      "patterns": [
+        {
+          "match": "([A-Za-z_][A-Za-z0-9_]*)\\s*(=)",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.kir" },
+            "2": { "name": "keyword.operator.assignment.kir" }
+          }
+        },
+        { "include": "#expression" }
+      ]
+    },
+
+    "subgraph": {
+      "begin": "(@def)(?![A-Za-z0-9_])",
+      "beginCaptures": { "1": { "name": "keyword.control.directive.kir" } },
+      "end": "(:)",
+      "endCaptures": { "1": { "name": "punctuation.separator.colon.kir" } },
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "begin": "\\G\\s*(\\()",
+          "beginCaptures": { "1": { "name": "punctuation.section.parens.begin.kir" } },
+          "end": "(\\))",
+          "endCaptures": { "1": { "name": "punctuation.section.parens.end.kir" } },
+          "patterns": [
+            { "include": "#comment" },
+            {
+              "begin": "(?:(?<=[(,])|^)\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(:)",
+              "beginCaptures": {
+                "1": { "name": "variable.parameter.kir" },
+                "2": { "name": "punctuation.separator.colon.kir" }
+              },
+              "end": "(?=[,=)])",
+              "patterns": [{ "include": "#types" }]
+            },
+            {
+              "match": "(?:(?<=[(,])|^)\\s*([A-Za-z_][A-Za-z0-9_]*)",
+              "captures": { "1": { "name": "variable.parameter.kir" } }
+            },
+            {
+              "match": "=",
+              "name": "keyword.operator.assignment.kir"
+            },
+            { "include": "#expression" }
+          ]
+        },
+        {
+          "begin": "(?<=\\))\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(\\()",
+          "beginCaptures": {
+            "1": { "name": "entity.name.function.definition.kir" },
+            "2": { "name": "punctuation.section.parens.begin.kir" }
+          },
+          "end": "(\\))",
+          "endCaptures": { "1": { "name": "punctuation.section.parens.end.kir" } },
+          "patterns": [
+            { "include": "#comment" },
+            {
+              "begin": "([A-Za-z_][A-Za-z0-9_]*)\\s*(:)",
+              "beginCaptures": {
+                "1": { "name": "variable.other.kir" },
+                "2": { "name": "punctuation.separator.colon.kir" }
+              },
+              "end": "(?=[,)])",
+              "patterns": [{ "include": "#types" }]
+            },
+            {
+              "match": "[A-Za-z_][A-Za-z0-9_]*",
+              "name": "variable.other.kir"
+            },
+            {
+              "match": ",",
+              "name": "punctuation.separator.comma.kir"
+            }
+          ]
+        }
+      ]
+    },
+
+    "typehint": {
+      "comment": "Ends at the first code line not indented deeper; comment lines never end it.",
+      "begin": "^([ \\t]*)(@typehint)\\s*(:)",
+      "beginCaptures": {
+        "2": { "name": "keyword.control.directive.kir" },
+        "3": { "name": "punctuation.separator.colon.kir" }
+      },
+      "end": "^(?![ \\t]*(?:#|$))(?!\\1[ \\t]+\\S)",
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "begin": "\\(",
+          "beginCaptures": { "0": { "name": "punctuation.section.parens.begin.kir" } },
+          "end": "\\)",
+          "endCaptures": { "0": { "name": "punctuation.section.parens.end.kir" } },
+          "patterns": [{ "include": "#types" }]
+        },
+        { "include": "#node-name" }
+      ]
+    },
+
+    "block-directive": {
+      "patterns": [
+        {
+          "match": "(@try|@dataflow)\\s*(:)",
+          "captures": {
+            "1": { "name": "keyword.control.directive.kir" },
+            "2": { "name": "punctuation.separator.colon.kir" }
+          }
+        },
+        {
+          "match": "(@except)(?:\\s+([A-Za-z_][A-Za-z0-9_]*))?\\s*(:)",
+          "captures": {
+            "1": { "name": "keyword.control.directive.kir" },
+            "2": { "name": "variable.other.kir" },
+            "3": { "name": "punctuation.separator.colon.kir" }
+          }
+        }
+      ]
+    },
+
+    "namespace": {
+      "match": "^\\s*(?!(?:True|False|None|_)(?![A-Za-z0-9_]))([A-Za-z_][A-Za-z0-9_]*)\\s*(:)(?=\\s*(?:#|$))",
+      "captures": {
+        "1": { "name": "entity.name.tag.label.kir" },
+        "2": { "name": "punctuation.separator.colon.kir" }
+      }
+    },
+
+    "typed-assignment": {
+      "begin": "^\\s*(?!(?:True|False|None|_)(?![A-Za-z0-9_]))([A-Za-z_][A-Za-z0-9_]*)\\s*(:)(?=[^#]*=)",
+      "beginCaptures": {
+        "1": { "name": "variable.other.kir" },
+        "2": { "name": "punctuation.separator.colon.kir" }
+      },
+      "end": "(=)",
+      "endCaptures": { "1": { "name": "keyword.operator.assignment.kir" } },
+      "patterns": [{ "include": "#types" }]
+    },
+
+    "assignment": {
+      "match": "^\\s*(?!(?:True|False|None|_)(?![A-Za-z0-9_]))([A-Za-z_][A-Za-z0-9_]*)\\s*(=)(?![=>])",
+      "captures": {
+        "1": { "name": "variable.other.kir" },
+        "2": { "name": "keyword.operator.assignment.kir" }
+      }
+    },
+
+    "call-inputs": {
+      "begin": "\\(",
+      "beginCaptures": { "0": { "name": "punctuation.section.parens.begin.kir" } },
+      "end": "\\)",
+      "endCaptures": { "0": { "name": "punctuation.section.parens.end.kir" } },
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "match": "(?<![A-Za-z0-9_])(?!(?:True|False|None|_)(?![A-Za-z0-9_]))([A-Za-z_][A-Za-z0-9_]*)\\s*(=)(?![=>])",
+          "captures": {
+            "1": { "name": "variable.parameter.kir" },
+            "2": { "name": "keyword.operator.assignment.kir" }
+          }
+        },
+        { "include": "#expression" }
+      ]
+    },
+
+    "builtin-outputs": {
+      "begin": "(?<=\\))\\s*(branch|switch|jump|parallel|each)\\s*(\\()",
+      "beginCaptures": {
+        "1": { "name": "support.function.builtin.kir" },
+        "2": { "name": "punctuation.section.parens.begin.kir" }
+      },
+      "end": "\\)",
+      "endCaptures": { "0": { "name": "punctuation.section.parens.end.kir" } },
+      "patterns": [{ "include": "#output-items" }]
+    },
+
+    "call-outputs": {
+      "begin": "(?<=\\))\\s*((?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*)([A-Za-z_][A-Za-z0-9_]*)\\s*(\\()",
+      "beginCaptures": {
+        "1": { "name": "entity.name.namespace.kir" },
+        "2": { "name": "entity.name.function.call.kir" },
+        "3": { "name": "punctuation.section.parens.begin.kir" }
+      },
+      "end": "\\)",
+      "endCaptures": { "0": { "name": "punctuation.section.parens.end.kir" } },
+      "patterns": [{ "include": "#output-items" }]
+    },
+
+    "node-name": {
+      "match": "(?<=\\))\\s*((?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*)([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\()",
+      "captures": {
+        "1": { "name": "entity.name.namespace.kir" },
+        "2": { "name": "entity.name.function.call.kir" }
+      }
+    },
+
+    "output-items": {
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "match": "=>",
+          "name": "keyword.operator.arrow.kir"
+        },
+        { "include": "#expression" }
+      ]
+    },
+
+    "types": {
+      "patterns": [
+        {
+          "match": "(?<![A-Za-z0-9_])(?:int|float|str|bool|None|list|dict)(?![A-Za-z0-9_])",
+          "name": "support.type.builtin.kir"
+        },
+        {
+          "match": "(?<![A-Za-z0-9_])_(?![A-Za-z0-9_])",
+          "name": "support.type.builtin.any.kir"
+        },
+        {
+          "match": "[A-Za-z_][A-Za-z0-9_]*",
+          "name": "entity.name.type.kir"
+        },
+        {
+          "match": "[?|]",
+          "name": "keyword.operator.type.kir"
+        },
+        {
+          "match": "[\\[\\]]",
+          "name": "punctuation.section.brackets.kir"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.comma.kir"
+        }
+      ]
+    },
+
+    "expression": {
+      "patterns": [
+        { "include": "#string" },
+        { "include": "#number" },
+        {
+          "match": "(?<![A-Za-z0-9_])(?:True|False)(?![A-Za-z0-9_])",
+          "name": "constant.language.boolean.kir"
+        },
+        {
+          "match": "(?<![A-Za-z0-9_])None(?![A-Za-z0-9_])",
+          "name": "constant.language.none.kir"
+        },
+        {
+          "match": "(`)([A-Za-z_][A-Za-z0-9_]*)(`)",
+          "captures": {
+            "1": { "name": "punctuation.definition.label.kir" },
+            "2": { "name": "entity.name.tag.label.kir" },
+            "3": { "name": "punctuation.definition.label.kir" }
+          }
+        },
+        {
+          "match": "(?<![A-Za-z0-9_])_(?![A-Za-z0-9_])",
+          "name": "variable.language.wildcard.kir"
+        },
+        {
+          "match": "[A-Za-z_][A-Za-z0-9_]*",
+          "name": "variable.other.kir"
+        },
+        {
+          "match": "[\\[\\]{}()]",
+          "name": "punctuation.section.brackets.kir"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.comma.kir"
+        },
+        {
+          "match": ":",
+          "name": "punctuation.separator.colon.kir"
+        }
+      ]
+    },
+
+    "string": {
+      "patterns": [
+        {
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "name": "string.quoted.triple.double.kir",
+          "patterns": [{ "include": "#string-escape" }]
+        },
+        {
+          "begin": "'''",
+          "end": "'''",
+          "name": "string.quoted.triple.single.kir",
+          "patterns": [{ "include": "#string-escape" }]
+        },
+        {
+          "begin": "\"",
+          "end": "\"|$",
+          "name": "string.quoted.double.kir",
+          "patterns": [{ "include": "#string-escape" }]
+        },
+        {
+          "begin": "'",
+          "end": "'|$",
+          "name": "string.quoted.single.kir",
+          "patterns": [{ "include": "#string-escape" }]
+        }
+      ]
+    },
+
+    "string-escape": {
+      "match": "\\\\.",
+      "name": "constant.character.escape.kir"
+    },
+
+    "number": {
+      "comment": "ASCII digits only; a number glued to identifier characters is not one.",
+      "patterns": [
+        {
+          "match": "(?<![A-Za-z0-9_.])[+-]?(?:[0-9]+\\.[0-9]*(?:[eE][+-]?[0-9]+)?|\\.[0-9]+(?:[eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+)(?![A-Za-z0-9_.])",
+          "name": "constant.numeric.float.kir"
+        },
+        {
+          "match": "(?<![A-Za-z0-9_.])[+-]?(?:0[xX][0-9a-fA-F]+|0[oO][0-7]+|0[bB][01]+|[0-9]+)(?![A-Za-z0-9_.])",
+          "name": "constant.numeric.integer.kir"
+        }
+      ]
+    }
+  }
+}

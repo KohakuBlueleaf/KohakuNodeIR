@@ -1,0 +1,87 @@
+{
+  "name": "kir-language",
+  "displayName": "KIR (Kohaku Node IR)",
+  "description": "Syntax highlighting, snippets and language server client for KIR v2 (.kir) files",
+  "version": "0.2.0",
+  "publisher": "KohakuBlueLeaf",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KohakuBlueleaf/KohakuNodeIR"
+  },
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": ["Programming Languages", "Snippets", "Formatters"],
+  "main": "./extension.js",
+  "activationEvents": ["onLanguage:kir"],
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "kir",
+        "aliases": ["KIR", "Kohaku Node IR", "kir"],
+        "extensions": [".kir"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "json",
+        "extensions": [".kirgraph"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "kir",
+        "scopeName": "source.kir",
+        "path": "./syntaxes/kir.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "kir",
+        "path": "./snippets/kir.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "kir.restartServer",
+        "title": "KIR: Restart Language Server"
+      }
+    ],
+    "configuration": {
+      "title": "KIR",
+      "properties": {
+        "kir.server.path": {
+          "type": "string",
+          "default": "kir-lsp",
+          "description": "Command that starts the KIR language server (stdio). Installed by `pip install \"kohakunode[lsp]\"`."
+        },
+        "kir.server.args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Extra arguments for the language server command."
+        },
+        "kir.sigPath": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Directories searched for node library signatures; sent to the server as initializationOptions.sigPath."
+        },
+        "kir.core": {
+          "type": "string",
+          "enum": ["auto", "rust", "python"],
+          "enumDescriptions": [
+            "Let the server choose: Rust when the compiled core is available, else Python.",
+            "Compute diagnostics and formatting with the Rust core.",
+            "Compute diagnostics and formatting with the Python core."
+          ],
+          "default": "auto",
+          "description": "Core used by the language server for diagnostics and formatting; sent as initializationOptions.core unless auto."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+@use "vision" as v
+# <- keyword.directive
+#     ^ string
+#                ^ module
+(img, k=n)v.detect(boxes, _)
+# ^ variable
+#     ^ variable.parameter
+#         ^ module
+#           ^ function.call
+#                  ^ variable
+#                         ^ variable.builtin
+(flag)branch(`yes`, `no`)
+#       ^ function.builtin
+#              ^ label
+yes:
+# <- label
+    (a)lib.op(out)
+#      ^ module
+#          ^ function.call
+@def (x: int, y: Img = None)f(z: Img?):
+# <- keyword.directive
+#     ^ variable.parameter
+#        ^ type.builtin
+#                ^ type
+#                      ^ constant.builtin
+#                           ^ function
+    z = x
+## Section
+# <- comment.documentation
+x = True  # note
+#   ^ boolean
+#          ^ comment
+y: int | None = None
+#        ^ type.builtin
+#               ^ constant.builtin
+@meta a=(Nonesuch,)
+#        ^ variable

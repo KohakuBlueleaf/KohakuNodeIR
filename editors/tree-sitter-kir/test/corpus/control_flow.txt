@@ -1,0 +1,157 @@
+================================================================================
+Branch into two namespaces
+================================================================================
+
+(flag)branch(`yes`, `no`)
+yes:
+    (a)left(out)
+no:
+    out = 0
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (call
+    inputs: (input_list
+      (identifier))
+    node: (node_name
+      (identifier))
+    outputs: (output_list
+      (label)
+      (label)))
+  (namespace
+    name: (identifier)
+    body: (block
+      (call
+        inputs: (input_list
+          (identifier))
+        node: (node_name
+          (identifier))
+        outputs: (output_list
+          (identifier)))))
+  (namespace
+    name: (identifier)
+    body: (block
+      (assignment
+        name: (identifier)
+        value: (integer)))))
+
+================================================================================
+Switch cases, parallel and each
+================================================================================
+
+(x)switch(1=>`one`, "s"=>`two`, k=>`three`, _=>`other`)
+()parallel(`left`, `right`)
+(items)each(item, `body`)
+(items)each(item, index, `body`)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (call
+    inputs: (input_list
+      (identifier))
+    node: (node_name
+      (identifier))
+    outputs: (output_list
+      (case
+        value: (integer)
+        label: (label))
+      (case
+        value: (string)
+        label: (label))
+      (case
+        value: (identifier)
+        label: (label))
+      (case
+        value: (wildcard)
+        label: (label))))
+  (call
+    inputs: (input_list)
+    node: (node_name
+      (identifier))
+    outputs: (output_list
+      (label)
+      (label)))
+  (call
+    inputs: (input_list
+      (identifier))
+    node: (node_name
+      (identifier))
+    outputs: (output_list
+      (identifier)
+      (label)))
+  (call
+    inputs: (input_list
+      (identifier))
+    node: (node_name
+      (identifier))
+    outputs: (output_list
+      (identifier)
+      (identifier)
+      (label))))
+
+================================================================================
+Loop with jump, empty namespace and multi-level dedent
+================================================================================
+
+loop:
+    (i, 1)add(i)
+    (more)branch(`again`, `done`)
+    again:
+        ()jump(`loop`)
+    done:
+outer:
+    mid:
+        inner:
+            x = 1
+y = 2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (namespace
+    name: (identifier)
+    body: (block
+      (call
+        inputs: (input_list
+          (identifier)
+          (integer))
+        node: (node_name
+          (identifier))
+        outputs: (output_list
+          (identifier)))
+      (call
+        inputs: (input_list
+          (identifier))
+        node: (node_name
+          (identifier))
+        outputs: (output_list
+          (label)
+          (label)))
+      (namespace
+        name: (identifier)
+        body: (block
+          (call
+            inputs: (input_list)
+            node: (node_name
+              (identifier))
+            outputs: (output_list
+              (label)))))
+      (namespace
+        name: (identifier))))
+  (namespace
+    name: (identifier)
+    body: (block
+      (namespace
+        name: (identifier)
+        body: (block
+          (namespace
+            name: (identifier)
+            body: (block
+              (assignment
+                name: (identifier)
+                value: (integer))))))))
+  (assignment
+    name: (identifier)
+    value: (integer)))

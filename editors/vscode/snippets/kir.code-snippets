@@ -1,0 +1,103 @@
+{
+  "Branch": {
+    "prefix": "branch",
+    "description": "Branch into two namespaces",
+    "body": [
+      "(${1:cond})branch(`${2:yes}`, `${3:no}`)",
+      "${2:yes}:",
+      "\t$4",
+      "${3:no}:",
+      "\t$5",
+      "$0"
+    ]
+  },
+  "Switch": {
+    "prefix": "switch",
+    "description": "Switch on a value with a default case",
+    "body": [
+      "(${1:value})switch(${2:1}=>`${3:first}`, _=>`${4:other}`)",
+      "${3:first}:",
+      "\t$5",
+      "${4:other}:",
+      "\t$6",
+      "$0"
+    ]
+  },
+  "Each": {
+    "prefix": "each",
+    "description": "Loop over a list",
+    "body": [
+      "(${1:items})each(${2:item}, `${3:body}`)",
+      "${3:body}:",
+      "\t$0"
+    ]
+  },
+  "Each with index": {
+    "prefix": "eachi",
+    "description": "Loop over a list with the 0-based index",
+    "body": [
+      "(${1:items})each(${2:item}, ${3:index}, `${4:body}`)",
+      "${4:body}:",
+      "\t$0"
+    ]
+  },
+  "Loop with jump": {
+    "prefix": "loop",
+    "description": "Namespace entered by a jump and re-entered from inside",
+    "body": [
+      "()jump(`${1:loop}`)",
+      "${1:loop}:",
+      "\t$2",
+      "\t(${3:keep_going})branch(`${4:again}`, `${5:done}`)",
+      "\t${4:again}:",
+      "\t\t()jump(`${1:loop}`)",
+      "\t${5:done}:",
+      "$0"
+    ]
+  },
+  "Parallel": {
+    "prefix": "parallel",
+    "description": "Enter several namespaces with no order between them",
+    "body": [
+      "()parallel(`${1:left}`, `${2:right}`)",
+      "${1:left}:",
+      "\t$3",
+      "${2:right}:",
+      "\t$4",
+      "$0"
+    ]
+  },
+  "Subgraph": {
+    "prefix": "@def",
+    "description": "Define a subgraph",
+    "body": [
+      "@def (${1:x: int})${2:name}(${3:out}):",
+      "\t$0"
+    ]
+  },
+  "Try / except": {
+    "prefix": "@try",
+    "description": "Error handling block pair",
+    "body": [
+      "@try:",
+      "\t$1",
+      "@except ${2:err}:",
+      "\t$0"
+    ]
+  },
+  "Dataflow block": {
+    "prefix": "@dataflow",
+    "description": "Statements ordered by data dependence",
+    "body": [
+      "@dataflow:",
+      "\t$0"
+    ]
+  },
+  "Use library": {
+    "prefix": "@use",
+    "description": "Make a node library's signatures available",
+    "body": [
+      "@use \"${1:library}\" as ${2:alias}"
+    ]
+  }
+}

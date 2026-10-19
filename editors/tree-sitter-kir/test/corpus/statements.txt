@@ -1,0 +1,215 @@
+================================================================================
+Assignments, plain and typed
+================================================================================
+
+x = 10
+name: str = "kohaku"
+mask: Image? | None = None
+boxes: list[Box, _]? = []
+y = x
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    name: (identifier)
+    value: (integer))
+  (assignment
+    name: (identifier)
+    type: (type_identifier)
+    value: (string))
+  (assignment
+    name: (identifier)
+    type: (union_type
+      (optional_type
+        (type_identifier))
+      (type_identifier))
+    value: (none))
+  (assignment
+    name: (identifier)
+    type: (optional_type
+      (generic_type
+        name: (type_identifier)
+        (type_identifier)
+        (any_type)))
+    value: (list))
+  (assignment
+    name: (identifier)
+    value: (identifier)))
+
+================================================================================
+Node calls with keywords, discards and dotted names
+================================================================================
+
+(a, 2, mode="fast")img.blur(out, _)
+()noop()
+(x)kir.copy(y,)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (call
+    inputs: (input_list
+      (identifier)
+      (integer)
+      (keyword_argument
+        name: (identifier)
+        value: (string)))
+    node: (node_name
+      (identifier)
+      (identifier))
+    outputs: (output_list
+      (identifier)
+      (wildcard)))
+  (call
+    inputs: (input_list)
+    node: (node_name
+      (identifier))
+    outputs: (output_list))
+  (call
+    inputs: (input_list
+      (identifier))
+    node: (node_name
+      (identifier)
+      (identifier))
+    outputs: (output_list
+      (identifier))))
+
+================================================================================
+Line breaks inside brackets
+================================================================================
+
+(
+    a,
+    b=[1,
+       2],
+)add(
+    total,
+)
+z = 1
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (call
+    inputs: (input_list
+      (identifier)
+      (keyword_argument
+        name: (identifier)
+        value: (list
+          (integer)
+          (integer))))
+    node: (node_name
+      (identifier))
+    outputs: (output_list
+      (identifier)))
+  (assignment
+    name: (identifier)
+    value: (integer)))
+
+================================================================================
+Comments do not affect indentation
+================================================================================
+
+## Section
+x = 1  # trailing
+ns:
+    y = 2
+# column zero, block continues
+    w = 4
+    # block level, block still open
+z = 3
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (assignment
+    name: (identifier)
+    value: (integer))
+  (comment)
+  (namespace
+    name: (identifier)
+    body: (block
+      (assignment
+        name: (identifier)
+        value: (integer))
+      (comment)
+      (assignment
+        name: (identifier)
+        value: (integer))
+      (comment)))
+  (assignment
+    name: (identifier)
+    value: (integer)))
+
+================================================================================
+Literals
+================================================================================
+
+a = 0x1F
+b = -0o17
+c = 0b101
+d = +42
+e = 1.5e-3
+f = .5
+g = 3e8
+h = 'it\'s'
+i = """multi
+line "quoted" text"""
+j = [1, "two", [3.0], None]
+k = {"a": 1, 2: [True, False],}
+m = {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    name: (identifier)
+    value: (integer))
+  (assignment
+    name: (identifier)
+    value: (integer))
+  (assignment
+    name: (identifier)
+    value: (integer))
+  (assignment
+    name: (identifier)
+    value: (integer))
+  (assignment
+    name: (identifier)
+    value: (float))
+  (assignment
+    name: (identifier)
+    value: (float))
+  (assignment
+    name: (identifier)
+    value: (float))
+  (assignment
+    name: (identifier)
+    value: (string))
+  (assignment
+    name: (identifier)
+    value: (string))
+  (assignment
+    name: (identifier)
+    value: (list
+      (integer)
+      (string)
+      (list
+        (float))
+      (none)))
+  (assignment
+    name: (identifier)
+    value: (dict
+      (dict_entry
+        key: (string)
+        value: (integer))
+      (dict_entry
+        key: (integer)
+        value: (list
+          (true)
+          (false)))))
+  (assignment
+    name: (identifier)
+    value: (dict)))

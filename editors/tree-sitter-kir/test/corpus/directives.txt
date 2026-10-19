@@ -1,0 +1,217 @@
+================================================================================
+Use, mode, meta and hint
+================================================================================
+
+@use "std"
+@use "vision" as v
+@mode dataflow
+@meta node_id="n1" pos=(10, -20) tags=("a", ("b", 1),)
+@hint max_wait_ms=5 device=gpu
+(img)v.detect(boxes)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (use_directive
+    library: (string))
+  (use_directive
+    library: (string)
+    alias: (identifier))
+  (mode_directive
+    mode: (identifier))
+  (meta_directive
+    (attribute
+      key: (identifier)
+      value: (string))
+    (attribute
+      key: (identifier)
+      value: (tuple
+        (integer)
+        (integer)))
+    (attribute
+      key: (identifier)
+      value: (tuple
+        (string)
+        (tuple
+          (string)
+          (integer)))))
+  (hint_directive
+    (attribute
+      key: (identifier)
+      value: (integer))
+    (attribute
+      key: (identifier)
+      value: (identifier)))
+  (call
+    inputs: (input_list
+      (identifier))
+    node: (node_name
+      (identifier)
+      (identifier))
+    outputs: (output_list
+      (identifier))))
+
+================================================================================
+Subgraph with typed parameters and outputs
+================================================================================
+
+@def (image: Image, box, budget: int = 8)expand(node: Node?, n):
+    (image, box)crop(node)
+    n = budget
+@def ()empty():
+    ()noop()
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (subgraph
+    parameters: (parameter_list
+      (parameter
+        name: (identifier)
+        type: (type_identifier))
+      (parameter
+        name: (identifier))
+      (parameter
+        name: (identifier)
+        type: (type_identifier)
+        default: (integer)))
+    name: (identifier)
+    outputs: (subgraph_output_list
+      (subgraph_output
+        name: (identifier)
+        type: (optional_type
+          (type_identifier)))
+      (subgraph_output
+        name: (identifier)))
+    body: (block
+      (call
+        inputs: (input_list
+          (identifier)
+          (identifier))
+        node: (node_name
+          (identifier))
+        outputs: (output_list
+          (identifier)))
+      (assignment
+        name: (identifier)
+        value: (identifier))))
+  (subgraph
+    parameters: (parameter_list)
+    name: (identifier)
+    outputs: (subgraph_output_list)
+    body: (block
+      (call
+        inputs: (input_list)
+        node: (node_name
+          (identifier))
+        outputs: (output_list)))))
+
+================================================================================
+Try with named and bare except
+================================================================================
+
+@try:
+    (x)risky(y)
+@except err:
+    (err)log()
+@try:
+    (x)risky(y)
+@except:
+    y = None
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (try_block
+    body: (block
+      (call
+        inputs: (input_list
+          (identifier))
+        node: (node_name
+          (identifier))
+        outputs: (output_list
+          (identifier))))
+    handler: (except_clause
+      name: (identifier)
+      body: (block
+        (call
+          inputs: (input_list
+            (identifier))
+          node: (node_name
+            (identifier))
+          outputs: (output_list)))))
+  (try_block
+    body: (block
+      (call
+        inputs: (input_list
+          (identifier))
+        node: (node_name
+          (identifier))
+        outputs: (output_list
+          (identifier))))
+    handler: (except_clause
+      body: (block
+        (assignment
+          name: (identifier)
+          value: (none))))))
+
+================================================================================
+Dataflow and typehint blocks
+================================================================================
+
+@dataflow:
+    (c)neg(d)
+    (a, b)add(c)
+@typehint:
+    (Image, Box)crop(Image)
+    (list[Box], _)pick(Box? | None)
+    ()source(int)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (dataflow_block
+    body: (block
+      (call
+        inputs: (input_list
+          (identifier))
+        node: (node_name
+          (identifier))
+        outputs: (output_list
+          (identifier)))
+      (call
+        inputs: (input_list
+          (identifier)
+          (identifier))
+        node: (node_name
+          (identifier))
+        outputs: (output_list
+          (identifier)))))
+  (typehint_block
+    (signature
+      inputs: (type_list
+        (type_identifier)
+        (type_identifier))
+      node: (node_name
+        (identifier))
+      outputs: (type_list
+        (type_identifier)))
+    (signature
+      inputs: (type_list
+        (generic_type
+          name: (type_identifier)
+          (type_identifier))
+        (any_type))
+      node: (node_name
+        (identifier))
+      outputs: (type_list
+        (union_type
+          (optional_type
+            (type_identifier))
+          (type_identifier))))
+    (signature
+      inputs: (type_list)
+      node: (node_name
+        (identifier))
+      outputs: (type_list
+        (type_identifier)))))

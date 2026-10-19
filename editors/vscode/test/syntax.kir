@@ -1,0 +1,104 @@
+# SYNTAX TEST "source.kir" "KIR v2 token classes"
+@use "vision" as v
+# <---- keyword.control.directive.kir
+#    ^^^^^^^^ string.quoted.kir
+#             ^^ keyword.other.as.kir
+#                ^ entity.name.namespace.kir
+@mode dataflow
+# <----- keyword.control.directive.kir
+#     ^^^^^^^^ constant.other.mode.kir
+@meta node_id="n1" pos=(10, -20)
+# <----- keyword.control.directive.kir
+#     ^^^^^^^ entity.other.attribute-name.kir
+#             ^^^^ string.quoted.double.kir
+#                           ^^^ constant.numeric.integer.kir
+(img, k=n)v.detect(boxes, _)
+#^^^ variable.other.kir
+#     ^ variable.parameter.kir
+#       ^ variable.other.kir
+#         ^ entity.name.namespace.kir
+#           ^^^^^^ entity.name.function.call.kir
+#                  ^^^^^ variable.other.kir
+#                         ^ variable.language.wildcard.kir
+(x)switch(1=>`one`, _=>`other`)
+#  ^^^^^^ support.function.builtin.kir
+#          ^^ keyword.operator.arrow.kir
+#             ^^^ entity.name.tag.label.kir
+#                   ^ variable.language.wildcard.kir
+()jump(`one`)
+# ^^^^ support.function.builtin.kir
+one:
+# <--- entity.name.tag.label.kir
+    y: int | None = 1
+#   ^ variable.other.kir
+#      ^^^ support.type.builtin.kir
+#            ^^^^ support.type.builtin.kir
+#                   ^ constant.numeric.integer.kir
+@def (image: Image, budget: int = 8)expand(node: Node?):
+# <---- keyword.control.directive.kir
+#     ^^^^^ variable.parameter.kir
+#            ^^^^^ entity.name.type.kir
+#                   ^^^^^^ variable.parameter.kir
+#                           ^^^ support.type.builtin.kir
+#                                 ^ constant.numeric.integer.kir
+#                                   ^^^^^^ entity.name.function.definition.kir
+#                                          ^^^^ variable.other.kir
+#                                                ^^^^ entity.name.type.kir
+#                                                    ^ keyword.operator.type.kir
+    @try:
+#   ^^^^ keyword.control.directive.kir
+        (image)g.crop(node)
+#              ^ entity.name.namespace.kir
+#                ^^^^ entity.name.function.call.kir
+    @except err:
+#   ^^^^^^^ keyword.control.directive.kir
+#           ^^^ variable.other.kir
+        node = None
+#              ^^^^ constant.language.none.kir
+@typehint:
+    (Image, list[Box])crop(Image?)
+#    ^^^^^ entity.name.type.kir
+#           ^^^^ support.type.builtin.kir
+#                ^^^ entity.name.type.kir
+#                     ^^^^ entity.name.function.call.kir
+y = 2
+# <- variable.other.kir
+# <- - entity.name.type.kir
+## Section
+# <-- comment.block.documentation.kir
+s = """multi
+line"""
+# <---- string.quoted.triple.double.kir
+x = 0x1F  # note
+#   ^^^^ constant.numeric.integer.kir
+#         ^^^^^^ comment.line.number-sign.kir
+f = .5
+#   ^^ constant.numeric.float.kir
+@metax a=1
+# <------ - keyword.control.directive.kir
+_tmp = Nonesuch
+# <---- variable.other.kir
+# <- - variable.language.wildcard.kir
+#      ^^^^^^^^ variable.other.kir
+#      ^^^^^^^^ - constant.language.none.kir
+Truex = True
+# <----- variable.other.kir
+#       ^^^^ constant.language.boolean.kir
+True = 1
+# <---- constant.language.boolean.kir
+# <---- - variable.other.kir
+y: int | None = None
+#        ^^^^ support.type.builtin.kir
+#               ^^^^ constant.language.none.kir
+@meta a=() b=(x,)
+# <----- keyword.control.directive.kir
+#     ^ entity.other.attribute-name.kir
+#          ^ entity.other.attribute-name.kir
+x = ١٢
+#   ^^ - constant.numeric.integer.kir
+@typehint:
+    (Image)crop(Image)
+# a comment at column zero
+    (Box)pad(Box)
+#    ^^^ entity.name.type.kir
+#        ^^^ entity.name.function.call.kir

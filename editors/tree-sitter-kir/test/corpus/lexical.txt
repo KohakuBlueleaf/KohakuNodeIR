@@ -1,0 +1,214 @@
+================================================================================
+Names that start like keywords are identifiers
+================================================================================
+
+_tmp = Nonesuch
+Truex = Falsey
+asg = 1
+(_tmp, Nonesuch)f(_x, Truex)
+y: int | None = None
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    name: (identifier)
+    value: (identifier))
+  (assignment
+    name: (identifier)
+    value: (identifier))
+  (assignment
+    name: (identifier)
+    value: (integer))
+  (call
+    inputs: (input_list
+      (identifier)
+      (identifier))
+    node: (node_name
+      (identifier))
+    outputs: (output_list
+      (identifier)
+      (identifier)))
+  (assignment
+    name: (identifier)
+    type: (union_type
+      (type_identifier)
+      (type_identifier))
+    value: (none)))
+
+================================================================================
+Directive glued to a name is an error
+:error
+================================================================================
+
+@metax a=1
+
+---
+
+================================================================================
+Directive followed by an attribute without a space is an error
+:error
+================================================================================
+
+@metax=1
+
+---
+
+================================================================================
+Use alias keyword glued to a name is an error
+:error
+================================================================================
+
+@use "lib" asg
+
+---
+
+================================================================================
+True is never an identifier
+:error
+================================================================================
+
+True = 1
+
+---
+
+================================================================================
+Wildcard is never an identifier
+:error
+================================================================================
+
+_ = 1
+
+---
+
+================================================================================
+None is never a node name
+:error
+================================================================================
+
+(x)None(y)
+
+---
+
+================================================================================
+Comment lines at any indentation
+================================================================================
+
+    # before any code
+ns:
+        # deeper than the block
+    a = 1
+# column zero inside the block
+    b = 2
+  # between levels, placed after the block
+c = 3
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (namespace
+    name: (identifier)
+    body: (block
+      (comment)
+      (assignment
+        name: (identifier)
+        value: (integer))
+      (comment)
+      (assignment
+        name: (identifier)
+        value: (integer))))
+  (comment)
+  (assignment
+    name: (identifier)
+    value: (integer)))
+
+================================================================================
+Indented first code line is an error
+:error
+================================================================================
+
+    x = 1
+
+---
+
+================================================================================
+Indented first code line after a comment is an error
+:error
+================================================================================
+
+# header
+    x = 1
+
+---
+
+================================================================================
+Unexpected indent is an error
+:error
+================================================================================
+
+x = 1
+    y = 2
+
+---
+
+================================================================================
+Tuples: empty, one element, several
+================================================================================
+
+@meta a=() b=(1,) c=(1, 2) d=(1, 2,) e=((), (x,))
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (meta_directive
+    (attribute
+      key: (identifier)
+      value: (tuple))
+    (attribute
+      key: (identifier)
+      value: (tuple
+        (integer)))
+    (attribute
+      key: (identifier)
+      value: (tuple
+        (integer)
+        (integer)))
+    (attribute
+      key: (identifier)
+      value: (tuple
+        (integer)
+        (integer)))
+    (attribute
+      key: (identifier)
+      value: (tuple
+        (tuple)
+        (tuple
+          (identifier))))))
+
+================================================================================
+Parenthesized value without a comma is not a tuple
+:error
+================================================================================
+
+@hint a=(1)
+
+---
+
+================================================================================
+Non-ASCII digits are not numbers
+:error
+================================================================================
+
+x = ١٢
+
+---
+
+================================================================================
+Non-ASCII digit after ASCII digits is an error
+:error
+================================================================================
+
+x = 1٢
+
+---
