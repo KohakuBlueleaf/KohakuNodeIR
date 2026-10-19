@@ -1,0 +1,1 @@
+"""The ``kir`` command line."""

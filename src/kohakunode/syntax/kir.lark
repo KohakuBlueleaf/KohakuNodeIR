@@ -1,0 +1,135 @@
+// KIR v2 grammar (LALR, contextual lexer, Python-style indentation).
+// The indenter suppresses newlines inside ( [ {. Keywords and directives end
+// at a word boundary, so `Nonesuch`, `_tmp` and `@metax` are never split.
+
+%declare _INDENT _DEDENT
+
+// `@use` parses as a statement; the transformer rejects one after other statements.
+start: (_NEWLINE | statement)*
+
+?statement: simple _NEWLINE+
+          | compound
+
+?simple: use_decl
+       | assignment
+       | call
+       | meta
+       | hint
+       | mode
+
+?compound: namespace
+         | subgraph
+         | dataflow
+         | try_block
+         | typehint_block
+
+// ---------------------------------------------------------------- simple
+
+use_decl: _USE STRING (_AS NAME)?
+
+assignment: NAME (":" type)? "=" expr
+
+call: "(" [in_list] ")" func_name "(" [out_list] ")"
+
+func_name: NAME ("." NAME)*
+
+in_list: in_item ("," in_item)* ","?
+?in_item: NAME "=" expr     -> kwarg
+        | expr              -> posarg
+
+out_list: out_item ("," out_item)* ","?
+?out_item: WILDCARD "=>" LABEL   -> out_default
+         | expr "=>" LABEL       -> out_case
+         | LABEL                 -> out_label
+         | NAME                  -> out_name
+         | WILDCARD              -> out_discard
+
+meta: _META pair+
+hint: _HINT pair+
+pair: NAME "=" pair_value
+?pair_value: literal
+           | NAME            -> pair_name
+           | tuple
+
+mode: _MODE NAME
+
+// ---------------------------------------------------------------- compound
+
+namespace: NAME ":" _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT   -> namespace_body
+         | NAME ":" _NEWLINE                                           -> namespace_empty
+
+subgraph: _DEF "(" [param_list] ")" NAME "(" [def_outs] ")" ":" block
+param_list: param ("," param)* ","?
+param: NAME (":" type)? ("=" expr)?
+def_outs: def_out ("," def_out)* ","?
+def_out: NAME (":" type)?
+
+dataflow: _DATAFLOW ":" block
+
+try_block: _TRY ":" block _EXCEPT NAME? ":" block
+
+typehint_block: _TYPEHINT ":" _NEWLINE _INDENT (_NEWLINE | typehint_entry)+ _DEDENT
+typehint_entry: "(" [type_list] ")" func_name "(" [type_list] ")" _NEWLINE
+type_list: type ("," type)* ","?
+
+block: _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT
+
+// ---------------------------------------------------------------- types
+
+?type: type_atom ("|" type_atom)+  -> type_union
+     | type_atom
+?type_atom: WILDCARD                                  -> type_any
+          | NAME "?"                                  -> type_optional
+          | NAME "[" type ("," type)* "]" "?"         -> type_generic_optional
+          | NAME "[" type ("," type)* "]"             -> type_generic
+          | NAME                                      -> type_name
+          | NONE                                      -> type_none
+
+// ---------------------------------------------------------------- values
+
+?expr: literal
+     | NAME                   -> name
+
+?literal: INT                 -> int_lit
+        | FLOAT               -> float_lit
+        | TRUE                -> true_lit
+        | FALSE               -> false_lit
+        | NONE                -> none_lit
+        | STRING              -> string_lit
+        | "[" [literal ("," literal)* ","?] "]"                      -> list_lit
+        | "{" [dict_pair ("," dict_pair)* ","?] "}"                  -> dict_lit
+dict_pair: literal ":" literal
+// Python tuple syntax: `()`, `(x,)`, `(x, y)`.
+tuple: "(" ")"
+     | "(" pair_value "," ")"
+     | "(" pair_value ("," pair_value)+ ","? ")"
+
+// ---------------------------------------------------------------- terminals
+
+// A keyword, directive or name ends where no identifier character follows.
+TRUE.2: /True(?![A-Za-z0-9_])/
+FALSE.2: /False(?![A-Za-z0-9_])/
+NONE.2: /None(?![A-Za-z0-9_])/
+WILDCARD.2: /_(?![A-Za-z0-9_])/
+_AS: /as(?![A-Za-z0-9_])/
+_USE: /@use(?![A-Za-z0-9_])/
+_DEF: /@def(?![A-Za-z0-9_])/
+_META: /@meta(?![A-Za-z0-9_])/
+_HINT: /@hint(?![A-Za-z0-9_])/
+_MODE: /@mode(?![A-Za-z0-9_])/
+_DATAFLOW: /@dataflow(?![A-Za-z0-9_])/
+_TRY: /@try(?![A-Za-z0-9_])/
+_EXCEPT: /@except(?![A-Za-z0-9_])/
+_TYPEHINT: /@typehint(?![A-Za-z0-9_])/
+// True, False, None and `_` are never names.
+NAME: /(?!(True|False|None|_)(?![A-Za-z0-9_]))[A-Za-z_][A-Za-z0-9_]*/
+LABEL: /`[A-Za-z_][A-Za-z0-9_]*`/
+FLOAT.1: /[+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?/ | /[+-]?[0-9]+[eE][+-]?[0-9]+/
+INT: /[+-]?0[xX][0-9a-fA-F]+/ | /[+-]?0[oO][0-7]+/ | /[+-]?0[bB][01]+/ | /[+-]?[0-9]+/
+STRING: /"""(\\[\s\S]|[^\\"]|"(?!""))*"""/ | /'''(\\[\s\S]|[^\\']|'(?!''))*'''/ | /"(\\.|[^"\\\n])*"/ | /'(\\.|[^'\\\n])*'/
+COMMENT: /#[^\r\n]*/
+// Comment-only lines belong to the newline, so their indentation never counts.
+_NEWLINE: (/\r?\n[\t ]*/ | COMMENT)+
+
+%ignore /[ \t]+/
+%ignore COMMENT
