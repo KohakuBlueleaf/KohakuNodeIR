@@ -1,0 +1,193 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  # Windows pipes default to the ANSI code page; the examples print Unicode.
+  PYTHONUTF8: '1'
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-14]
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+
+      - name: Install maturin
+        run: python -m pip install --upgrade pip maturin
+
+      - name: Build wheel
+        run: maturin build --release --out wheels
+
+      - name: Install built wheel with test dependencies
+        shell: bash
+        run: |
+          pip install wheels/*.whl
+          pip install pytest pygls
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Run examples
+        run: python examples/run_examples.py
+
+      - name: Rust core vs Python reference (golden, generated, edge cases)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        run: python rust/tests/parity/parity.py
+
+      - name: Format check (Python)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        run: |
+          pip install black ruff
+          black --check src tests examples rust/tests/parity apps/kir-editor/backend
+          ruff check src tests examples rust/tests/parity apps/kir-editor/backend
+
+      - name: Format check (Rust)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        working-directory: rust
+        run: cargo fmt --check
+
+  rust:
+    name: Rust core (clippy, golden corpus, WASM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo clippy --features python -- -D warnings
+      - run: cargo clippy --target wasm32-unknown-unknown --features wasm -- -D warnings
+      - run: cargo test --release
+
+  editors:
+    name: Editor grammars and the example editor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: tree-sitter grammar
+        working-directory: editors/tree-sitter-kir
+        run: |
+          npm install
+          npx tree-sitter generate
+          npx tree-sitter test
+
+      - name: VS Code grammar
+        working-directory: editors/vscode
+        run: |
+          npm ci
+          node --check extension.js
+          npx --yes vscode-tmgrammar-test@0.1.3 -g syntaxes/kir.tmLanguage.json test/syntax.kir
+
+      - name: Example editor backend
+        run: |
+          pip install . fastapi uvicorn httpx pytest
+          cd apps/kir-editor/backend && pytest -q
+
+      - name: Example editor frontend build
+        working-directory: apps/kir-editor/frontend
+        run: |
+          npm ci
+          npm run build
+
+  android-smoke-build:
+    # Cross-compile smoke for Android on every PR, so release.yml's matrix
+    # does not surprise us at tag time. arm64 only; see release.yml.
+    name: Android cross-compile smoke (aarch64-linux-android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r27c
+      - name: Stage Chaquopy Android Python cross-prefix
+        env:
+          PY_VER: '3.13.7'
+          TARGET_TRIPLET: 'aarch64-linux-android'
+        run: |
+          set -euo pipefail
+          PREFIX_DIR="$RUNNER_TEMP/python-android-$TARGET_TRIPLET"
+          mkdir -p "$PREFIX_DIR"
+          URL="https://repo.maven.apache.org/maven2/com/chaquo/python/python/${PY_VER}/python-${PY_VER}-${TARGET_TRIPLET}.tar.gz"
+          curl -sSfL "$URL" -o "$PREFIX_DIR/python.tar.gz"
+          tar -xzf "$PREFIX_DIR/python.tar.gz" -C "$PREFIX_DIR"
+          LIB_DIR="$PREFIX_DIR/prefix/lib"
+          test -f "$LIB_DIR/libpython3.13.so" || {
+            echo "::error::libpython3.13.so not found"; ls -la "$LIB_DIR" || true; exit 1;
+          }
+          echo "PYO3_CROSS_LIB_DIR=$LIB_DIR"    >> "$GITHUB_ENV"
+          echo "PYO3_CROSS_PYTHON_VERSION=3.13" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=-L native=$LIB_DIR"   >> "$GITHUB_ENV"
+      - name: Cross-compile via maturin
+        uses: PyO3/maturin-action@v1
+        env:
+          ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_API_VERSION: '24'
+        with:
+          maturin-version: v1.13.3
+          target: aarch64-linux-android
+          args: --release --interpreter python3.13 --out dist
+          manylinux: 'off'
+      - name: Verify android_24_arm64_v8a wheel produced
+        run: |
+          ls -lh dist/
+          test -n "$(ls dist/*-android_24_arm64_v8a.whl 2>/dev/null)" || {
+              echo "::error::Expected an *android_24_arm64_v8a.whl in dist/; got:"
+              ls dist/ || true
+              exit 1
+          }

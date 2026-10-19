@@ -1,24 +1,66 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.8,<2"]
+build-backend = "maturin"
 
 [project]
 name = "kohakunode"
-version = "0.0.1"
-description = ""
+# maturin reads the version from rust/Cargo.toml.
+dynamic = ["version"]
+description = "KIR: a text IR for node graphs, with a sequential meaning per job"
 authors = [
     { name = "Shih-Ying Yeh(KohakuBlueLeaf)", email = "apolloyeh0123@gmail.com" },
 ]
 license = { text = "Apache-2.0" }
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "lark"
+dependencies = ["lark>=1.2"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Rust",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Compilers",
 ]
-urls = { "Homepage" = "https://kblueleaf.net/" }
+
+[project.urls]
+Homepage = "https://kblueleaf.net/"
+Repository = "https://github.com/KohakuBlueleaf/KohakuNodeIR"
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "pytest-cov"]
+lsp = ["pygls>=2"]
+dev = ["pytest>=8", "ruff", "black", "pygls>=2", "maturin>=1.8,<2"]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
+[project.scripts]
+kir = "kohakunode.cli.main:main"
+kir-lsp = "kohakunode.lsp.server:main"
+
+# One wheel: the Python reference (src/kohakunode) plus the Rust core as the
+# extension module kohakunode._rs.
+[tool.maturin]
+manifest-path = "rust/Cargo.toml"
+python-source = "src"
+module-name = "kohakunode._rs"
+features = ["python"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "PLC0415"]
+# Line length is black's job; zip() over ports and positional inputs is
+# deliberately non-strict (fewer inputs than ports is normal).
+ignore = ["E501", "B905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
