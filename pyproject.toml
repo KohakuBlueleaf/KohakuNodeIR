@@ -46,6 +46,8 @@ manifest-path = "rust/Cargo.toml"
 python-source = "src"
 module-name = "kohakunode._rs"
 features = ["python"]
+# The metadata names LICENSE (License-File); PyPI rejects an sdist without it.
+include = [{ path = "LICENSE", format = "sdist" }]
 
 [tool.black]
 line-length = 100
