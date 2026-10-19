@@ -1,13 +1,18 @@
 <template>
-  <BaseEdge :id="id" :path="path" :marker-end="markerEnd" :interaction-width="14" :style="style" :class="['kir-edge', `kir-edge--${data.kind}`, { 'kir-edge--back': data.back, 'is-selected': selected }]" />
+  <BaseEdge :id="id" :path="path" :marker-end="markerEnd" :interaction-width="14" :style="style" :class="['kir-edge', `kir-edge--${data.kind}`, { 'kir-edge--back': data.back }]" />
 </template>
 
 <script setup>
 import { computed } from "vue"
 import { BaseEdge, Position, getBezierPath } from "@vue-flow/core"
 
-import { loopPoints, roundedPath } from "@/graph/paths"
+import { loopPoints, loopPointsLeft, roundedPath } from "@/graph/paths"
 
+/**
+ * A wire in any graph view: the ELK route while neither end has moved since
+ * the layout, else a curve along the ports' sides; a control edge going back
+ * against the flow loops around.
+ */
 const props = defineProps({
   id: { type: String, required: true },
   sourceX: { type: Number, required: true },
@@ -20,12 +25,10 @@ const props = defineProps({
   targetNode: { type: Object, default: null },
   data: { type: Object, required: true },
   markerEnd: { type: String, default: undefined },
-  selected: { type: Boolean, default: false },
 })
 
 const near = (a, b) => !!a && !!b && Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5
 
-/** The ELK route still fits while neither end has moved since the layout. */
 const routeFits = computed(() => {
   const at = props.data.at
   if (!props.data.route || !at) return false
@@ -36,8 +39,12 @@ const path = computed(() => {
   const s = { x: props.sourceX, y: props.sourceY }
   const t = { x: props.targetX, y: props.targetY }
   if (routeFits.value) return roundedPath([s, ...props.data.route, t])
-  const upward = props.data.kind === "ctrl" && (props.data.back || t.y < s.y + 8)
-  if (upward) return roundedPath(loopPoints(s.x, s.y, t.x, t.y, props.targetPosition === Position.Right), 10)
+  if (props.data.kind === "ctrl") {
+    if (props.targetPosition === Position.Left && (props.data.back || t.x < s.x - 8))
+      return roundedPath(loopPointsLeft(s.x, s.y, t.x, t.y), 10)
+    if (props.targetPosition !== Position.Left && (props.data.back || t.y < s.y + 8))
+      return roundedPath(loopPoints(s.x, s.y, t.x, t.y, props.targetPosition === Position.Right), 10)
+  }
   const [d] = getBezierPath({
     sourceX: s.x,
     sourceY: s.y,
@@ -51,6 +58,6 @@ const path = computed(() => {
 
 const style = computed(() => ({
   stroke: props.data.color,
-  strokeWidth: props.data.kind === "ctrl" ? 2 : 1.6,
+  strokeWidth: props.data.kind === "ctrl" ? 2.4 : 1.8,
 }))
 </script>

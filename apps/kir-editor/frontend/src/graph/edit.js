@@ -4,8 +4,7 @@
  * leads to one place, a merge's input ports are numbered without gaps.
  */
 
-import { edgeKey } from "@/graph/layout"
-import { mergeSlot, parseHandle } from "@/graph/geometry"
+import { edgeKey, mergeSlot, parseHandle } from "@/graph/ports"
 
 // ---------------------------------------------------------------- names
 
@@ -70,29 +69,24 @@ export function makeNode(graph, spec) {
       }))
       return { ...base, name: spec.name, inputs, outputs, ctrl_in: ["in"], ctrl_out: ["out"] }
     }
+    case "assign":
+      return {
+        ...base,
+        inputs: [{ port: "value", value: 0 }],
+        outputs: [{ port: "value", var: fresh(names, spec.name || "x") }],
+        ctrl_in: ["in"],
+        ctrl_out: ["out"],
+      }
     case "value":
+      return { ...base, props: { value: spec.value ?? 0 }, outputs: [{ port: "value" }] }
+    case "get":
       return {
         ...base,
-        props: { value: 0 },
-        outputs: [{ port: "value", var: fresh(names, "v") }],
-        ctrl_in: ["in"],
-        ctrl_out: ["out"],
+        props: { name: spec.name || [...names][0] || "x" },
+        outputs: [{ port: "value" }],
       }
-    case "get": {
-      const name = spec.name || [...names][0] || "x"
-      return { ...base, props: { name }, outputs: [{ port: "value", var: name }] }
-    }
-    case "set": {
-      const name = fresh(names, "x")
-      return {
-        ...base,
-        props: { name, copy: true },
-        inputs: [{ port: "value" }],
-        outputs: [{ port: "value", var: name }],
-        ctrl_in: ["in"],
-        ctrl_out: ["out"],
-      }
-    }
+    case "set":
+      return { ...base, props: { name: spec.name || fresh(names, "x") }, inputs: [{ port: "value" }] }
     case "branch":
       return {
         ...base,
@@ -178,6 +172,14 @@ export function connect(graph, c) {
     )
     const port = (target.inputs || []).find((p) => p.port === t.name)
     if (port) delete port.value
+    // One output names at most one variable: wiring it into a set replaces its other set.
+    if (target.kind === "set") {
+      const isSet = (id) => graph.nodes.find((n) => n.id === id)?.kind === "set"
+      graph.edges = graph.edges.filter(
+        (e) =>
+          !(e.kind === "data" && e.from.node === c.source && e.from.port === s.name && isSet(e.to.node)),
+      )
+    }
   } else {
     graph.edges = graph.edges.filter(
       (e) => !(e.kind === "ctrl" && e.from.node === c.source && e.from.port === s.name),
@@ -275,14 +277,27 @@ export function toggleDefault(graph, node) {
   }
 }
 
+/**
+ * Put `node` on the control chain right after `afterId`: the edge leaving
+ * `afterId` now leaves `node`. A node without an `out` port (a branch) or a
+ * missing one leaves the graph as it is.
+ */
+export function insertAfter(graph, afterId, node) {
+  const after = graph.nodes.find((n) => n.id === afterId)
+  if (!after || !(after.ctrl_out || []).includes("out")) return
+  const next = graph.edges.find((e) => e.kind === "ctrl" && e.from.node === afterId && e.from.port === "out")
+  if (next) next.from = { node: node.id, port: "out" }
+  graph.edges.push({ kind: "ctrl", from: { node: afterId, port: "out" }, to: { node: node.id, port: "in" } })
+}
+
 // ---------------------------------------------------------------- to the backend
 
-const CHAINABLE = new Set(["call", "value", "set"])
+const CHAINABLE = new Set(["call", "assign"])
 
 /**
- * The graph as `from_graph` reads it. A call, value or set node that no
- * control edge touches belongs to the dataflow part of the canvas, so its
- * unused control ports are left out.
+ * The graph as `from_graph` reads it. A call or assign node that no control
+ * edge touches belongs to the dataflow part of the canvas, so its unused
+ * control ports are left out.
  */
 export function serializeGraph(graph) {
   const touched = new Set()

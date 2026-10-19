@@ -19,6 +19,18 @@ class SourceRequest(ScopedRequest):
     text: str
 
 
+class ToGraphRequest(SourceRequest):
+    """``data``: how the graph draws data, "wires" or "variables" (graph.md)."""
+
+    data: str = "wires"
+
+
+class AstRequest(ScopedRequest):
+    """A program as AST JSON (core/ast_json.py)."""
+
+    ast: dict
+
+
 class CompileRequest(SourceRequest):
     """``passes``: optimization passes to run, in order; None runs all, [] none."""
 

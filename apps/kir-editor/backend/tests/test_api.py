@@ -82,7 +82,7 @@ def test_passes_are_selectable(client):
 
 
 def test_editor_built_graph_becomes_text(client):
-    """Nodes shaped as the editor's palette makes them: a chain, a free node, a keyword input."""
+    """Nodes as the editor makes them: an assign chain, a free assign named by a set, a get, a keyword input."""
     graph = {
         "kirgraph": 2,
         "uses": [{"library": "vision", "alias": None}],
@@ -91,9 +91,9 @@ def test_editor_built_graph_becomes_text(client):
                 "name": "main",
                 "nodes": [
                     {
-                        "id": "value_1",
-                        "kind": "value",
-                        "props": {"value": "a.png"},
+                        "id": "assign_1",
+                        "kind": "assign",
+                        "inputs": [{"port": "value", "value": "a.png"}],
                         "outputs": [{"port": "value", "var": "path"}],
                         "ctrl_in": ["in"],
                         "ctrl_out": ["out"],
@@ -120,19 +120,36 @@ def test_editor_built_graph_becomes_text(client):
                         "ctrl_out": ["out"],
                     },
                     {
-                        "id": "value_4",
-                        "kind": "value",
-                        "props": {"value": 2},
-                        "outputs": [{"port": "value", "var": "scale"}],
+                        "id": "assign_4",
+                        "kind": "assign",
+                        "inputs": [{"port": "value", "value": 2}],
+                        "outputs": [{"port": "value"}],
                         "ctrl_in": [],
                         "ctrl_out": [],
+                    },
+                    {
+                        "id": "set_5",
+                        "kind": "set",
+                        "props": {"name": "scale"},
+                        "inputs": [{"port": "value"}],
+                    },
+                    {
+                        "id": "get_6",
+                        "kind": "get",
+                        "props": {"name": "path"},
+                        "outputs": [{"port": "value"}],
                     },
                 ],
                 "edges": [
                     {
                         "kind": "ctrl",
-                        "from": {"node": "value_1", "port": "out"},
+                        "from": {"node": "assign_1", "port": "out"},
                         "to": {"node": "load_image_2", "port": "in"},
+                    },
+                    {
+                        "kind": "data",
+                        "from": {"node": "assign_4", "port": "value"},
+                        "to": {"node": "set_5", "port": "value"},
                     },
                     {
                         "kind": "ctrl",
@@ -141,7 +158,7 @@ def test_editor_built_graph_becomes_text(client):
                     },
                     {
                         "kind": "data",
-                        "from": {"node": "value_1", "port": "value"},
+                        "from": {"node": "get_6", "port": "value"},
                         "to": {"node": "load_image_2", "port": "path"},
                     },
                     {
@@ -165,16 +182,59 @@ def test_editor_built_graph_becomes_text(client):
     )
 
 
-def test_outline_nests_namespaces(client):
-    text, sig, _ = _case("v2__each")
-    body = client.post(
-        "/api/graph", json={"text": text, "signatures": [sig], "use_demo": False}
-    ).json()["outline"]["body"]
-    kinds = [s["kind"] for s in body]
-    assert kinds == ["assign", "assign", "assign", "each", "namespace", "call"]
-    inner = body[4]["slots"][0]["body"]
-    assert [s["kind"] for s in inner] == ["call", "branch", "namespace", "namespace", "call"]
-    assert inner[2]["slots"][0]["body"][1]["hint"] == {"max_wait_ms": 5}
+CASE_NAMES = sorted(p.name for p in CASES.iterdir())
+
+
+@pytest.mark.parametrize("name", CASE_NAMES)
+def test_ast_json_writes_the_golden_canonical_text(client, name):
+    """AST -> JSON -> AST loses nothing: written back it is the golden canonical text, byte for byte."""
+    text, sig, d = _case(name)
+    scope = {"signatures": [sig], "use_demo": False}
+    ast = client.post("/api/graph", json={"text": text, **scope}).json()["ast"]
+    out = client.post("/api/ast/text", json={"ast": ast, **scope}).json()
+    assert out["text"] == (d / "canonical.kir").read_text(encoding="utf-8")
+
+
+def test_variables_style_is_the_golden_variables_graph(client):
+    text, sig, d = _case("v2__features")
+    scope = {"signatures": [sig], "use_demo": False}
+    g = client.post("/api/graph", json={"text": text, "data": "variables", **scope}).json()
+    golden = (d / "graph.variables.kirgraph").read_text(encoding="utf-8")
+    assert json.dumps(g["graph"], indent=2, ensure_ascii=False) + "\n" == golden
+    bad = client.post("/api/graph", json={"text": text, "data": "nope", **scope}).json()
+    assert bad["graph"] is None and "unknown data style" in bad["diagnostics"][0]["message"]
+
+
+def _node_ids(stmts):
+    for s in stmts:
+        if "node_id" in s.get("meta", {}):
+            yield s["meta"]["node_id"]
+        for k in ("body", "handler"):
+            yield from _node_ids(s.get(k, []))
+
+
+@pytest.mark.parametrize("data", ["wires", "variables"])
+def test_structure_tags_statements_with_their_nodes(client, data):
+    """Every structure statement names a node of its graph, and each call/assign node appears once."""
+    text, sig, _ = _case("v2__features")
+    scope = {"signatures": [sig], "use_demo": False}
+    out = client.post("/api/graph", json={"text": text, "data": data, **scope}).json()
+    for g in out["graph"]["graphs"]:
+        ids = list(_node_ids(out["structure"][g["name"]]))
+        nodes = {n["id"]: n for n in g["nodes"]}
+        assert set(ids) <= set(nodes), (g["name"], set(ids) - set(nodes))
+        statements = [n["id"] for n in g["nodes"] if n["kind"] in ("call", "assign")]
+        assert sorted(i for i in ids if nodes[i]["kind"] in ("call", "assign")) == sorted(
+            statements
+        )
+    main = out["structure"]["main"]
+    types = [s["type"] for s in main]
+    assert types[types.index("switch") + 1 : types.index("switch") + 4] == ["namespace"] * 3
+
+
+def test_ast_text_reports_bad_json(client):
+    out = client.post("/api/ast/text", json={"ast": {"body": [{"type": "nope"}]}}).json()
+    assert out["text"] is None and "unknown statement type" in out["diagnostics"][0]["message"]
 
 
 @pytest.mark.parametrize(

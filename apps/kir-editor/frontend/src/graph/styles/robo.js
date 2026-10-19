@@ -1,15 +1,17 @@
 /**
- * Node geometry: size, outline shape, port positions and text placement for
- * every node kind. ELK lays nodes out with exactly these port positions and
- * the node component draws handles at the same points, so routed wires meet
- * their ports.
+ * Flowchart geometry (classic ROBO Pro): size, outline shape, port positions
+ * and text placement for every element. ELK lays elements out with exactly
+ * these port positions and the element component draws handles at the same
+ * points, so routed lines meet their ports.
  *
- * Two axes: control ports sit on the top (in) and bottom (out) edges, data
- * ports on the left (in) and right (out) sides. The one exception is an
- * `each` node's `next` control input, on the right, where the loop body
- * returns.
+ * Two axes: program flow runs top (in) to bottom (out); data pins sit on the
+ * left (in) and right (out) sides. The one exception is an `each` element's
+ * `next` flow input, on the right, where the loop body returns. Variables
+ * (`get` / `set`) are VARIABLE elements beside the flow; an assignment is an
+ * "= value" command whose output line runs to the variable it writes.
  */
 
+import { handleId, mergeSlot } from "@/graph/ports"
 import { CTRL_COLOR, typeColor } from "@/graph/types"
 import { shortLiteral } from "@/graph/literal"
 
@@ -20,17 +22,6 @@ const CHAR = 6.6 // 11px monospace advance
 const TITLE_CHAR = 7.2 // 12px monospace advance
 
 export const tw = (s, char = CHAR) => Math.ceil(String(s).length * char)
-
-/** Handle id of a port: `<flow>:<dir>:<name>`. */
-export const handleId = (flow, dir, name) => `${flow}:${dir}:${name}`
-
-export function parseHandle(id) {
-  const [flow, dir, ...rest] = id.split(":")
-  return { flow, dir, name: rest.join(":") }
-}
-
-/** The free `in_<n>` slot a merge offers for one more incoming path. */
-export const mergeSlot = (node) => `in_${(node.ctrl_in || []).length}`
 
 function spread(n, from, to) {
   if (n <= 0) return []
@@ -81,7 +72,6 @@ function outputLabel(p) {
 const RECT_TITLE = {
   inputs: () => "inputs",
   outputs: () => "outputs",
-  set: (n) => `set ${n.props?.name ?? ""}`,
   try: (n) => (n.props?.error_name ? `@try · except ${n.props.error_name}` : "@try"),
   each: (n) => {
     const p = n.props || {}
@@ -90,7 +80,7 @@ const RECT_TITLE = {
   },
 }
 
-const RECT_SHAPE = { inputs: "io", outputs: "io", set: "set", try: "try", each: "each" }
+const RECT_SHAPE = { inputs: "io", outputs: "io", try: "try", each: "each" }
 
 const CTRL_OUT_LABEL = { try: ["try", "except"], each: ["body", "done"] }
 
@@ -145,32 +135,84 @@ function rectGeometry(node, ctx) {
   })
   let shape = RECT_SHAPE[node.kind] || "work"
   if (node.kind === "call" && ctx.defNames?.has(node.name)) shape = "defcall"
-  if (node.kind === "set" && node.props?.copy) shape = "set"
   return { w, h, shape, ports, texts, head: HEAD }
 }
 
-// ---------------------------------------------------------------- pills
+// ---------------------------------------------------------------- literals, variables, start / end
 
 function pillGeometry(node) {
-  const out = (node.outputs || [])[0]
-  let text
-  if (node.kind === "get") text = `get ${node.props?.name ?? ""}`
-  else {
-    const name = out?.var || `${node.id}_value`
-    text = `${name}${out?.type ? `: ${out.type}` : ""} = ${shortLiteral(node.props?.value, 26)}`
-  }
-  const w = Math.max(64, tw(text) + 30)
-  const h = 28
-  const ports = []
-  if (out) ports.push(dataPort("out", out, w, h / 2))
-  for (const p of node.ctrl_in || []) ports.push(ctrlPort("in", p, w / 2, 0))
-  for (const p of node.ctrl_out || []) ports.push(ctrlPort("out", p, w / 2, h))
+  const out = (node.outputs || [])[0] || { port: "value" }
+  const text = shortLiteral(node.props?.value, 26)
+  const w = Math.max(56, tw(text) + 30)
+  const h = 26
   return {
     w,
     h,
-    shape: node.kind === "get" ? "get" : "value",
-    ports,
+    shape: "value",
+    ports: [dataPort("out", out, w, h / 2)],
     texts: [{ text, x: w / 2 - 3, y: h / 2 + 4, anchor: "middle", cls: "pill" }],
+  }
+}
+
+/** A VARIABLE element: a yellow box beside the flow; `set` takes a value, `get` gives one. */
+function variableGeometry(node) {
+  const name = node.props?.name ?? "?"
+  const w = Math.max(72, tw(name, TITLE_CHAR) + 34)
+  const h = 40
+  const ports =
+    node.kind === "set"
+      ? [dataPort("in", (node.inputs || [])[0] || { port: "value" }, 0, h / 2)]
+      : [dataPort("out", (node.outputs || [])[0] || { port: "value" }, w, h / 2)]
+  return {
+    w,
+    h,
+    shape: "variable",
+    ports,
+    texts: [
+      { text: "VAR", x: w / 2, y: 14, anchor: "middle", cls: "muted" },
+      { text: name, x: w / 2, y: 30, anchor: "middle", cls: "title" },
+    ],
+  }
+}
+
+/** An "= value" command (pentagon pointing right) on the flow; its output writes a variable. */
+function assignGeometry(node) {
+  const input = (node.inputs || [])[0] || { port: "value" }
+  const out = (node.outputs || [])[0] || { port: "value" }
+  const text = `= ${"value" in input ? shortLiteral(input.value, 18) : "◂"}`
+  const label = out.var ? `→ ${out.var}` : ""
+  const w = Math.max(96, tw(text, TITLE_CHAR) + tw(label) + 48)
+  const h = 34
+  return {
+    w,
+    h,
+    shape: "pentagon",
+    ports: [
+      dataPort("in", input, 0, h / 2),
+      dataPort("out", out, w, h / 2),
+      ...(node.ctrl_in || []).map((p) => ctrlPort("in", p, (w - 16) / 2, 0)),
+      ...(node.ctrl_out || []).map((p) => ctrlPort("out", p, (w - 16) / 2, h)),
+    ],
+    texts: [
+      { text, x: 12, y: h / 2 + 4, anchor: "start", cls: "title" },
+      ...(label ? [{ text: label, x: w - 22, y: h / 2 + 4, anchor: "end", cls: "port" }] : []),
+    ],
+  }
+}
+
+/** The start and end elements of a program (synthetic: they stand for no statement). */
+function terminalGeometry(node) {
+  const w = 86
+  const h = 30
+  return {
+    w,
+    h,
+    shape: node.kind,
+    ports:
+      node.kind === "start"
+        ? [ctrlPort("out", "out", w / 2, h, "bottom", { fixed: true })]
+        : [ctrlPort("in", "in", w / 2, 0, "top", { fixed: true })],
+    texts: [{ text: node.kind === "start" ? "Start" : "End", x: w / 2, y: h / 2 + 4, anchor: "middle", cls: "terminal" }],
   }
 }
 
@@ -292,12 +334,19 @@ function parallelGeometry(node) {
   }
 }
 
-/** Geometry of one node. `ctx.defNames`: names of the program's `@def` graphs. */
-export function nodeGeometry(node, ctx = {}) {
+/** Geometry of one element. `ctx.defNames`: names of the program's `@def` graphs. */
+export function roboGeometry(node, ctx = {}) {
   switch (node.kind) {
     case "value":
-    case "get":
       return pillGeometry(node)
+    case "get":
+    case "set":
+      return variableGeometry(node)
+    case "assign":
+      return assignGeometry(node)
+    case "start":
+    case "end":
+      return terminalGeometry(node)
     case "branch":
       return branchGeometry(node)
     case "switch":
@@ -311,20 +360,12 @@ export function nodeGeometry(node, ctx = {}) {
   }
 }
 
-/** Ports of a dataflow frame, at positions ELK chose on its border. */
-export function framePorts(node, box) {
-  const ports = []
-  for (const p of node.ctrl_in || [])
-    ports.push(ctrlPort("in", p, box.ports?.[`ctrl:in:${p}`]?.x ?? box.w / 2, 0))
-  for (const p of node.ctrl_out || [])
-    ports.push(ctrlPort("out", p, box.ports?.[`ctrl:out:${p}`]?.x ?? box.w / 2, box.h))
-  return ports
-}
-
-/** SVG path of a node outline in its own box. */
+/** SVG path of an element outline in its own box. */
 export function shapePath(g) {
   const { w, h } = g
   switch (g.shape) {
+    case "pentagon":
+      return `M 0 0 L ${w - 16} 0 L ${w} ${h / 2} L ${w - 16} ${h} L 0 ${h} Z`
     case "diamond": {
       const x0 = g.inset
       const x1 = g.inset + g.innerW

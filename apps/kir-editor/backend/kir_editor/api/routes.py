@@ -2,7 +2,13 @@
 
 from fastapi import APIRouter, Request
 
-from kir_editor.api.schemas import CompileRequest, GraphRequest, SourceRequest
+from kir_editor.api.schemas import (
+    AstRequest,
+    CompileRequest,
+    GraphRequest,
+    SourceRequest,
+    ToGraphRequest,
+)
 from kir_editor.core.toolchain import Toolchain
 
 router = APIRouter(prefix="/api")
@@ -13,15 +19,21 @@ def _tc(request: Request) -> Toolchain:
 
 
 @router.post("/graph")
-def text_to_graph(body: SourceRequest, request: Request) -> dict:
-    """KIR text -> ``{graph, outline, diagnostics}``."""
-    return _tc(request).graph(body.text, body.scope())
+def text_to_graph(body: ToGraphRequest, request: Request) -> dict:
+    """KIR text -> ``{graph, structure, ast, diagnostics}``."""
+    return _tc(request).graph(body.text, body.scope(), body.data)
 
 
 @router.post("/text")
 def graph_to_text(body: GraphRequest, request: Request) -> dict:
-    """Graph document -> ``{text, outline, diagnostics}``."""
+    """Graph document -> ``{text, structure, ast, diagnostics}``."""
     return _tc(request).text(body.graph, body.scope(), body.with_meta)
+
+
+@router.post("/ast/text")
+def ast_to_text(body: AstRequest, request: Request) -> dict:
+    """AST JSON -> ``{text, diagnostics}`` (canonical text)."""
+    return _tc(request).ast_text(body.ast, body.scope())
 
 
 @router.post("/check")

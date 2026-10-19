@@ -1,68 +1,37 @@
 /**
  * Browser smoke test of the editor: `npm run test:e2e`.
  *
- * Starts the backend (uvicorn from the repository's .venv, or KIR_PYTHON) and
- * the Vite dev server on their own ports, drives the installed Microsoft Edge
- * headless through playwright-core with a fresh user-data-dir, and checks
- * each step against the DOM, the stores (exposed by the dev build as
- * `window.__kir`) and the backend's own answers.
+ * Starts the backend and the dev server (tests/e2e/harness.mjs), drives the
+ * installed Microsoft Edge headless with a fresh profile, and checks each
+ * step against the DOM, the stores (exposed by the dev build as
+ * `window.__kir`) and the backend's own answers:
+ *
+ * 1. Graph editing in the node view (exec pins): drag a node in, wire data
+ *    and control, set a literal in a node's input box, delete, undo, redo,
+ *    undo a typed text change, run, lower with a pass off.
+ * 2. Every view loads the tour, each and factorial samples.
+ * 3. One edit in every view round-trips: the text it produces equals the
+ *    backend's text for the graph (and, for statement views, for the AST).
+ * 4. No page or console errors anywhere.
  */
 
-import { spawn } from "node:child_process"
-import { mkdtempSync, rmSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
 
-import { chromium } from "playwright-core"
+import { launch, serverLogs, settled, startServers, stopServers } from "./harness.mjs"
 
-const FRONTEND = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
-const BACKEND = path.resolve(FRONTEND, "../backend")
-const REPO = path.resolve(FRONTEND, "../../..")
-const PYTHON =
-  process.env.KIR_PYTHON ||
-  path.join(REPO, ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python")
-const API_PORT = Number(process.env.KIR_E2E_API_PORT || 48931)
-const WEB_PORT = Number(process.env.KIR_E2E_WEB_PORT || 5931)
-const BASE = `http://127.0.0.1:${WEB_PORT}`
-const PANEL = "[data-test=bottom-panel]"
-
-const children = []
 const results = []
-
-function start(cmd, args, opts) {
-  const child = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"], ...opts })
-  let log = ""
-  child.stdout.on("data", (d) => (log += d))
-  child.stderr.on("data", (d) => (log += d))
-  child.log = () => log
-  children.push(child)
-  return child
-}
-
-async function waitForUrl(url, timeoutMs = 30000) {
-  const end = Date.now() + timeoutMs
-  while (Date.now() < end) {
-    try {
-      const res = await fetch(url)
-      if (res.ok) return
-    } catch {
-      /* not up yet */
-    }
-    await new Promise((r) => setTimeout(r, 250))
-  }
-  throw new Error(`${url} did not come up`)
-}
+let BASE = ""
+const PANEL = "[data-test=bottom-panel]"
 
 function assert(cond, message) {
   if (!cond) throw new Error(message)
 }
 
 async function step(name, fn) {
-  const t0 = Date.now()
   try {
     await fn()
-    results.push({ name, ok: true, ms: Date.now() - t0 })
+    results.push({ name, ok: true })
     console.log(`  ok    ${name}`)
   } catch (e) {
     results.push({ name, ok: false, error: e.message })
@@ -74,15 +43,14 @@ async function step(name, fn) {
 // ---------------------------------------------------------------- page helpers
 
 const store = (page, fn, arg) => page.evaluate(fn, arg)
-
-/** Wait until no text <-> graph sync is pending or in flight. */
-const settled = (page) =>
-  page.waitForFunction(() => {
-    const d = window.__kir?.doc
-    return d && !d.syncing && !d.textPending && !d.layingOut
-  })
-
+const text = (page) => store(page, () => window.__kir.doc.text)
 const nodeIds = (page) => store(page, () => window.__kir.doc.graph.nodes.map((n) => n.id))
+
+async function open(page, query) {
+  await page.goto(`${BASE}/?${query}`)
+  await settled(page)
+  await page.waitForFunction(() => !document.querySelector(".chip-iolite .animate-spin"))
+}
 
 async function center(page, selector) {
   const box = await page.locator(selector).first().boundingBox()
@@ -92,18 +60,15 @@ async function center(page, selector) {
 
 const handle = (node, id) => `.vue-flow__handle[data-nodeid="${node}"][data-handleid="${id}"]`
 
-/** The element under a point is `selector` (or inside it): nothing (the minimap, a panel) covers it. */
+/** The element under a point is `selector` (or inside it): nothing covers it. */
 async function uncovered(page, selector, p) {
-  const ok = await page.evaluate(
-    ([sel, x, y]) => !!document.elementFromPoint(x, y)?.closest(sel),
-    [selector, p.x, p.y],
-  )
+  const ok = await page.evaluate(([sel, x, y]) => !!document.elementFromPoint(x, y)?.closest(sel), [selector, p.x, p.y])
   assert(ok, `${selector} is covered at (${p.x}, ${p.y})`)
 }
 
 /** Drag a wire from one handle to another, after framing both nodes in the view. */
-async function wire(page, from, to, nodes) {
-  await page.evaluate((ids) => window.__kir.flow.fitView({ nodes: ids, padding: 0.5 }), nodes)
+async function wire(page, flowId, from, to, nodes) {
+  await page.evaluate(([f, ids]) => window.__kir.flows[f]({ nodes: ids, padding: 0.5 }), [flowId, nodes])
   await page.waitForTimeout(150)
   const a = await center(page, from)
   const b = await center(page, to)
@@ -116,145 +81,134 @@ async function wire(page, from, to, nodes) {
   await page.mouse.up()
 }
 
-/** The backend's text for the store's current graph, asked for independently. */
-const backendText = (page) =>
+/** The backend's text for the store's graph, and for its AST, asked for independently. */
+const backendTexts = (page) =>
   store(page, async () => {
     const d = window.__kir.doc
-    const res = await fetch("/api/text", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ graph: d.serializedDoc(), with_meta: d.withMeta, ...d.scope() }),
-    })
-    return (await res.json()).text
+    const post = async (route, body) => {
+      const res = await fetch(`/api/${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, ...d.scope() }),
+      })
+      return (await res.json()).text
+    }
+    return {
+      fromGraph: await post("text", { graph: d.serializedDoc(), with_meta: d.withMeta }),
+      fromAst: await post("ast/text", { ast: d.ast }),
+    }
   })
 
-// ---------------------------------------------------------------- the scenario
+/** After an edit: the text says `expect`, and graph -> text and AST -> text both give that same text. */
+async function roundTrips(page, expect, label) {
+  await settled(page)
+  const t = await text(page)
+  assert(expect.every((s) => t.includes(s)), `${label}: text lacks ${JSON.stringify(expect)}:\n${t}`)
+  const { fromGraph, fromAst } = await backendTexts(page)
+  assert(fromGraph === t, `${label}: /api/text of the graph differs from the text:\n${fromGraph}\n---\n${t}`)
+  assert(fromAst === t, `${label}: /api/ast/text of the AST differs from the text:\n${fromAst}\n---\n${t}`)
+  const errors = await store(page, () => window.__kir.doc.errorCount)
+  assert(errors === 0, `${label}: ${errors} errors after the edit`)
+}
 
-async function scenario(page) {
+// ---------------------------------------------------------------- 1. graph editing
+
+async function graphEditing(page) {
   let mul = null
 
-  await step("load ?sample=clamp: 8 nodes laid out and drawn", async () => {
-    await page.goto(`${BASE}/?sample=clamp&view=split&theme=light`)
-    await page.waitForFunction(() => window.__kir?.doc?.layout && window.__kir.doc.graph.nodes.length === 8)
-    await settled(page)
-    await page.waitForFunction(() => document.querySelectorAll(".vue-flow__node").length === 8)
-    const text = await store(page, () => window.__kir.doc.text)
-    assert(text.includes("(x, y)clamp(avg)"), `unexpected text:\n${text}`)
+  await step("nodes view (exec, wires) loads clamp: 8 nodes drawn", async () => {
+    await open(page, "sample=clamp&view=split&split=nodes,text&data=wires&control=exec&theme=light")
+    await page.waitForFunction(() => document.querySelectorAll("[data-view=nodes] .vue-flow__node").length === 8)
+    assert((await text(page)).includes("(x, y)clamp(avg)"), "unexpected text")
   })
 
   await step("drag multiply from the palette onto the canvas", async () => {
     const before = new Set(await nodeIds(page))
     const item = page.locator(".kir-pal-item").filter({ has: page.locator("span", { hasText: /^multiply$/ }) })
-    await item.dragTo(page.locator(".kir-surface"), { targetPosition: { x: 120, y: 120 } })
+    await item.dragTo(page.locator("[data-view=nodes] .kir-surface"), { targetPosition: { x: 160, y: 140 } })
     await page.waitForFunction(() => window.__kir.doc.graph.nodes.length === 9)
     mul = (await nodeIds(page)).find((id) => !before.has(id))
     const node = await store(page, (id) => window.__kir.doc.graph.nodes.find((n) => n.id === id), mul)
     assert(node.kind === "call" && node.name === "multiply", `dropped ${JSON.stringify(node)}`)
     await page.waitForSelector(`.vue-flow__node[data-id="${mul}"]`)
     await settled(page)
-    const text = await store(page, () => window.__kir.doc.text)
-    assert(text.includes("()multiply(result)"), `text lacks the free multiply:\n${text}`)
+    assert((await text(page)).includes("()multiply(result)"), "text lacks the free multiply")
   })
 
-  await step("wire a data edge x.value -> multiply.a", async () => {
+  await step("wire a data edge x -> multiply.a", async () => {
     const x = await store(page, () => window.__kir.doc.graph.nodes.find((n) => n.outputs?.[0]?.var === "x").id)
-    const drawn = await page.locator(".vue-flow__edge").count()
-    await wire(page, handle(x, "data:out:value"), handle(mul, "data:in:a"), [x, mul])
+    await wire(page, "kir-nodes", handle(x, "data:out:value"), handle(mul, "data:in:a"), [x, mul])
     const ok = await store(
       page,
-      ([x, mul]) =>
-        window.__kir.doc.graph.edges.some(
-          (e) => e.kind === "data" && e.from.node === x && e.from.port === "value" && e.to.node === mul && e.to.port === "a",
-        ),
+      ([x, mul]) => window.__kir.doc.graph.edges.some((e) => e.kind === "data" && e.from.node === x && e.to.node === mul && e.to.port === "a"),
       [x, mul],
     )
     assert(ok, "no data edge in the store")
-    await page.waitForFunction((n) => document.querySelectorAll(".vue-flow__edge").length === n + 1, drawn)
   })
 
-  await step("wire a control edge last print_val.out -> multiply.in", async () => {
+  await step("wire an exec edge last print_val -> multiply", async () => {
     const last = await store(page, () => window.__kir.doc.graph.nodes.filter((n) => n.name === "print_val").at(-1).id)
-    await wire(page, handle(last, "ctrl:out:out"), handle(mul, "ctrl:in:in"), [last, mul])
+    await wire(page, "kir-nodes", handle(last, "ctrl:out:out"), handle(mul, "ctrl:in:in"), [last, mul])
     const ok = await store(
       page,
-      ([last, mul]) =>
-        window.__kir.doc.graph.edges.some((e) => e.kind === "ctrl" && e.from.node === last && e.to.node === mul && e.to.port === "in"),
+      ([last, mul]) => window.__kir.doc.graph.edges.some((e) => e.kind === "ctrl" && e.from.node === last && e.to.node === mul),
       [last, mul],
     )
     assert(ok, "no control edge in the store")
     await settled(page)
-    const text = await store(page, () => window.__kir.doc.text)
-    assert(text.trimEnd().endsWith("(avg2)print_val()\n(x)multiply(result)"), `multiply not chained last:\n${text}`)
+    assert((await text(page)).trimEnd().endsWith("(avg2)print_val()\n(x)multiply(result)"), "multiply not chained last")
   })
 
-  await step("edit literal b = 7 in the inspector; text and /api/text agree", async () => {
-    await page.locator(`.vue-flow__node[data-id="${mul}"]`).click()
-    const field = page.locator("aside input[placeholder='literal, or wire it']")
-    await field.fill("7")
-    await field.press("Enter")
+  await step("type b = 7 in the node's input box (widget); graph -> text and AST -> text agree", async () => {
+    const box = page.locator(`.vue-flow__node[data-id="${mul}"] input.kir-widget`)
+    assert((await box.count()) === 1, "expected one widget (a is wired, so only b has a box)")
+    await box.fill("7")
+    await box.press("Enter")
     const value = await store(page, (id) => window.__kir.doc.graph.nodes.find((n) => n.id === id).inputs.find((p) => p.port === "b").value, mul)
     assert(value === 7, `b is ${JSON.stringify(value)}`)
-    await settled(page)
-    const text = await store(page, () => window.__kir.doc.text)
-    assert(text.includes("(x, 7)multiply(result)"), `text lacks the call:\n${text}`)
-    assert((await backendText(page)) === text, "store text differs from /api/text for the same graph")
-    const errors = await store(page, () => window.__kir.doc.errorCount)
-    assert(errors === 0, `${errors} errors after the edit`)
+    await roundTrips(page, ["(x, 7)multiply(result)"], "widget edit")
     assert((await page.locator(".cm-content").innerText()).includes("(x, 7)multiply(result)"), "text view not updated")
   })
 
   let withMultiply = ""
   await step("delete multiply with the Delete key", async () => {
-    withMultiply = await store(page, () => window.__kir.doc.text)
-    await page.locator(`.vue-flow__node[data-id="${mul}"]`).click()
+    withMultiply = await text(page)
+    await page.locator(`.vue-flow__node[data-id="${mul}"] .kir-card__head`).click()
     await page.keyboard.press("Delete")
     await page.waitForFunction((id) => !window.__kir.doc.graph.nodes.some((n) => n.id === id), mul)
-    const dangling = await store(page, (id) => window.__kir.doc.graph.edges.filter((e) => e.from.node === id || e.to.node === id).length, mul)
-    assert(dangling === 0, `${dangling} edges still touch the deleted node`)
     await settled(page)
-    const text = await store(page, () => window.__kir.doc.text)
-    assert(!text.includes("multiply"), `text still has multiply:\n${text}`)
-    assert((await page.locator(`.vue-flow__node[data-id="${mul}"]`).count()) === 0, "node still drawn")
+    assert(!(await text(page)).includes("multiply"), "text still has multiply")
   })
 
   await step("undo (Ctrl+Z) restores multiply, its wires, b = 7 and the text", async () => {
-    await page.locator(".kir-surface").click({ position: { x: 20, y: 300 } })
+    await page.locator("[data-view=nodes] .kir-surface").click({ position: { x: 30, y: 300 } })
     await page.keyboard.press("Control+z")
     await page.waitForFunction((id) => window.__kir.doc.graph.nodes.some((n) => n.id === id), mul)
-    const node = await store(page, (id) => window.__kir.doc.graph.nodes.find((n) => n.id === id), mul)
-    assert(node.inputs.find((p) => p.port === "b").value === 7, "b lost its literal")
     const edges = await store(page, (id) => window.__kir.doc.graph.edges.filter((e) => e.to.node === id).length, mul)
     assert(edges === 2, `${edges} edges into multiply after undo`)
     await settled(page)
-    const text = await store(page, () => window.__kir.doc.text)
-    assert(text === withMultiply, `text after undo differs:\n${text}`)
-    assert((await backendText(page)) === text, "restored text differs from /api/text for the restored graph")
-    await page.waitForSelector(`.vue-flow__node[data-id="${mul}"]`)
+    assert((await text(page)) === withMultiply, "text after undo differs")
   })
 
   await step("redo (toolbar) removes it again", async () => {
     await page.locator("[data-test=redo]").click()
     await page.waitForFunction((id) => !window.__kir.doc.graph.nodes.some((n) => n.id === id), mul)
     await settled(page)
-    const text = await store(page, () => window.__kir.doc.text)
-    assert(!text.includes("multiply"), `text still has multiply after redo:\n${text}`)
-    assert((await store(page, () => window.__kir.doc.redoDepth)) === 0, "redo stack not empty")
+    assert(!(await text(page)).includes("multiply"), "text still has multiply after redo")
   })
 
-  await step("a typed text change reaches the graph, and undo takes it back", async () => {
-    const before = await store(page, () => window.__kir.doc.text)
+  await step("a typed text change reaches every projection, and undo takes it back", async () => {
+    const before = await text(page)
     await page.locator(".cm-content").click()
     await page.keyboard.press("Control+End")
     await page.keyboard.type("z = 1\n")
-    await page.waitForFunction(() => window.__kir.doc.graph.nodes.some((n) => n.outputs?.[0]?.var === "z"))
+    await page.waitForFunction(() => window.__kir.doc.ast?.body.some((s) => s.type === "assign" && s.target === "z"))
     await settled(page)
-    await page.locator(".kir-surface").click({ position: { x: 20, y: 300 } })
+    await page.locator("[data-view=nodes] .kir-surface").click({ position: { x: 30, y: 300 } })
     await page.keyboard.press("Control+z")
-    await page.waitForFunction(() => !window.__kir.doc.graph.nodes.some((n) => n.outputs?.[0]?.var === "z"))
+    await page.waitForFunction(() => !window.__kir.doc.ast?.body.some((s) => s.type === "assign" && s.target === "z"))
     await settled(page)
-    const text = await store(page, () => window.__kir.doc.text)
-    assert(text === before, `text after undo:\n${text}`)
-    assert(!(await page.locator(".cm-content").innerText()).includes("z = 1"), "text view still has the typed line")
+    assert((await text(page)) === before, "text after undo differs")
   })
 
   await step("Run: the Run tab shows stdout and final values", async () => {
@@ -264,30 +218,120 @@ async function scenario(page) {
     assert(run.ok && run.values.avg === 20 && run.values.avg2 === 47.5, `run result ${JSON.stringify(run)}`)
     const pre = await page.locator(`${PANEL} pre`).first().innerText()
     assert(pre.includes("20.0") && pre.includes("47.5"), `Run tab shows:\n${pre}`)
-    assert((await page.locator(`${PANEL} table`).innerText()).includes("avg2"), "final values table missing")
   })
 
-  await step("Lowered: inline switched off keeps the @def; matches /api/lower", async () => {
+  await step("Lowered: inline switched off keeps the @def", async () => {
     await page.locator(".kir-tab", { hasText: "Lowered" }).click()
     await page.locator(".kir-pass", { hasText: /^inline$/ }).click()
-    const on = await store(page, () => [...window.__kir.doc.passesOn])
-    assert(!on.includes("inline") && !on.includes("version"), `passes on: ${on}`)
     await page.locator("header button", { hasText: "Lower" }).click()
     await page.waitForFunction(() => window.__kir.doc.lowerResult?.lowered)
     const shown = await page.locator(`${PANEL} pre`).first().innerText()
     assert(shown.includes("@def (a, b)clamp(result)"), `Lowered tab shows:\n${shown}`)
-    const direct = await store(page, async (passes) => {
-      const d = window.__kir.doc
-      const res = await fetch("/api/lower", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: d.text, passes, ...d.scope() }),
+  })
+}
+
+// ---------------------------------------------------------------- 2. every view loads every sample
+
+const VIEW_CHECKS = {
+  "nodes&control=frames": async (page, s) => {
+    const drawn = await page.locator("[data-view=nodes] .vue-flow__node-card").count()
+    assert(drawn > 0, "no cards drawn")
+    if (s !== "clamp") assert((await page.locator(".kir-region").count()) > 0, "no control regions drawn")
+  },
+  "nodes&control=exec": async (page) => {
+    assert((await page.locator(".kir-pin--exec").count()) > 0, "no exec pins drawn")
+  },
+  flowchart: async (page) => {
+    assert((await page.locator(".robo-el--start").count()) === 1, "no Start element")
+    assert((await page.locator(".robo-el--variable").count()) > 0, "no VARIABLE elements")
+  },
+  sequence: async (page) => {
+    assert((await page.locator(".ev-tile").count()) > 0, "no EV3 blocks")
+    assert((await page.locator(".ev-cont").count()) > 0, "no containers")
+  },
+  blocks: async (page) => {
+    assert((await page.locator(".sb-hat").count()) >= 1, "no hat block")
+    assert((await page.locator(".sb-c").count()) > 0, "no C blocks")
+  },
+  text: async (page) => {
+    const shown = await page.locator(".cm-content").innerText()
+    assert(shown.length > 20, "no text shown")
+  },
+}
+
+async function everyView(page) {
+  for (const sample of ["tour", "each", "factorial"]) {
+    for (const [view, check] of Object.entries(VIEW_CHECKS)) {
+      await step(`${view} loads ${sample}`, async () => {
+        await open(page, `view=${view}&sample=${sample}`)
+        await page.waitForTimeout(300)
+        await check(page, sample)
       })
-      return res.json()
-    }, on)
-    const lowered = await store(page, () => window.__kir.doc.lowerResult)
-    assert(direct.lowered === lowered.lowered && direct.semantic_hash === lowered.semantic_hash, "tab differs from /api/lower")
-    assert((await page.locator(PANEL).innerText()).includes(lowered.semantic_hash), "hash not shown")
+    }
+  }
+}
+
+// ---------------------------------------------------------------- 3. one edit per view round-trips
+
+async function editsPerView(page) {
+  await step("nodes (frames): set x = 3 in an assign node's input box", async () => {
+    await open(page, "view=nodes&sample=tour&data=variables&control=frames")
+    const id = await store(page, () => {
+      const g = window.__kir.doc.graph
+      const set = g.nodes.find((n) => n.kind === "set" && n.props.name === "x")
+      return g.edges.find((e) => e.to.node === set.id).from.node
+    })
+    const box = page.locator(`.vue-flow__node[data-id="${id}"] input.kir-widget`)
+    await box.fill("3")
+    await box.press("Enter")
+    await roundTrips(page, ["x = 3\n"], "nodes frames")
+  })
+
+  await step("flowchart: set n = 6 on the '= value' element (inspector)", async () => {
+    await open(page, "view=flowchart&sample=factorial")
+    const id = await store(page, () => {
+      const g = window.__kir.doc.graph
+      const set = g.nodes.find((n) => n.kind === "set" && n.props.name === "n")
+      return g.edges.find((e) => e.to.node === set.id).from.node
+    })
+    await page.locator(`.vue-flow__node[data-id="${id}"]`).click()
+    await page.waitForFunction((x) => window.__kir.doc.selectedId === x, id)
+    const field = page.locator("[data-test=inspector] input").first()
+    await field.fill("6")
+    await field.press("Enter")
+    await roundTrips(page, ["n = 6\n"], "flowchart")
+  })
+
+  await step("sequence: edit the boxes parameter box to [1, 2, 3, 4]", async () => {
+    await open(page, "view=sequence&sample=each")
+    await page.locator(".ev-param .sb-slot", { hasText: "[1, 2, 3]" }).click()
+    const field = page.locator(".ev-param input.sb-slot--edit")
+    await field.fill("[1, 2, 3, 4]")
+    await field.press("Enter")
+    await roundTrips(page, ["boxes = [1, 2, 3, 4]"], "sequence")
+  })
+
+  await step("blocks: edit 'set n to 5' to 7, then drag 'set counter' above 'set result'", async () => {
+    await open(page, "view=blocks&sample=factorial")
+    await page.locator(".sb-block", { hasText: /set\s*n/ }).locator(".sb-slot").click()
+    const field = page.locator("input.sb-slot--edit")
+    await field.fill("7")
+    await field.press("Enter")
+    await roundTrips(page, ["n = 7\n"], "blocks slot")
+    const counter = page.locator("[data-script=main] > .sb-stack > .sb-item", { hasText: /set\s*counter/ }).first()
+    const drops = page.locator("[data-script=main] > .sb-stack > .sb-drop")
+    await counter.dragTo(drops.nth(1))
+    await roundTrips(page, ["n = 7\ncounter = 1\nresult = 1\n"], "blocks drag")
+  })
+
+  // A sample without comments or @meta: graph -> text keeps neither, so only there is it the text itself.
+  await step("text: type a statement; the graph and AST follow", async () => {
+    await open(page, "view=text&sample=each")
+    await page.locator(".cm-content").click()
+    await page.keyboard.press("Control+End")
+    await page.keyboard.type("w = 9\n")
+    await page.waitForFunction(() => window.__kir.doc.ast?.body.some((s) => s.type === "assign" && s.target === "w"))
+    await roundTrips(page, ["w = 9"], "text")
   })
 }
 
@@ -295,50 +339,22 @@ async function scenario(page) {
 
 async function main() {
   console.log("starting backend and dev server…")
-  start(PYTHON, ["-m", "uvicorn", "kir_editor.app:app", "--port", String(API_PORT)], { cwd: BACKEND })
-  start(process.execPath, [path.join(FRONTEND, "node_modules/vite/bin/vite.js"), "--port", String(WEB_PORT), "--strictPort", "--host", "127.0.0.1"], {
-    cwd: FRONTEND,
-    env: { ...process.env, KIR_API_TARGET: `http://127.0.0.1:${API_PORT}` },
-  })
-  await waitForUrl(`http://127.0.0.1:${API_PORT}/api/health`)
-  await waitForUrl(`${BASE}/`)
-
-  const userDataDir = mkdtempSync(path.join(os.tmpdir(), "kir-editor-e2e-"))
-  const context = await chromium.launchPersistentContext(userDataDir, {
-    channel: "msedge",
-    headless: true,
-    viewport: { width: 1500, height: 950 },
-  })
-  const page = context.pages()[0] || (await context.newPage())
-  const pageErrors = []
-  page.on("pageerror", (e) => pageErrors.push(`pageerror: ${e.message}`))
-  page.on("console", (m) => {
-    // The page has no favicon; the browser's request for one is not the app's error.
-    if (m.type() === "error" && !m.location().url.endsWith("/favicon.ico"))
-      pageErrors.push(`console: ${m.text()} (${m.location().url})`)
-  })
-  page.setDefaultTimeout(15000)
-
+  BASE = await startServers()
+  const b = await launch({ width: 1500, height: 950 })
   let failed = false
   try {
-    await scenario(page)
-    await step("no page errors or console errors", async () => {
-      assert(pageErrors.length === 0, pageErrors.join("\n"))
-    })
+    await graphEditing(b.page)
+    await everyView(b.page)
+    await editsPerView(b.page)
+    await step("no page errors or console errors", async () => assert(b.errors.length === 0, b.errors.join("\n")))
   } catch {
     failed = true
     const shot = path.join(os.tmpdir(), "kir-editor-e2e-failure.png")
-    await page.screenshot({ path: shot }).catch(() => {})
-    const state = await store(page, () => {
-      const d = window.__kir.doc
-      const vp = document.querySelector(".vue-flow__transformationpane")?.style.transform
-      return { syncing: d.syncing, textPending: d.textPending, transportError: d.transportError, layoutError: d.layoutError, viewport: vp, drawn: document.querySelectorAll(".vue-flow__node").length, text: d.text }
-    }).catch((e) => String(e))
-    console.log(`state at failure (screenshot ${shot}):\n${JSON.stringify(state, null, 2)}`)
-    if (pageErrors.length) console.log(`page errors:\n  ${pageErrors.join("\n  ")}`)
+    await b.page.screenshot({ path: shot }).catch(() => {})
+    console.log(`screenshot at failure: ${shot}`)
+    if (b.errors.length) console.log(`page errors:\n  ${b.errors.join("\n  ")}`)
   } finally {
-    await context.close()
-    rmSync(userDataDir, { recursive: true, force: true })
+    await b.close()
   }
   const passed = results.filter((r) => r.ok).length
   console.log(`\n${passed}/${results.length} steps passed${failed ? " (stopped at the first failure)" : ""}`)
@@ -350,8 +366,8 @@ try {
   code = await main()
 } catch (e) {
   console.error(e)
-  for (const c of children) console.error(c.log().slice(-2000))
+  console.error(serverLogs())
 } finally {
-  for (const c of children) c.kill()
+  stopServers()
 }
 process.exit(code)

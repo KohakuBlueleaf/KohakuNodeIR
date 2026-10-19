@@ -11,7 +11,7 @@ import { indentWithTab } from "@codemirror/commands"
 import { indentUnit } from "@codemirror/language"
 import { lintGutter, setDiagnostics } from "@codemirror/lint"
 
-import { kir } from "@/components/text/kirLanguage"
+import { kir } from "@/views/text/kirLanguage"
 import { useDocumentStore } from "@/stores/document"
 import { useUiStore } from "@/stores/ui"
 

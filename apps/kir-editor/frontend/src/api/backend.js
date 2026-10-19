@@ -13,10 +13,11 @@ async function post(path, body) {
   return res.json()
 }
 
-/** `scope`: `{signatures: [kirsig json], use_demo: bool}`. */
-export const textToGraph = (text, scope) => post("graph", { text, ...scope })
+/** `scope`: `{signatures: [kirsig json], use_demo: bool}`; `data`: "variables" or "wires". */
+export const textToGraph = (text, scope, data) => post("graph", { text, data, ...scope })
 export const graphToText = (graph, scope, withMeta) =>
   post("text", { graph, with_meta: withMeta, ...scope })
+export const astToText = (ast, scope) => post("ast/text", { ast, ...scope })
 export const checkText = (text, scope) => post("check", { text, ...scope })
 /** `passes`: optimization passes to run, in order; null runs all, [] runs the program as written. */
 export const lowerText = (text, scope, passes) => post("lower", { text, passes, ...scope })

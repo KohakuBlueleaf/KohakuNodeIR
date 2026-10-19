@@ -28,6 +28,22 @@ function toward(from, to, r) {
 }
 
 /**
+ * A control edge that returns leftwards into a left-side port (node view):
+ * out to the right of the source, under both ends, back in from the left.
+ */
+export function loopPointsLeft(sx, sy, tx, ty, lane = 40) {
+  const y = Math.max(sy, ty) + lane
+  return [
+    { x: sx, y: sy },
+    { x: sx + 16, y: sy },
+    { x: sx + 16, y },
+    { x: tx - 16, y },
+    { x: tx - 16, y: ty },
+    { x: tx, y: ty },
+  ]
+}
+
+/**
  * A control edge that returns upwards (into a loop entry, or an `each` node's
  * `next` port on its right side): out below the source, round the right of
  * both ends, back in from above or from the right.

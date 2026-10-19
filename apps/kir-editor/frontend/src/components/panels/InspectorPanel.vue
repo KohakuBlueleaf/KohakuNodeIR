@@ -1,5 +1,5 @@
 <template>
-  <aside class="h-full flex flex-col bg-warm-100 dark:bg-warm-950 border-l border-warm-200 dark:border-warm-800 min-w-0">
+  <aside data-test="inspector" class="h-full flex flex-col bg-warm-100 dark:bg-warm-950 border-l border-warm-200 dark:border-warm-800 min-w-0">
     <div class="panel-head">
       <span class="i-carbon-settings-adjust text-iolite" />
       <span class="text-xs font-semibold text-warm-700 dark:text-warm-200">Inspector</span>
@@ -9,7 +9,7 @@
 
     <div v-if="!node" class="p-3 text-xs text-warm-500 leading-relaxed">
       <p>Select a node to see its ports, types, hints and meta.</p>
-      <p class="mt-2">Drag from a port to a port of the same axis to wire: control top → bottom, data left → right. Del removes the selection.</p>
+      <p class="mt-2">In the node and flowchart views, drag from an output port to an input port of the same kind (control or data) to wire them; Del removes the selection. The blocks and sequence views edit statements in place.</p>
       <div class="mt-4 section-title">Graph · {{ docStore.graphName }}</div>
       <div class="mt-1 font-mono text-[11px]">{{ docStore.graph?.nodes.length ?? 0 }} nodes · {{ docStore.graph?.edges.length ?? 0 }} edges</div>
       <template v-if="docStore.graph?.params">
@@ -38,15 +38,19 @@
       <!-- Kind-specific properties -->
       <section v-if="node.kind === 'value'" class="flex flex-col gap-2">
         <InspectorField label="literal" :value="formatLiteral(node.props.value)" :commit="(t) => edit((n) => (n.props.value = parseLiteral(t)))" />
-        <InspectorField label="name" :value="node.outputs[0].var || ''" :commit="(t) => edit((n) => (n.outputs[0].var = ident(t)))" />
-        <InspectorField label="type (optional)" :value="node.outputs[0].type || ''" :commit="(t) => edit((n) => setType(n.outputs[0], t))" />
+        <div class="text-[11px] text-warm-500">A wire from a literal is the same as writing it in the input box it feeds.</div>
       </section>
       <section v-else-if="node.kind === 'get'" class="flex flex-col gap-2">
-        <InspectorField label="reads name" :value="node.props.name" :commit="(t) => edit((n) => (n.props.name = n.outputs[0].var = ident(t)))" />
+        <InspectorField label="reads variable" :value="node.props.name" :commit="(t) => edit((n) => (n.props.name = ident(t)))" />
       </section>
       <section v-else-if="node.kind === 'set'" class="flex flex-col gap-2">
-        <InspectorField label="writes name" :value="node.props.name" :commit="(t) => edit(renameSet(t))" />
-        <div v-if="!node.props.copy" class="text-[11px] text-warm-500">Shows a name written on several paths; the write itself is the node feeding it.</div>
+        <InspectorField label="writes variable" :value="node.props.name" :commit="(t) => edit((n) => (n.props.name = ident(t)))" />
+        <div class="text-[11px] text-warm-500">Names the output wired into it: the write happens when that node runs.</div>
+      </section>
+      <section v-else-if="node.kind === 'assign'" class="flex flex-col gap-2">
+        <InspectorField v-if="!wiredFrom('value')" label="value (literal)" :value="'value' in node.inputs[0] ? formatLiteral(node.inputs[0].value) : ''" :commit="(t) => edit(setInputValue(0, t))" />
+        <InspectorField label="variable (empty: named by a set node)" :value="node.outputs[0].var || ''" :commit="(t) => edit((n) => setVar(n.outputs[0], t))" />
+        <InspectorField label="type (optional)" :value="node.outputs[0].type || ''" :commit="(t) => edit((n) => setType(n.outputs[0], t))" />
       </section>
       <section v-else-if="node.kind === 'branch'" class="grid grid-cols-2 gap-2">
         <InspectorField label="true → namespace" :value="node.props.labels.true" :commit="(t) => edit((n) => (n.props.labels.true = ident(t)))" />
@@ -86,7 +90,7 @@
       </section>
 
       <!-- Ports -->
-      <section v-if="node.inputs?.length && node.kind !== 'value'">
+      <section v-if="node.inputs?.length && !['value', 'set', 'assign'].includes(node.kind)">
         <div class="section-title mb-1">Inputs</div>
         <div class="flex flex-col gap-1.5">
           <div v-for="(p, i) in node.inputs" :key="p.port" class="flex flex-col gap-0.5">
@@ -103,7 +107,7 @@
         </div>
       </section>
 
-      <section v-if="node.outputs?.length && !['value', 'get'].includes(node.kind)">
+      <section v-if="node.outputs?.length && !['value', 'get', 'assign'].includes(node.kind)">
         <div class="section-title mb-1">Outputs</div>
         <div class="flex flex-col gap-1.5">
           <div v-for="(p, i) in node.outputs" :key="p.port" class="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-0.5">
@@ -184,9 +188,10 @@ const setOutputVar = (i, text) => (n) => {
   n.outputs[i].var = text.trim() ? ident(text) : null
 }
 
-const renameSet = (text) => (n) => {
-  n.props.name = ident(text)
-  for (const o of n.outputs || []) o.var = n.props.name
+function setVar(port, text) {
+  const t = text.trim()
+  if (t) port.var = ident(t)
+  else delete port.var
 }
 
 const setMergeLabel = (text) => (n) => {

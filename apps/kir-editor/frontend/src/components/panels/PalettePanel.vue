@@ -72,12 +72,13 @@ const query = ref("")
 const collapsed = reactive({ "kir.std": true })
 
 const BUILTINS = [
-  { kind: "value", icon: "i-carbon-character-whole-number", hint: "name = literal" },
-  { kind: "get", icon: "i-carbon-download", hint: "read a name written on several paths" },
-  { kind: "set", icon: "i-carbon-upload", hint: "name = another name" },
+  { kind: "assign", icon: "i-carbon-assignment", hint: "name = value: a command on the control chain" },
+  { kind: "value", icon: "i-carbon-character-whole-number", hint: "a literal as a node (graph views)" },
+  { kind: "get", icon: "i-carbon-download", hint: "read a variable (graph views)" },
+  { kind: "set", icon: "i-carbon-upload", hint: "name the output wired into it (graph views)" },
   { kind: "branch", icon: "i-carbon-flow-connection", hint: "(cond)branch(`t`, `f`)" },
   { kind: "switch", icon: "i-carbon-tree-view-alt", hint: "(value)switch(1=>`a`, _=>`b`)" },
-  { kind: "merge", icon: "i-carbon-direction-merge", hint: "join control paths; a label makes it a loop entry (jump target)" },
+  { kind: "merge", icon: "i-carbon-direction-merge", hint: "join control paths; with a label it is a loop entry (in the statement views: a loop)" },
   { kind: "each", icon: "i-carbon-repeat", hint: "(items)each(item, index, `body`)" },
   { kind: "parallel", icon: "i-carbon-split", hint: "()parallel(`a`, `b`)" },
   { kind: "try", icon: "i-carbon-warning-alt", hint: "@try: … @except err: …" },

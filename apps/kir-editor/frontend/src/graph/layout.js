@@ -1,18 +1,21 @@
 /**
- * ELK layered layout of one graph, top to bottom along control flow.
+ * ELK layered layout of one graph, for any view style.
  *
- * Every port is given to ELK at its fixed position and side (control
- * NORTH/SOUTH, data WEST/EAST), so routes end where the handles are drawn.
- * Back edges (jumps back into a labelled merge, returns into an `each` node's
- * `next` port) go into ELK reversed, so the layering follows control flow and
- * ELK routes them around the loop body. A dataflow node becomes a compound
- * node holding its members.
+ * The style gives each node's geometry (size and ports with side and
+ * position) and the flow direction. Every port goes to ELK at that fixed
+ * position, so routes end where the handles are drawn. Back edges (jumps
+ * back into a labelled merge, returns into an `each` node's `next` port) go
+ * into ELK reversed, so layering follows control flow and ELK routes them
+ * around the loop body. A dataflow node becomes a compound node holding its
+ * members.
  */
 
 import ElkApi from "elkjs/lib/elk-api.js"
 import elkWorkerUrl from "elkjs/lib/elk-worker.min.js?url"
 
-import { handleId, nodeGeometry } from "@/graph/geometry"
+import { edgeKey, handleId, isBackEdge, membership, sourceHandle, targetHandle } from "@/graph/ports"
+
+export { edgeKey, membership } from "@/graph/ports"
 
 const ELK_SIDE = { top: "NORTH", bottom: "SOUTH", left: "WEST", right: "EAST" }
 export const FRAME_PAD = { top: 34, side: 18, bottom: 18 }
@@ -50,30 +53,6 @@ async function runElk(graph) {
   return mainElk.layout(graph)
 }
 
-export const edgeKey = (e) =>
-  `${e.kind}|${e.from.node}|${e.from.port}|${e.to.node}|${e.to.port}`
-
-export const sourceHandle = (e) => handleId(e.kind === "ctrl" ? "ctrl" : "data", "out", e.from.port)
-export const targetHandle = (e) => handleId(e.kind === "ctrl" ? "ctrl" : "data", "in", e.to.port)
-
-/** A control edge closing a loop: into a labelled merge (a jump back), or into an `each` node's `next`. */
-export function isBackEdge(e, byId) {
-  if (e.kind !== "ctrl") return false
-  const target = byId.get(e.to.node)
-  if (target?.kind === "each") return e.to.port === "next"
-  if (target?.kind !== "merge" || !target.props?.label) return false
-  // The first entry into a loop merge comes from before the loop; the others come back to it.
-  return e.to.port !== "in_0"
-}
-
-/** Map member node id -> dataflow node id. */
-export function membership(graph) {
-  const out = new Map()
-  for (const n of graph.nodes)
-    if (n.kind === "dataflow") for (const m of n.props?.members || []) out.set(m, n.id)
-  return out
-}
-
 function borderPoint(p, w, h) {
   if (p.side === "top") return { x: p.x, y: 0 }
   if (p.side === "bottom") return { x: p.x, y: h }
@@ -81,8 +60,8 @@ function borderPoint(p, w, h) {
   return { x: w, y: p.y }
 }
 
-function leaf(node, ctx, portIds) {
-  const g = nodeGeometry(node, ctx)
+function leaf(node, style, portIds) {
+  const g = style.geometry(node)
   const ports = g.ports.map((p) => {
     const id = `${node.id}|${p.handle}`
     portIds.add(id)
@@ -103,10 +82,11 @@ function leaf(node, ctx, portIds) {
   }
 }
 
-function frame(node, members, portIds) {
+function frame(node, members, style, portIds) {
+  const [inSide, outSide] = style.frameSides
   const ports = [
-    ...(node.ctrl_in || []).map((p) => [handleId("ctrl", "in", p), "NORTH"]),
-    ...(node.ctrl_out || []).map((p) => [handleId("ctrl", "out", p), "SOUTH"]),
+    ...(node.ctrl_in || []).map((p) => [handleId("ctrl", "in", p), inSide]),
+    ...(node.ctrl_out || []).map((p) => [handleId("ctrl", "out", p), outSide]),
   ].map(([h, side]) => {
     const id = `${node.id}|${h}`
     portIds.add(id)
@@ -125,7 +105,8 @@ function frame(node, members, portIds) {
   }
 }
 
-export function buildElkGraph(graph, ctx) {
+/** `style`: `{geometry(node), direction: "DOWN"|"RIGHT", frameSides: [inSide, outSide]}`. */
+export function buildElkGraph(graph, style) {
   const memberOf = membership(graph)
   const byId = new Map(graph.nodes.map((n) => [n.id, n]))
   const portIds = new Set()
@@ -136,10 +117,10 @@ export function buildElkGraph(graph, ctx) {
       const members = (n.props?.members || [])
         .map((m) => byId.get(m))
         .filter(Boolean)
-        .map((m) => leaf(m, ctx, portIds))
-      children.push(frame(n, members, portIds))
+        .map((m) => leaf(m, style, portIds))
+      children.push(frame(n, members, style, portIds))
     } else {
-      children.push(leaf(n, ctx, portIds))
+      children.push(leaf(n, style, portIds))
     }
   }
   const edges = []
@@ -156,20 +137,21 @@ export function buildElkGraph(graph, ctx) {
     }
     edges.push({ id: edgeKey(e), sources: [ends[0]], targets: [ends[1]] })
   }
+  const across = style.direction === "RIGHT"
   return {
     id: "root",
     reversed,
     layoutOptions: {
       "elk.algorithm": "layered",
-      "elk.direction": "DOWN",
+      "elk.direction": style.direction,
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.edgeRouting": "ORTHOGONAL",
       "elk.json.edgeCoords": "ROOT",
-      "elk.spacing.nodeNode": "36",
+      "elk.spacing.nodeNode": across ? "28" : "36",
       "elk.spacing.edgeNode": "16",
       "elk.spacing.edgeEdge": "10",
       "elk.spacing.componentComponent": "60",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "44",
+      "elk.layered.spacing.nodeNodeBetweenLayers": across ? "70" : "44",
       "elk.layered.spacing.edgeNodeBetweenLayers": "16",
       "elk.layered.spacing.edgeEdgeBetweenLayers": "10",
       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
@@ -177,6 +159,14 @@ export function buildElkGraph(graph, ctx) {
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
       "elk.layered.nodePlacement.favorStraightEdges": "true",
       "elk.separateConnectedComponents": "true",
+      // A long left-to-right chain wraps into rows instead of one thin strip.
+      ...(across
+        ? {
+            "elk.layered.wrapping.strategy": "MULTI_EDGE",
+            "elk.aspectRatio": String(style.aspect || 1.6),
+            "elk.layered.wrapping.additionalEdgeSpacing": "24",
+          }
+        : {}),
     },
     children,
     edges,
@@ -197,8 +187,8 @@ function collectRoutes(node, out) {
  * `{positions: {id: {x, y}}, frames: {id: {w, h, ports: {handle: {x, y}}}}, routes: {edgeKey: [{x, y}]}, absolute: {id: {x, y}}}`;
  * member positions are relative to their frame, `absolute` holds page positions.
  */
-export async function layoutGraph(graph, ctx) {
-  const { reversed, ...input } = buildElkGraph(graph, ctx)
+export async function layoutGraph(graph, style) {
+  const { reversed, ...input } = buildElkGraph(graph, style)
   const result = await runElk(input)
   const positions = {}
   const absolute = {}

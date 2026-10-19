@@ -1,31 +1,48 @@
 # kir-editor
 
-An example node editor for KIR v2. It is a client of the toolchain, not part
-of it: the Python package `kohakunode` (in `src/`) parses, checks, converts,
-lowers and runs programs; machines consume KIR text. The editor shows one
-program three ways (graph, text, blocks) and keeps them in step through a
-thin HTTP backend over `kohakunode`.
+An example editor for KIR v2. It is a client of the toolchain, not part of
+it: the Python package `kohakunode` (in `src/`) parses, checks, converts,
+lowers and runs programs; machines consume KIR text.
+
+The editor shows **one program in several visual styles**. The text is the
+source of truth; every view is a projection of it, and an edit in any view
+rewrites the program, after which every view is drawn again.
+
+| View | Style | Drawn from |
+|---|---|---|
+| **Nodes** (default) | ComfyUI / Blender / Unreal: data flows left → right; literal inputs are input boxes inside the node | the graph document |
+| **Flowchart** | classic ROBO Pro: blue program flow from a Start element, orange data lines, yellow VARIABLE elements | the graph document (variables style) |
+| **Sequence** | LEGO EV3: a sequence beam of coloured blocks, parameter boxes along their bottoms, data wires underneath | the AST |
+| **Blocks** | Scratch: hats, command blocks with slots, C blocks | the AST |
+| **Text** | KIR text with highlighting and diagnostics | — |
+| **Split** | any two of the above side by side | — |
 
 ```
 apps/kir-editor/
-  backend/                 FastAPI over kohakunode
+  backend/                   FastAPI over kohakunode
     kir_editor/
-      app.py               create_app(); `uvicorn kir_editor.app:app`
-      config.py            settings from the environment
-      api/                 routes and request bodies
+      app.py                 create_app(); `uvicorn kir_editor.app:app`
+      config.py              settings from the environment
+      api/                   routes and request bodies
       core/
-        toolchain.py       every operation as one kohakunode call
-        outline.py         block structure of a program (Blocks view)
-        demo_nodes.py      `demo`, the runnable node library
-    signatures/            .kirsig.json files listed in the palette (`vision`)
-    tests/test_api.py      API smoke tests
-  frontend/                Vue 3 + Vite + Pinia + UnoCSS + Vue Flow + elkjs + CodeMirror 6
+        toolchain.py         every operation as one kohakunode call
+        ast_json.py          programs as JSON and back (the statement views' AST)
+        demo_nodes.py        `demo`, the runnable node library
+    signatures/              .kirsig.json files listed in the palette (`vision`)
+    tests/test_api.py        API tests against the golden corpus and the samples
+  frontend/                  Vue 3 + Vite + Pinia + UnoCSS + Vue Flow + elkjs + CodeMirror 6
     src/
-      api/                 backend client
-      graph/               pure graph logic: geometry, ELK layout, edits, Vue Flow mapping
-      stores/              document (text + graph + layout), library, ui
-      components/          chrome, graph canvas and nodes, text editor, blocks, panels
-      samples/             programs shipped with the editor
+      api/                   backend client
+      stores/                document (text, graph, AST, layouts, history), library, ui (view knobs)
+      graph/                 graph-view logic: ports, ELK layout, frames layout, edits, Vue Flow mapping
+        styles/              node geometry per view: card.js (nodes), robo.js (flowchart)
+      program/               statement-view logic: grouping into constructs, edits, new statements
+      views/
+        nodes/ flowchart/ sequence/ blocks/ text/   one folder per view
+        shared/              graph canvas, wire edge, literal widget, knob switch, legend
+      components/            chrome (header, status bar) and panels (palette, inspector, bottom)
+      samples/               programs shipped with the editor
+    tests/e2e/               browser smoke test and screenshot tool (playwright-core + Edge)
 ```
 
 ## Run
@@ -56,21 +73,45 @@ Backend settings:
 | `KIR_EDITOR_SIG_DIR` | `backend/signatures` | directories of `.kirsig.json` files (os.pathsep separated); listed in the palette and searched by `@use` |
 | `KIR_EDITOR_STEP_BUDGET` | `200000` | node calls one run may make |
 
-URL parameters choose the start state: `?sample=tour|factorial|each|clamp`,
-`&view=graph|split|text|blocks`, `&graph=<@def name>`, `&theme=light|dark`.
+## View knobs
 
-Tests:
+Every knob is in the UI and persists per viewer (localStorage). URL
+parameters override them for one page load:
 
-- Backend API: `cd apps/kir-editor/backend && ../../../.venv/Scripts/python.exe -m pytest`.
-- Browser smoke: `cd apps/kir-editor/frontend && npm run test:e2e`. It starts the
+| Parameter | Values | Meaning |
+|---|---|---|
+| `view` | `nodes` `flowchart` `sequence` `blocks` `text` `split` | the view on screen |
+| `split` | `<view>,<view>` | the two views of `split` |
+| `data` | `variables` (default), `wires` | node view: every read a `get` pill and every write a `set` pill (name → node → name), or reads wired straight to their only write |
+| `control` | `auto` (default), `exec`, `frames` | node view: Unreal-style exec pins and wires; or control as boxing (each namespace, branch arm, loop body, `each` body, `@try` / `@except`, `@dataflow` is a framed region, statements top to bottom, no control wires); `auto` is frames, or nothing when the graph has no control statements |
+| `lanes` | `stacked` (default), `tabs` | sequence view: switch / parallel / try lanes all shown, or one at a time |
+| `sample` | `tour` `factorial` `each` `clamp` | the program to open |
+| `graph` | a `@def` name | which graph the node and flowchart views show |
+| `theme` | `light` `dark` | |
+
+## Tests
+
+- Backend: `cd apps/kir-editor/backend && ../../../.venv/Scripts/python.exe -m pytest`.
+  Against the golden corpus: the graph (both data styles) is the golden
+  `.kirgraph` byte for byte; text → graph → text is a fixed point; AST → JSON →
+  text is the golden canonical text for every case; the structure tags every
+  statement with its node; plus diagnostics, passes, runs of every sample.
+- Browser smoke: `cd apps/kir-editor/frontend && npm run test:e2e`. Starts the
   backend and the dev server on their own ports (48931, 5931; `KIR_E2E_API_PORT`,
-  `KIR_E2E_WEB_PORT`), drives the installed Microsoft Edge headless through
-  playwright-core with a fresh profile, and on the `clamp` sample: drags a node
-  in, wires a data and a control edge, edits a literal, deletes the node, undoes
-  and redoes, undoes a typed text change, runs, and lowers with a pass switched
-  off. Each step is checked against the DOM, the stores (the dev build exposes
-  them as `window.__kir`) and the backend's own answers. `KIR_PYTHON` overrides
-  the Python that runs the backend.
+  `KIR_E2E_WEB_PORT`, `KIR_PYTHON`), drives the installed Microsoft Edge
+  headless through playwright-core with a fresh profile, and checks against the
+  DOM, the stores (the dev build exposes them as `window.__kir`) and the
+  backend's own answers:
+  1. node view editing: drag a node in, wire data and exec, type a literal in
+     the node's input box, delete, undo, redo, undo a typed text change, run,
+     lower with a pass off;
+  2. every view (nodes in frames and exec, flowchart, sequence, blocks, text)
+     loads the `tour`, `each` and `factorial` samples;
+  3. one edit per view round-trips: afterwards `/api/text` of the graph and
+     `/api/ast/text` of the AST both equal the text;
+  4. no page or console errors.
+- Screenshots: `npm run shots -- <dir> [filter]` saves one image per view ×
+  style (light, plus a dark round).
 
 ## API
 
@@ -80,64 +121,99 @@ come back as `diagnostics: [{code, severity, message, line, column}]`.
 
 | Route | Body | Returns |
 |---|---|---|
-| `POST /api/graph` | `text` | `graph` (.kirgraph), `outline`, `diagnostics` |
-| `POST /api/text` | `graph`, `with_meta` | canonical `text`, `outline`, `diagnostics` |
+| `POST /api/graph` | `text`, `data` | `graph` (.kirgraph) in that data style, `structure`, `ast`, `diagnostics` |
+| `POST /api/text` | `graph`, `with_meta` | canonical `text`, `structure`, `ast`, `diagnostics` |
+| `POST /api/ast/text` | `ast` | canonical `text`, `diagnostics` |
 | `POST /api/check` | `text` | `diagnostics` |
 | `POST /api/lower` | `text`, `passes` | `lowered` text, `semantic_hash`, `full_hash`, `diagnostics` |
 | `POST /api/run` | `text`, `passes` | `ok`, final `values`, `stdout`, `diagnostics` |
 | `GET /api/passes` | | the optimization passes in order, with what each needs |
 | `GET /api/signatures` | | `kir.std`, `demo`, then the signature directory |
 
-`passes` is a list of pass names in order; omitted or null runs all of them,
-`[]` runs the program as written.
+- `ast`: the program as JSON (`core/ast_json.py`): `{uses, mode, body}`, every
+  statement `{type, line, meta?, hint?, …}`, expressions `{name}` / `{lit}`.
+- `structure`: per graph name, its statements as graph → text reads them,
+  each carrying `meta.node_id` of the node it stands for. The node view boxes
+  nodes into regions with it.
+- `passes`: pass names in order; omitted or null runs all, `[]` runs the
+  program as written.
 
 ## How it works
 
-**Two copies, one direction at a time.** The document store holds the text
-and the graph document. Typing in the text view re-derives the graph
-(`/api/graph`) and lays it out again. Editing the graph (adding a node from
-the palette, wiring ports, deleting, changing a property in the inspector)
-re-derives the text (`/api/text`) and leaves the graph and its layout as the
-user arranged them. Node ids and positions survive a text edit only when the
-text carries them: the `@meta` toggle writes `@meta node_id=… pos=(…)` on
-every statement, and positions from `@meta pos` are used when present.
+**Text first.** The document store holds the text and its projections: the
+graph document (for the node and flowchart views, in the data style they
+ask for) and the AST (for the blocks and sequence views). Typing in the text
+view re-derives both. A graph edit (adding a node, wiring, deleting, typing in
+an input box, the inspector) goes graph → text and re-derives the AST; the
+graph and its layout stay as the user arranged them. A statement edit in the
+blocks or sequence view goes AST → text → graph. Comments live only in the
+text: an edit made in another view writes canonical text. Node ids and
+positions survive a text edit only when the text carries them (the `@meta`
+toggle).
 
 **Undo / redo.** Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y and the header buttons. Every
-graph edit (add, delete, wire, unwire, inspector change) and every text
-change applied to the graph first records a snapshot of the graph document,
-node positions and the matching text, in a stack of 100; undo and redo swap
-whole snapshots. Inside the text editor and input fields the keys keep their
-own undo. Opening a file or sample starts a new history.
+edit, from any view, first records a snapshot (graph, AST, layouts, the
+matching text) in a stack of 100; undo and redo swap whole snapshots. Inside
+the text editor and input fields the keys keep their own undo. Opening a file
+or sample starts a new history.
 
-**Graph view.** Control ports sit on the top and bottom edges, data ports on
-the left and right sides; control wires are iolite, data wires take the
-colour of their type (legend in the corner). Every kind has its own shape:
-call = rectangle (double border for a call to a `@def`), value = amber pill,
-`get` = dashed pill, `set` = dashed rectangle, branch = diamond with `T`/`F`
-ports labelled by their namespaces, switch = hexagon with one port per case,
-merge = funnel (shows its label when it is a loop entry, plus a free slot for
-one more incoming path), each = heavy-bordered node with `body`/`done` below
-and `next` on the right, parallel = bar, try = red-edged node, `@dataflow` =
-frame around its members, `inputs`/`outputs` = green nodes of a `@def` graph.
-`graph/geometry.js` computes every size and port position; ELK (layered,
-downwards) lays nodes out with exactly those ports, so its orthogonal routes
-end at the handles. Back edges (jumps back into a loop merge, returns into an
-`each` node's `next`) are given to ELK reversed, so layering follows control
-flow, and drawn dashed around the loop. An edge draws its ELK route until one
-of its ends is moved, then a curve. ELK runs in a web worker and falls back
-to the main thread when the worker does not answer.
+**Nodes view.** Cards with a header and one row per port; unwired data inputs
+carry an input box: a switch for bool, a number field, a text field, KIR
+literal syntax for lists, dicts and None. Variables are pills (`get x` with
+its output on the right, `set x` with its input on the left); a literal node
+is an amber pill with its own box. With `control=exec` every node has Unreal
+exec pins and ELK lays the graph out left to right, wrapping long chains into
+rows; back edges (jumps back into a loop merge, returns into an `each` node's
+`next`) go into ELK reversed and are drawn dashed. With `control=frames`
+(`graph/frames.js`) the regions come from the backend's `structure`, arms of
+one branch / switch / parallel / try sit side by side, pills sit beside the
+node they serve, and a node dropped into a region joins that region's
+sequence. Frames are laid out again after every edit.
+
+**Flowchart view.** `graph/styles/robo.js`: commands are rectangles on the
+flow, `x = v` is an "= value" pentagon whose output line runs to the VARIABLE
+element it writes, branch is a diamond with labelled exits, switch a
+hexagon, loops return to a labelled merge, `each` is a loop element with item
+and index outputs, parallel a bar, try a red-edged element. A Start element
+precedes the first statement and an End element follows every exit; both are
+view-only (ids with `__`) and never written back.
+
+**Sequence view.** Each script (the program, every `@def`) is a beam of
+tiles coloured by library (demo green, kir.std red, other libraries yellow,
+`@def` calls turquoise, variable writes magenta with a suitcase). Loops and
+`each` are orange containers, branch and switch are switch containers with a
+lane per case, parallel and try have a lane per arm. A data wire runs under
+the blocks from the plug that last wrote a variable to every parameter box
+that reads it, coloured by kind (number yellow, logic green, text orange,
+other grey). Click a parameter box to type a literal or a variable name;
+drag tiles to reorder or move them between lanes.
+
+**Blocks view.** A hat for the program and a `define` hat per `@def` (its
+parameters are reporters). Command blocks have round slots (numbers, text)
+and hexagonal ones (conditions); a variable in a slot is an orange reporter.
+C blocks: if / else (a `branch` and its two namespaces), switch with a mouth
+per case, for-each, loop (`()jump(`L`)` + `L:`, with "repeat loop" for the
+jumps back), parallel, try / except, labelled block, @dataflow. Drag blocks
+to reorder or nest, click a slot or a name to edit it, drag a variable from
+the variables strip into a slot, drop palette entries into any stack.
+
+`program/structure.js` groups a statement with its namespaces only when they
+follow it directly, so the grouping is exact: writing the blocks back gives
+the statements they came from, and moving a construct keeps where its arms
+continue.
 
 **Palette.** Builtins, the program's `@def`s, and every library from
-`/api/signatures` plus loaded `.kirsig.json` files. Drag a node onto the
-canvas or click it to drop it in the middle. A node from a library the
-program does not reach yet adds its `@use`. `demo` is given to every program
-unaliased while "in scope without @use" is on; turn it off when a loaded
-library shares node names with it (they would be ambiguous, E011).
+`/api/signatures` plus loaded `.kirsig.json` files. Drag an entry into any
+view or click it to add it there. A node from a library the program does not
+reach yet adds its `@use`. `demo` is given to every program unaliased while
+"in scope without @use" is on; turn it off when a loaded library shares node
+names with it (they would be ambiguous, E011).
 
-**Free nodes.** A call or value node with no control edge belongs to the
-dataflow part of the canvas: graph → text puts all such nodes in one
-`@dataflow:` block at the top (graph.md). Wire a node into the control chain
-when it reads something the chain writes.
+**Free nodes.** A call or assign node with no control edge belongs to the
+dataflow part of the graph: graph → text puts all such nodes in one
+`@dataflow:` block at the top (graph.md). Wire it into the control chain (or,
+in frames style, drop it into a region) when it reads something the chain
+writes.
 
 **Run.** `demo` (backend `core/demo_nodes.py`) has implementations; other
 libraries are signatures only, so a program using them checks, converts and

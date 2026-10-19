@@ -1,0 +1,178 @@
+/* Flowchart view: classic ROBO Pro. Blue program flow, orange data lines,
+   white command elements, yellow VARIABLE elements, green Start, red End. */
+
+.robo-surface {
+  --robo-blue: #1f5fd0;
+  --robo-orange: #e08a10;
+  --robo-fill: #ffffff;
+  --robo-ink: #1c2a44;
+  --robo-var: #ffe46b;
+  --kir-grid: #c9d4e8;
+  background: #f4f7fd;
+}
+html.dark .robo-surface {
+  --robo-fill: #20262f;
+  --robo-ink: #e3e9f5;
+  --robo-var: #8a7414;
+  --kir-grid: #2c3442;
+  background: #161a20;
+}
+
+.robo-el {
+  position: relative;
+  color: var(--robo-ink);
+}
+.robo-el__svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.robo-shape {
+  fill: var(--robo-fill);
+  stroke: var(--robo-blue);
+  stroke-width: 1.6;
+  pointer-events: all;
+}
+.robo-shape-inner {
+  fill: none;
+  stroke: var(--robo-blue);
+  stroke-width: 1;
+}
+.robo-rule {
+  stroke: var(--robo-blue);
+  stroke-opacity: 0.35;
+}
+.robo-el.is-selected .robo-shape {
+  stroke: var(--kt-color-iolite);
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 4px rgb(90 79 207 / 0.5));
+}
+
+.robo-el--variable .robo-shape {
+  fill: var(--robo-var);
+  stroke: var(--robo-orange);
+  stroke-width: 1.8;
+}
+.robo-el--pentagon .robo-shape {
+  fill: #fff4dd;
+  stroke: var(--robo-orange);
+}
+html.dark .robo-el--pentagon .robo-shape {
+  fill: #3a2c12;
+}
+.robo-el--value .robo-shape {
+  fill: #fff4dd;
+  stroke: var(--robo-orange);
+}
+html.dark .robo-el--value .robo-shape {
+  fill: #3a2c12;
+}
+.robo-el--start .robo-shape {
+  fill: #3fa34d;
+  stroke: #2a7a35;
+}
+.robo-el--end .robo-shape {
+  fill: #d0453f;
+  stroke: #9c2a25;
+}
+.robo-el--diamond .robo-shape,
+.robo-el--hexagon .robo-shape {
+  fill: #e6eefc;
+}
+html.dark .robo-el--diamond .robo-shape,
+html.dark .robo-el--hexagon .robo-shape {
+  fill: #1d2c48;
+}
+.robo-el--bar .robo-shape {
+  fill: var(--robo-blue);
+}
+.robo-el--each .robo-shape {
+  stroke-width: 3.2;
+}
+.robo-el--try .robo-shape {
+  stroke: #d0453f;
+  stroke-width: 2.4;
+}
+.robo-el--io .robo-shape {
+  fill: #e5f3e7;
+  stroke: #3fa34d;
+}
+html.dark .robo-el--io .robo-shape {
+  fill: #1f3324;
+}
+.robo-el--funnel .robo-shape {
+  fill: #e6eefc;
+}
+html.dark .robo-el--funnel .robo-shape {
+  fill: #1d2c48;
+}
+
+.robo-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--robo-ink);
+}
+.robo-text--title {
+  font-size: 12px;
+  font-weight: 700;
+}
+.robo-text--port {
+  fill: #5a6b88;
+}
+html.dark .robo-text--port {
+  fill: #9fb0cc;
+}
+.robo-text--value {
+  fill: var(--robo-orange);
+}
+.robo-text--ctrl,
+.robo-text--loop {
+  font-size: 10.5px;
+  fill: var(--robo-blue);
+  font-weight: 600;
+}
+html.dark .robo-text--ctrl,
+html.dark .robo-text--loop {
+  fill: #8fb3ee;
+}
+.robo-text--muted {
+  font-size: 9.5px;
+  fill: #8a6a10;
+  letter-spacing: 0.08em;
+}
+html.dark .robo-text--muted {
+  fill: #f5e6c8;
+}
+.robo-text--pill {
+  fill: var(--robo-orange);
+  font-weight: 700;
+}
+.robo-text--bar,
+.robo-text--terminal {
+  fill: #ffffff;
+  font-weight: 700;
+}
+
+/* Pins: blue squares for flow, orange squares for data. */
+.robo-surface .vue-flow__handle.robo-pin {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 1px;
+  border: 2px solid var(--robo-blue);
+  background: var(--robo-fill);
+}
+.robo-surface .vue-flow__handle.robo-pin--data {
+  border-color: var(--robo-orange);
+}
+.robo-surface .vue-flow__handle.robo-pin:hover {
+  background: currentColor;
+}
+.robo-surface .vue-flow__handle.robo-pin--free {
+  opacity: 0.45;
+}
+.robo-surface .kir-edge--ctrl {
+  stroke-width: 2.6 !important;
+}

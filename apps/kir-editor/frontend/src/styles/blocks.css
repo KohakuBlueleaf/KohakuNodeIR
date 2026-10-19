@@ -1,0 +1,330 @@
+/* Blocks view: Scratch. Command blocks with a notch on top and a bump below,
+   C blocks with mouths, hats, round / hexagonal slots, orange reporters. */
+
+.sb-canvas {
+  background-color: #f9f9f9;
+  background-image: radial-gradient(rgb(0 0 0 / 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+  --sb-ink: #ffffff;
+}
+html.dark .sb-canvas {
+  background-color: #1d1f24;
+  background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px);
+}
+.sb-scripts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 2.5rem 3rem;
+  padding: 1.5rem;
+}
+.sb-script {
+  display: flex;
+  flex-direction: column;
+  min-width: 16rem;
+}
+
+/* Category colours (Scratch 3) */
+.sb-cat--event { --sb-c: #ffbf00; --sb-d: #cc9900; }
+.sb-cat--control { --sb-c: #ffab19; --sb-d: #cf8b17; }
+.sb-cat--var { --sb-c: #ff8c1a; --sb-d: #db6e00; }
+.sb-cat--std { --sb-c: #59c059; --sb-d: #389438; }
+.sb-cat--demo { --sb-c: #4c97ff; --sb-d: #3373cc; }
+.sb-cat--ext { --sb-c: #0fbd8c; --sb-d: #0b8e69; }
+.sb-cat--def { --sb-c: #ff6680; --sb-d: #ff3355; }
+.sb-cat--unknown { --sb-c: #9e9e9e; --sb-d: #757575; }
+.sb-cat--try { --sb-c: #e05e5e; --sb-d: #b84646; }
+.sb-cat--dataflow { --sb-c: #5cb1d6; --sb-d: #2e8eb8; }
+.sb-cat--meta { --sb-c: #8a8480; --sb-d: #6a645f; }
+
+.sb-block {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0.45rem 0.7rem 0.45rem 0.6rem;
+  background: var(--sb-c);
+  border: 1px solid var(--sb-d);
+  color: var(--sb-ink, #fff);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+  max-width: 44rem;
+  position: relative;
+}
+/* Command block: notch cut into the top, bump hanging below. */
+.sb-cmd {
+  border-radius: 4px;
+  clip-path: polygon(0 0, 12px 0, 16px 5px, 30px 5px, 34px 0, 100% 0, 100% calc(100% - 5px), 34px calc(100% - 5px), 30px 100%, 16px 100%, 12px calc(100% - 5px), 0 calc(100% - 5px));
+  padding-top: 0.7rem;
+  padding-bottom: 0.75rem;
+  border: 0;
+  box-shadow: inset 0 -6px 0 -1px var(--sb-d);
+}
+/* A cap (jump): nothing can follow it, so no bump. */
+.sb-cap {
+  clip-path: polygon(0 0, 12px 0, 16px 5px, 30px 5px, 34px 0, 100% 0, 100% 100%, 0 100%);
+  padding-bottom: 0.5rem;
+}
+.sb-hat {
+  border: 0;
+  border-radius: 22px 22px 4px 4px / 16px 16px 4px 4px;
+  padding: 0.8rem 0.9rem 0.85rem;
+  min-width: 12rem;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), 34px calc(100% - 5px), 30px 100%, 16px 100%, 12px calc(100% - 5px), 0 calc(100% - 5px));
+}
+.sb-hat--define {
+  border-radius: 14px 14px 4px 4px;
+}
+.sb-text {
+  white-space: nowrap;
+}
+.sb-text--name {
+  font-weight: 700;
+}
+.sb-text--key,
+.sb-text--arrow,
+.sb-text--foot {
+  opacity: 0.85;
+  font-weight: 500;
+}
+.sb-text--mono {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.sb-text--hint {
+  font-size: 10px;
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.15);
+}
+.sb-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.16);
+  color: #fff;
+}
+
+/* Slots */
+.sb-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  height: 24px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #575e75;
+  border: 1px solid rgb(0 0 0 / 0.15);
+  font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  cursor: text;
+  white-space: pre;
+  outline: none;
+}
+.sb-slot--hex {
+  border-radius: 0;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
+  padding: 0 0.9rem;
+  background: var(--sb-d);
+  color: #fff;
+  border: 0;
+}
+.sb-slot--empty {
+  opacity: 0.7;
+}
+.sb-slot--edit {
+  min-width: 3ch;
+  box-sizing: content-box;
+}
+.sb-slot--edit.sb-slot--hex {
+  background: #fff;
+  color: #575e75;
+}
+.sb-slot.is-bad,
+.sb-name.is-bad {
+  box-shadow: 0 0 0 2px #e05e5e;
+}
+.sb-reporter {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  background: #ff8c1a;
+  border: 1px solid #db6e00;
+  color: #fff;
+  font-weight: 600;
+  font-size: 11.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sb-reporter--hex {
+  border-radius: 0;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
+  padding: 0 0.95rem;
+}
+.sb-reporter--palette,
+.sb-reporter--param {
+  cursor: grab;
+}
+.sb-reporter--param {
+  background: #ff6680;
+  border-color: #ff3355;
+}
+.sb-name {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 0.45rem;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.16);
+  color: #fff;
+  font-weight: 600;
+  font-size: 11.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 0;
+  outline: none;
+  font-family: inherit;
+}
+.sb-name::after {
+  content: "▾";
+  font-size: 9px;
+  margin-left: 0.3rem;
+  opacity: 0.8;
+}
+.sb-name--edit {
+  background: #fff;
+  color: #575e75;
+  box-sizing: content-box;
+}
+.sb-name--edit::after {
+  content: none;
+}
+
+/* C blocks */
+.sb-c {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  min-width: 15rem;
+}
+.sb-c__bar {
+  border: 0;
+  min-height: 40px;
+  width: auto;
+  max-width: none;
+}
+.sb-c__bar--top {
+  border-radius: 4px 4px 0 0;
+  clip-path: polygon(0 0, 12px 0, 16px 5px, 30px 5px, 34px 0, 100% 0, 100% 100%, 0 100%);
+  padding-top: 0.7rem;
+}
+.sb-c__bar--mid {
+  border-radius: 0 4px 4px 0;
+}
+.sb-c__bar--bottom {
+  min-height: 22px;
+  border-radius: 0 0 4px 4px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), 34px calc(100% - 5px), 30px 100%, 16px 100%, 12px calc(100% - 5px), 0 calc(100% - 5px));
+  padding: 0.2rem 0.7rem 0.55rem;
+}
+.sb-c__mouth {
+  display: flex;
+  min-height: 2rem;
+}
+.sb-c__spine {
+  width: 16px;
+  background: var(--sb-c);
+  flex-shrink: 0;
+}
+
+/* Stacks and drop zones */
+.sb-stack {
+  display: flex;
+  flex-direction: column;
+  padding: 0.15rem 0;
+}
+.sb-stack--empty {
+  padding: 0.3rem;
+}
+.sb-item {
+  position: relative;
+  cursor: grab;
+}
+.sb-drop {
+  height: 6px;
+  margin: -2px 0;
+  border-radius: 3px;
+  position: relative;
+  z-index: 2;
+}
+.sb-drop.is-over {
+  height: 14px;
+  margin: 1px 0;
+  background: rgb(90 79 207 / 0.25);
+  box-shadow: inset 0 0 0 2px rgb(90 79 207 / 0.6);
+}
+.sb-drop--end {
+  height: 14px;
+}
+.sb-drop__hint {
+  display: block;
+  padding: 0.3rem 0.6rem;
+  font-size: 10.5px;
+  color: rgb(0 0 0 / 0.35);
+  font-style: italic;
+}
+html.dark .sb-drop__hint {
+  color: rgb(255 255 255 / 0.35);
+}
+.sb-stack--empty .sb-drop--end {
+  height: 28px;
+  border: 1.5px dashed rgb(0 0 0 / 0.15);
+}
+html.dark .sb-stack--empty .sb-drop--end {
+  border-color: rgb(255 255 255 / 0.15);
+}
+
+.sb-del {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 0.25rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.2);
+  color: #fff;
+  font-size: 11px;
+}
+.sb-block:hover > .sb-del,
+.sb-c__bar--top:hover > .sb-del {
+  display: inline-flex;
+}
+
+/* Variables strip */
+.sb-vars {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.sb-palette-cmd {
+  min-height: 34px;
+  cursor: grab;
+  font-size: 11px;
+  transform: scale(0.9);
+  transform-origin: left center;
+}
