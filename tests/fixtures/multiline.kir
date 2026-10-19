@@ -1,8 +1,0 @@
-(
-    x1, x2,
-    mode="bicubic",
-    threshold=0.5
-)complex_filter(
-    filtered,
-    confidence
-)

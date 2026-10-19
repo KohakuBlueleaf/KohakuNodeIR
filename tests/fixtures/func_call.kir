@@ -1,4 +1,0 @@
-("./data/test.bin")load_data(x1, x2)
-(x1, x2)process(result)
-()generate(value)
-(value)consume()

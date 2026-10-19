@@ -1,6 +1,0 @@
-x = 1
-()jump(`target`)
-skipped:
-    ("never")print()
-target:
-    (x)process(result)

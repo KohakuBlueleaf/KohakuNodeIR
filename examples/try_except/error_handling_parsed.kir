@@ -1,7 +1,0 @@
-@try:
-    (url)fetch(data)
-    (data)parse_json(result)
-@except:
-    ("fetch failed")log_error()
-    ("default")identity(result)
-(result)print()
