@@ -1,0 +1,31 @@
+@use "demo" as g
+
+@def (image: str, box: int = 2)expand(node: Node?):
+    @try:
+        (image, box)g.crop(c)
+        (c)g.entity(node)
+    @except err:
+        (err)g.log_error()
+        node = None
+
+@meta node_id="seed"
+image = "img"
+("img", -1)expand(a)
+("img")expand(b)
+x = 2
+(x)switch(1=>`one`, 2=>`two`, _=>`other`)
+one:
+    y = 1
+two:
+    y = 2
+other:
+    y = 3
+()parallel(`left`, `right`)
+left:
+    p = 1
+right:
+    q = 2
+@dataflow:
+    (s)g.finish(t)
+    (p, q)add(s)
+(a, b, t, y)g.combine(out)

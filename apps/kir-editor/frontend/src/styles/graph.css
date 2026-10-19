@@ -1,0 +1,294 @@
+@import "@vue-flow/core/dist/style.css";
+@import "@vue-flow/core/dist/theme-default.css";
+@import "@vue-flow/controls/dist/style.css";
+@import "@vue-flow/minimap/dist/style.css";
+
+/* ---------------------------------------------------------------- surface */
+
+.kir-surface {
+  --kir-grid: var(--kt-color-warm-300);
+  --kir-panel: var(--kt-color-warm-50);
+  --kir-panel-border: var(--kt-color-warm-200);
+  --kir-text: var(--kt-color-warm-800);
+  --kir-text-muted: var(--kt-color-warm-500);
+  --kir-node-fill: #ffffff;
+  --kir-node-stroke: var(--kt-color-warm-300);
+  --kir-head-rule: var(--kt-color-warm-200);
+  background: var(--color-bg);
+}
+html.dark .kir-surface {
+  --kir-grid: var(--kt-color-warm-800);
+  --kir-panel: var(--kt-color-warm-900);
+  --kir-panel-border: var(--kt-color-warm-700);
+  --kir-text: var(--kt-color-warm-100);
+  --kir-text-muted: var(--kt-color-warm-400);
+  --kir-node-fill: var(--kt-color-warm-900);
+  --kir-node-stroke: var(--kt-color-warm-600);
+  --kir-head-rule: var(--kt-color-warm-700);
+}
+
+.kir-surface .vue-flow__node {
+  font-family: var(--font-mono);
+}
+.kir-surface .vue-flow__node-kir,
+.kir-surface .vue-flow__node-frame {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+.kir-surface .vue-flow__node.selected,
+.kir-surface .vue-flow__node:focus,
+.kir-surface .vue-flow__node:focus-visible {
+  box-shadow: none;
+  outline: none;
+}
+.kir-surface .vue-flow__controls {
+  box-shadow: none;
+  border: 1px solid var(--kir-panel-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.kir-surface .vue-flow__controls-button {
+  background: var(--kir-panel);
+  border-bottom: 1px solid var(--kir-panel-border);
+  color: var(--kir-text);
+  fill: var(--kir-text);
+}
+.kir-surface .vue-flow__minimap {
+  background: var(--kir-panel);
+  border: 1px solid var(--kir-panel-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.vue-flow__connection-path {
+  stroke: var(--kt-color-iolite);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+}
+
+/* ---------------------------------------------------------------- nodes */
+
+.kir-node {
+  position: relative;
+  color: var(--kir-text);
+}
+.kir-node__svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.kir-shape {
+  fill: var(--kir-node-fill);
+  stroke: var(--kir-node-stroke);
+  stroke-width: 1.5;
+  pointer-events: all;
+  filter: drop-shadow(0 1px 1.5px rgb(42 39 36 / 0.12));
+}
+.kir-shape-inner {
+  fill: none;
+  stroke: var(--kt-color-taaffeite);
+  stroke-width: 1.5;
+}
+.kir-head-rule {
+  stroke: var(--kir-head-rule);
+  stroke-width: 1;
+}
+.kir-hint-dot {
+  fill: var(--kt-color-amber);
+}
+
+.kir-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--kir-text);
+}
+.kir-text--title {
+  font-size: 12px;
+  font-weight: 600;
+}
+.kir-text--port {
+  fill: var(--kir-text-muted);
+}
+.kir-text--value {
+  fill: var(--kt-color-amber-shadow);
+}
+html.dark .kir-text--value {
+  fill: var(--kt-color-amber-light);
+}
+.kir-text--ctrl {
+  font-size: 10.5px;
+  fill: var(--kt-color-iolite);
+}
+html.dark .kir-text--ctrl {
+  fill: var(--kt-color-iolite-light);
+}
+.kir-text--muted {
+  font-size: 10px;
+  fill: var(--kir-text-muted);
+}
+.kir-text--loop {
+  font-weight: 600;
+  fill: var(--kt-color-iolite);
+}
+html.dark .kir-text--loop {
+  fill: var(--kt-color-iolite-light);
+}
+.kir-text--pill {
+  font-size: 11.5px;
+}
+.kir-text--bar {
+  font-size: 10.5px;
+  fill: #ffffff;
+}
+
+/* Work node: a call. A call to a @def has a double border. */
+.kir-node--defcall .kir-shape {
+  stroke: var(--kt-color-taaffeite);
+}
+
+/* Value: an amber pill. Get: a dashed sapphire pill. Set: a dashed sapphire rect. */
+.kir-node--value .kir-shape {
+  fill: var(--kt-color-amber-light);
+  stroke: var(--kt-color-amber);
+}
+html.dark .kir-node--value .kir-shape {
+  fill: rgb(139 94 0 / 0.35);
+}
+.kir-node--get .kir-shape,
+.kir-node--set .kir-shape {
+  stroke: var(--kt-color-sapphire);
+  stroke-dasharray: 5 3;
+}
+.kir-node--get .kir-shape {
+  fill: var(--kt-color-sapphire-light);
+}
+html.dark .kir-node--get .kir-shape {
+  fill: rgb(8 37 103 / 0.45);
+}
+
+/* Control: branch diamond, switch hexagon, merge funnel, parallel bar, each, try. */
+.kir-node--diamond .kir-shape,
+.kir-node--hexagon .kir-shape {
+  fill: var(--kt-color-iolite-light);
+  stroke: var(--kt-color-iolite);
+}
+html.dark .kir-node--diamond .kir-shape,
+html.dark .kir-node--hexagon .kir-shape {
+  fill: rgb(49 42 122 / 0.6);
+}
+.kir-node--funnel .kir-shape {
+  fill: var(--kt-color-warm-100);
+  stroke: var(--kt-color-iolite);
+}
+html.dark .kir-node--funnel .kir-shape {
+  fill: var(--kt-color-warm-800);
+}
+.kir-node--bar .kir-shape {
+  fill: var(--kt-color-iolite);
+  stroke: var(--kt-color-iolite-shadow);
+}
+.kir-node--each .kir-shape {
+  stroke: var(--kt-color-iolite);
+  stroke-width: 3.5;
+}
+.kir-node--try .kir-shape {
+  stroke: var(--kt-color-coral);
+  stroke-width: 2.5;
+}
+.kir-node--io .kir-shape {
+  fill: var(--kt-color-sage-light);
+  stroke: var(--kt-color-sage);
+}
+html.dark .kir-node--io .kir-shape {
+  fill: rgb(58 107 72 / 0.4);
+}
+
+.kir-node.is-selected .kir-shape {
+  stroke: var(--kt-color-iolite);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px rgb(90 79 207 / 0.55));
+}
+
+/* ---------------------------------------------------------------- dataflow frame */
+
+.kir-frame {
+  position: relative;
+  border: 1.5px dashed var(--kt-color-aquamarine);
+  border-radius: 12px;
+  background: rgb(76 153 137 / 0.06);
+}
+.kir-frame.is-selected {
+  border-color: var(--kt-color-iolite);
+  border-style: solid;
+}
+.kir-frame__title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 28px;
+  padding: 0 0.7rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--kt-color-aquamarine-shadow);
+}
+html.dark .kir-frame__title {
+  color: var(--kt-color-aquamarine-light);
+}
+.kir-frame__count {
+  font-weight: 400;
+  color: var(--kir-text-muted);
+}
+
+/* ---------------------------------------------------------------- ports */
+
+.kir-surface .vue-flow__handle.kir-port {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  border: 2px solid var(--port-color);
+  background: var(--kir-node-fill);
+  opacity: 0.9;
+  transition: background-color 120ms ease;
+}
+.kir-surface .vue-flow__handle.kir-port::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+}
+.kir-surface .vue-flow__handle.kir-port--data {
+  border-radius: 999px;
+}
+.kir-surface .vue-flow__handle.kir-port--ctrl {
+  border-radius: 2px;
+}
+.kir-surface .vue-flow__handle.kir-port:hover {
+  background: var(--port-color);
+}
+.kir-surface .vue-flow__handle.kir-port--free {
+  border-style: dashed;
+  opacity: 0.6;
+}
+.kir-surface .vue-flow__handle.connectingto,
+.kir-surface .vue-flow__handle.valid {
+  background: var(--kt-color-iolite-light);
+  border-color: var(--kt-color-iolite);
+}
+
+/* ---------------------------------------------------------------- edges */
+
+.kir-edge {
+  fill: none;
+}
+.kir-edge--back {
+  stroke-dasharray: 7 4;
+}
+.vue-flow__edge.selected .kir-edge,
+.kir-edge.is-selected {
+  stroke-width: 3.2 !important;
+  filter: drop-shadow(0 0 3px rgb(90 79 207 / 0.6));
+}

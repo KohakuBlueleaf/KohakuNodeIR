@@ -1,0 +1,82 @@
+/* KIR text colours and the CodeMirror chrome, in both themes. */
+
+:root {
+  --kir-code-bg: #ffffff;
+  --kir-code-gutter: #f7f5f2;
+  --kir-code-text: #2e2a26;
+  --kir-code-comment: #8f8880;
+  --kir-code-section: #6b4670;
+  --kir-code-directive: #a57eae;
+  --kir-code-label: #4c9989;
+  --kir-code-string: #8b5e00;
+  --kir-code-number: #0f52ba;
+  --kir-code-builtin: #5a4fcf;
+  --kir-code-node: #312a7a;
+  --kir-code-def: #1b6b5a;
+  --kir-code-punct: #8a8480;
+  --kir-code-select: rgb(90 79 207 / 0.18);
+  --kir-code-active: rgb(90 79 207 / 0.05);
+}
+html.dark {
+  --kir-code-bg: #1e1c1a;
+  --kir-code-gutter: #1a1816;
+  --kir-code-text: #e8e0d8;
+  --kir-code-comment: #6a645f;
+  --kir-code-section: #e8d5ed;
+  --kir-code-directive: #a57eae;
+  --kir-code-label: #7cc3b4;
+  --kir-code-string: #f5c66a;
+  --kir-code-number: #8fb3ee;
+  --kir-code-builtin: #a99ff0;
+  --kir-code-node: #ddd0f0;
+  --kir-code-def: #9ad3c4;
+  --kir-code-punct: #8a8078;
+  --kir-code-select: rgb(165 158 240 / 0.25);
+  --kir-code-active: rgb(165 158 240 / 0.06);
+}
+
+.kir-code .cm-editor {
+  height: 100%;
+  background: var(--kir-code-bg);
+  color: var(--kir-code-text);
+  font-size: 13px;
+}
+.kir-code .cm-scroller {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  line-height: 1.6;
+}
+.kir-code .cm-gutters {
+  background: var(--kir-code-gutter);
+  color: var(--kir-code-punct);
+  border-right: 1px solid var(--color-border);
+}
+.kir-code .cm-activeLine {
+  background: var(--kir-code-active);
+}
+.kir-code .cm-activeLineGutter {
+  background: var(--kir-code-active);
+}
+.kir-code .cm-content {
+  caret-color: var(--kt-color-iolite);
+}
+.kir-code .cm-cursor {
+  border-left-color: var(--kt-color-iolite);
+}
+.kir-code .cm-selectionBackground,
+.kir-code .cm-focused .cm-selectionBackground,
+.kir-code .cm-content ::selection {
+  background: var(--kir-code-select) !important;
+}
+.kir-code .cm-focused {
+  outline: none;
+}
+.kir-code .cm-tooltip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+.kir-code .cm-panels {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}

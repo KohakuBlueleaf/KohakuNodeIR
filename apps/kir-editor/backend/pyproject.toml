@@ -1,0 +1,32 @@
+[project]
+name = "kir-editor-backend"
+version = "0.1.0"
+description = "HTTP backend of the KIR example editor"
+requires-python = ">=3.10"
+dependencies = ["kohakunode", "fastapi>=0.110", "uvicorn>=0.29"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx", "ruff", "black"]
+
+[tool.setuptools.packages.find]
+include = ["kir_editor*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "PLC0415"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["kir_editor"]
+known-third-party = ["kohakunode"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

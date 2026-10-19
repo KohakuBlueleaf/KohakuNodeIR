@@ -1,0 +1,40 @@
+{
+  "kirsig": 1,
+  "library": "vision",
+  "nodes": [
+    {
+      "name": "load_image",
+      "inputs": [{"name": "path", "type": "str"}],
+      "outputs": [{"name": "image", "type": "Image"}],
+      "doc": "Read an image file."
+    },
+    {
+      "name": "detect",
+      "inputs": [
+        {"name": "image", "type": "Image"},
+        {"name": "threshold", "type": "float", "default": 0.5}
+      ],
+      "outputs": [{"name": "boxes", "type": "list[Box]"}],
+      "doc": "Find object boxes above a score threshold."
+    },
+    {
+      "name": "crop",
+      "inputs": [{"name": "image", "type": "Image"}, {"name": "box", "type": "Box"}],
+      "outputs": [{"name": "crop", "type": "Image"}],
+      "doc": "Cut one box out of an image."
+    },
+    {
+      "name": "embed",
+      "inputs": [{"name": "crop", "type": "Image"}],
+      "outputs": [{"name": "vector", "type": "Vector"}],
+      "doc": "Embed an image crop."
+    },
+    {
+      "name": "caption",
+      "inputs": [{"name": "crop", "type": "Image"}],
+      "outputs": [{"name": "text", "type": "str"}, {"name": "score", "type": "float"}],
+      "flags": {"mutates": [], "ordered": true},
+      "doc": "Describe an image crop; calls a remote model, so calls keep their order."
+    }
+  ]
+}
