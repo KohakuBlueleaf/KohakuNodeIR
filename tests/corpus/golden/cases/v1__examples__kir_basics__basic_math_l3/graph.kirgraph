@@ -1,0 +1,207 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "value_1",
+          "kind": "value",
+          "props": {
+            "value": 10
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "x"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_2",
+          "kind": "value",
+          "props": {
+            "value": 20
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "y"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "add_3",
+          "kind": "call",
+          "name": "add",
+          "inputs": [
+            {
+              "port": "a"
+            },
+            {
+              "port": "b"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "result",
+              "var": "sum"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "multiply_4",
+          "kind": "call",
+          "name": "multiply",
+          "inputs": [
+            {
+              "port": "a"
+            },
+            {
+              "port": "b",
+              "value": 3
+            }
+          ],
+          "outputs": [
+            {
+              "port": "result",
+              "var": "product"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "print_val_5",
+          "kind": "call",
+          "name": "print_val",
+          "inputs": [
+            {
+              "port": "v"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "data",
+          "from": {
+            "node": "value_1",
+            "port": "value"
+          },
+          "to": {
+            "node": "add_3",
+            "port": "a"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "value_2",
+            "port": "value"
+          },
+          "to": {
+            "node": "add_3",
+            "port": "b"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_2",
+            "port": "out"
+          },
+          "to": {
+            "node": "add_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "add_3",
+            "port": "result"
+          },
+          "to": {
+            "node": "multiply_4",
+            "port": "a"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "add_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "multiply_4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "multiply_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "print_val_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "multiply_4",
+            "port": "result"
+          },
+          "to": {
+            "node": "print_val_5",
+            "port": "v"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_2",
+            "port": "in"
+          }
+        }
+      ]
+    }
+  ]
+}

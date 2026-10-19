@@ -1,0 +1,17 @@
+@dataflow:
+    counter__1 = 0
+    counter__0 = counter__1
+    limit__1 = 5
+()jump(`loop_body`)
+loop_body:
+    @dataflow:
+        (counter__0, 1)add(counter__2)
+    @dataflow:
+        counter__0 = counter__2
+        (counter__2, limit__1)less_than(keep_going__1)
+    (keep_going__1)branch(`continue_loop`, `exit_loop`)
+    continue_loop:
+        ()jump(`loop_body`)
+    exit_loop:
+@dataflow:
+    (counter__2)print()

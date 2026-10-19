@@ -1,0 +1,15 @@
+@dataflow:
+    day__1 = 3
+(day__1)switch(1=>`monday`, 2=>`tuesday`, 3=>`wednesday`, _=>`other`)
+monday:
+    @dataflow:
+        ("It's Monday")print()
+tuesday:
+    @dataflow:
+        ("It's Tuesday")print()
+wednesday:
+    @dataflow:
+        ("It's Wednesday!")print()
+other:
+    @dataflow:
+        ("Some other day")print()

@@ -1,0 +1,592 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "value_1",
+          "kind": "value",
+          "props": {
+            "value": true
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "debug_mode"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "log_2",
+          "kind": "call",
+          "name": "log",
+          "inputs": [
+            {
+              "port": "v",
+              "value": "Debug: starting pipeline"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_3",
+          "kind": "value",
+          "props": {
+            "value": 100
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "temp_a"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_4",
+          "kind": "value",
+          "props": {
+            "value": 200
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "temp_b"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_5",
+          "kind": "value",
+          "props": {
+            "value": 300
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "temp_c"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_6",
+          "kind": "value",
+          "props": {
+            "value": 10
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "x"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_7",
+          "kind": "value",
+          "props": {
+            "value": 20
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "y"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "add_8",
+          "kind": "call",
+          "name": "add",
+          "inputs": [
+            {
+              "port": "a"
+            },
+            {
+              "port": "b"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "result",
+              "var": "result"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_9",
+          "kind": "value",
+          "props": {
+            "value": 42
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "data"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "normalize_10",
+          "kind": "call",
+          "name": "normalize",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "norm1"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "normalize_11",
+          "kind": "call",
+          "name": "normalize",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "norm2"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "process_a_12",
+          "kind": "call",
+          "name": "process_a",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "out_a"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "process_b_13",
+          "kind": "call",
+          "name": "process_b",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "out_b"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_14",
+          "kind": "value",
+          "props": {
+            "value": true
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "always_true"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "multiply_15",
+          "kind": "call",
+          "name": "multiply",
+          "inputs": [
+            {
+              "port": "a"
+            },
+            {
+              "port": "b",
+              "value": 2
+            }
+          ],
+          "outputs": [
+            {
+              "port": "result",
+              "var": "doubled"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "print_16",
+          "kind": "call",
+          "name": "print",
+          "inputs": [
+            {
+              "port": "v"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "data",
+          "from": {
+            "node": "value_6",
+            "port": "value"
+          },
+          "to": {
+            "node": "add_8",
+            "port": "a"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "value_7",
+            "port": "value"
+          },
+          "to": {
+            "node": "add_8",
+            "port": "b"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_7",
+            "port": "out"
+          },
+          "to": {
+            "node": "add_8",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "log_2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "add_8",
+            "port": "result"
+          },
+          "to": {
+            "node": "multiply_15",
+            "port": "a"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_14",
+            "port": "out"
+          },
+          "to": {
+            "node": "multiply_15",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_9",
+            "port": "out"
+          },
+          "to": {
+            "node": "normalize_10",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "value_9",
+            "port": "value"
+          },
+          "to": {
+            "node": "normalize_10",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "normalize_10",
+            "port": "out"
+          },
+          "to": {
+            "node": "normalize_11",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "value_9",
+            "port": "value"
+          },
+          "to": {
+            "node": "normalize_11",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "multiply_15",
+            "port": "out"
+          },
+          "to": {
+            "node": "print_16",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "multiply_15",
+            "port": "result"
+          },
+          "to": {
+            "node": "print_16",
+            "port": "v"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "normalize_11",
+            "port": "out"
+          },
+          "to": {
+            "node": "process_a_12",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "normalize_10",
+            "port": "out0"
+          },
+          "to": {
+            "node": "process_a_12",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "process_a_12",
+            "port": "out"
+          },
+          "to": {
+            "node": "process_b_13",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "normalize_11",
+            "port": "out0"
+          },
+          "to": {
+            "node": "process_b_13",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "process_b_13",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_14",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "log_2",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_6",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_6",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "add_8",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_9",
+            "port": "in"
+          }
+        }
+      ]
+    }
+  ]
+}

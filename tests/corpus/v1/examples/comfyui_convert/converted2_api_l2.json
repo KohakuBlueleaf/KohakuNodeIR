@@ -1,0 +1,5 @@
+{
+  "file": "examples/comfyui_convert/converted2_api_l2.kir",
+  "status": "parse_error",
+  "error": "VisitError: Error trying to process rule \"string_lit\":\n\nunterminated string literal (detected at line 1) (<unknown>, line 1)"
+}

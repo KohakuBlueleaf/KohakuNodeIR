@@ -1,0 +1,16 @@
+debug_mode = True
+("Debug: starting pipeline")log()
+temp_a = 100
+temp_b = 200
+temp_c = 300
+x = 10
+y = 20
+(x, y)add(result)
+data = 42
+(data)normalize(norm1)
+(data)normalize(norm2)
+(norm1)process_a(out_a)
+(norm2)process_b(out_b)
+always_true = True
+(result, 2)multiply(doubled)
+(doubled)print()

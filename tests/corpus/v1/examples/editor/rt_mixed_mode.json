@@ -1,0 +1,6 @@
+{
+  "file": "examples/editor/rt_mixed_mode.kir",
+  "stubs": [],
+  "status": "nonterminating",
+  "error": "more than 100000 node calls"
+}

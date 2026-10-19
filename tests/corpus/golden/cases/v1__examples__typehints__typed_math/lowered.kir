@@ -1,0 +1,13 @@
+@typehint:
+    (int, int)add(int)
+    (int, int)multiply(int)
+    (int)to_string(str)
+    (str)print(_)
+
+@dataflow:
+    x__1: int = 10
+    y__1: int = 20
+    (x__1, y__1)add(sum__1)
+    (sum__1, 3)multiply(product__1)
+    (product__1)to_string(text__1)
+    (text__1)print()

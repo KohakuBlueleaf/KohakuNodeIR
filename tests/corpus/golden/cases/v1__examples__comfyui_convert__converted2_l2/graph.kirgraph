@@ -1,0 +1,2052 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "comfy_52",
+          "kind": "call",
+          "name": "vaeencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": 0
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_52_latent"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1150,
+              570
+            ],
+            "size": [
+              140,
+              50
+            ],
+            "comfyui_type": "VAEEncode",
+            "comfyui_id": 52,
+            "mode": 0,
+            "order": 19,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "pixels",
+                "name": "pixels",
+                "type": "IMAGE",
+                "link": 82
+              },
+              {
+                "label": "vae",
+                "name": "vae",
+                "type": "VAE",
+                "link": null
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "slot_index": 0,
+                "links": [
+                  83
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_8",
+          "kind": "call",
+          "name": "vaedecode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_8_image"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1610,
+              100
+            ],
+            "size": [
+              140,
+              50
+            ],
+            "comfyui_type": "VAEDecode",
+            "comfyui_id": 8,
+            "mode": 0,
+            "order": 16,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "samples",
+                "name": "samples",
+                "type": "LATENT",
+                "link": 84
+              },
+              {
+                "label": "vae",
+                "name": "vae",
+                "type": "VAE",
+                "link": 180
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "slot_index": 0,
+                "links": [
+                  75,
+                  97
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_42",
+          "kind": "call",
+          "name": "vaedecode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_42_image"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1610,
+              450
+            ],
+            "size": [
+              140,
+              50
+            ],
+            "comfyui_type": "VAEDecode",
+            "comfyui_id": 42,
+            "mode": 0,
+            "order": 21,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "samples",
+                "name": "samples",
+                "type": "LATENT",
+                "link": 71
+              },
+              {
+                "label": "vae",
+                "name": "vae",
+                "type": "VAE",
+                "link": 181
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "slot_index": 0,
+                "links": [
+                  76
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_51",
+          "kind": "call",
+          "name": "imagescaleby",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "lanczos"
+            },
+            {
+              "port": "in2",
+              "value": 1.5
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_51_image"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1080,
+              450
+            ],
+            "size": [
+              210,
+              82
+            ],
+            "comfyui_type": "ImageScaleBy",
+            "comfyui_id": 51,
+            "mode": 0,
+            "order": 18,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "image",
+                "name": "image",
+                "type": "IMAGE",
+                "link": 97
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "slot_index": 0,
+                "links": [
+                  82
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_29",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_29_string"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              370,
+              1050
+            ],
+            "size": [
+              330,
+              150
+            ],
+            "comfyui_type": "PrimitiveNode",
+            "comfyui_id": 29,
+            "mode": 0,
+            "order": 0,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "widget": {
+                  "name": "ban_tags"
+                },
+                "slot_index": 0,
+                "links": [
+                  118
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_82",
+          "kind": "call",
+          "name": "showtext_x7c_pysssss",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "1girl, \n\nneck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,\n\nA realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_82_string"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1070,
+              760
+            ],
+            "size": [
+              740,
+              440
+            ],
+            "comfyui_type": "ShowText|pysssss",
+            "comfyui_id": 82,
+            "mode": 0,
+            "order": 13,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "name": "text",
+                "type": "STRING",
+                "link": 150
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "name": "STRING",
+                "shape": 6,
+                "type": "STRING",
+                "links": null
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_46",
+          "kind": "call",
+          "name": "saveimage",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "HiresFix/ComfyUI_HiresFix"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              900,
+              1240
+            ],
+            "size": [
+              860,
+              650
+            ],
+            "comfyui_type": "SaveImage",
+            "comfyui_id": 46,
+            "mode": 0,
+            "order": 22,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "images",
+                "name": "images",
+                "type": "IMAGE",
+                "link": 76
+              }
+            ],
+            "comfyui_outputs": []
+          }
+        },
+        {
+          "id": "comfy_45",
+          "kind": "call",
+          "name": "saveimage",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "ComfyUI"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              40,
+              1240
+            ],
+            "size": [
+              850,
+              650
+            ],
+            "comfyui_type": "SaveImage",
+            "comfyui_id": 45,
+            "mode": 0,
+            "order": 17,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "images",
+                "name": "images",
+                "type": "IMAGE",
+                "link": 75
+              }
+            ],
+            "comfyui_outputs": []
+          }
+        },
+        {
+          "id": "comfy_18",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": 923874509872640
+            },
+            {
+              "port": "in1",
+              "value": "increment"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_18_int"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              40,
+              490
+            ],
+            "size": [
+              380,
+              82
+            ],
+            "comfyui_type": "PrimitiveNode",
+            "comfyui_id": 18,
+            "mode": 0,
+            "order": 1,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "widget": {
+                  "name": "seed"
+                },
+                "slot_index": 0,
+                "links": [
+                  24,
+                  69,
+                  131
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_73",
+          "kind": "call",
+          "name": "primitiveint",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": 1344
+            },
+            {
+              "port": "in1",
+              "value": "fixed"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_73_int"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              40,
+              100
+            ],
+            "size": [
+              380,
+              82
+            ],
+            "comfyui_type": "PrimitiveInt",
+            "comfyui_id": 73,
+            "mode": 0,
+            "order": 2,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [
+                  121,
+                  133
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_74",
+          "kind": "call",
+          "name": "primitiveint",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": 768
+            },
+            {
+              "port": "in1",
+              "value": "fixed"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_74_int"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              40,
+              220
+            ],
+            "size": [
+              380,
+              82
+            ],
+            "comfyui_type": "PrimitiveInt",
+            "comfyui_id": 74,
+            "mode": 0,
+            "order": 3,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "links": [
+                  122,
+                  132
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_7",
+          "kind": "call",
+          "name": "cliptextencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2",
+              "value": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_7_conditioning"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1057,
+              215
+            ],
+            "size": [
+              210,
+              88
+            ],
+            "comfyui_type": "CLIPTextEncode",
+            "comfyui_id": 7,
+            "mode": 0,
+            "order": 11,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "clip",
+                "name": "clip",
+                "type": "CLIP",
+                "link": 178
+              },
+              {
+                "name": "text",
+                "type": "STRING",
+                "widget": {
+                  "name": "text"
+                },
+                "link": 86
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "CONDITIONING",
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "slot_index": 0,
+                "links": [
+                  67,
+                  175
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_6",
+          "kind": "call",
+          "name": "cliptextencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2",
+              "value": "1girl,\n\noriginal,\n\nfujisaki hikari, (quasarcake:0.95), (welchino:0.9), (hazuki natsu, sho \\(sho lwlw\\), yuzuki gao:0.85), (naga u:0.85), (usashiro mani:0.92), (azumi kazuki:0.92), \n\ndragon girl, dragon wings, dragon tail, dragon horns, pointy ears, very long hair, scenery, solo, indoors, off shoulder, tail, light blue hair, silver hair, solo, sapphire, gray eyes, bedroom, no pants, black dress, multicolored hair, gradient hair,\n\nabsurdres, masterpiece, safe, sensitive"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_6_conditioning"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1067,
+              79
+            ],
+            "size": [
+              210,
+              88
+            ],
+            "comfyui_type": "CLIPTextEncode",
+            "comfyui_id": 6,
+            "mode": 0,
+            "order": 14,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "clip",
+                "name": "clip",
+                "type": "CLIP",
+                "link": 179
+              },
+              {
+                "name": "text",
+                "type": "STRING",
+                "widget": {
+                  "name": "text"
+                },
+                "link": 187
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "CONDITIONING",
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "slot_index": 0,
+                "links": [
+                  79,
+                  174
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_88",
+          "kind": "call",
+          "name": "vaeloader",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "flux2-vae.safetensors"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_88_vae"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              432,
+              373
+            ],
+            "size": [
+              270,
+              58
+            ],
+            "comfyui_type": "VAELoader",
+            "comfyui_id": 88,
+            "mode": 0,
+            "order": 4,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "VAE",
+                "type": "VAE",
+                "links": [
+                  180,
+                  181
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_71",
+          "kind": "call",
+          "name": "emptylatentimage",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2",
+              "value": 1344
+            },
+            {
+              "port": "in3",
+              "value": 896
+            },
+            {
+              "port": "in4",
+              "value": 1
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_71_latent"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              40,
+              340
+            ],
+            "size": [
+              380,
+              110
+            ],
+            "comfyui_type": "EmptyLatentImage",
+            "comfyui_id": 71,
+            "mode": 0,
+            "order": 10,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "name": "width",
+                "type": "INT",
+                "widget": {
+                  "name": "width"
+                },
+                "link": 133
+              },
+              {
+                "name": "height",
+                "type": "INT",
+                "widget": {
+                  "name": "height"
+                },
+                "link": 132
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [
+                  107
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_86",
+          "kind": "call",
+          "name": "unetloader",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "flux-2-klein-4b.safetensors"
+            },
+            {
+              "port": "in1",
+              "value": "default"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_86_model"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              493,
+              80
+            ],
+            "size": [
+              270,
+              82
+            ],
+            "comfyui_type": "UNETLoader",
+            "comfyui_id": 86,
+            "mode": 0,
+            "order": 5,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "MODEL",
+                "type": "MODEL",
+                "links": [
+                  176,
+                  177
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_57",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_57_string"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              40,
+              610
+            ],
+            "size": [
+              380,
+              140
+            ],
+            "comfyui_type": "PrimitiveNode",
+            "comfyui_id": 57,
+            "mode": 0,
+            "order": 6,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "widget": {
+                  "name": "text"
+                },
+                "slot_index": 0,
+                "links": [
+                  86
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_87",
+          "kind": "call",
+          "name": "cliploader",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "qwen_3_4b.safetensors"
+            },
+            {
+              "port": "in1",
+              "value": "flux2"
+            },
+            {
+              "port": "in2",
+              "value": "default"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_87_clip"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              496,
+              219
+            ],
+            "size": [
+              270,
+              106
+            ],
+            "comfyui_type": "CLIPLoader",
+            "comfyui_id": 87,
+            "mode": 0,
+            "order": 7,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "CLIP",
+                "type": "CLIP",
+                "links": [
+                  178,
+                  179
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_3",
+          "kind": "call",
+          "name": "ksampler",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2"
+            },
+            {
+              "port": "in3"
+            },
+            {
+              "port": "in4"
+            },
+            {
+              "port": "in5",
+              "value": 923874509872640
+            },
+            {
+              "port": "in6",
+              "value": "randomize"
+            },
+            {
+              "port": "in7",
+              "value": 24
+            },
+            {
+              "port": "in8",
+              "value": 1
+            },
+            {
+              "port": "in9",
+              "value": "euler_ancestral"
+            },
+            {
+              "port": "in10",
+              "value": "exponential"
+            },
+            {
+              "port": "in11",
+              "value": 1
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_3_latent"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1300,
+              100
+            ],
+            "size": [
+              300,
+              262
+            ],
+            "comfyui_type": "KSampler",
+            "comfyui_id": 3,
+            "mode": 0,
+            "order": 15,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 176
+              },
+              {
+                "label": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": 174
+              },
+              {
+                "label": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": 175
+              },
+              {
+                "label": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": 107
+              },
+              {
+                "name": "seed",
+                "type": "INT",
+                "widget": {
+                  "name": "seed"
+                },
+                "link": 24
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "slot_index": 0,
+                "links": [
+                  84
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_27",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": ""
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_27_string"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              40,
+              790
+            ],
+            "size": [
+              660,
+              220
+            ],
+            "comfyui_type": "PrimitiveNode",
+            "comfyui_id": 27,
+            "mode": 0,
+            "order": 8,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "widget": {
+                  "name": "tags"
+                },
+                "slot_index": 0,
+                "links": [
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_76",
+          "kind": "call",
+          "name": "tipo",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2"
+            },
+            {
+              "port": "in3"
+            },
+            {
+              "port": "in4"
+            },
+            {
+              "port": "in5"
+            },
+            {
+              "port": "in6",
+              "value": ""
+            },
+            {
+              "port": "in7",
+              "value": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+            },
+            {
+              "port": "in8",
+              "value": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
+            },
+            {
+              "port": "in9",
+              "value": "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf"
+            },
+            {
+              "port": "in10",
+              "value": "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>.\n\n<|quality|>, <|meta|>, <|rating|>"
+            },
+            {
+              "port": "in11",
+              "value": 1024
+            },
+            {
+              "port": "in12",
+              "value": 1024
+            },
+            {
+              "port": "in13",
+              "value": 0.5
+            },
+            {
+              "port": "in14",
+              "value": 0.95
+            },
+            {
+              "port": "in15",
+              "value": 0.05
+            },
+            {
+              "port": "in16",
+              "value": 64
+            },
+            {
+              "port": "in17",
+              "value": "long"
+            },
+            {
+              "port": "in18",
+              "value": "long"
+            },
+            {
+              "port": "in19",
+              "value": 923874509872640
+            },
+            {
+              "port": "in20",
+              "value": "fixed"
+            },
+            {
+              "port": "in21",
+              "value": "cuda"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_76_prompt"
+            },
+            {
+              "port": "out1",
+              "var": "comfy_76_user_prompt"
+            },
+            {
+              "port": "out2",
+              "var": "comfy_76_unformatted_prompt"
+            },
+            {
+              "port": "out3",
+              "var": "comfy_76_unformatted_user_prompt"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              710,
+              450
+            ],
+            "size": [
+              350,
+              750
+            ],
+            "comfyui_type": "TIPO",
+            "comfyui_id": 76,
+            "mode": 0,
+            "order": 12,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "name": "tags",
+                "type": "STRING",
+                "widget": {
+                  "name": "tags"
+                },
+                "link": 116
+              },
+              {
+                "name": "nl_prompt",
+                "type": "STRING",
+                "widget": {
+                  "name": "nl_prompt"
+                },
+                "link": 117
+              },
+              {
+                "name": "ban_tags",
+                "type": "STRING",
+                "widget": {
+                  "name": "ban_tags"
+                },
+                "link": 118
+              },
+              {
+                "name": "width",
+                "type": "INT",
+                "widget": {
+                  "name": "width"
+                },
+                "link": 121
+              },
+              {
+                "name": "height",
+                "type": "INT",
+                "widget": {
+                  "name": "height"
+                },
+                "link": 122
+              },
+              {
+                "name": "seed",
+                "type": "INT",
+                "widget": {
+                  "name": "seed"
+                },
+                "link": 131
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "name": "prompt",
+                "type": "STRING",
+                "links": [
+                  150
+                ]
+              },
+              {
+                "name": "user_prompt",
+                "type": "STRING",
+                "links": [
+                  187
+                ]
+              },
+              {
+                "name": "unformatted_prompt",
+                "type": "STRING",
+                "links": []
+              },
+              {
+                "name": "unformatted_user_prompt",
+                "type": "STRING",
+                "links": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_28",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_28_string"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              40,
+              1050
+            ],
+            "size": [
+              320,
+              150
+            ],
+            "comfyui_type": "PrimitiveNode",
+            "comfyui_id": 28,
+            "mode": 0,
+            "order": 9,
+            "flags": {},
+            "comfyui_inputs": [],
+            "comfyui_outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "widget": {
+                  "name": "nl_prompt"
+                },
+                "slot_index": 0,
+                "links": [
+                  117
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "comfy_41",
+          "kind": "call",
+          "name": "ksampler",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2"
+            },
+            {
+              "port": "in3"
+            },
+            {
+              "port": "in4"
+            },
+            {
+              "port": "in5",
+              "value": 923874509872640
+            },
+            {
+              "port": "in6",
+              "value": "randomize"
+            },
+            {
+              "port": "in7",
+              "value": 16
+            },
+            {
+              "port": "in8",
+              "value": 5
+            },
+            {
+              "port": "in9",
+              "value": "euler_ancestral"
+            },
+            {
+              "port": "in10",
+              "value": "exponential"
+            },
+            {
+              "port": "in11",
+              "value": 0.5500000000000002
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_41_latent"
+            }
+          ],
+          "ctrl_in": [],
+          "ctrl_out": [],
+          "meta": {
+            "pos": [
+              1300,
+              450
+            ],
+            "size": [
+              300,
+              262
+            ],
+            "comfyui_type": "KSampler",
+            "comfyui_id": 41,
+            "mode": 0,
+            "order": 20,
+            "flags": {},
+            "comfyui_inputs": [
+              {
+                "label": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 177
+              },
+              {
+                "label": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": 79
+              },
+              {
+                "label": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": 67
+              },
+              {
+                "label": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": 83
+              },
+              {
+                "name": "seed",
+                "type": "INT",
+                "widget": {
+                  "name": "seed"
+                },
+                "link": 69
+              }
+            ],
+            "comfyui_outputs": [
+              {
+                "label": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "slot_index": 0,
+                "links": [
+                  71
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "get_24",
+          "kind": "get",
+          "props": {
+            "name": "comfy_51_image"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_51_image"
+            }
+          ]
+        },
+        {
+          "id": "get_25",
+          "kind": "get",
+          "props": {
+            "name": "comfy_3_latent"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_3_latent"
+            }
+          ]
+        },
+        {
+          "id": "get_26",
+          "kind": "get",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_88_vae"
+            }
+          ]
+        },
+        {
+          "id": "get_27",
+          "kind": "get",
+          "props": {
+            "name": "comfy_41_latent"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_41_latent"
+            }
+          ]
+        },
+        {
+          "id": "get_28",
+          "kind": "get",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_88_vae"
+            }
+          ]
+        },
+        {
+          "id": "get_29",
+          "kind": "get",
+          "props": {
+            "name": "comfy_76_prompt"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_76_prompt"
+            }
+          ]
+        },
+        {
+          "id": "get_30",
+          "kind": "get",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_87_clip"
+            }
+          ]
+        },
+        {
+          "id": "get_31",
+          "kind": "get",
+          "props": {
+            "name": "comfy_57_string"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_57_string"
+            }
+          ]
+        },
+        {
+          "id": "get_32",
+          "kind": "get",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_87_clip"
+            }
+          ]
+        },
+        {
+          "id": "get_33",
+          "kind": "get",
+          "props": {
+            "name": "comfy_76_user_prompt"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_76_user_prompt"
+            }
+          ]
+        },
+        {
+          "id": "get_34",
+          "kind": "get",
+          "props": {
+            "name": "comfy_28_string"
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "comfy_28_string"
+            }
+          ]
+        },
+        {
+          "id": "dataflow_35",
+          "kind": "dataflow",
+          "props": {
+            "members": [
+              "comfy_52",
+              "comfy_8",
+              "comfy_42",
+              "comfy_51",
+              "comfy_29",
+              "comfy_82",
+              "comfy_46",
+              "comfy_45",
+              "comfy_18",
+              "comfy_73",
+              "comfy_74",
+              "comfy_7",
+              "comfy_6",
+              "comfy_88",
+              "comfy_71",
+              "comfy_86",
+              "comfy_57",
+              "comfy_87",
+              "comfy_3",
+              "comfy_27",
+              "comfy_76",
+              "comfy_28",
+              "comfy_41"
+            ]
+          },
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_86",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_3",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_6",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_3",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_7",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_3",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_71",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_3",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_18",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_3",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_86",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_6",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_7",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_52",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_18",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_27",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_42",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_28",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_42",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_8",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_45",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_42",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_46",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_8",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_51",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_24",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_52",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_32",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_6",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_33",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_6",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_30",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_7",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_31",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_7",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_73",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_71",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_74",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_71",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_27",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_76",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_34",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_76",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_29",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_76",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_73",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_76",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_74",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_76",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "comfy_18",
+            "port": "out0"
+          },
+          "to": {
+            "node": "comfy_76",
+            "port": "in5"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_25",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_8",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_26",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_8",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_29",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_82",
+            "port": "in0"
+          }
+        }
+      ]
+    }
+  ]
+}

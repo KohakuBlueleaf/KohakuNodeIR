@@ -1,0 +1,19 @@
+{
+  "file": "examples/editor/mixed_mode-editor-local.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "",
+  "vars": {
+    "add_5_counter": 1.0,
+    "add_7_total": 1.0,
+    "concat_12_prefix": "Sum of squares 1..1.0",
+    "concat_13_mid": "Sum of squares 1..1.0 = ",
+    "less_than_8_keep_going": true,
+    "multiply_6_squared": 1.0,
+    "to_float_1_limit": 10.0,
+    "to_float_2_step": 1.0,
+    "to_string_11_count_str": "1.0",
+    "value_3_value": 0,
+    "value_4_value": 0
+  }
+}

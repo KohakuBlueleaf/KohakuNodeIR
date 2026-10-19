@@ -1,0 +1,166 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "load_data_1",
+          "kind": "call",
+          "name": "load_data",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "./data/test.bin"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "x1"
+            },
+            {
+              "port": "out1",
+              "var": "x2"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "process_2",
+          "kind": "call",
+          "name": "process",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "result"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "generate_3",
+          "kind": "call",
+          "name": "generate",
+          "inputs": [],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "consume_4",
+          "kind": "call",
+          "name": "consume",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "generate_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "consume_4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "generate_3",
+            "port": "out0"
+          },
+          "to": {
+            "node": "consume_4",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "process_2",
+            "port": "out"
+          },
+          "to": {
+            "node": "generate_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "load_data_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "process_2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "load_data_1",
+            "port": "out0"
+          },
+          "to": {
+            "node": "process_2",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "load_data_1",
+            "port": "out1"
+          },
+          "to": {
+            "node": "process_2",
+            "port": "in1"
+          }
+        }
+      ]
+    }
+  ]
+}

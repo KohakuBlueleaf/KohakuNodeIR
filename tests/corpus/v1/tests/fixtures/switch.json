@@ -1,0 +1,9 @@
+{
+  "file": "tests/fixtures/switch.kir",
+  "stubs": [
+    "classify"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'x'"
+}

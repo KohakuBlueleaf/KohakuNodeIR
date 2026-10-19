@@ -1,0 +1,6 @@
+@meta node_id="n01" pos=(120, 300)
+@meta color="blue" label="My Node"
+(x1)process(x2)
+
+@meta node_id="n02" pos=(400, 300)
+(x2)another(x3)

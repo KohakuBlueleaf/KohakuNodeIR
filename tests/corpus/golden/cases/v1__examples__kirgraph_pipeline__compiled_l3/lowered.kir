@@ -1,0 +1,25 @@
+@dataflow:
+    val_step_value__1 = 1
+    val_limit_value__1 = 3
+    val_total_value__1 = 0
+    val_i_value__1 = 0
+    inc_i_result__1 = val_i_value__1
+    inc_i_result__0 = inc_i_result__1
+()jump(`ns_merge_loop`)
+ns_merge_loop:
+    @dataflow:
+        (inc_i_result__0, val_step_value__1)add(inc_i_result__2)
+    @dataflow:
+        inc_i_result__0 = inc_i_result__2
+        (inc_i_result__2, inc_i_result__2)multiply(square_result__1)
+        (val_total_value__1, square_result__1)add(accum_result__1)
+@dataflow:
+    (inc_i_result__2, val_limit_value__1)less_than(check_result__1)
+(check_result__1)branch(`branch_true`, `branch_false`)
+branch_true:
+    ()jump(`ns_merge_loop`)
+branch_false:
+    @dataflow:
+        (accum_result__1)to_string(to_str_result__1)
+        ("Sum of squares = ", to_str_result__1)concat(fmt_result__1)
+        (fmt_result__1)print()

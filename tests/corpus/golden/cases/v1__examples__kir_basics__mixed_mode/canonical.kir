@@ -1,0 +1,23 @@
+@dataflow:
+    (10)to_float(limit)
+    (1)to_float(step)
+counter = 0
+total = 0
+()jump(`loop`)
+loop:
+    (counter, step)add(counter)
+    @dataflow:
+        (counter, counter)multiply(squared)
+        (total, squared)add(total)
+    (counter, limit)less_than(keep_going)
+    (keep_going)branch(`continue`, `done`)
+    continue:
+        ()jump(`loop`)
+    done:
+@dataflow:
+    (total)to_string(total_str)
+    (counter)to_string(count_str)
+    ("Sum of squares 1..", count_str)concat(prefix)
+    (prefix, " = ")concat(mid)
+    (mid, total_str)concat(message)
+    (message)print()

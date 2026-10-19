@@ -1,0 +1,335 @@
+{
+  "kirsig": 1,
+  "library": "v1",
+  "nodes": [
+    {
+      "name": "add",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "subtract",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "multiply",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "divide",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "min_val",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "max_val",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "less_than",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "less_equal",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "greater_than",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "equal",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "to_int",
+      "inputs": [
+        {
+          "name": "v"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "to_float",
+      "inputs": [
+        {
+          "name": "v"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "to_string",
+      "inputs": [
+        {
+          "name": "v"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "concat",
+      "inputs": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "format_string",
+      "inputs": [
+        {
+          "name": "t"
+        },
+        {
+          "name": "v"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "format_factorial",
+      "inputs": [
+        {
+          "name": "n"
+        },
+        {
+          "name": "r"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "print",
+      "inputs": [
+        {
+          "name": "v"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "name": "print_val",
+      "inputs": [
+        {
+          "name": "v"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "name": "log",
+      "inputs": [
+        {
+          "name": "v"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "name": "identity",
+      "inputs": [
+        {
+          "name": "v"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result"
+        }
+      ]
+    },
+    {
+      "name": "normalize",
+      "inputs": [
+        {
+          "name": "in0",
+          "default": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out0"
+        }
+      ]
+    },
+    {
+      "name": "process_a",
+      "inputs": [
+        {
+          "name": "in0",
+          "default": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out0"
+        }
+      ]
+    },
+    {
+      "name": "process_b",
+      "inputs": [
+        {
+          "name": "in0",
+          "default": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out0"
+        }
+      ]
+    }
+  ]
+}

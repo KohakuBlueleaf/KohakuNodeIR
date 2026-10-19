@@ -1,0 +1,7 @@
+@dataflow:
+    x__1 = 42
+    name__1 = "hello"
+    pi__1 = 3.14
+    flag__1 = True
+    empty__1 = None
+    y__1 = x__1

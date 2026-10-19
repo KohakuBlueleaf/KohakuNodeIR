@@ -1,0 +1,9 @@
+{
+  "file": "tests/fixtures/multiline.kir",
+  "stubs": [
+    "complex_filter"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'x1'"
+}

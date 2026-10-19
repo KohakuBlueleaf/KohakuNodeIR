@@ -1,0 +1,12 @@
+{
+  "file": "tests/fixtures/jump.kir",
+  "stubs": [
+    "process"
+  ],
+  "status": "ok",
+  "stdout": "",
+  "vars": {
+    "result": "process(in0=1)",
+    "x": 1
+  }
+}

@@ -1,0 +1,9 @@
+@dataflow:
+    x__1 = 1
+()jump(`target`)
+skipped:
+    @dataflow:
+        ("never")print()
+target:
+    @dataflow:
+        (x__1)process(result__1)

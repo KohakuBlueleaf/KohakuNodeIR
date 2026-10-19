@@ -1,0 +1,16 @@
+{
+  "file": "tests/fixtures/scoped_dataflow.kir",
+  "stubs": [
+    "combine",
+    "generate",
+    "process_b"
+  ],
+  "status": "ok",
+  "stdout": "combine(in0='generate()', in1='process_b(in0=10)')\n",
+  "vars": {
+    "result": "combine(in0='generate()', in1='process_b(in0=10)')",
+    "x": 10,
+    "y": "generate()",
+    "z": "process_b(in0=10)"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "file": "examples/editor/rt_control_flow.kir",
+  "stubs": [],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: jump: target namespace 'ns_multiply_4' not found in any enclosing scope"
+}

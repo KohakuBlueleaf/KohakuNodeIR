@@ -1,0 +1,14 @@
+@def clamp(a, b)(result)
+    (a, b)min_val(lo)
+    (a, b)max_val(hi)
+    (lo, hi)add(sum)
+    (sum, 2)divide(result)
+
+x = 10
+y = 30
+(x, y)clamp(avg)
+(avg)print_val()
+x2 = -5
+y2 = 100
+(x2, y2)clamp(avg2)
+(avg2)print_val()

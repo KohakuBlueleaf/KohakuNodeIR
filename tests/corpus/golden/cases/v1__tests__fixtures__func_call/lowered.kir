@@ -1,0 +1,5 @@
+@dataflow:
+    ("./data/test.bin")load_data(x1__1, x2__1)
+    (x1__1, x2__1)process(result__1)
+    ()generate(value__1)
+    (value__1)consume()

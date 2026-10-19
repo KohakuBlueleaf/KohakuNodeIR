@@ -1,0 +1,26 @@
+{
+  "file": "examples/optimizer/no_opt.kir",
+  "stubs": [
+    "normalize",
+    "process_a",
+    "process_b"
+  ],
+  "status": "ok",
+  "stdout": "[log] Debug: starting pipeline\n60\n",
+  "vars": {
+    "always_true": true,
+    "data": 42,
+    "debug_mode": true,
+    "doubled": 60,
+    "norm1": "normalize(in0=42)",
+    "norm2": "normalize(in0=42)",
+    "out_a": "process_a(in0='normalize(in0=42)')",
+    "out_b": "process_b(in0='normalize(in0=42)')",
+    "result": 30,
+    "temp_a": 100,
+    "temp_b": 200,
+    "temp_c": 300,
+    "x": 10,
+    "y": 20
+  }
+}

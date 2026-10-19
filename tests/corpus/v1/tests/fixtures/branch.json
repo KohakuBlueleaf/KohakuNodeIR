@@ -1,0 +1,12 @@
+{
+  "file": "tests/fixtures/branch.kir",
+  "stubs": [
+    "compare",
+    "final",
+    "process_a",
+    "process_b"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'x1'"
+}

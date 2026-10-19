@@ -1,0 +1,17 @@
+@dataflow:
+    value__1 = 42
+    (value__1, 0)less_than(is_negative__1)
+(is_negative__1)branch(`handle_negative`, `check_positive`)
+handle_negative:
+    @dataflow:
+        ("negative")print()
+check_positive:
+    @dataflow:
+        (value__1, 100)greater_than(is_large__1)
+    (is_large__1)branch(`handle_large`, `handle_normal`)
+    handle_large:
+        @dataflow:
+            ("large positive")print()
+    handle_normal:
+        @dataflow:
+            ("normal positive")print()

@@ -1,0 +1,14 @@
+{
+  "file": "examples/kir_basics/data_pipeline.kir",
+  "stubs": [
+    "clean_data",
+    "compute_stats",
+    "filter_outliers",
+    "load_csv",
+    "normalize",
+    "save_csv"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "TypeError: '>' not supported between instances of 'str' and 'int'"
+}

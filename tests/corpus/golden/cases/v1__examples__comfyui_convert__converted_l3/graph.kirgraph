@@ -1,0 +1,397 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "checkpointloadersimple_1",
+          "kind": "call",
+          "name": "checkpointloadersimple",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "v1-5-pruned-emaonly.ckpt"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_1_model"
+            },
+            {
+              "port": "out1",
+              "var": "comfy_1_clip"
+            },
+            {
+              "port": "out2",
+              "var": "comfy_1_vae"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "emptylatentimage_2",
+          "kind": "call",
+          "name": "emptylatentimage",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": 512
+            },
+            {
+              "port": "in1",
+              "value": 512
+            },
+            {
+              "port": "in2",
+              "value": 1
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_5_latent"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "cliptextencode_3",
+          "kind": "call",
+          "name": "cliptextencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "a beautiful landscape, mountains, sunset"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_2_conditioning"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "cliptextencode_4",
+          "kind": "call",
+          "name": "cliptextencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "blurry, low quality"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_3_conditioning"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "ksampler_5",
+          "kind": "call",
+          "name": "ksampler",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2"
+            },
+            {
+              "port": "in3"
+            },
+            {
+              "port": "in4",
+              "value": 42
+            },
+            {
+              "port": "in5",
+              "value": "fixed"
+            },
+            {
+              "port": "in6",
+              "value": 20
+            },
+            {
+              "port": "in7",
+              "value": 7.5
+            },
+            {
+              "port": "in8",
+              "value": "euler"
+            },
+            {
+              "port": "in9",
+              "value": "normal"
+            },
+            {
+              "port": "in10",
+              "value": 1.0
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_4_latent"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "vaedecode_6",
+          "kind": "call",
+          "name": "vaedecode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "comfy_6_image"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "saveimage_7",
+          "kind": "call",
+          "name": "saveimage",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "ComfyUI"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "emptylatentimage_2",
+            "port": "out"
+          },
+          "to": {
+            "node": "cliptextencode_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out1"
+          },
+          "to": {
+            "node": "cliptextencode_3",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliptextencode_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "cliptextencode_4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out1"
+          },
+          "to": {
+            "node": "cliptextencode_4",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "emptylatentimage_2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliptextencode_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "ksampler_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out0"
+          },
+          "to": {
+            "node": "ksampler_5",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliptextencode_3",
+            "port": "out0"
+          },
+          "to": {
+            "node": "ksampler_5",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliptextencode_4",
+            "port": "out0"
+          },
+          "to": {
+            "node": "ksampler_5",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "emptylatentimage_2",
+            "port": "out0"
+          },
+          "to": {
+            "node": "ksampler_5",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "vaedecode_6",
+            "port": "out"
+          },
+          "to": {
+            "node": "saveimage_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "vaedecode_6",
+            "port": "out0"
+          },
+          "to": {
+            "node": "saveimage_7",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "ksampler_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaedecode_6",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "ksampler_5",
+            "port": "out0"
+          },
+          "to": {
+            "node": "vaedecode_6",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out2"
+          },
+          "to": {
+            "node": "vaedecode_6",
+            "port": "in1"
+          }
+        }
+      ]
+    }
+  ]
+}

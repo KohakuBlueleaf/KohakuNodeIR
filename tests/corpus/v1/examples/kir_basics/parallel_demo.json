@@ -1,0 +1,11 @@
+{
+  "file": "examples/kir_basics/parallel_demo.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "input_data + processed_A\ninput_data + processed_B\nBoth branches done\n",
+  "vars": {
+    "data": "input_data",
+    "result_a": "input_data + processed_A",
+    "result_b": "input_data + processed_B"
+  }
+}

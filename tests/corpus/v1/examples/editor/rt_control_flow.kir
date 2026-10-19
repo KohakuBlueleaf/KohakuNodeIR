@@ -1,0 +1,22 @@
+@dataflow:
+    @meta node_id="value_1" pos=(340, 420) size=[180, 100]
+    value_1_value = 5
+    @meta node_id="value_2" pos=(100, 100) size=[180, 100]
+    value_2_value = 1
+    @meta node_id="value_3" pos=(340, 100) size=[180, 100]
+    value_3_value = 1
+@meta node_id="multiply_4" pos=(580, 100) size=[180, 132]
+(value_2_value, value_3_value)multiply(multiply_4_result)
+@meta node_id="add_5" pos=(580, 260) size=[180, 132]
+(value_3_value, 1)add(add_5_counter)
+@meta node_id="less_equal_6" pos=(580, 420) size=[180, 132]
+(add_5_counter, value_1_value)less_equal(less_equal_6_keep_going)
+@meta node_id="branch_7" pos=(580, 580) size=[180, 104]
+(less_equal_6_keep_going)branch(`branch_7_true`, `branch_7_false`)
+branch_7_true:
+    ()jump(`ns_multiply_4`)
+branch_7_false:
+    @meta node_id="format_factorial_8" pos=(580, 740) size=[180, 132]
+    (value_1_value, multiply_4_result)format_factorial(format_factorial_8_msg)
+    @meta node_id="print_val_9" pos=(580, 900) size=[180, 104]
+    (format_factorial_8_msg)print_val()

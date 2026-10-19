@@ -1,0 +1,13 @@
+{
+  "file": "examples/typehints/typed_math_l3.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "90\n",
+  "vars": {
+    "product": 90,
+    "sum": 30,
+    "text": "90",
+    "x": 10,
+    "y": 20
+  }
+}

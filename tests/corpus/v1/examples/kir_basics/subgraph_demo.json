@@ -1,0 +1,20 @@
+{
+  "file": "examples/kir_basics/subgraph_demo.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "20.0\n47.5\n",
+  "vars": {
+    "a": -5,
+    "avg": 20.0,
+    "avg2": 47.5,
+    "b": 100,
+    "hi": 100,
+    "lo": -5,
+    "result": 47.5,
+    "sum": 95,
+    "x": 10,
+    "x2": -5,
+    "y": 30,
+    "y2": 100
+  }
+}

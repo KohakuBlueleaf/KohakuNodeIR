@@ -1,0 +1,18 @@
+{
+  "file": "tests/fixtures/dataflow.kir",
+  "stubs": [
+    "decode",
+    "encode",
+    "load_model",
+    "sample"
+  ],
+  "status": "ok",
+  "stdout": "",
+  "vars": {
+    "clip": "load_model#1()",
+    "image": "decode(in0='sample(in0=\\'load_model#0()\\', in1=\"encode(in0=\\'a cat\\', in1=\\'load_model#1()\\')\", steps=20)')",
+    "latent": "sample(in0='load_model#0()', in1=\"encode(in0='a cat', in1='load_model#1()')\", steps=20)",
+    "model": "load_model#0()",
+    "positive": "encode(in0='a cat', in1='load_model#1()')"
+  }
+}

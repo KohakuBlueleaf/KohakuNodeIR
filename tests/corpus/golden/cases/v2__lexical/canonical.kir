@@ -1,0 +1,14 @@
+@meta node_id="first" pos=() size=(3,)
+_tmp = 1
+Nonesuch = [1, 2]
+Truex = 0
+err = {}
+(err)len(before)
+@try:
+    (Nonesuch, 5)item_at(v)
+    (v, _tmp)add(w)
+@except err:
+    w = Truex
+(err)len(after)
+y: int | None = None
+(w, after)add(z)

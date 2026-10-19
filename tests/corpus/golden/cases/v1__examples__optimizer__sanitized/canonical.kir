@@ -1,0 +1,24 @@
+debug_mode = True
+(debug_mode)branch(`debug_path`, `prod_path`)
+debug_path:
+    ("Debug: starting pipeline")log()
+prod_path:
+    ("Starting pipeline")log()
+temp_a = 100
+temp_b = 200
+temp_c = 300
+x = 10
+y = 20
+(x, y)add(result)
+data = 42
+(data)normalize(norm1)
+(data)normalize(norm2)
+(norm1)process_a(out_a)
+(norm2)process_b(out_b)
+always_true = True
+(always_true)branch(`compute`, `skip`)
+compute:
+    (result, 2)multiply(doubled)
+    (doubled)print()
+skip:
+    ("skipped")print()

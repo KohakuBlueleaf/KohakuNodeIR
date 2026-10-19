@@ -1,0 +1,9 @@
+{
+  "file": "examples/kir_basics/switch_demo.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "It's Wednesday!\n",
+  "vars": {
+    "day": 3
+  }
+}

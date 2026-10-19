@@ -1,0 +1,21 @@
+{
+  "file": "examples/optimizer/all_optimized.kir",
+  "stubs": [
+    "normalize",
+    "process_a",
+    "process_b"
+  ],
+  "status": "ok",
+  "stdout": "[log] Debug: starting pipeline\n60\n",
+  "vars": {
+    "data": 42,
+    "doubled": 60,
+    "norm1": "normalize(in0=42)",
+    "norm2": "normalize(in0=42)",
+    "out_a": "process_a(in0='normalize(in0=42)')",
+    "out_b": "process_b(in0='normalize(in0=42)')",
+    "result": 30,
+    "x": 10,
+    "y": 20
+  }
+}

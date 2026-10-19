@@ -1,0 +1,293 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "value_1",
+          "kind": "value",
+          "props": {
+            "value": 10
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "x",
+              "type": "int"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "value_2",
+          "kind": "value",
+          "props": {
+            "value": 20
+          },
+          "outputs": [
+            {
+              "port": "value",
+              "var": "y",
+              "type": "int"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "add_3",
+          "kind": "call",
+          "name": "add",
+          "inputs": [
+            {
+              "port": "a"
+            },
+            {
+              "port": "b"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "result",
+              "var": "sum"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "multiply_4",
+          "kind": "call",
+          "name": "multiply",
+          "inputs": [
+            {
+              "port": "a"
+            },
+            {
+              "port": "b",
+              "value": 3
+            }
+          ],
+          "outputs": [
+            {
+              "port": "result",
+              "var": "product"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "to_string_5",
+          "kind": "call",
+          "name": "to_string",
+          "inputs": [
+            {
+              "port": "v"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "result",
+              "var": "text"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "print_6",
+          "kind": "call",
+          "name": "print",
+          "inputs": [
+            {
+              "port": "v"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "data",
+          "from": {
+            "node": "value_1",
+            "port": "value"
+          },
+          "to": {
+            "node": "add_3",
+            "port": "a"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "value_2",
+            "port": "value"
+          },
+          "to": {
+            "node": "add_3",
+            "port": "b"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_2",
+            "port": "out"
+          },
+          "to": {
+            "node": "add_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "add_3",
+            "port": "result"
+          },
+          "to": {
+            "node": "multiply_4",
+            "port": "a"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "add_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "multiply_4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "to_string_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "print_6",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "to_string_5",
+            "port": "result"
+          },
+          "to": {
+            "node": "print_6",
+            "port": "v"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "multiply_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "to_string_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "multiply_4",
+            "port": "result"
+          },
+          "to": {
+            "node": "to_string_5",
+            "port": "v"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "value_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "value_2",
+            "port": "in"
+          }
+        }
+      ]
+    }
+  ],
+  "typehints": [
+    {
+      "name": "add",
+      "inputs": [
+        "int",
+        "int"
+      ],
+      "outputs": [
+        "int"
+      ]
+    },
+    {
+      "name": "multiply",
+      "inputs": [
+        "int",
+        "int"
+      ],
+      "outputs": [
+        "int"
+      ]
+    },
+    {
+      "name": "to_string",
+      "inputs": [
+        "int"
+      ],
+      "outputs": [
+        "str"
+      ]
+    },
+    {
+      "name": "print",
+      "inputs": [
+        "str"
+      ],
+      "outputs": [
+        "_"
+      ]
+    }
+  ]
+}

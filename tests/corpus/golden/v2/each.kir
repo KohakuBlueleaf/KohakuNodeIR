@@ -1,0 +1,15 @@
+image = "img"
+boxes = [1, 2, 3]
+nodes = []
+(boxes)each(b, i, `body`)
+body:
+    (b)is_new(fresh)
+    (fresh)branch(`yes`, `no`)
+    yes:
+        (image, b)crop(c)
+        @hint max_wait_ms=5
+        (c)entity(node)
+    no:
+        node = None
+    (nodes, node)append(nodes)
+(nodes)summarize(summary)

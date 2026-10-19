@@ -1,0 +1,10 @@
+{
+  "file": "tests/fixtures/subgraph.kir",
+  "stubs": [
+    "denoise",
+    "normalize"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'raw_data'"
+}

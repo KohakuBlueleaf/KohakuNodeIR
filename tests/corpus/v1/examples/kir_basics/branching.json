@@ -1,0 +1,11 @@
+{
+  "file": "examples/kir_basics/branching.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "normal positive\n",
+  "vars": {
+    "is_large": false,
+    "is_negative": false,
+    "value": 42
+  }
+}

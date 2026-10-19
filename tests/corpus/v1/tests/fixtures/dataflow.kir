@@ -1,0 +1,13 @@
+@mode dataflow
+
+@meta node_id="1" pos=(0, 0)
+()load_model(model, clip)
+
+@meta node_id="2" pos=(300, 0)
+("a cat", clip)encode(positive)
+
+@meta node_id="3" pos=(600, 0)
+(model, positive, steps=20)sample(latent)
+
+@meta node_id="4" pos=(900, 0)
+(latent)decode(image)

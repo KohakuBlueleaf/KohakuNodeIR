@@ -1,0 +1,57 @@
+@use "v1" as g
+
+@dataflow:
+    image__1 = "img"
+    expand__1__image__1 = "img"
+    expand__1__box__1 = 1
+@try:
+    @dataflow:
+        (expand__1__image__1, expand__1__box__1)g.crop(expand__1__c__1)
+        (expand__1__c__1)g.entity(expand__1__node__1)
+        expand__1__node__0 = expand__1__node__1
+@except expand__1__err__1:
+    @dataflow:
+        (expand__1__err__1)g.log_error()
+        expand__1__node__2 = None
+        expand__1__node__0 = expand__1__node__2
+@dataflow:
+    a__1 = expand__1__node__0
+    expand__2__image__1 = "img"
+    expand__2__box__1 = 2
+@try:
+    @dataflow:
+        (expand__2__image__1, expand__2__box__1)g.crop(expand__2__c__1)
+        (expand__2__c__1)g.entity(expand__2__node__1)
+        expand__2__node__0 = expand__2__node__1
+@except expand__2__err__1:
+    @dataflow:
+        (expand__2__err__1)g.log_error()
+        expand__2__node__2 = None
+        expand__2__node__0 = expand__2__node__2
+@dataflow:
+    b__1 = expand__2__node__0
+    x__1 = 2
+(x__1)switch(1=>`one`, 2=>`two`, _=>`other`)
+one:
+    @dataflow:
+        y__1 = 1
+        y__0 = y__1
+two:
+    @dataflow:
+        y__2 = 2
+        y__0 = y__2
+other:
+    @dataflow:
+        y__3 = 3
+        y__0 = y__3
+()parallel(`left`, `right`)
+left:
+    @dataflow:
+        p__1 = 1
+right:
+    @dataflow:
+        q__1 = 2
+@dataflow:
+    (p__1, q__1)add(s__1)
+    (s__1)g.finish(t__1)
+    (a__1, b__1, t__1, y__0)g.combine(out__1)

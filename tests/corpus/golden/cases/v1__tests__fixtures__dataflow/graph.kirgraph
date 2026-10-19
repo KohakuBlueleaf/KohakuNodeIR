@@ -1,0 +1,215 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "1",
+          "kind": "call",
+          "name": "load_model",
+          "inputs": [],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "model"
+            },
+            {
+              "port": "out1",
+              "var": "clip"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "meta": {
+            "pos": [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "id": "2",
+          "kind": "call",
+          "name": "encode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "a cat"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "positive"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "meta": {
+            "pos": [
+              300,
+              0
+            ]
+          }
+        },
+        {
+          "id": "3",
+          "kind": "call",
+          "name": "sample",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "steps",
+              "keyword": true,
+              "value": 20
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "latent"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "meta": {
+            "pos": [
+              600,
+              0
+            ]
+          }
+        },
+        {
+          "id": "4",
+          "kind": "call",
+          "name": "decode",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0",
+              "var": "image"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "meta": {
+            "pos": [
+              900,
+              0
+            ]
+          }
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "1",
+            "port": "out"
+          },
+          "to": {
+            "node": "2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "1",
+            "port": "out1"
+          },
+          "to": {
+            "node": "2",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "2",
+            "port": "out"
+          },
+          "to": {
+            "node": "3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "1",
+            "port": "out0"
+          },
+          "to": {
+            "node": "3",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "2",
+            "port": "out0"
+          },
+          "to": {
+            "node": "3",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "3",
+            "port": "out"
+          },
+          "to": {
+            "node": "4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "3",
+            "port": "out0"
+          },
+          "to": {
+            "node": "4",
+            "port": "in0"
+          }
+        }
+      ]
+    }
+  ],
+  "mode": "dataflow"
+}

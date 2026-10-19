@@ -1,0 +1,21 @@
+@dataflow:
+    x__1 = 10
+    y__1 = 30
+    clamp__1__a__1 = x__1
+    clamp__1__b__1 = y__1
+    (clamp__1__a__1, clamp__1__b__1)min_val(clamp__1__lo__1)
+    (clamp__1__a__1, clamp__1__b__1)max_val(clamp__1__hi__1)
+    (clamp__1__lo__1, clamp__1__hi__1)add(clamp__1__sum__1)
+    (clamp__1__sum__1, 2)divide(clamp__1__result__1)
+    avg__1 = clamp__1__result__1
+    (avg__1)print_val()
+    x2__1 = -5
+    y2__1 = 100
+    clamp__2__a__1 = x2__1
+    clamp__2__b__1 = y2__1
+    (clamp__2__a__1, clamp__2__b__1)min_val(clamp__2__lo__1)
+    (clamp__2__a__1, clamp__2__b__1)max_val(clamp__2__hi__1)
+    (clamp__2__lo__1, clamp__2__hi__1)add(clamp__2__sum__1)
+    (clamp__2__sum__1, 2)divide(clamp__2__result__1)
+    avg2__1 = clamp__2__result__1
+    (avg2__1)print_val()

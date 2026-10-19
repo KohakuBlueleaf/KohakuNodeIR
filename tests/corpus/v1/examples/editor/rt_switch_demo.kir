@@ -1,0 +1,17 @@
+@dataflow:
+    @meta node_id="value_1" pos=(100, 100) size=[180, 100]
+    value_1_value = 3
+@meta node_id="switch_2" pos=(340, 100) size=[300, 104]
+(value_1_value)switch("monday"=>`switch_2_monday`, "tuesday"=>`switch_2_tuesday`, "wednesday"=>`switch_2_wednesday`, "other"=>`switch_2_other`)
+switch_2_monday:
+    @meta node_id="print_3" pos=(340, 260) size=[180, 104]
+    ("It's Monday")print()
+switch_2_tuesday:
+    @meta node_id="print_4" pos=(340, 420) size=[180, 104]
+    ("It's Tuesday")print()
+switch_2_wednesday:
+    @meta node_id="print_5" pos=(340, 580) size=[180, 104]
+    ("It's Wednesday!")print()
+switch_2_other:
+    @meta node_id="print_6" pos=(340, 740) size=[180, 104]
+    ("Some other day")print()

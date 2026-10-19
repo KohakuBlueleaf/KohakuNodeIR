@@ -1,0 +1,19 @@
+    # a comment line's indentation never opens or closes a block
+## Names that start like keywords, one-element and empty tuples, an error
+## name that is also written elsewhere.
+@meta node_id="first" pos=() size=(3,)
+_tmp = 1
+Nonesuch = [1, 2]
+Truex = 0
+err = {}
+(err)len(before)
+@try:
+    (Nonesuch, 5)item_at(v)
+        # deeper comment
+    (v, _tmp)add(w)
+@except err:
+# outdented comment inside the handler
+    w = Truex
+(err)len(after)
+y: int | None = None
+(w, after)add(z)

@@ -1,0 +1,7 @@
+(data)split(a, b)
+()parallel(`task_a`, `task_b`)
+task_a:
+    (a)process_a(result_a)
+task_b:
+    (b)process_b(result_b)
+(result_a, result_b)merge(final)

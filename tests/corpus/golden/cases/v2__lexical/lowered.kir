@@ -1,0 +1,21 @@
+@dataflow:
+    _tmp__1 = 1
+    Nonesuch__1 = [1, 2]
+    Truex__1 = 0
+    err__1 = {}
+    err__0 = err__1
+    (err__1)len(before__1)
+@try:
+    @dataflow:
+        (Nonesuch__1, 5)item_at(v__1)
+        (v__1, _tmp__1)add(w__1)
+        w__0 = w__1
+@except err__2:
+    @dataflow:
+        err__0 = err__2
+        w__2 = Truex__1
+        w__0 = w__2
+@dataflow:
+    (err__0)len(after__1)
+    y__1: int | None = None
+    (w__0, after__1)add(z__1)

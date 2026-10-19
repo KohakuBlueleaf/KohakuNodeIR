@@ -1,0 +1,5 @@
+@dataflow:
+    sizes__1 = [512, 768, 1024]
+    config__1 = {"mode": "fast", "quality": "high"}
+    nested__1 = [1, [2, 3], "four"]
+    (sizes__1, config__1)process(result__1)

@@ -1,0 +1,13 @@
+@dataflow:
+    data__1 = "input_data"
+()parallel(`process_a`, `process_b`)
+process_a:
+    @dataflow:
+        (data__1, " + processed_A")concat(result_a__1)
+        (result_a__1)print()
+process_b:
+    @dataflow:
+        (data__1, " + processed_B")concat(result_b__1)
+        (result_b__1)print()
+@dataflow:
+    ("Both branches done")print()

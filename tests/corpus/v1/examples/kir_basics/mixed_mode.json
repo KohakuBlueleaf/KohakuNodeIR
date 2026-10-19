@@ -1,0 +1,19 @@
+{
+  "file": "examples/kir_basics/mixed_mode.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "Sum of squares 1..10.0 = 385.0\n",
+  "vars": {
+    "count_str": "10.0",
+    "counter": 10.0,
+    "keep_going": false,
+    "limit": 10.0,
+    "message": "Sum of squares 1..10.0 = 385.0",
+    "mid": "Sum of squares 1..10.0 = ",
+    "prefix": "Sum of squares 1..10.0",
+    "squared": 100.0,
+    "step": 1.0,
+    "total": 385.0,
+    "total_str": "385.0"
+  }
+}

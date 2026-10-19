@@ -1,0 +1,13 @@
+{
+  "file": "examples/try_except/error_handling.kir",
+  "stubs": [
+    "fetch",
+    "log_error",
+    "parse_json"
+  ],
+  "status": "ok",
+  "stdout": "default\n",
+  "vars": {
+    "result": "default"
+  }
+}

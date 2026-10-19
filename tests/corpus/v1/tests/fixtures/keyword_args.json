@@ -1,0 +1,10 @@
+{
+  "file": "tests/fixtures/keyword_args.kir",
+  "stubs": [
+    "export",
+    "process"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'x1'"
+}

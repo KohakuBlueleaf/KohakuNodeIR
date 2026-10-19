@@ -1,0 +1,8 @@
+@dataflow:
+    ("v1-5-pruned-emaonly.ckpt")checkpointloadersimple(comfy_1_model__1, comfy_1_clip__1, comfy_1_vae__1)
+    (comfy_1_clip__1, "a beautiful landscape, mountains, sunset")cliptextencode(comfy_2_conditioning__1)
+    (comfy_1_clip__1, "blurry, low quality")cliptextencode(comfy_3_conditioning__1)
+    (512, 512, 1)emptylatentimage(comfy_5_latent__1)
+    (comfy_1_model__1, comfy_2_conditioning__1, comfy_3_conditioning__1, comfy_5_latent__1, 42, "fixed", 20, 7.5, "euler", "normal", 1.0)ksampler(comfy_4_latent__1)
+    (comfy_4_latent__1, comfy_1_vae__1)vaedecode(comfy_6_image__1)
+    (comfy_6_image__1, "ComfyUI")saveimage()

@@ -1,0 +1,13 @@
+{
+  "file": "examples/kir_basics/control_flow.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "5! = 120\n",
+  "vars": {
+    "counter": 6,
+    "keep_going": false,
+    "msg": "5! = 120",
+    "n": 5,
+    "result": 120
+  }
+}

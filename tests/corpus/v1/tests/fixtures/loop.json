@@ -1,0 +1,11 @@
+{
+  "file": "tests/fixtures/loop.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "5\n",
+  "vars": {
+    "counter": 5,
+    "keep_going": false,
+    "limit": 5
+  }
+}

@@ -1,0 +1,10 @@
+@dataflow:
+    name__1 = "World"
+    greeting__1 = "Hello"
+    (greeting__1, ", ")concat(with_comma__1)
+    (with_comma__1, name__1)concat(with_name__1)
+    (with_name__1, "!")concat(message__1)
+    (message__1)print()
+    count__1 = 42
+    ("{} items found", count__1)format_string(status__1)
+    (status__1)print()

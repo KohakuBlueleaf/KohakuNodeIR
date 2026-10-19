@@ -1,0 +1,14 @@
+{
+  "file": "tests/fixtures/basic_assignment.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "",
+  "vars": {
+    "empty": null,
+    "flag": true,
+    "name": "hello",
+    "pi": 3.14,
+    "x": 42,
+    "y": 42
+  }
+}

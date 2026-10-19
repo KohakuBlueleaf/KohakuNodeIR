@@ -1,0 +1,23 @@
+@dataflow:
+    n__1 = 5
+    result__1 = 1
+    result__0 = result__1
+    counter__1 = 1
+    counter__0 = counter__1
+()jump(`loop`)
+loop:
+    @dataflow:
+        (result__0, counter__0)multiply(result__2)
+    @dataflow:
+        result__0 = result__2
+        (counter__0, 1)add(counter__2)
+    @dataflow:
+        counter__0 = counter__2
+        (counter__2, n__1)less_equal(keep_going__1)
+    (keep_going__1)branch(`continue_loop`, `done`)
+    continue_loop:
+        ()jump(`loop`)
+    done:
+@dataflow:
+    (n__1, result__2)format_factorial(msg__1)
+    (msg__1)print_val()

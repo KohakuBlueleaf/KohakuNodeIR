@@ -1,0 +1,12 @@
+{
+  "file": "examples/kir_basics/basic_math_l3.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "90\n",
+  "vars": {
+    "product": 90,
+    "sum": 30,
+    "x": 10,
+    "y": 20
+  }
+}

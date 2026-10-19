@@ -1,0 +1,29 @@
+@dataflow:
+    (10)to_float(limit__1)
+    (1)to_float(step__1)
+    counter__1 = 0
+    counter__0 = counter__1
+    total__1 = 0
+    total__0 = total__1
+()jump(`loop`)
+loop:
+    @dataflow:
+        (counter__0, step__1)add(counter__2)
+    @dataflow:
+        counter__0 = counter__2
+        (counter__2, counter__2)multiply(squared__1)
+        (total__0, squared__1)add(total__2)
+    @dataflow:
+        total__0 = total__2
+        (counter__2, limit__1)less_than(keep_going__1)
+    (keep_going__1)branch(`continue`, `done`)
+    continue:
+        ()jump(`loop`)
+    done:
+@dataflow:
+    (total__2)to_string(total_str__1)
+    (counter__2)to_string(count_str__1)
+    ("Sum of squares 1..", count_str__1)concat(prefix__1)
+    (prefix__1, " = ")concat(mid__1)
+    (mid__1, total_str__1)concat(message__1)
+    (message__1)print()

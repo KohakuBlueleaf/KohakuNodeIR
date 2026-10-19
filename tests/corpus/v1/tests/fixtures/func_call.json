@@ -1,0 +1,17 @@
+{
+  "file": "tests/fixtures/func_call.kir",
+  "stubs": [
+    "consume",
+    "generate",
+    "load_data",
+    "process"
+  ],
+  "status": "ok",
+  "stdout": "",
+  "vars": {
+    "result": "process(in0=\"load_data#0(in0='./data/test.bin')\", in1=\"load_data#1(in0='./data/test.bin')\")",
+    "value": "generate()",
+    "x1": "load_data#0(in0='./data/test.bin')",
+    "x2": "load_data#1(in0='./data/test.bin')"
+  }
+}

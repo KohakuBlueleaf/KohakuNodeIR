@@ -1,0 +1,16 @@
+{
+  "file": "examples/kirgraph_pipeline/compiled_l2.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "",
+  "vars": {
+    "accum_result": 4,
+    "check_result": true,
+    "inc_i_result": 2,
+    "square_result": 4,
+    "val_i_value": 0,
+    "val_limit_value": 3,
+    "val_step_value": 1,
+    "val_total_value": 0
+  }
+}

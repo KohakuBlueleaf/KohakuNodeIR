@@ -1,0 +1,2 @@
+(x1, x2)process(_, result, _)
+("test")load(data, _)

@@ -1,0 +1,5 @@
+{
+  "file": "examples/kir_basics/subgraph_demo_l3.kir",
+  "status": "parse_error",
+  "error": "KirSyntaxError: Unexpected token Token('NAME', 'clamp') at line 1, column 6.\nExpected one of: \n\t* LPAR\nPrevious tokens: [Token('__ANON_1', '@def')]\n (line 1, col 6)\n  @def clamp(a, b)(result)"
+}

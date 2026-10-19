@@ -1,0 +1,11 @@
+counter = 0
+limit = 5
+()jump(`loop_body`)
+loop_body:
+    (counter, 1)add(counter)
+    (counter, limit)less_than(keep_going)
+    (keep_going)branch(`continue_loop`, `exit_loop`)
+    continue_loop:
+        ()jump(`loop_body`)
+    exit_loop:
+(counter)print()

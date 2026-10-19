@@ -1,0 +1,6 @@
+@def (input, strength=1.0)preprocess(output):
+    (input)denoise(clean)
+    (clean, amount=strength)normalize(output)
+
+(raw_data)preprocess(result)
+(raw_data, strength=2.0)preprocess(result2)

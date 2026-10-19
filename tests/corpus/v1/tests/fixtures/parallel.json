@@ -1,0 +1,12 @@
+{
+  "file": "tests/fixtures/parallel.kir",
+  "stubs": [
+    "merge",
+    "process_a",
+    "process_b",
+    "split"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'data'"
+}

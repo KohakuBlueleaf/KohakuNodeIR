@@ -1,0 +1,40 @@
+@dataflow:
+    image__1 = "img"
+    boxes__1 = [1, 2, 3]
+    nodes__1 = []
+    nodes__0 = nodes__1
+    (boxes__1)kir.to_list(each__1__items__1)
+    each__1__index__1 = 0
+    each__1__index__0 = each__1__index__1
+()jump(`each__1`)
+each__1:
+    @dataflow:
+        (each__1__items__1, each__1__index__0)kir.item_at(each__1__item__1, each__1__more__1)
+    (each__1__more__1)branch(`body`, `each__1__done`)
+    body:
+        @dataflow:
+            b__1 = each__1__item__1
+            i__1 = each__1__index__0
+            (b__1)is_new(fresh__1)
+        (fresh__1)branch(`yes`, `no`)
+        yes:
+            @dataflow:
+                (image__1, b__1)crop(c__1)
+                @hint max_wait_ms=5
+                (c__1)entity(node__1)
+                node__0 = node__1
+        no:
+            @dataflow:
+                node__2 = None
+                node__0 = node__2
+        @dataflow:
+            (nodes__0, node__0)append(nodes__2)
+        @dataflow:
+            nodes__0 = nodes__2
+            (each__1__index__0)kir.next_index(each__1__index__2)
+        @dataflow:
+            each__1__index__0 = each__1__index__2
+        ()jump(`each__1`)
+    each__1__done:
+@dataflow:
+    (nodes__0)summarize(summary__1)

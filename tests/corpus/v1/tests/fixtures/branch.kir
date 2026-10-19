@@ -1,0 +1,7 @@
+(x1, x2)compare(cond)
+(cond)branch(`on_true`, `on_false`)
+on_true:
+    (x1)process_a(out)
+on_false:
+    (x2)process_b(out)
+(out)final(result)

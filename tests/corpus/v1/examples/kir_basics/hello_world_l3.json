@@ -1,0 +1,7 @@
+{
+  "file": "examples/kir_basics/hello_world_l3.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "Hello, World!\n",
+  "vars": {}
+}

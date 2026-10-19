@@ -1,0 +1,15 @@
+{
+  "file": "examples/kir_basics/string_processing_l3.kir",
+  "stubs": [],
+  "status": "ok",
+  "stdout": "Hello, World!\n42 items found\n",
+  "vars": {
+    "count": 42,
+    "greeting": "Hello",
+    "message": "Hello, World!",
+    "name": "World",
+    "status": "42 items found",
+    "with_comma": "Hello, ",
+    "with_name": "Hello, World"
+  }
+}

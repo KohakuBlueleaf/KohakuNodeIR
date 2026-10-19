@@ -1,0 +1,13 @@
+{
+  "file": "tests/fixtures/nested_namespace.kir",
+  "stubs": [
+    "basic",
+    "check",
+    "deeper_check",
+    "fallback",
+    "process"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'x'"
+}

@@ -1,0 +1,7 @@
+@dataflow:
+    x__1 = 1
+unused:
+    @dataflow:
+        ("never runs")print()
+@dataflow:
+    (x__1)process(result__1)

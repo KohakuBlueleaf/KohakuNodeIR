@@ -1,0 +1,5 @@
+@dataflow:
+    ()load_model(model__1, clip__1)
+    ("a cat", clip__1)encode(positive__1)
+    (model__1, positive__1, steps=20)sample(latent__1)
+    (latent__1)decode(image__1)

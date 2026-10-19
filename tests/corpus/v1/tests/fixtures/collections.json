@@ -1,0 +1,28 @@
+{
+  "file": "tests/fixtures/collections.kir",
+  "stubs": [
+    "process"
+  ],
+  "status": "ok",
+  "stdout": "",
+  "vars": {
+    "config": {
+      "mode": "fast",
+      "quality": "high"
+    },
+    "nested": [
+      1,
+      [
+        2,
+        3
+      ],
+      "four"
+    ],
+    "result": "process(in0=[512, 768, 1024], in1={'mode': 'fast', 'quality': 'high'})",
+    "sizes": [
+      512,
+      768,
+      1024
+    ]
+  }
+}

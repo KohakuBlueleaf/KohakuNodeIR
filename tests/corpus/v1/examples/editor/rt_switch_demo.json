@@ -1,0 +1,7 @@
+{
+  "file": "examples/editor/rt_switch_demo.kir",
+  "stubs": [],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: switch: no case matched value 3 and no default label is defined"
+}

@@ -1,0 +1,23 @@
+{
+  "file": "examples/comfyui_convert/converted_l2.kir",
+  "stubs": [
+    "checkpointloadersimple",
+    "cliptextencode",
+    "emptylatentimage",
+    "ksampler",
+    "saveimage",
+    "vaedecode"
+  ],
+  "status": "ok",
+  "stdout": "",
+  "vars": {
+    "comfy_1_clip": "checkpointloadersimple#1(in0='v1-5-pruned-emaonly.ckpt')",
+    "comfy_1_model": "checkpointloadersimple#0(in0='v1-5-pruned-emaonly.ckpt')",
+    "comfy_1_vae": "checkpointloadersimple#2(in0='v1-5-pruned-emaonly.ckpt')",
+    "comfy_2_conditioning": "cliptextencode(in0=\"checkpointloadersimple#1(in0='v1-5-pruned-emaonly.ckpt')\", in1='a beautiful landscape, mountains, sunset')",
+    "comfy_3_conditioning": "cliptextencode(in0=\"checkpointloadersimple#1(in0='v1-5-pruned-emaonly.ckpt')\", in1='blurry, low quality')",
+    "comfy_4_latent": "ksampler(in0=\"checkpointloadersimple#0(in0='v1-5-pruned-emaonly.ckpt')\", in1='cliptextencode(in0=\"checkpointloadersimple#1(in0=\\'v1-5-pruned-emaonly.ckpt\\')\", in1=\\'a beautiful landscape, mountains, sunset\\')', in10=1.0, in2='cliptextencode(in0=\"checkpointloadersimple#1(in0=\\'v1-5-pruned-emaonly.ckpt\\')\", in1=\\'blurry, low quality\\')', in3='emptylatentimage(in0=512, in1=512, in2=1)', in4=42, in5='fixed', in6=20, in7=7.5, in8='euler', in9='normal')",
+    "comfy_5_latent": "emptylatentimage(in0=512, in1=512, in2=1)",
+    "comfy_6_image": "vaedecode(in0='ksampler(in0=\"checkpointloadersimple#0(in0=\\'v1-5-pruned-emaonly.ckpt\\')\", in1=\\'cliptextencode(in0=\"checkpointloadersimple#1(in0=\\\\\\'v1-5-pruned-emaonly.ckpt\\\\\\')\", in1=\\\\\\'a beautiful landscape, mountains, sunset\\\\\\')\\', in10=1.0, in2=\\'cliptextencode(in0=\"checkpointloadersimple#1(in0=\\\\\\'v1-5-pruned-emaonly.ckpt\\\\\\')\", in1=\\\\\\'blurry, low quality\\\\\\')\\', in3=\\'emptylatentimage(in0=512, in1=512, in2=1)\\', in4=42, in5=\\'fixed\\', in6=20, in7=7.5, in8=\\'euler\\', in9=\\'normal\\')', in1=\"checkpointloadersimple#2(in0='v1-5-pruned-emaonly.ckpt')\")"
+  }
+}

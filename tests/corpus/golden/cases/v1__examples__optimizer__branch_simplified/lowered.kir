@@ -1,0 +1,17 @@
+@dataflow:
+    debug_mode__1 = True
+    ("Debug: starting pipeline")log()
+    temp_a__1 = 100
+    temp_b__1 = 200
+    temp_c__1 = 300
+    x__1 = 10
+    y__1 = 20
+    (x__1, y__1)add(result__1)
+    data__1 = 42
+    (data__1)normalize(norm1__1)
+    (data__1)normalize(norm2__1)
+    (norm1__1)process_a(out_a__1)
+    (norm2__1)process_b(out_b__1)
+    always_true__1 = True
+    (result__1, 2)multiply(doubled__1)
+    (doubled__1)print()

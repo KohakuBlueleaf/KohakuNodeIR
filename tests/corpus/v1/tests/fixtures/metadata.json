@@ -1,0 +1,10 @@
+{
+  "file": "tests/fixtures/metadata.kir",
+  "stubs": [
+    "another",
+    "process"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'x1'"
+}

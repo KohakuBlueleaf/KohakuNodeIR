@@ -1,0 +1,22 @@
+@dataflow:
+    (10)to_float(to_float_1_limit__1)
+    value_3_value__1 = 0
+    value_4_value__1 = 0
+    (1)to_float(to_float_2_step__1)
+()jump(`ns_merge_1`)
+ns_merge_1:
+    @dataflow:
+        (value_3_value__1, to_float_2_step__1)add(add_5_counter__1)
+        (add_5_counter__1)to_string(to_string_11_count_str__1)
+        ("Sum of squares 1..", to_string_11_count_str__1)concat(concat_12_prefix__1)
+        (concat_12_prefix__1, " = ")concat(concat_13_mid__1)
+        (add_5_counter__1, add_5_counter__1)multiply(multiply_6_squared__1)
+@dataflow:
+    (value_4_value__1, multiply_6_squared__1)add(add_7_total__1)
+    (add_5_counter__1, to_float_1_limit__1)less_than(less_than_8_keep_going__1)
+(less_than_8_keep_going__1)branch(`branch_9_true`, `branch_9_false`)
+branch_9_true:
+    ()jump(`ns_merge_1`)
+branch_9_false:
+    @dataflow:
+        (add_7_total__1)to_string(to_string_10_total_str__1)

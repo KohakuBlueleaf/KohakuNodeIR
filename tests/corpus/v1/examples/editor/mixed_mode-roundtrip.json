@@ -1,0 +1,6 @@
+{
+  "file": "examples/editor/mixed_mode-roundtrip.kir",
+  "stubs": [],
+  "status": "nonterminating",
+  "error": "more than 100000 node calls"
+}

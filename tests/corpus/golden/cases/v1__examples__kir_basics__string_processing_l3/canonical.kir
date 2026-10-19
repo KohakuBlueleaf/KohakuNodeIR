@@ -1,0 +1,9 @@
+name = "World"
+greeting = "Hello"
+(greeting, ", ")concat(with_comma)
+(with_comma, name)concat(with_name)
+(with_name, "!")concat(message)
+(message)print()
+count = 42
+("{} items found", count)format_string(status)
+(status)print()

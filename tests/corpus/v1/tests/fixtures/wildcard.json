@@ -1,0 +1,10 @@
+{
+  "file": "tests/fixtures/wildcard.kir",
+  "stubs": [
+    "load",
+    "process"
+  ],
+  "status": "error",
+  "stdout": "",
+  "error": "KirRuntimeError: Undefined variable: 'x1'"
+}

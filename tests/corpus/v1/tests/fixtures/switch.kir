@@ -1,0 +1,8 @@
+(x)classify(category)
+(category)switch(0=>`case_a`, 1=>`case_b`, _=>`case_default`)
+case_a:
+    ("a")print()
+case_b:
+    ("b")print()
+case_default:
+    ("default")print()

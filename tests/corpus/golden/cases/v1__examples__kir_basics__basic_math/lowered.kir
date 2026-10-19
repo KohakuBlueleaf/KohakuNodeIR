@@ -1,0 +1,6 @@
+@dataflow:
+    x__1 = 10
+    y__1 = 20
+    (x__1, y__1)add(sum__1)
+    (sum__1, 3)multiply(product__1)
+    (product__1)print_val()
