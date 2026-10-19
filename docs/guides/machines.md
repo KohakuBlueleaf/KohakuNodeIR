@@ -49,3 +49,11 @@ interp = Interpreter(compiled.lowered, compiled.env, hook=replay)
 interp.run()
 assert interp.source_values() == machine_values
 ```
+
+A machine whose jobs run one `@def` checks against the program as written,
+where the `@def` still exists:
+
+```python
+interp = Interpreter(compiled.program, compiled.env, hook=replay)
+assert interp.call("gbc", job_inputs) == machine_outputs   # outputs by name
+```

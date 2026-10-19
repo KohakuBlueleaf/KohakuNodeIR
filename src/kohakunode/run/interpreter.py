@@ -308,6 +308,25 @@ class Interpreter:
             if name is not None:
                 self.scope.set(name, value)
 
+    def call(self, name: str, inputs: dict[str, Any]) -> dict[str, Any]:
+        """Run one `@def` as a job: bind ``inputs`` (defaults fill the rest), return its outputs by name."""
+        d = self.defs.get(name)
+        if d is None:
+            raise KirRuntimeError(f"no @def {name!r}")
+        unknown = sorted(set(inputs) - {p.name for p in d.params})
+        if unknown:
+            raise KirRuntimeError(f"@def {name}: unknown inputs {unknown}")
+        self.scope = _Scope()
+        bound = dict(inputs)
+        for p in d.params:
+            if p.name not in bound:
+                if p.default is None:
+                    raise KirRuntimeError(f"@def {name}: input {p.name!r} missing")
+                bound[p.name] = self._value(p.default)
+        result = self._call_def(d, bound)
+        values = [result] if len(d.outputs) == 1 else list(result)
+        return {o.name: v for o, v in zip(d.outputs, values)}
+
     def _call_def(self, d: Def, inputs: dict[str, Any]) -> Any:
         outer = self.scope
         self.scope = _Scope()

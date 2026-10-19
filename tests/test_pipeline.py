@@ -5,6 +5,7 @@ import pytest
 from kohakunode import (
     Interpreter,
     KirCheckError,
+    KirRuntimeError,
     NodeLibrary,
     build_env,
     check,
@@ -129,6 +130,23 @@ note2 = "after"
     assert values["node"] is None
     assert values["err"] == {"kind": "ValueError", "node": "entity", "message": "bad box"}
     assert "note" not in values and values["note2"] == "after"
+
+
+def test_call_runs_one_def_as_a_job():
+    src = """
+@def (image: str, box: int = 2)expand(node):
+    (image, box)crop(c)
+    (c)entity(node)
+x = 1
+"""
+    c = compile_source(src, [LIB])
+    interp = Interpreter(c.program, c.env)
+    assert interp.call("expand", {"image": "img"}) == {"node": "E(img[2])"}
+    assert interp.call("expand", {"image": "img", "box": 5}) == {"node": "E(img[5])"}
+    with pytest.raises(KirRuntimeError, match="missing"):
+        interp.call("expand", {})
+    with pytest.raises(KirRuntimeError, match="unknown"):
+        interp.call("expand", {"image": "img", "boxes": 1})
 
 
 def test_error_name_written_elsewhere_gets_a_home_version():
