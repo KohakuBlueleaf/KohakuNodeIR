@@ -60,11 +60,14 @@
           ]
         },
         {
-          "id": "value_4",
-          "kind": "value",
-          "props": {
-            "value": 0
-          },
+          "id": "assign_4",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 0
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -88,20 +91,17 @@
             {
               "port": "value"
             }
-          ],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
           ]
         },
         {
-          "id": "value_6",
-          "kind": "value",
-          "props": {
-            "value": 0
-          },
+          "id": "assign_6",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 0
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -125,12 +125,6 @@
             {
               "port": "value"
             }
-          ],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
           ]
         },
         {
@@ -180,8 +174,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "counter"
+              "port": "value"
             }
           ]
         },
@@ -195,12 +188,6 @@
             {
               "port": "value"
             }
-          ],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
           ]
         },
         {
@@ -253,8 +240,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "counter"
+              "port": "value"
             }
           ]
         },
@@ -266,8 +252,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "counter"
+              "port": "value"
             }
           ]
         },
@@ -279,29 +264,12 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "total"
+              "port": "value"
             }
           ]
         },
         {
-          "id": "dataflow_17",
-          "kind": "dataflow",
-          "props": {
-            "members": [
-              "multiply_12",
-              "add_13"
-            ]
-          },
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
-          ]
-        },
-        {
-          "id": "set_18",
+          "id": "set_17",
           "kind": "set",
           "props": {
             "name": "total"
@@ -310,7 +278,17 @@
             {
               "port": "value"
             }
-          ],
+          ]
+        },
+        {
+          "id": "dataflow_18",
+          "kind": "dataflow",
+          "props": {
+            "members": [
+              "multiply_12",
+              "add_13"
+            ]
+          },
           "ctrl_in": [
             "in"
           ],
@@ -351,8 +329,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "counter"
+              "port": "value"
             }
           ]
         },
@@ -500,8 +477,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "total"
+              "port": "value"
             }
           ]
         },
@@ -513,8 +489,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "counter"
+              "port": "value"
             }
           ]
         },
@@ -596,6 +571,28 @@
           }
         },
         {
+          "kind": "ctrl",
+          "from": {
+            "node": "dataflow_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_6",
+            "port": "in"
+          }
+        },
+        {
           "kind": "data",
           "from": {
             "node": "less_than_19",
@@ -664,11 +661,11 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "set_11",
+            "node": "add_9",
             "port": "out"
           },
           "to": {
-            "node": "dataflow_17",
+            "node": "dataflow_18",
             "port": "in"
           }
         },
@@ -708,7 +705,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "set_18",
+            "node": "dataflow_18",
             "port": "out"
           },
           "to": {
@@ -719,7 +716,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "set_7",
+            "node": "assign_6",
             "port": "out"
           },
           "to": {
@@ -772,17 +769,6 @@
           }
         },
         {
-          "kind": "ctrl",
-          "from": {
-            "node": "add_9",
-            "port": "out"
-          },
-          "to": {
-            "node": "set_11",
-            "port": "in"
-          }
-        },
-        {
           "kind": "data",
           "from": {
             "node": "add_9",
@@ -791,17 +777,6 @@
           "to": {
             "node": "set_11",
             "port": "value"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "dataflow_17",
-            "port": "out"
-          },
-          "to": {
-            "node": "set_18",
-            "port": "in"
           }
         },
         {
@@ -811,25 +786,14 @@
             "port": "result"
           },
           "to": {
-            "node": "set_18",
+            "node": "set_17",
             "port": "value"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "value_4",
-            "port": "out"
-          },
-          "to": {
-            "node": "set_5",
-            "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "value_4",
+            "node": "assign_4",
             "port": "value"
           },
           "to": {
@@ -838,20 +802,9 @@
           }
         },
         {
-          "kind": "ctrl",
-          "from": {
-            "node": "value_6",
-            "port": "out"
-          },
-          "to": {
-            "node": "set_7",
-            "port": "in"
-          }
-        },
-        {
           "kind": "data",
           "from": {
-            "node": "value_6",
+            "node": "assign_6",
             "port": "value"
           },
           "to": {
@@ -879,28 +832,6 @@
           "to": {
             "node": "to_string_23",
             "port": "v"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "dataflow_3",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_4",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "set_5",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_6",
-            "port": "in"
           }
         }
       ]

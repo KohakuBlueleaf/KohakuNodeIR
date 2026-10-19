@@ -25,6 +25,7 @@ from kohakunode.syntax.ast import (
 from kohakunode.syntax.writer import write_type
 
 FORMAT = 2
+DATA_STYLES = ("wires", "variables")
 
 Port = tuple[str, str]  # (node id, port name)
 
@@ -32,9 +33,18 @@ Port = tuple[str, str]  # (node id, port name)
 class _Scope:
     """Builds one graph: the top level or one `@def`."""
 
-    def __init__(self, env: NodeEnv | None, name: str, body: list[Stmt], params=(), outputs=()):
+    def __init__(
+        self,
+        env: NodeEnv | None,
+        name: str,
+        body: list[Stmt],
+        params=(),
+        outputs=(),
+        data: str = "wires",
+    ):
         self.env = env
         self.name = name
+        self.variables = data == "variables"
         self.body = body
         self.params = list(params)
         self.outputs = list(outputs)
@@ -146,20 +156,35 @@ class _Scope:
         return None
 
     def wire_read(self, cfg_node: int, name: str, target: Port) -> None:
-        if name in self.multi:
-            g = self.node(
-                "get", "get", props={"name": name}, outputs=[{"port": "value", "var": name}]
-            )
-            self.data((g["id"], "value"), target)
-            return
-        defs = {d for y, d in self.inn[cfg_node] if y == name} - {UNDEF}
-        if len(defs) == 1:
-            src = self.writer_port(next(iter(defs)), name)
-            if src is not None:
-                self.data(src, target)
-                return
-        g = self.node("get", "get", props={"name": name}, outputs=[{"port": "value", "var": name}])
+        """A read: a direct wire from its only write, or a `get` variable node."""
+        if not self.variables and name not in self.multi:
+            defs = {d for y, d in self.inn[cfg_node] if y == name} - {UNDEF}
+            if len(defs) == 1:
+                src = self.writer_port(next(iter(defs)), name)
+                if src is not None:
+                    self.data(src, target)
+                    return
+        g = self.node("get", "get", props={"name": name}, outputs=[{"port": "value"}])
         self.data((g["id"], "value"), target)
+
+    def out_entry(self, port: str, name: str | None, ptype: str | None = None) -> dict:
+        """An output port; with variables, a written name is shown by its `set` node instead."""
+        entry: dict = {"port": port}
+        if name is None:
+            entry["var"] = None
+        elif not self.variables:
+            entry["var"] = name
+        if ptype is not None:
+            entry["type"] = ptype
+        return entry
+
+    def bind_out(self, src: Port, name: str | None) -> None:
+        """A write: a `set` variable node on the output port (with variables, or for a name
+        written on several paths)."""
+        if name is None or not (self.variables or name in self.multi):
+            return
+        st = self.node("set", "set", props={"name": name}, inputs=[{"port": "value"}])
+        self.data(src, (st["id"], "value"))
 
     # ------------------------------------------------------------ statements
     def ports_of(self, s: Call) -> tuple[list[dict], list[dict]]:
@@ -188,11 +213,9 @@ class _Scope:
         outs = []
         for i, o in enumerate(s.outs):
             port = sig.outputs[i].name if sig and i < len(sig.outputs) else f"out{i}"
-            entry = {"port": port, "var": o}
             ptype = sig.outputs[i].type if sig and i < len(sig.outputs) else None
-            if ptype is not None and ptype.kind != "any":
-                entry["type"] = type_text(ptype)
-            outs.append(entry)
+            text = type_text(ptype) if ptype is not None and ptype.kind != "any" else None
+            outs.append(self.out_entry(port, o, text))
         return ins, outs
 
     def simple(self, s: Stmt, on_chain: bool) -> dict:
@@ -203,30 +226,25 @@ class _Scope:
         )
         if isinstance(s, Call):
             ins, outs = self.ports_of(s)
-            n = self.node("call", s.name, s, name=s.name, inputs=ins, outputs=outs, **ctrl)
-        elif isinstance(s.value, Literal):
-            out = {"port": "value", "var": s.target}
-            if s.type is not None:
-                out["type"] = write_type(s.type)
-            n = self.node(
-                "value",
-                "value",
-                s,
-                props={"value": _json_literal(s.value.value)},
-                outputs=[out],
-                **ctrl,
-            )
-        else:
-            n = self.node(
-                "set",
-                "set",
-                s,
-                props={"name": s.target, "copy": True},
-                inputs=[{"port": "value"}],
-                outputs=[{"port": "value", "var": s.target}],
-                **ctrl,
-            )
-        return n
+            return self.node("call", s.name, s, name=s.name, inputs=ins, outputs=outs, **ctrl)
+        # `x = 10` / `x = y`: the assign command, value in, variable out.
+        inp: dict = {"port": "value"}
+        if isinstance(s.value, Literal):
+            inp["value"] = _json_literal(s.value.value)
+        ptype = write_type(s.type) if s.type is not None else None
+        return self.node(
+            "assign",
+            "assign",
+            s,
+            inputs=[inp],
+            outputs=[self.out_entry("value", s.target, ptype)],
+            **ctrl,
+        )
+
+    def bind_outs(self, s: Stmt, n: dict) -> None:
+        names = [s.target] if isinstance(s, Assign) else list(s.outs)
+        for name, port in zip(names, n["outputs"]):
+            self.bind_out((n["id"], port["port"]), name)
 
     def wire_simple_inputs(self, s: Stmt, n: dict) -> None:
         cfg_n = self.cfg.node_of.get(id(s))
@@ -236,24 +254,6 @@ class _Scope:
                     self.wire_read(cfg_n, a.value.id, (n["id"], port["port"]))
         elif isinstance(s, Assign) and isinstance(s.value, Name) and cfg_n is not None:
             self.wire_read(cfg_n, s.value.id, (n["id"], "value"))
-
-    def sets_after(self, names: list[str], incoming: list[Port], src_of) -> list[Port]:
-        """Chain a set node after a write of each multi-path name."""
-        for x in names:
-            if x is None or x not in self.multi:
-                continue
-            st = self.node(
-                "set",
-                "set",
-                props={"name": x},
-                inputs=[{"port": "value"}],
-                ctrl_in=["in"],
-                ctrl_out=["out"],
-            )
-            self.data(src_of(x), (st["id"], "value"))
-            self.join(incoming, (st["id"], "in"))
-            incoming = [(st["id"], "out")]
-        return incoming
 
     def block(self, stmts: list[Stmt], incoming: list[Port]) -> list[Port]:
         self.stack.append(stmts)
@@ -278,16 +278,15 @@ class _Scope:
                     n = self.simple(s, True)
                     self.wire_simple_inputs(s, n)
                     self.join(incoming, (n["id"], "in"))
-                    outs = [s.target] if isinstance(s, Assign) else list(s.outs)
-                    incoming = self.sets_after(
-                        outs, [(n["id"], "out")], lambda x, n=n, s=s: self.out_port(n, x)
-                    )
+                    self.bind_outs(s, n)
+                    incoming = [(n["id"], "out")]
                 case Dataflow():
                     members = []
                     for inner in s.body:
                         members.append(self.simple(inner, False))
                     for inner, m in zip(s.body, members):
                         self.wire_simple_inputs(inner, m)
+                        self.bind_outs(inner, m)
                     g = self.node(
                         "dataflow",
                         "dataflow",
@@ -298,11 +297,6 @@ class _Scope:
                     )
                     self.join(incoming, (g["id"], "in"))
                     incoming = [(g["id"], "out")]
-                    for inner, m in zip(s.body, members):
-                        outs = [inner.target] if isinstance(inner, Assign) else list(inner.outs)
-                        incoming = self.sets_after(
-                            outs, incoming, lambda x, m=m: self.out_port(m, x)
-                        )
                 case Branch():
                     n = self.node(
                         "branch",
@@ -369,24 +363,18 @@ class _Scope:
                             "has_index": s.has_index,
                         },
                         inputs=[{"port": "items"}],
-                        outputs=[
-                            {"port": "item", "var": s.item},
-                            {"port": "index", "var": s.index},
-                        ],
+                        outputs=[self.out_entry("item", s.item), self.out_entry("index", s.index)],
                         ctrl_in=["in", "next"],
                         ctrl_out=["body", "done"],
                     )
                     self.read_expr(s, s.items, (n["id"], "items"), n["inputs"][0])
                     self.join(incoming, (n["id"], "in"))
+                    self.bind_out((n["id"], "item"), s.item)
+                    self.bind_out((n["id"], "index"), s.index)
                     ns = local.get(s.label)
                     if ns is not None:
                         self.emitted.add(id(ns))
-                        start = self.sets_after(
-                            [s.item, s.index],
-                            [(n["id"], "body")],
-                            lambda x, n=n, s=s: (n["id"], "item" if x == s.item else "index"),
-                        )
-                        ends = self.namespace(ns, start)
+                        ends = self.namespace(ns, [(n["id"], "body")])
                         self.join(ends, (n["id"], "next"))
                     incoming = [(n["id"], "done")]
                 case Jump():
@@ -414,26 +402,16 @@ class _Scope:
                         "try",
                         s,
                         props={"error_name": s.error_name},
-                        outputs=[{"port": "error", "var": s.error_name}] if s.error_name else [],
+                        outputs=[self.out_entry("error", s.error_name)] if s.error_name else [],
                         ctrl_in=["in"],
                         ctrl_out=["try", "except"],
                     )
                     self.join(incoming, (n["id"], "in"))
+                    self.bind_out((n["id"], "error"), s.error_name)
                     a = self.block(s.body, [(n["id"], "try")])
-                    start = [(n["id"], "except")]
-                    if s.error_name:
-                        start = self.sets_after(
-                            [s.error_name], start, lambda x, n=n: (n["id"], "error")
-                        )
-                    b = self.block(s.handler, start)
+                    b = self.block(s.handler, [(n["id"], "except")])
                     incoming = a + b
         return incoming
-
-    def out_port(self, n: dict, var: str) -> Port:
-        for p in n["outputs"]:
-            if p.get("var") == var:
-                return (n["id"], p["port"])
-        raise KeyError(var)
 
     def read_expr(self, s: Stmt, e, target: Port, port_entry: dict) -> None:
         if isinstance(e, Literal):
@@ -481,12 +459,10 @@ class _Scope:
     def build(self) -> dict:
         start: list[Port] = []
         if self.params is not None and self.name != "main":
-            outs = []
-            for p in self.params:
-                entry = {"port": p.name, "var": p.name}
-                if p.type is not None:
-                    entry["type"] = write_type(p.type)
-                outs.append(entry)
+            outs = [
+                self.out_entry(p.name, p.name, write_type(p.type) if p.type is not None else None)
+                for p in self.params
+            ]
             self.nodes.append(
                 {
                     "id": "inputs",
@@ -498,7 +474,8 @@ class _Scope:
             )
             self.ids.add("inputs")
             start = [("inputs", "out")]
-            start = self.sets_after([p.name for p in self.params], start, lambda x: ("inputs", x))
+            for p in self.params:
+                self.bind_out(("inputs", p.name), p.name)
         end = self.block(self.body, start)
         if self.name != "main":
             ins = [
@@ -554,12 +531,18 @@ def _json_literal(v):
     return v
 
 
-def to_graph(program: Program, env: NodeEnv | None = None) -> dict:
-    """The graph view of a program."""
-    graphs = [_Scope(env, "main", program.body).build()]
+def to_graph(program: Program, env: NodeEnv | None = None, data: str = "wires") -> dict:
+    """The graph view of a program.
+
+    ``data="wires"`` wires a read straight to its only write; ``data="variables"`` draws
+    every read as a `get` node and every write as a `set` node (name → node → name).
+    """
+    if data not in DATA_STYLES:
+        raise ValueError(f"unknown data style {data!r}; known: {list(DATA_STYLES)}")
+    graphs = [_Scope(env, "main", program.body, data=data).build()]
     for s in program.body:
         if isinstance(s, Def):
-            graphs.append(_Scope(env, s.name, s.body, s.params, s.outputs).build())
+            graphs.append(_Scope(env, s.name, s.body, s.params, s.outputs, data).build())
     out = {
         "kirgraph": FORMAT,
         "uses": [{"library": u.library, "alias": u.alias} for u in program.uses],

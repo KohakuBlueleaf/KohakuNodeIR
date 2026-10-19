@@ -1,0 +1,2256 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "primitiveint_1",
+          "kind": "call",
+          "name": "primitiveint",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": 768
+            },
+            {
+              "port": "in1",
+              "value": "fixed"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_2",
+          "kind": "set",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "primitivenode_3",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_4",
+          "kind": "set",
+          "props": {
+            "name": "comfy_57_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "primitivenode_5",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_6",
+          "kind": "set",
+          "props": {
+            "name": "comfy_29_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "primitiveint_7",
+          "kind": "call",
+          "name": "primitiveint",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": 1344
+            },
+            {
+              "port": "in1",
+              "value": "fixed"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_8",
+          "kind": "set",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "primitivenode_9",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": 923874509872640
+            },
+            {
+              "port": "in1",
+              "value": "increment"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_10",
+          "kind": "set",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "cliploader_11",
+          "kind": "call",
+          "name": "cliploader",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "qwen_3_4b.safetensors"
+            },
+            {
+              "port": "in1",
+              "value": "flux2"
+            },
+            {
+              "port": "in2",
+              "value": "default"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_12",
+          "kind": "set",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "unetloader_13",
+          "kind": "call",
+          "name": "unetloader",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "flux-2-klein-4b.safetensors"
+            },
+            {
+              "port": "in1",
+              "value": "default"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_14",
+          "kind": "set",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "vaeloader_15",
+          "kind": "call",
+          "name": "vaeloader",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "flux2-vae.safetensors"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_16",
+          "kind": "set",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "primitivenode_17",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": ""
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_18",
+          "kind": "set",
+          "props": {
+            "name": "comfy_27_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "primitivenode_19",
+          "kind": "call",
+          "name": "primitivenode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_20",
+          "kind": "set",
+          "props": {
+            "name": "comfy_28_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "emptylatentimage_21",
+          "kind": "call",
+          "name": "emptylatentimage",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2",
+              "value": 1344
+            },
+            {
+              "port": "in3",
+              "value": 896
+            },
+            {
+              "port": "in4",
+              "value": 1
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_22",
+          "kind": "get",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_23",
+          "kind": "get",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_24",
+          "kind": "set",
+          "props": {
+            "name": "comfy_71_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "cliptextencode_25",
+          "kind": "call",
+          "name": "cliptextencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2",
+              "value": "low quality, jpeg artifacts, bad anatomy, old, early, copyright name, watermark"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_26",
+          "kind": "get",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_27",
+          "kind": "get",
+          "props": {
+            "name": "comfy_57_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_28",
+          "kind": "set",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "tipo_29",
+          "kind": "call",
+          "name": "tipo",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2"
+            },
+            {
+              "port": "in3"
+            },
+            {
+              "port": "in4"
+            },
+            {
+              "port": "in5"
+            },
+            {
+              "port": "in6",
+              "value": ""
+            },
+            {
+              "port": "in7",
+              "value": "A realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+            },
+            {
+              "port": "in8",
+              "value": "censor, text, speeach, name, sign, open mouth, meme, sticker, hair intakes, looking at viewer, ^dragon$, weapon, doll, eye, bunny, intake, pink hair, white hair, yellow hair, blonde hair, glasses"
+            },
+            {
+              "port": "in9",
+              "value": "KBlueLeaf/TIPO-500M-ft | TIPO-500M-ft-F16.gguf"
+            },
+            {
+              "port": "in10",
+              "value": "<|special|>, \n<|characters|>, <|copyrights|>, \n<|artist|>, \n\n<|general|>,\n\n<|extended|>.\n\n<|quality|>, <|meta|>, <|rating|>"
+            },
+            {
+              "port": "in11",
+              "value": 1024
+            },
+            {
+              "port": "in12",
+              "value": 1024
+            },
+            {
+              "port": "in13",
+              "value": 0.5
+            },
+            {
+              "port": "in14",
+              "value": 0.95
+            },
+            {
+              "port": "in15",
+              "value": 0.05
+            },
+            {
+              "port": "in16",
+              "value": 64
+            },
+            {
+              "port": "in17",
+              "value": "long"
+            },
+            {
+              "port": "in18",
+              "value": "long"
+            },
+            {
+              "port": "in19",
+              "value": 923874509872640
+            },
+            {
+              "port": "in20",
+              "value": "fixed"
+            },
+            {
+              "port": "in21",
+              "value": "cuda"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            },
+            {
+              "port": "out1"
+            },
+            {
+              "port": "out2"
+            },
+            {
+              "port": "out3"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_30",
+          "kind": "get",
+          "props": {
+            "name": "comfy_27_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_31",
+          "kind": "get",
+          "props": {
+            "name": "comfy_28_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_32",
+          "kind": "get",
+          "props": {
+            "name": "comfy_29_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_33",
+          "kind": "get",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_34",
+          "kind": "get",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_35",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_36",
+          "kind": "set",
+          "props": {
+            "name": "comfy_76_prompt"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_37",
+          "kind": "set",
+          "props": {
+            "name": "comfy_76_user_prompt"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_38",
+          "kind": "set",
+          "props": {
+            "name": "comfy_76_unformatted_prompt"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_39",
+          "kind": "set",
+          "props": {
+            "name": "comfy_76_unformatted_user_prompt"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "cliptextencode_40",
+          "kind": "call",
+          "name": "cliptextencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2",
+              "value": "1girl,\n\noriginal,\n\nfujisaki hikari, (quasarcake:0.95), (welchino:0.9), (hazuki natsu, sho \\(sho lwlw\\), yuzuki gao:0.85), (naga u:0.85), (usashiro mani:0.92), (azumi kazuki:0.92), \n\ndragon girl, dragon wings, dragon tail, dragon horns, pointy ears, very long hair, scenery, solo, indoors, off shoulder, tail, light blue hair, silver hair, solo, sapphire, gray eyes, bedroom, no pants, black dress, multicolored hair, gradient hair,\n\nabsurdres, masterpiece, safe, sensitive"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_41",
+          "kind": "get",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_42",
+          "kind": "get",
+          "props": {
+            "name": "comfy_76_user_prompt"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_43",
+          "kind": "set",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "showtext_x7c_pysssss_44",
+          "kind": "call",
+          "name": "showtext_x7c_pysssss",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "1girl, \n\nneck ribbon, table, yellow flower, puffy sleeves, vase, flower, chair, puffy long sleeves, picture frame, white rose, sitting, brown belt, blue dress, light smile, feet out of frame, holding cup, white flower, ribbon, blue ribbon, on chair, holding saucer, saucer, teapot, dress, belt, plant, long sleeves, hairclip, long hair, day, cup, indoors, painting \\(object\\), teacup, leaf, solo, holding,\n\nA realistic photograph, oilpainting about a young woman with long, light blue-silver hair and blue eyes sits in a deep blue upholstered chair, her hands resting gently on her lap. She wears a white blouse with puffy sleeves, a teal ribbon bow at her collar, and an ornate brown belt at her waist, with a small decorative hair accessory on the right side of her head. Beside her, a wooden side table holds a vase of yellow and blue flowers, a teacup and saucer, and a glass, while two small framed paintings hang on the muted blue-grey wall behind her. A large window behind her floods the entire scene with warm, golden backlight, silhouetting lush green tree branches and foliage outside, and green plants creep into the foreground at the bottom of the frame. The overall color palette is soft and harmonious, combining light blues, warm golds, and greens to create a hazy, peaceful afternoon-tea atmosphere with a dreamy, painterly quality."
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_45",
+          "kind": "get",
+          "props": {
+            "name": "comfy_76_prompt"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_46",
+          "kind": "set",
+          "props": {
+            "name": "comfy_82_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "ksampler_47",
+          "kind": "call",
+          "name": "ksampler",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2"
+            },
+            {
+              "port": "in3"
+            },
+            {
+              "port": "in4"
+            },
+            {
+              "port": "in5",
+              "value": 923874509872640
+            },
+            {
+              "port": "in6",
+              "value": "randomize"
+            },
+            {
+              "port": "in7",
+              "value": 24
+            },
+            {
+              "port": "in8",
+              "value": 1
+            },
+            {
+              "port": "in9",
+              "value": "euler_ancestral"
+            },
+            {
+              "port": "in10",
+              "value": "exponential"
+            },
+            {
+              "port": "in11",
+              "value": 1
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_48",
+          "kind": "get",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_49",
+          "kind": "get",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_50",
+          "kind": "get",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_51",
+          "kind": "get",
+          "props": {
+            "name": "comfy_71_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_52",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_53",
+          "kind": "set",
+          "props": {
+            "name": "comfy_3_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "vaedecode_54",
+          "kind": "call",
+          "name": "vaedecode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_55",
+          "kind": "get",
+          "props": {
+            "name": "comfy_3_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_56",
+          "kind": "get",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_57",
+          "kind": "set",
+          "props": {
+            "name": "comfy_8_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "imagescaleby_58",
+          "kind": "call",
+          "name": "imagescaleby",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "lanczos"
+            },
+            {
+              "port": "in2",
+              "value": 1.5
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_59",
+          "kind": "get",
+          "props": {
+            "name": "comfy_8_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_60",
+          "kind": "set",
+          "props": {
+            "name": "comfy_51_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "vaeencode_61",
+          "kind": "call",
+          "name": "vaeencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": 0
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_62",
+          "kind": "get",
+          "props": {
+            "name": "comfy_51_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_63",
+          "kind": "set",
+          "props": {
+            "name": "comfy_52_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "ksampler_64",
+          "kind": "call",
+          "name": "ksampler",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2"
+            },
+            {
+              "port": "in3"
+            },
+            {
+              "port": "in4"
+            },
+            {
+              "port": "in5",
+              "value": 923874509872640
+            },
+            {
+              "port": "in6",
+              "value": "randomize"
+            },
+            {
+              "port": "in7",
+              "value": 16
+            },
+            {
+              "port": "in8",
+              "value": 5
+            },
+            {
+              "port": "in9",
+              "value": "euler_ancestral"
+            },
+            {
+              "port": "in10",
+              "value": "exponential"
+            },
+            {
+              "port": "in11",
+              "value": 0.5500000000000002
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_65",
+          "kind": "get",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_66",
+          "kind": "get",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_67",
+          "kind": "get",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_68",
+          "kind": "get",
+          "props": {
+            "name": "comfy_52_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_69",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_70",
+          "kind": "set",
+          "props": {
+            "name": "comfy_41_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "vaedecode_71",
+          "kind": "call",
+          "name": "vaedecode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_72",
+          "kind": "get",
+          "props": {
+            "name": "comfy_41_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_73",
+          "kind": "get",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_74",
+          "kind": "set",
+          "props": {
+            "name": "comfy_42_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "saveimage_75",
+          "kind": "call",
+          "name": "saveimage",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "HiresFix/ComfyUI_HiresFix"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_76",
+          "kind": "get",
+          "props": {
+            "name": "comfy_42_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "saveimage_77",
+          "kind": "call",
+          "name": "saveimage",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "ComfyUI"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_78",
+          "kind": "get",
+          "props": {
+            "name": "comfy_8_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitivenode_9",
+            "port": "out"
+          },
+          "to": {
+            "node": "cliploader_11",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "emptylatentimage_21",
+            "port": "out"
+          },
+          "to": {
+            "node": "cliptextencode_25",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_26",
+            "port": "value"
+          },
+          "to": {
+            "node": "cliptextencode_25",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_27",
+            "port": "value"
+          },
+          "to": {
+            "node": "cliptextencode_25",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "tipo_29",
+            "port": "out"
+          },
+          "to": {
+            "node": "cliptextencode_40",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_41",
+            "port": "value"
+          },
+          "to": {
+            "node": "cliptextencode_40",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_42",
+            "port": "value"
+          },
+          "to": {
+            "node": "cliptextencode_40",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitivenode_19",
+            "port": "out"
+          },
+          "to": {
+            "node": "emptylatentimage_21",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_22",
+            "port": "value"
+          },
+          "to": {
+            "node": "emptylatentimage_21",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_23",
+            "port": "value"
+          },
+          "to": {
+            "node": "emptylatentimage_21",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "vaedecode_54",
+            "port": "out"
+          },
+          "to": {
+            "node": "imagescaleby_58",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_59",
+            "port": "value"
+          },
+          "to": {
+            "node": "imagescaleby_58",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "showtext_x7c_pysssss_44",
+            "port": "out"
+          },
+          "to": {
+            "node": "ksampler_47",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_48",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_47",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_49",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_47",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_50",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_47",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_51",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_47",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_52",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_47",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "vaeencode_61",
+            "port": "out"
+          },
+          "to": {
+            "node": "ksampler_64",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_65",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_64",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_66",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_64",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_67",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_64",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_68",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_64",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_69",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_64",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitivenode_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "primitiveint_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "vaeloader_15",
+            "port": "out"
+          },
+          "to": {
+            "node": "primitivenode_17",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitivenode_17",
+            "port": "out"
+          },
+          "to": {
+            "node": "primitivenode_19",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitiveint_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "primitivenode_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitivenode_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "primitivenode_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitiveint_7",
+            "port": "out"
+          },
+          "to": {
+            "node": "primitivenode_9",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "vaedecode_71",
+            "port": "out"
+          },
+          "to": {
+            "node": "saveimage_75",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_76",
+            "port": "value"
+          },
+          "to": {
+            "node": "saveimage_75",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "saveimage_75",
+            "port": "out"
+          },
+          "to": {
+            "node": "saveimage_77",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_78",
+            "port": "value"
+          },
+          "to": {
+            "node": "saveimage_77",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "primitivenode_9",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_10",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliploader_11",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_12",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "unetloader_13",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_14",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "vaeloader_15",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_16",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "primitivenode_17",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_18",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "primitiveint_1",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_2",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "primitivenode_19",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_20",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "emptylatentimage_21",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_24",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliptextencode_25",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_28",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "tipo_29",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_36",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "tipo_29",
+            "port": "out1"
+          },
+          "to": {
+            "node": "set_37",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "tipo_29",
+            "port": "out2"
+          },
+          "to": {
+            "node": "set_38",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "tipo_29",
+            "port": "out3"
+          },
+          "to": {
+            "node": "set_39",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "primitivenode_3",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_4",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliptextencode_40",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_43",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "showtext_x7c_pysssss_44",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_46",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "ksampler_47",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_53",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "vaedecode_54",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_57",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "primitivenode_5",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_6",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "imagescaleby_58",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_60",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "vaeencode_61",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_63",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "ksampler_64",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_70",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "vaedecode_71",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_74",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "primitiveint_7",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_8",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliptextencode_40",
+            "port": "out"
+          },
+          "to": {
+            "node": "showtext_x7c_pysssss_44",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_45",
+            "port": "value"
+          },
+          "to": {
+            "node": "showtext_x7c_pysssss_44",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliptextencode_25",
+            "port": "out"
+          },
+          "to": {
+            "node": "tipo_29",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_30",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_29",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_31",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_29",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_32",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_29",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_33",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_29",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_34",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_29",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_35",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_29",
+            "port": "in5"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliploader_11",
+            "port": "out"
+          },
+          "to": {
+            "node": "unetloader_13",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "ksampler_47",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaedecode_54",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_55",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_54",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_56",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_54",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "ksampler_64",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaedecode_71",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_72",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_71",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_73",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_71",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "imagescaleby_58",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaeencode_61",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_62",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaeencode_61",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "unetloader_13",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaeloader_15",
+            "port": "in"
+          }
+        }
+      ]
+    }
+  ]
+}

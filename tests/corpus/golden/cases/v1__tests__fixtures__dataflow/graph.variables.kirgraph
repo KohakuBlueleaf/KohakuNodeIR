@@ -1,0 +1,373 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "1",
+          "kind": "call",
+          "name": "load_model",
+          "inputs": [],
+          "outputs": [
+            {
+              "port": "out0"
+            },
+            {
+              "port": "out1"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "meta": {
+            "pos": [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "id": "set_2",
+          "kind": "set",
+          "props": {
+            "name": "model"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_3",
+          "kind": "set",
+          "props": {
+            "name": "clip"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "kind": "call",
+          "name": "encode",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "a cat"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "meta": {
+            "pos": [
+              300,
+              0
+            ]
+          }
+        },
+        {
+          "id": "get_5",
+          "kind": "get",
+          "props": {
+            "name": "clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_6",
+          "kind": "set",
+          "props": {
+            "name": "positive"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "3",
+          "kind": "call",
+          "name": "sample",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "steps",
+              "keyword": true,
+              "value": 20
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "meta": {
+            "pos": [
+              600,
+              0
+            ]
+          }
+        },
+        {
+          "id": "get_8",
+          "kind": "get",
+          "props": {
+            "name": "model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_9",
+          "kind": "get",
+          "props": {
+            "name": "positive"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_10",
+          "kind": "set",
+          "props": {
+            "name": "latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "4",
+          "kind": "call",
+          "name": "decode",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "meta": {
+            "pos": [
+              900,
+              0
+            ]
+          }
+        },
+        {
+          "id": "get_12",
+          "kind": "get",
+          "props": {
+            "name": "latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_13",
+          "kind": "set",
+          "props": {
+            "name": "image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "1",
+            "port": "out"
+          },
+          "to": {
+            "node": "2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_5",
+            "port": "value"
+          },
+          "to": {
+            "node": "2",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "2",
+            "port": "out"
+          },
+          "to": {
+            "node": "3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_8",
+            "port": "value"
+          },
+          "to": {
+            "node": "3",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_9",
+            "port": "value"
+          },
+          "to": {
+            "node": "3",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "3",
+            "port": "out"
+          },
+          "to": {
+            "node": "4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_12",
+            "port": "value"
+          },
+          "to": {
+            "node": "4",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "3",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_10",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "4",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_13",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "1",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_2",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "1",
+            "port": "out1"
+          },
+          "to": {
+            "node": "set_3",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "2",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_6",
+            "port": "value"
+          }
+        }
+      ]
+    }
+  ],
+  "mode": "dataflow"
+}

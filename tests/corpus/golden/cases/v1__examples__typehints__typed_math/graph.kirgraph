@@ -6,11 +6,14 @@
       "name": "main",
       "nodes": [
         {
-          "id": "value_1",
-          "kind": "value",
-          "props": {
-            "value": 10
-          },
+          "id": "assign_1",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 10
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -26,11 +29,14 @@
           ]
         },
         {
-          "id": "value_2",
-          "kind": "value",
-          "props": {
-            "value": 20
-          },
+          "id": "assign_2",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 20
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -140,7 +146,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_1",
+            "node": "assign_1",
             "port": "value"
           },
           "to": {
@@ -151,7 +157,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_2",
+            "node": "assign_2",
             "port": "value"
           },
           "to": {
@@ -162,11 +168,22 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "value_2",
+            "node": "assign_2",
             "port": "out"
           },
           "to": {
             "node": "add_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_2",
             "port": "in"
           }
         },
@@ -234,17 +251,6 @@
           "to": {
             "node": "to_string_5",
             "port": "v"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "value_1",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_2",
-            "port": "in"
           }
         }
       ]

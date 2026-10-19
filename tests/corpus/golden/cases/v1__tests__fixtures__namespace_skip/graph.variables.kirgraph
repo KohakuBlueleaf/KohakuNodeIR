@@ -1,0 +1,210 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "assign_1",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 1
+            }
+          ],
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_2",
+          "kind": "set",
+          "props": {
+            "name": "x"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "merge_3",
+          "kind": "merge",
+          "props": {
+            "label": "unused"
+          },
+          "ctrl_in": [
+            "in_0"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "print_4",
+          "kind": "call",
+          "name": "print",
+          "inputs": [
+            {
+              "port": "v",
+              "value": "never runs"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "process_5",
+          "kind": "call",
+          "name": "process",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_6",
+          "kind": "get",
+          "props": {
+            "name": "x"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "merge_7",
+          "kind": "merge",
+          "ctrl_in": [
+            "in_0",
+            "in_1"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_8",
+          "kind": "set",
+          "props": {
+            "name": "result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "merge_7",
+            "port": "in_0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "print_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "merge_7",
+            "port": "in_1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "merge_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "print_4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "merge_7",
+            "port": "out"
+          },
+          "to": {
+            "node": "process_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_6",
+            "port": "value"
+          },
+          "to": {
+            "node": "process_5",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_1",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_2",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "process_5",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_8",
+            "port": "value"
+          }
+        }
+      ]
+    }
+  ]
+}

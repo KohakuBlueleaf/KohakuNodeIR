@@ -1,0 +1,354 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "assign_1",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 42
+            }
+          ],
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_2",
+          "kind": "set",
+          "props": {
+            "name": "x"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "assign_3",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": "hello"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_4",
+          "kind": "set",
+          "props": {
+            "name": "name"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "assign_5",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 3.14
+            }
+          ],
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_6",
+          "kind": "set",
+          "props": {
+            "name": "pi"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "assign_7",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": true
+            }
+          ],
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_8",
+          "kind": "set",
+          "props": {
+            "name": "flag"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "assign_9",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": null
+            }
+          ],
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_10",
+          "kind": "set",
+          "props": {
+            "name": "empty"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "assign_11",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_12",
+          "kind": "get",
+          "props": {
+            "name": "x"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_13",
+          "kind": "set",
+          "props": {
+            "name": "y"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_9",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_11",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_12",
+            "port": "value"
+          },
+          "to": {
+            "node": "assign_11",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_3",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_7",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_9",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_9",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_10",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_11",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_13",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_1",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_2",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_3",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_4",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_5",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_6",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_7",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_8",
+            "port": "value"
+          }
+        }
+      ]
+    }
+  ]
+}

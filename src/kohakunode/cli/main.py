@@ -8,7 +8,7 @@ from pathlib import Path
 
 from kohakunode.compiler import compile_program
 from kohakunode.errors import KirError
-from kohakunode.graph import from_graph, to_graph
+from kohakunode.graph import DATA_STYLES, from_graph, to_graph
 from kohakunode.lower import PASSES
 from kohakunode.run import Interpreter
 from kohakunode.sig.env import build_env
@@ -100,7 +100,8 @@ def cmd_graph(args) -> int:
     env = build_env(
         program, load_libraries(args.lib), path.parent, [Path(p) for p in args.sig_path]
     )
-    _emit(json.dumps(to_graph(program, env), indent=2, ensure_ascii=False) + "\n", args.output)
+    graph = to_graph(program, env, args.data)
+    _emit(json.dumps(graph, indent=2, ensure_ascii=False) + "\n", args.output)
     return 0
 
 
@@ -178,6 +179,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("graph", help="text to graph JSON (.kirgraph)")
     sp.add_argument("file")
     sp.add_argument("-o", "--output")
+    sp.add_argument(
+        "--data",
+        choices=DATA_STYLES,
+        default="wires",
+        help="data as direct wires, or as variable nodes (name -> node -> name)",
+    )
     with_libs(sp)
     sp.set_defaults(fn=cmd_graph)
 

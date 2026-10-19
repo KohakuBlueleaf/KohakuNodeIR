@@ -3,7 +3,8 @@
 Each case directory holds the input ``input.kir``, the signatures it is
 checked against ``sig.kirsig.json``, and what the Python reference produces:
 ``canonical.kir`` (the program as written, canonical form), ``lowered.kir``
-(after every optimization pass), ``graph.kirgraph`` (the graph view) and
+(after every optimization pass), ``graph.kirgraph`` and
+``graph.variables.kirgraph`` (the graph view, data as wires / as variables) and
 ``hashes.json``.
 Cases come from the v1 corpus (files v1 ran cleanly) and ``v2/*.kir``.
 """
@@ -42,11 +43,12 @@ def sources():
 def outputs(src: str, lib) -> dict[str, str]:
     program = parse(src)
     compiled = compile_program(program, [lib])
-    graph = to_graph(program, build_env(program, [lib]))
+    env = build_env(program, [lib])
     return {
         "canonical.kir": write(program),
         "lowered.kir": write(compiled.lowered),
-        "graph.kirgraph": json.dumps(graph, indent=2, ensure_ascii=False) + "\n",
+        "graph.kirgraph": _json(to_graph(program, env)),
+        "graph.variables.kirgraph": _json(to_graph(program, env, "variables")),
         "hashes.json": json.dumps(
             {"semantic": compiled.semantic_hash, "full": compiled.full_hash}, indent=2
         )
@@ -68,6 +70,10 @@ def main() -> None:
         for fname, text in outputs(src, library_from_json(sig)).items():
             (d / fname).write_text(text, encoding="utf-8")
     print(f"wrote {len(list(cases.iterdir()))} cases")
+
+
+def _json(graph: dict) -> str:
+    return json.dumps(graph, indent=2, ensure_ascii=False) + "\n"
 
 
 def _json_safe(lib):

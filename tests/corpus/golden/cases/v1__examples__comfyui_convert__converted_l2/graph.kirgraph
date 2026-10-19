@@ -436,8 +436,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_5_latent"
+              "port": "value"
             }
           ]
         },

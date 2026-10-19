@@ -1,0 +1,290 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "load_data_1",
+          "kind": "call",
+          "name": "load_data",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "./data/test.bin"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            },
+            {
+              "port": "out1"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_2",
+          "kind": "set",
+          "props": {
+            "name": "x1"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_3",
+          "kind": "set",
+          "props": {
+            "name": "x2"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "process_4",
+          "kind": "call",
+          "name": "process",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_5",
+          "kind": "get",
+          "props": {
+            "name": "x1"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_6",
+          "kind": "get",
+          "props": {
+            "name": "x2"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_7",
+          "kind": "set",
+          "props": {
+            "name": "result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "generate_8",
+          "kind": "call",
+          "name": "generate",
+          "inputs": [],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_9",
+          "kind": "set",
+          "props": {
+            "name": "value"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "consume_10",
+          "kind": "call",
+          "name": "consume",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_11",
+          "kind": "get",
+          "props": {
+            "name": "value"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "generate_8",
+            "port": "out"
+          },
+          "to": {
+            "node": "consume_10",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_11",
+            "port": "value"
+          },
+          "to": {
+            "node": "consume_10",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "process_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "generate_8",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "load_data_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "process_4",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_5",
+            "port": "value"
+          },
+          "to": {
+            "node": "process_4",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_6",
+            "port": "value"
+          },
+          "to": {
+            "node": "process_4",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "load_data_1",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_2",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "load_data_1",
+            "port": "out1"
+          },
+          "to": {
+            "node": "set_3",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "process_4",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_7",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "generate_8",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_9",
+            "port": "value"
+          }
+        }
+      ]
+    }
+  ]
+}

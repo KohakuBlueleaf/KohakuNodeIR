@@ -1,0 +1,30 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "print_1",
+          "kind": "call",
+          "name": "print",
+          "inputs": [
+            {
+              "port": "v",
+              "value": "Hello, World!"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        }
+      ],
+      "edges": []
+    }
+  ]
+}

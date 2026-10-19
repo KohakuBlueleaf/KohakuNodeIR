@@ -90,12 +90,19 @@ class _Graph:
                 if dst in self.data_in:
                     raise KirGraphError(f"input {dst} has two data edges")
                 self.data_in[dst] = src
+        # A `set` variable node names the output port wired into it.
         self.rename: dict[tuple[str, str], str] = {}
         for n in g["nodes"]:
-            if n["kind"] == "set" and not n.get("props", {}).get("copy"):
+            if n["kind"] == "set":
                 src = self.data_in.get((n["id"], "value"))
-                if src is not None:
-                    self.rename[src] = n["props"]["name"]
+                if src is None:
+                    continue
+                if src in self.rename and self.rename[src] != n["props"]["name"]:
+                    raise KirGraphError(
+                        f"output {src} feeds two variables: {self.rename[src]!r} and "
+                        f"{n['props']['name']!r}"
+                    )
+                self.rename[src] = n["props"]["name"]
         self.members = {
             m for n in g["nodes"] if n["kind"] == "dataflow" for m in n["props"]["members"]
         }
@@ -118,6 +125,9 @@ class _Graph:
     def expr(self, nid: str, port: dict):
         src = self.data_in.get((nid, port["port"]))
         if src is not None:
+            producer = self.nodes[src[0]]
+            if producer["kind"] == "value":
+                return Literal(decode_literal(producer["props"]["value"]))
             return Name(self.var(src))
         if "value" in port:
             return Literal(decode_literal(port["value"]))
@@ -134,16 +144,13 @@ class _Graph:
     # ------------------------------------------------------------ statements
     def simple(self, n: dict) -> Stmt:
         nid = n["id"]
-        if n["kind"] == "value":
+        if n["kind"] == "assign":
             out = n["outputs"][0]
             t = parse_type(out["type"]) if out.get("type") else None
+            value = self.expr(nid, n["inputs"][0])
             return self.decorate(
-                Assign(self.var((nid, "value")), Literal(decode_literal(n["props"]["value"])), t), n
-            )
-        if n["kind"] == "set":
-            src = self.expr(nid, {"port": "value"})
-            return self.decorate(
-                Assign(n["props"]["name"], src if src is not None else Literal(None)), n
+                Assign(self.var((nid, "value")), value if value is not None else Literal(None), t),
+                n,
             )
         args = []
         for port in n.get("inputs", []):
@@ -160,9 +167,9 @@ class _Graph:
                 outs.append(self.var(key))
         return self.decorate(Call(n["name"], args, outs), n)
 
-    def derived(self, n: dict) -> bool:
-        """A set node that only shows a name written on several paths."""
-        return n["kind"] == "set" and not n.get("props", {}).get("copy")
+    def bound(self, nid: str, port: str, default: str | None) -> str | None:
+        """The name a builtin's output port binds: its `set` node's, else the props'."""
+        return self.rename.get((nid, port), default)
 
     def next_of(self, nid: str, port: str = "out"):
         return self.ctrl_out.get((nid, port))
@@ -240,9 +247,7 @@ class _Graph:
             if cur in self.emitted:
                 break
             self.emitted.add(cur)
-            if self.derived(n):
-                nxt = self.next_of(cur)
-            elif kind in ("call", "value", "set"):
+            if kind in ("call", "assign"):
                 out.append(self.simple(n))
                 nxt = self.next_of(cur)
             elif kind == "dataflow":
@@ -255,8 +260,8 @@ class _Graph:
             elif kind == "each":
                 p = n["props"]
                 items = self.expr(cur, n["inputs"][0]) or Literal([])
-                item = p.get("item")
-                index = p.get("index")
+                item = self.bound(cur, "item", p.get("item"))
+                index = self.bound(cur, "index", p.get("index"))
                 out.append(
                     self.decorate(Each(items, item, index, p["label"], bool(p.get("has_index"))), n)
                 )
@@ -297,14 +302,14 @@ class _Graph:
                             Namespace(labels[port], self.chain(self.next_of(cur, port), arm_stop))
                         )
                 else:
-                    err = n["props"].get("error_name")
+                    err = self.bound(cur, "error", n["props"].get("error_name"))
                     body = self.chain(self.next_of(cur, "try"), arm_stop)
                     handler = self.chain(self.next_of(cur, "except"), arm_stop)
                     out.append(self.decorate(Try(body, handler, err), n))
                 nxt = (join, "in") if join else None
             elif kind in ("inputs",):
                 nxt = self.next_of(cur)
-            elif kind in ("outputs", "get"):
+            elif kind in ("outputs", "get", "set", "value"):
                 nxt = None
             else:
                 raise KirGraphError(f"unknown node kind {kind!r}")
@@ -315,8 +320,7 @@ class _Graph:
         free = [
             nid
             for nid in self.order
-            if self.nodes[nid]["kind"] in ("call", "value", "set")
-            and not self.derived(self.nodes[nid])
+            if self.nodes[nid]["kind"] in ("call", "assign")
             and not self.nodes[nid].get("ctrl_in")
             and nid not in self.members
         ]
@@ -328,7 +332,7 @@ class _Graph:
             n = self.nodes[nid]
             if nid in self.emitted or nid in self.members or nid in free:
                 continue
-            if n["kind"] in ("get", "outputs"):
+            if n["kind"] in ("get", "set", "value", "outputs"):
                 continue
             if self.ctrl_in[nid] and n["kind"] != "inputs":
                 continue

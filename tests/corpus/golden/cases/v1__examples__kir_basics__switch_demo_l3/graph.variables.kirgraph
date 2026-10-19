@@ -1,0 +1,238 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "assign_1",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 3
+            }
+          ],
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_2",
+          "kind": "set",
+          "props": {
+            "name": "day"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "switch_3",
+          "kind": "switch",
+          "props": {
+            "cases": [
+              1,
+              2,
+              3
+            ],
+            "labels": {
+              "case_0": "monday",
+              "case_1": "tuesday",
+              "case_2": "wednesday",
+              "default": "other"
+            }
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "case_0",
+            "case_1",
+            "case_2",
+            "default"
+          ]
+        },
+        {
+          "id": "get_4",
+          "kind": "get",
+          "props": {
+            "name": "day"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "print_5",
+          "kind": "call",
+          "name": "print",
+          "inputs": [
+            {
+              "port": "v",
+              "value": "It's Monday"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "print_6",
+          "kind": "call",
+          "name": "print",
+          "inputs": [
+            {
+              "port": "v",
+              "value": "It's Tuesday"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "print_7",
+          "kind": "call",
+          "name": "print",
+          "inputs": [
+            {
+              "port": "v",
+              "value": "It's Wednesday!"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "print_8",
+          "kind": "call",
+          "name": "print",
+          "inputs": [
+            {
+              "port": "v",
+              "value": "Some other day"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "switch_3",
+            "port": "case_0"
+          },
+          "to": {
+            "node": "print_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "switch_3",
+            "port": "case_1"
+          },
+          "to": {
+            "node": "print_6",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "switch_3",
+            "port": "case_2"
+          },
+          "to": {
+            "node": "print_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "switch_3",
+            "port": "default"
+          },
+          "to": {
+            "node": "print_8",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_1",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_2",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "switch_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_4",
+            "port": "value"
+          },
+          "to": {
+            "node": "switch_3",
+            "port": "value"
+          }
+        }
+      ]
+    }
+  ]
+}

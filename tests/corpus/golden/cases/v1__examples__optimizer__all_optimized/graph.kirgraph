@@ -24,11 +24,14 @@
           ]
         },
         {
-          "id": "value_2",
-          "kind": "value",
-          "props": {
-            "value": 10
-          },
+          "id": "assign_2",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 10
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -43,11 +46,14 @@
           ]
         },
         {
-          "id": "value_3",
-          "kind": "value",
-          "props": {
-            "value": 20
-          },
+          "id": "assign_3",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 20
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -87,11 +93,14 @@
           ]
         },
         {
-          "id": "value_5",
-          "kind": "value",
-          "props": {
-            "value": 42
-          },
+          "id": "assign_5",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 42
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -128,12 +137,8 @@
           ]
         },
         {
-          "id": "set_7",
-          "kind": "set",
-          "props": {
-            "name": "norm2",
-            "copy": true
-          },
+          "id": "assign_7",
+          "kind": "assign",
           "inputs": [
             {
               "port": "value"
@@ -244,7 +249,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_2",
+            "node": "assign_2",
             "port": "value"
           },
           "to": {
@@ -255,7 +260,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_3",
+            "node": "assign_3",
             "port": "value"
           },
           "to": {
@@ -266,12 +271,67 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "value_3",
+            "node": "assign_3",
             "port": "out"
           },
           "to": {
             "node": "add_4",
             "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "log_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_2",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "add_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "normalize_6",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "normalize_6",
+            "port": "out0"
+          },
+          "to": {
+            "node": "assign_7",
+            "port": "value"
           }
         },
         {
@@ -299,7 +359,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "value_5",
+            "node": "assign_5",
             "port": "out"
           },
           "to": {
@@ -310,7 +370,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_5",
+            "node": "assign_5",
             "port": "value"
           },
           "to": {
@@ -343,7 +403,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "set_7",
+            "node": "assign_7",
             "port": "out"
           },
           "to": {
@@ -376,67 +436,12 @@
         {
           "kind": "data",
           "from": {
-            "node": "set_7",
+            "node": "assign_7",
             "port": "value"
           },
           "to": {
             "node": "process_b_9",
             "port": "in0"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "normalize_6",
-            "port": "out"
-          },
-          "to": {
-            "node": "set_7",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "normalize_6",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_7",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "log_1",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_2",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "value_2",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_3",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "add_4",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_5",
-            "port": "in"
           }
         }
       ]

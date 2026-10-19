@@ -6,15 +6,18 @@
       "name": "main",
       "nodes": [
         {
-          "id": "value_1",
-          "kind": "value",
-          "props": {
-            "value": [
-              512,
-              768,
-              1024
-            ]
-          },
+          "id": "assign_1",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": [
+                512,
+                768,
+                1024
+              ]
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -29,16 +32,19 @@
           ]
         },
         {
-          "id": "value_2",
-          "kind": "value",
-          "props": {
-            "value": {
-              "dict": {
-                "mode": "fast",
-                "quality": "high"
+          "id": "assign_2",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": {
+                "dict": {
+                  "mode": "fast",
+                  "quality": "high"
+                }
               }
             }
-          },
+          ],
           "outputs": [
             {
               "port": "value",
@@ -53,18 +59,21 @@
           ]
         },
         {
-          "id": "value_3",
-          "kind": "value",
-          "props": {
-            "value": [
-              1,
-              [
-                2,
-                3
-              ],
-              "four"
-            ]
-          },
+          "id": "assign_3",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": [
+                1,
+                [
+                  2,
+                  3
+                ],
+                "four"
+              ]
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -108,7 +117,29 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "value_3",
+            "node": "assign_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_2",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_3",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_3",
             "port": "out"
           },
           "to": {
@@ -119,7 +150,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_1",
+            "node": "assign_1",
             "port": "value"
           },
           "to": {
@@ -130,34 +161,12 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_2",
+            "node": "assign_2",
             "port": "value"
           },
           "to": {
             "node": "process_4",
             "port": "in1"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "value_1",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_2",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "value_2",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_3",
-            "port": "in"
           }
         }
       ]

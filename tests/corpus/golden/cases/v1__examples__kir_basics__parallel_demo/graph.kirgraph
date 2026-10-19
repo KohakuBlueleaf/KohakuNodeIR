@@ -6,11 +6,14 @@
       "name": "main",
       "nodes": [
         {
-          "id": "value_1",
-          "kind": "value",
-          "props": {
-            "value": "input_data"
-          },
+          "id": "assign_1",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": "input_data"
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -161,7 +164,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_1",
+            "node": "assign_1",
             "port": "value"
           },
           "to": {
@@ -183,7 +186,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_1",
+            "node": "assign_1",
             "port": "value"
           },
           "to": {
@@ -227,7 +230,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "value_1",
+            "node": "assign_1",
             "port": "out"
           },
           "to": {

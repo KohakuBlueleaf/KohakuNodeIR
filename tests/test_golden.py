@@ -23,9 +23,11 @@ def test_golden(case):
     lib = library_from_json(json.loads(golden(d, "sig.kirsig.json")))
     program = parse(golden(d, "input.kir"))
     compiled = compile_program(program, [lib])
-    graph = to_graph(program, build_env(program, [lib]))
+    env = build_env(program, [lib])
     assert write(program) == golden(d, "canonical.kir")
     assert write(compiled.lowered) == golden(d, "lowered.kir")
-    assert json.dumps(graph, indent=2, ensure_ascii=False) + "\n" == golden(d, "graph.kirgraph")
+    for data, name in (("wires", "graph.kirgraph"), ("variables", "graph.variables.kirgraph")):
+        graph = to_graph(program, env, data)
+        assert json.dumps(graph, indent=2, ensure_ascii=False) + "\n" == golden(d, name)
     hashes = json.loads(golden(d, "hashes.json"))
     assert (compiled.semantic_hash, compiled.full_hash) == (hashes["semantic"], hashes["full"])

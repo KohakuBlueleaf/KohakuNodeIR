@@ -1531,8 +1531,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_51_image"
+              "port": "value"
             }
           ]
         },
@@ -1544,8 +1543,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_3_latent"
+              "port": "value"
             }
           ]
         },
@@ -1557,8 +1555,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_88_vae"
+              "port": "value"
             }
           ]
         },
@@ -1570,8 +1567,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_41_latent"
+              "port": "value"
             }
           ]
         },
@@ -1583,8 +1579,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_88_vae"
+              "port": "value"
             }
           ]
         },
@@ -1596,8 +1591,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_76_prompt"
+              "port": "value"
             }
           ]
         },
@@ -1609,8 +1603,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_87_clip"
+              "port": "value"
             }
           ]
         },
@@ -1622,8 +1615,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_57_string"
+              "port": "value"
             }
           ]
         },
@@ -1635,8 +1627,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_87_clip"
+              "port": "value"
             }
           ]
         },
@@ -1648,8 +1639,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_76_user_prompt"
+              "port": "value"
             }
           ]
         },
@@ -1661,8 +1651,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "comfy_28_string"
+              "port": "value"
             }
           ]
         },

@@ -36,10 +36,13 @@
         },
         {
           "id": "value_3",
-          "kind": "value",
-          "props": {
-            "value": 0
-          },
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 0
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -61,10 +64,13 @@
         },
         {
           "id": "value_4",
-          "kind": "value",
-          "props": {
-            "value": 0
-          },
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 0
+            }
+          ],
           "outputs": [
             {
               "port": "value",

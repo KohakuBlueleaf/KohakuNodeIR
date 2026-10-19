@@ -1,0 +1,681 @@
+{
+  "kirgraph": 2,
+  "uses": [],
+  "graphs": [
+    {
+      "name": "main",
+      "nodes": [
+        {
+          "id": "checkpointloadersimple_1",
+          "kind": "call",
+          "name": "checkpointloadersimple",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": "v1-5-pruned-emaonly.ckpt"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            },
+            {
+              "port": "out1"
+            },
+            {
+              "port": "out2"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_2",
+          "kind": "set",
+          "props": {
+            "name": "comfy_1_model"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_3",
+          "kind": "set",
+          "props": {
+            "name": "comfy_1_clip"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_4",
+          "kind": "set",
+          "props": {
+            "name": "comfy_1_vae"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "emptylatentimage_5",
+          "kind": "call",
+          "name": "emptylatentimage",
+          "inputs": [
+            {
+              "port": "in0",
+              "value": 512
+            },
+            {
+              "port": "in1",
+              "value": 512
+            },
+            {
+              "port": "in2",
+              "value": 1
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "set_6",
+          "kind": "set",
+          "props": {
+            "name": "comfy_5_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "cliptextencode_7",
+          "kind": "call",
+          "name": "cliptextencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "a beautiful landscape, mountains, sunset"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_8",
+          "kind": "get",
+          "props": {
+            "name": "comfy_1_clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_9",
+          "kind": "set",
+          "props": {
+            "name": "comfy_2_conditioning"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "cliptextencode_10",
+          "kind": "call",
+          "name": "cliptextencode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "blurry, low quality"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_11",
+          "kind": "get",
+          "props": {
+            "name": "comfy_1_clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_12",
+          "kind": "set",
+          "props": {
+            "name": "comfy_3_conditioning"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "ksampler_13",
+          "kind": "call",
+          "name": "ksampler",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            },
+            {
+              "port": "in2"
+            },
+            {
+              "port": "in3"
+            },
+            {
+              "port": "in4",
+              "value": 42
+            },
+            {
+              "port": "in5",
+              "value": "fixed"
+            },
+            {
+              "port": "in6",
+              "value": 20
+            },
+            {
+              "port": "in7",
+              "value": 7.5
+            },
+            {
+              "port": "in8",
+              "value": "euler"
+            },
+            {
+              "port": "in9",
+              "value": "normal"
+            },
+            {
+              "port": "in10",
+              "value": 1.0
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_14",
+          "kind": "get",
+          "props": {
+            "name": "comfy_1_model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_15",
+          "kind": "get",
+          "props": {
+            "name": "comfy_2_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_16",
+          "kind": "get",
+          "props": {
+            "name": "comfy_3_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_17",
+          "kind": "get",
+          "props": {
+            "name": "comfy_5_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_18",
+          "kind": "set",
+          "props": {
+            "name": "comfy_4_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "vaedecode_19",
+          "kind": "call",
+          "name": "vaedecode",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1"
+            }
+          ],
+          "outputs": [
+            {
+              "port": "out0"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_20",
+          "kind": "get",
+          "props": {
+            "name": "comfy_4_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_21",
+          "kind": "get",
+          "props": {
+            "name": "comfy_1_vae"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_22",
+          "kind": "set",
+          "props": {
+            "name": "comfy_6_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "saveimage_23",
+          "kind": "call",
+          "name": "saveimage",
+          "inputs": [
+            {
+              "port": "in0"
+            },
+            {
+              "port": "in1",
+              "value": "ComfyUI"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ]
+        },
+        {
+          "id": "get_24",
+          "kind": "get",
+          "props": {
+            "name": "comfy_6_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliptextencode_7",
+            "port": "out"
+          },
+          "to": {
+            "node": "cliptextencode_10",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_11",
+            "port": "value"
+          },
+          "to": {
+            "node": "cliptextencode_10",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "emptylatentimage_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "cliptextencode_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_8",
+            "port": "value"
+          },
+          "to": {
+            "node": "cliptextencode_7",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "emptylatentimage_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliptextencode_10",
+            "port": "out"
+          },
+          "to": {
+            "node": "ksampler_13",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_14",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_13",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_15",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_13",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_16",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_13",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_17",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_13",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "vaedecode_19",
+            "port": "out"
+          },
+          "to": {
+            "node": "saveimage_23",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_24",
+            "port": "value"
+          },
+          "to": {
+            "node": "saveimage_23",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliptextencode_10",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_12",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "ksampler_13",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_18",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_2",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "vaedecode_19",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_22",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out1"
+          },
+          "to": {
+            "node": "set_3",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "checkpointloadersimple_1",
+            "port": "out2"
+          },
+          "to": {
+            "node": "set_4",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "emptylatentimage_5",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_6",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliptextencode_7",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_9",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "ksampler_13",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaedecode_19",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_20",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_19",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_21",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_19",
+            "port": "in1"
+          }
+        }
+      ]
+    }
+  ]
+}

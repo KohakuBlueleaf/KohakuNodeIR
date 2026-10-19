@@ -58,9 +58,10 @@ target port, source node, source port).
 | kind | data in | data out | control in | control out | props |
 |---|---|---|---|---|---|
 | `call` | from signature | from signature | `in` | `out` | — |
-| `value` | — | `value` | `in` | `out` | `value` (a literal) |
-| `set` | `value` | `value` | `in` | `out` | `name`, `copy` |
+| `assign` | `value` | `value` | `in` | `out` | — |
+| `value` | — | `value` | — | — | `value` (a literal) |
 | `get` | — | `value` | — | — | `name` |
+| `set` | `value` | — | — | — | `name` |
 | `branch` | `cond` | — | `in` | `true`, `false` | `labels` {port: label} |
 | `switch` | `value` | — | `in` | `case_0` … `case_n`, `default` | `cases`, `labels` |
 | `merge` | — | — | `in_0` … `in_n` | `out` | `label` (loop entry only) |
@@ -71,10 +72,18 @@ target port, source node, source port).
 | `inputs` | — | one per parameter | — | `out` | — |
 | `outputs` | one per output | — | `in` | — | — |
 
-- A `set` with `copy: true` is the assignment `name = other`. A `set` without
-  it only shows that a name is written on several paths: it sits after each
-  such write, and every read of the name is a `get`. In text both collapse to
-  plain writes and reads of the name.
+- **Variables.** `get` and `set` are the variable nodes: name → node → name.
+  A `get` is a read of the name at the position of the node its wire goes
+  into; a `set` names the output port wired into it, so the write happens when
+  that node runs. Neither has control ports. An output port wired into a `set`
+  needs no `var`; one output may feed only one `set`.
+- **`assign`** is the command `name = value`: its `value` input is a literal
+  box or a wire, its output is the variable (a `var` on the port, or a `set`).
+  It sits on the control chain like a call.
+- **`value`** is a literal as a node, with no control ports; a wire from it is
+  the same as writing the literal in the input box it feeds.
+- Builtin outputs (`each` item and index, `try` error, `inputs` parameters)
+  bind the name of the `set` they feed, else the name in their props.
 - A `merge` with a `label` is a loop entry: `()jump(`label`)` followed by
   `label:`; every other edge into it is a `jump` back.
 - A `dataflow` node stands for a `@dataflow:` block on the control chain; its
@@ -97,9 +106,21 @@ Statements become nodes in order. Control edges follow the rule of
 semantics.md: a namespace's body continues after the namespace definition, an
 `each` body returns to the `each` node's `next` port, `parallel` arms and both
 `@try` branches join the statement after them. Where two or more control
-paths reach the same statement, a `merge` node joins them. A read reached by
-exactly one write is a data edge from that write's output port (or from the
-`inputs` node for a parameter); otherwise it is a `get`.
+paths reach the same statement, a `merge` node joins them. Literals become
+input boxes (`value` on the input port).
+
+Data is drawn in one of two styles, chosen by the caller
+(`to_graph(program, env, data=...)`, `kir graph --data ...`):
+
+- **`wires`** (default): a read reached by exactly one write is a data edge
+  from that write's output port (or from the `inputs` node for a parameter).
+  A name written on several paths is drawn with variables: a `set` on each of
+  its writes and a `get` for each read.
+- **`variables`**: every read is a `get` and every write a `set`, so data
+  always reads name → node → name and control wires stay uncrossed.
+
+Both styles convert back to the same canonical text, and an editor may mix
+them freely.
 
 ## Graph → text
 
@@ -108,5 +129,5 @@ node (`branch`, `switch`, `parallel`, `try`) writes one namespace per output
 port; each arm stops at the first node every arm reaches inside the current
 loop, and the text continues there. A labelled `merge` writes the loop entry;
 when every path leaving the loop meets at one node, the text continues there
-after the loop's namespace. Free `call` / `value` / copy-`set` nodes outside
-any `dataflow` group form one `@dataflow:` block at the top.
+after the loop's namespace. Free `call` / `assign` nodes (no control ports)
+outside any `dataflow` group form one `@dataflow:` block at the top.

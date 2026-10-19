@@ -6,11 +6,14 @@
       "name": "main",
       "nodes": [
         {
-          "id": "value_1",
-          "kind": "value",
-          "props": {
-            "value": 10
-          },
+          "id": "assign_1",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 10
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -25,11 +28,14 @@
           ]
         },
         {
-          "id": "value_2",
-          "kind": "value",
-          "props": {
-            "value": 30
-          },
+          "id": "assign_2",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 30
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -86,11 +92,14 @@
           ]
         },
         {
-          "id": "value_5",
-          "kind": "value",
-          "props": {
-            "value": -5
-          },
+          "id": "assign_5",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": -5
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -105,11 +114,14 @@
           ]
         },
         {
-          "id": "value_6",
-          "kind": "value",
-          "props": {
-            "value": 100
-          },
+          "id": "assign_6",
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 100
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -168,9 +180,42 @@
       ],
       "edges": [
         {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_1",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "print_val_4",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_6",
+            "port": "in"
+          }
+        },
+        {
           "kind": "data",
           "from": {
-            "node": "value_1",
+            "node": "assign_1",
             "port": "value"
           },
           "to": {
@@ -181,7 +226,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_2",
+            "node": "assign_2",
             "port": "value"
           },
           "to": {
@@ -192,7 +237,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "value_2",
+            "node": "assign_2",
             "port": "out"
           },
           "to": {
@@ -203,7 +248,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_5",
+            "node": "assign_5",
             "port": "value"
           },
           "to": {
@@ -214,7 +259,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "value_6",
+            "node": "assign_6",
             "port": "value"
           },
           "to": {
@@ -225,7 +270,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "value_6",
+            "node": "assign_6",
             "port": "out"
           },
           "to": {
@@ -275,39 +320,6 @@
           "to": {
             "node": "print_val_8",
             "port": "v"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "value_1",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_2",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "print_val_4",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_5",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "value_5",
-            "port": "out"
-          },
-          "to": {
-            "node": "value_6",
-            "port": "in"
           }
         }
       ]

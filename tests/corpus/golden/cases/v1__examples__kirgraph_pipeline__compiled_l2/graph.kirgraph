@@ -7,10 +7,13 @@
       "nodes": [
         {
           "id": "val_limit",
-          "kind": "value",
-          "props": {
-            "value": 3
-          },
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 3
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -32,10 +35,13 @@
         },
         {
           "id": "val_step",
-          "kind": "value",
-          "props": {
-            "value": 1
-          },
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 1
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -57,10 +63,13 @@
         },
         {
           "id": "val_i",
-          "kind": "value",
-          "props": {
-            "value": 0
-          },
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 0
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -82,10 +91,13 @@
         },
         {
           "id": "val_total",
-          "kind": "value",
-          "props": {
-            "value": 0
-          },
+          "kind": "assign",
+          "inputs": [
+            {
+              "port": "value",
+              "value": 0
+            }
+          ],
           "outputs": [
             {
               "port": "value",
@@ -124,12 +136,8 @@
           ]
         },
         {
-          "id": "set_6",
-          "kind": "set",
-          "props": {
-            "name": "inc_i_result",
-            "copy": true
-          },
+          "id": "assign_6",
+          "kind": "assign",
           "inputs": [
             {
               "port": "value"
@@ -158,12 +166,6 @@
             {
               "port": "value"
             }
-          ],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
           ]
         },
         {
@@ -233,8 +235,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "inc_i_result"
+              "port": "value"
             }
           ]
         },
@@ -248,12 +249,6 @@
             {
               "port": "value"
             }
-          ],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
           ]
         },
         {
@@ -326,8 +321,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "inc_i_result"
+              "port": "value"
             }
           ]
         },
@@ -339,8 +333,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "inc_i_result"
+              "port": "value"
             }
           ]
         },
@@ -403,8 +396,7 @@
           },
           "outputs": [
             {
-              "port": "value",
-              "var": "inc_i_result"
+              "port": "value"
             }
           ]
         },
@@ -568,6 +560,28 @@
           }
         },
         {
+          "kind": "ctrl",
+          "from": {
+            "node": "dataflow_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "assign_6",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "val_i",
+            "port": "value"
+          },
+          "to": {
+            "node": "assign_6",
+            "port": "value"
+          }
+        },
+        {
           "kind": "data",
           "from": {
             "node": "check",
@@ -625,7 +639,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "set_11",
+            "node": "inc_i",
             "port": "out"
           },
           "to": {
@@ -691,7 +705,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "set_7",
+            "node": "assign_6",
             "port": "out"
           },
           "to": {
@@ -722,17 +736,6 @@
           }
         },
         {
-          "kind": "ctrl",
-          "from": {
-            "node": "inc_i",
-            "port": "out"
-          },
-          "to": {
-            "node": "set_11",
-            "port": "in"
-          }
-        },
-        {
           "kind": "data",
           "from": {
             "node": "inc_i",
@@ -744,42 +747,9 @@
           }
         },
         {
-          "kind": "ctrl",
-          "from": {
-            "node": "dataflow_5",
-            "port": "out"
-          },
-          "to": {
-            "node": "set_6",
-            "port": "in"
-          }
-        },
-        {
           "kind": "data",
           "from": {
-            "node": "val_i",
-            "port": "value"
-          },
-          "to": {
-            "node": "set_6",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "set_6",
-            "port": "out"
-          },
-          "to": {
-            "node": "set_7",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "set_6",
+            "node": "assign_6",
             "port": "value"
           },
           "to": {
