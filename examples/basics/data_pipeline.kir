@@ -1,0 +1,15 @@
+# Simulated data processing pipeline
+("./input/raw_data.csv")load_csv(raw_data)
+(raw_data)clean_data(cleaned)
+(cleaned, threshold=0.5)filter_outliers(filtered)
+(filtered)compute_stats(mean, std, count)
+
+# Branch on count
+(count, 100)greater_than(enough_data)
+(enough_data)branch(`do_analysis`, `do_warn`)
+do_analysis:
+    (filtered, mean, std)normalize(normalized)
+    (normalized, "output/result.csv")save_csv()
+    ("Pipeline complete: data saved")print_val()
+do_warn:
+    ("Warning: not enough data points")print_val()

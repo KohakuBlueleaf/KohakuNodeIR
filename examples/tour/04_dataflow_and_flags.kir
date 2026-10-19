@@ -1,0 +1,9 @@
+## A `@dataflow:` block is ordered by data, not by line order.
+## `attach` is registered with mutates=["graph"]: it updates its input in place,
+## so a machine runs every earlier reader of that value first.
+graph = {}
+@dataflow:
+    (with_b, a)attach(out)
+    (graph, b)attach(with_b)
+    ("photo", 2)crop(b)
+    ("photo", 1)crop(a)

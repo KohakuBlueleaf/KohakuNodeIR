@@ -1,0 +1,9 @@
+## A failing node sends the job to the except chain; `err` says what failed.
+image = "photo"
+@try:
+    (image, 13)crop(c)
+    (c)entity(node)
+@except err:
+    (err)log_error()
+    node = "no caption"
+(node)to_str(summary)

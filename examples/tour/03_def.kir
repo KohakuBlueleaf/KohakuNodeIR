@@ -1,0 +1,10 @@
+## A `@def` is a group node with typed ports and its own names.
+@def (image: str, box: int, max_tokens: int = 32)expand(node: str):
+    (image, box)crop(c)
+    @hint lane="vlm" max_wait_ms=5
+    (c, max_tokens=max_tokens)entity(node)
+
+c = "this name is not touched by the calls"
+("photo", 1)expand(a)
+("photo", 2, max_tokens=8)expand(b)
+(a, b)concat(summary)

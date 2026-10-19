@@ -1,0 +1,43 @@
+## Graph-Based Captioning for one image, written as one sequential job.
+## The nodes in nodes.py are small stand-ins for the VLM, detector and graph code.
+@use "gbc"
+
+@def (image, frontier, seen)expand_all(expanded, seen):
+    expanded = []
+    (frontier)each(b, `body`)
+    body:
+        (seen, b)register(seen, is_new)
+        (is_new)branch(`new_box`, `known_box`)
+        new_box:
+            (image, b)crop(crop_img)
+            @hint lane="vlm"
+            (crop_img, b)entity(node)
+        known_box:
+            node = None
+        (expanded, node)append(expanded)
+
+@def (image, graph)relate(graph):
+    (graph)relational_queries(queries)
+    (queries)each(q, `ask`)
+    ask:
+        @hint lane="vlm"
+        (image, q)relational(rel)
+        (graph, rel)attach_relation(graph)
+
+@def (image, description: str, brief: str, budget: int = 2)gbc(result):
+    (description, brief)seed_elements(elements)
+    (image, elements)detect(frontier)
+    ()empty_state(graph, seen)
+    ()jump(`round`)
+    round:
+        (image, frontier, seen)expand_all(expanded, seen)
+        (graph, expanded)assemble(graph, children)
+        (children, graph, budget)next_frontier(frontier, more)
+        (image, graph)relate(graph)
+        (more)branch(`again`, `finished`)
+        again:
+            ()jump(`round`)
+        finished:
+    (graph)to_gbc(result)
+
+("sample.jpg", "A cat sits on a wooden table next to a phone.", "cat, table, phone")gbc(result)

@@ -1,0 +1,15 @@
+## `each` runs its body once per element, in order; no index bookkeeping.
+image = "photo"
+boxes = [1, 2, 3, 4]
+nodes = []
+(boxes)each(box, i, `body`)
+body:
+    (box)is_new(fresh)
+    (fresh)branch(`new_box`, `known_box`)
+    new_box:
+        (image, box)crop(c)
+        (c)entity(node)
+    known_box:
+        node = None
+    (nodes, node)append(nodes)
+(nodes)summarize(summary)
