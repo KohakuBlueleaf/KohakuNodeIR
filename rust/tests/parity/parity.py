@@ -4,7 +4,7 @@ Run from the repo root after ``maturin develop --release`` (see rust/README.md):
 
     python rust/tests/parity/parity.py [--seeds N] [--mutations M] [--show K]
 
-Sources: the golden corpus, programs from ``tests/progen.py``, parser edge
+Sources: the golden corpus, programs and entry programs from ``tests/progen.py``, parser edge
 snippets, and random line-level mutations of all of them. For each source it
 compares parse acceptance and canonical text, checker diagnostics, every pass
 prefix, both hashes, the graph view in both data styles, and graph -> text with
@@ -34,7 +34,7 @@ from kohakunode.graph import DATA_STYLES, from_graph, to_graph  # noqa: E402
 from kohakunode.lower import PASSES  # noqa: E402
 from kohakunode.sig import STD, library_from_json, library_to_json  # noqa: E402
 from kohakunode.sig.env import build_env  # noqa: E402
-from progen import LIB, program  # noqa: E402
+from progen import LIB, entry_program, program  # noqa: E402
 
 CASES = REPO / "tests" / "corpus" / "golden" / "cases"
 
@@ -628,6 +628,7 @@ def main() -> int:
     gen_sig = json.dumps(library_to_json(LIB))
     for seed in range(args.seeds):
         sources.append((f"progen {seed}", program(seed), gen_sig))
+        sources.append((f"progen entry {seed}", entry_program(seed).text, gen_sig))
     v1_sig = (CASES / "v2__features" / "sig.kirsig.json").read_text(encoding="utf-8")
     for i, snippet in enumerate(SNIPPETS):
         sources.append((f"snippet {i}", snippet, gen_sig))
