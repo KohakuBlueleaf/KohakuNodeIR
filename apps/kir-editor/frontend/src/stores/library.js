@@ -8,6 +8,7 @@
 import { defineStore } from "pinia"
 
 import { listSignatures } from "@/api/backend"
+import { projectLibraries, validateSignatureFile } from "@/program/signatures"
 
 export const useLibraryStore = defineStore("library", {
   state: () => ({
@@ -21,10 +22,7 @@ export const useLibraryStore = defineStore("library", {
     /** What every backend request carries. */
     scope: (s) => ({ signatures: s.uploaded, use_demo: s.useDemo }),
 
-    libraries: (s) => [
-      ...s.catalog,
-      ...s.uploaded.map((lib) => ({ ...lib, source: "loaded file", runnable: false })),
-    ],
+    libraries: (s) => projectLibraries(s.catalog, s.uploaded),
   },
 
   actions: {
@@ -38,8 +36,7 @@ export const useLibraryStore = defineStore("library", {
     },
 
     addSignatureFile(data) {
-      if (data?.kirsig !== 1 || !data.library || !Array.isArray(data.nodes))
-        throw new Error("not a .kirsig.json file (kirsig 1)")
+      validateSignatureFile(data)
       this.uploaded = [...this.uploaded.filter((l) => l.library !== data.library), data]
     },
 

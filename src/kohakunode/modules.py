@@ -130,6 +130,8 @@ def contract_hash(lib: Library) -> str:
     for node in contract["nodes"]:
         node.pop("doc", None)
     contract["nodes"].sort(key=lambda n: n["name"])
+    if "records" in contract:
+        contract["records"].sort(key=lambda schema: schema["name"])
     try:
         encoded = _canonical(contract)
     except (TypeError, ValueError) as exc:
@@ -250,7 +252,9 @@ class _Linker:
                 if export not in top:
                     raise KirModuleError(f"export {export!r} is not a top-level definition")
                 exports.add(export)
-            env = build_env(program, self.libraries, self.base_for(name), self.sig_path)
+            env = build_env(
+                program, self.libraries, self.base_for(name), self.sig_path, validate_records=False
+            )
             aliases = {u.alias for u in program.uses if u.alias is not None}
             if any(alias.startswith(PREFIX) for alias in aliases):
                 raise KirModuleError(f"signature aliases cannot use reserved prefix {PREFIX!r}")
@@ -315,6 +319,9 @@ class _Linker:
             return self.type_name(target, rest)
         if not name or name in BUILTIN_TYPES:
             return name
+        record_name = module.env.record_type(TypeExpr("name", name)).name
+        if record_name in module.env.record_schemas():
+            return record_name
         # Host nominal types retain their declared contract identity.
         for lib, _ in module.env.libraries:
             for sig in lib.signatures.values():
@@ -419,7 +426,10 @@ class _Linker:
                 body.extend(self.rewrite(self.loaded[name]))
         body.extend(self.rewrite(root))
         linked = Program(uses=self.uses, body=body, mode=root.program.mode)
-        return Linked(linked, list(self.hosts.values()), self.manifest())
+        libraries = list(self.hosts.values())
+        # Closure includes contracts loaded through transitive source imports.
+        build_env(linked, libraries, self.base, self.sig_path)
+        return Linked(linked, libraries, self.manifest())
 
 
 def link_program(
@@ -440,5 +450,21 @@ def link_program(
         source_name = _module_id(source_name, "")
     if not program.imports and not program.exports:
         result = stamp_origins(program, source_name)
+        env = build_env(result, libraries, base_dir, sig_path)
+        if env.record_schemas():
+            resolved = {lib.name: lib for lib, _ in env.libraries}
+            identity = {
+                "version": 1,
+                "modules": [],
+                "signatures": [
+                    {"library": name, "hash": contract_hash(lib)}
+                    for name, lib in sorted(resolved.items())
+                ],
+            }
+            dependencies = {**identity, "hash": hashlib.sha256(_canonical(identity)).hexdigest()}
+            result.uses = [
+                Use(lib.name, use.alias) for use, (lib, _) in zip(result.uses, env.libraries)
+            ]
+            return Linked(result, list(resolved.values()), dependencies)
         return Linked(result, list(libraries or []))
     return _Linker(libraries, base_dir, sig_path, modules, source_name).link(program)

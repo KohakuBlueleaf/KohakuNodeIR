@@ -4,6 +4,7 @@ import inspect
 from collections.abc import Callable, Sequence
 
 from kohakunode.sig.model import REQUIRED, Library, Port, Signature
+from kohakunode.sig.records import RecordField, RecordSchema
 from kohakunode.sig.types import from_annotation, parse_type
 from kohakunode.syntax.ast import ANY, TypeExpr
 
@@ -72,6 +73,29 @@ class NodeLibrary(Library):
 
     def __init__(self, name: str):
         super().__init__(name)
+
+    def record(self, name: str, fields: Sequence[RecordField | tuple]) -> RecordSchema:
+        """Register a record from ordered ``(name, type[, default])`` fields.
+
+        A three-item tuple supplies a default even when that default is None.
+        RecordField instances can be mixed with tuple specifications.
+        """
+        parsed = []
+        for spec in fields:
+            if isinstance(spec, RecordField):
+                parsed.append(spec)
+            elif isinstance(spec, tuple) and len(spec) in (2, 3):
+                parsed.append(
+                    RecordField(
+                        spec[0],
+                        _port_type(spec[1]),
+                        len(spec) == 3,
+                        spec[2] if len(spec) == 3 else None,
+                    )
+                )
+            else:
+                raise ValueError("record fields must be RecordField or (name, type[, default])")
+        return self.add_record(name, parsed)
 
     def node(
         self,

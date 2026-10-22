@@ -6,19 +6,32 @@ editor metadata. Equality ignores ``line`` and ``origin`` so trees from differen
 texts of the same program compare equal.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import FrozenInstanceError, dataclass, field
 from typing import Any
 
 # ---------------------------------------------------------------- types
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True, init=False)
 class TypeExpr:
     """A type: ``kind`` is "any", "name", "optional", "generic" or "union"."""
 
     kind: str
     name: str = ""
     args: tuple["TypeExpr", ...] = ()
+
+    def __init__(self, kind: str, name: str = "", args: tuple["TypeExpr", ...] = ()) -> None:
+        if hasattr(self, "kind"):
+            raise FrozenInstanceError("cannot reinitialize TypeExpr")
+        object.__setattr__(self, "kind", kind)
+        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "args", args)
+
+    def __reduce__(self):
+        return TypeExpr, (self.kind, self.name, self.args)
+
+    def __setstate__(self, state) -> None:
+        raise FrozenInstanceError("cannot overwrite TypeExpr state")
 
 
 ANY = TypeExpr("any")

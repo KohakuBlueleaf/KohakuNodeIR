@@ -9,8 +9,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from kohakunode.errors import KirSyntaxError
-from kohakunode.sig.env import NodeEnv
+from kohakunode.errors import KirSignatureError, KirSyntaxError
+from kohakunode.sig.env import NodeEnv, build_env, qualify_record_types
 from kohakunode.syntax.ast import Def, Program
 from kohakunode.syntax.parser import parse
 
@@ -27,6 +27,7 @@ def exported_definitions(
     base: Path | None,
     source_name: str,
     modules: Mapping[str, str] | None = None,
+    sig_path: list[str] = (),
 ) -> dict[str, DefinitionLocation]:
     locations = {}
     for imp in program.imports:
@@ -51,6 +52,15 @@ def exported_definitions(
             imported = parse(text)
         except (KeyError, OSError, UnicodeError, KirSyntaxError):
             continue  # The compiler reports invalid/missing sources, not this index.
+        try:
+            imported_env = build_env(
+                imported,
+                base_dir=path.parent if path else None,
+                search=[Path(p) for p in sig_path],
+            )
+            imported = qualify_record_types(imported, imported_env)
+        except KirSignatureError:
+            pass  # Preserve declaration discovery even while signatures are incomplete.
         for stmt in imported.body:
             if isinstance(stmt, Def) and stmt.name in imported.exports:
                 name = f"{imp.alias}.{stmt.name}"

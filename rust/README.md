@@ -97,7 +97,10 @@ Rust callers can use `modules::link_program` with an optional `ModuleMap`, or
 source-compatible and resolves modular imports under its `base_dir` when no map
 is provided. `Compiled.source_program` retains authored imports/exports;
 `Compiled.program` is linked. `Compiled.dependencies` contains the deterministic
-version-1 manifest for modular sources, and `{}` for legacy sources. The exact
+version-1 manifest for modular sources and sources using record schemas, and
+`{}` for legacy sources without either. Record-only manifests have an empty
+`modules` list and include the loaded signature contracts, so schema/default
+revisions change compiled identity even without source-module imports. The exact
 language/link/hash contract is in [`docs/spec/modules.md`](../docs/spec/modules.md).
 
 Additional focused checks (from the repository root):
@@ -111,3 +114,52 @@ node rust/tests/wasm/modules.cjs
 On Windows, `modules.py --extension /absolute/path/to/kohakunode_rs.dll` can load
 a freshly built native library without installing a wheel. Do not rebuild that
 same DLL while a differential test process has it loaded; Windows locks it.
+
+## Record schemas (signature format 2)
+
+`sig::records::{RecordField, RecordSchema}` provide validated owned schemas with
+read-only accessors. Register a schema with `Library::add_record`; the operation
+validates names, defaults, collisions, and local cycles before modifying the
+library. A missing field default is `None`, while an explicit JSON null default
+is `Some(Value::None)` and still must match the field type.
+
+```rust
+use kohakunode_rs::sig::{Library, RecordField, RecordSchema};
+use kohakunode_rs::syntax::{ast::TypeExpr, value::Value};
+
+let mut geometry = Library::new("geometry");
+geometry.add_record(RecordSchema::new("Point", vec![
+    RecordField::new("x", TypeExpr::name("float"), None)?,
+    RecordField::new("y", TypeExpr::name("float"), Some(Value::int(0)))?,
+])?)?;
+```
+
+This derives ordinary pure signatures `Point.make`, `Point.get.x`,
+`Point.with.x`, and the corresponding operations for each other field. The
+constructor returns nominal type `geometry.Point`. No new KIR grammar or native
+runtime dispatcher is introduced: the Rust core supplies signatures to checking,
+graph conversion, lowering, and the Python/WASM tool interfaces. Runtime record
+values and trusted operation implementations belong to the Python/runtime layer.
+
+Schema libraries serialize as format 2: root fields `kirsig`, `library`, `nodes`,
+`records`; `nodes` contains handwritten signatures only. Every record field has
+an explicit type string (`"_"` for any) and an optional JSON default. Generated
+signatures are recreated on load and tampering is rejected on export. Libraries
+without records continue to serialize byte-for-byte as format 1.
+
+Defaults are finite JSON values only, with distinct string object keys; tuples,
+nonfinite numbers, and implicit record dictionaries are rejected. Supported
+field types are scalar JSON types, list/dict, `list[T]`, `dict[str,T]`, optional,
+union, and nominal records. `build_env` rejects missing schema references and
+cycles across the complete loaded record graph. Aliased `g.Point`, unaliased
+`Point`, and canonical `geometry.Point` annotations resolve to the canonical
+schema identity; ambiguous bare names are errors. Compiling preserves authored
+annotations in `source_program` and canonicalizes the checked program.
+
+Record checks:
+
+```sh
+cargo test --manifest-path rust/Cargo.toml --test records
+python rust/tests/parity/records.py
+node rust/tests/wasm/records.cjs
+```

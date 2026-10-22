@@ -30,6 +30,21 @@ Editing support for KIR v2 (Kohaku Node IR) `.kir` files. No build step.
   `pip install "kohakunode[lsp]"` (the Rust core ships inside the kohakunode
   wheel). Command palette: **KIR: Restart Language Server**.
 
+## Record schemas
+
+The language server reads record declarations from **format-2 `.kirsig.json`**
+files on `kir.sigPath`; it does not import a library's Python implementation.
+For a `Point` schema in library `geometry`, `@use "geometry" as g` exposes
+`g.Point.make`, `g.Point.get.x`, and `g.Point.with.x` as ordinary node calls.
+Completion and signature help include their derived ports and constructor defaults.
+`with` returns an updated record value; it is not an in-place field mutation.
+
+Type completion offers both `g.Point` and canonical `geometry.Point`. Hover on
+either annotation shows the schema's fields/defaults and canonical identity;
+hover on authored `@def` signatures resolves record aliases without rewriting
+source text. Ambiguous unaliased record types are reported rather than silently
+selecting one library. No new KIR declaration or field-access syntax is required.
+
 ## Settings
 
 | Setting | Default | Meaning |

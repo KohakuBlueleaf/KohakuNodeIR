@@ -1,0 +1,24 @@
+@use "geometry.kirsig.json" as g
+
+@def (request: g.Request, x: float)move(updated: g.Request):
+    (request)g.Request.get.point(point)
+    (point, x)g.Point.with.x(moved)
+    (request, moved)g.Request.with.point(updated)
+
+(1.0, tags=["source"])g.Point.make(point)
+("job-1", point, tags=["input"])g.Request.make(original)
+(original, 3.0)move(updated)
+
+(original)g.Request.get.point(original_point)
+(updated)g.Request.get.point(updated_point)
+(original_point)g.Point.get.x(original_x)
+(updated_point)g.Point.get.x(updated_x)
+(updated_point)g.Point.get.y(default_y)
+(updated_point)g.Point.get.label(nullable_label)
+(updated)g.Request.get.fallback(nullable_fallback)
+
+(updated)g.Request.get.tags(tags)
+(tags, "reviewed")append(replacement_tags)
+(updated, replacement_tags)g.Request.with.tags(reviewed)
+(original)g.Request.get.tags(original_tags)
+(reviewed)g.Request.get.tags(reviewed_tags)

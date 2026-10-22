@@ -125,12 +125,15 @@ that generated names are stable across module renames or linker-format changes.
 ## Dependency identity
 
 `Compiled.dependencies` is empty for legacy programs without import/export
-declarations. Modular compilation produces a version-1 manifest containing:
+declarations or loaded record schemas. Record-bearing programs also retain signature
+contract identity even without source imports (their module list is empty; see
+[records.md](records.md)). Modular compilation produces a version-1 manifest containing:
 
 - Modules sorted by resource ID, each with its canonical semantic source hash,
   resolved import-alias map, and sorted exports.
 - Resolved signature contracts sorted by library name. Contract hashes include
-  ports, types, defaults, and effect flags; documentation is excluded.
+  ports, types, defaults, effect flags and record schemas; documentation is excluded.
+  Node/schema registration order is ignored; port and record-field order remains semantic.
 - A manifest hash over compact sorted-key UTF-8 JSON of the preceding fields.
 
 Module source hashes exclude editor metadata and scheduling hints. Transitive

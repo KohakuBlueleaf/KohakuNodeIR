@@ -9,7 +9,7 @@ from kohakunode.check import Diagnostic, check
 from kohakunode.errors import KirCheckError, KirSignatureError
 from kohakunode.lower import full_hash, run_passes, semantic_hash
 from kohakunode.modules import link_program
-from kohakunode.sig.env import NodeEnv, build_env
+from kohakunode.sig.env import NodeEnv, build_env, qualify_record_types
 from kohakunode.sig.model import Library
 from kohakunode.syntax.ast import Program
 from kohakunode.syntax.parser import parse
@@ -49,6 +49,9 @@ def compile_program(
         )
         program = linked.program
         env = build_env(program, linked.libraries, base_dir, sig_path)
+        if env.record_schemas():
+            program = qualify_record_types(program, env)
+            env = build_env(program, linked.libraries, base_dir, sig_path)
     except KirSignatureError as exc:
         raise KirCheckError([Diagnostic("E002", str(exc))]) from None
     diagnostics = check(program, env)

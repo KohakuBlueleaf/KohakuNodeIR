@@ -10,7 +10,7 @@ import json
 import re
 import warnings
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 try:
@@ -24,9 +24,10 @@ from kohakunode.errors import KirCheckError, KirSignatureError, KirSyntaxError
 from kohakunode.lsp.modules import DefinitionLocation, exported_definitions
 from kohakunode.sig.env import NodeEnv, Resolved, build_env
 from kohakunode.sig.model import Signature
+from kohakunode.sig.records import thaw_default
 from kohakunode.sig.std import STD
 from kohakunode.sig.types import type_text
-from kohakunode.syntax.ast import BUILTINS, Def, Namespace, Program, walk
+from kohakunode.syntax.ast import BUILTINS, Def, Namespace, Program, TypeExpr, walk
 from kohakunode.syntax.parser import parse
 from kohakunode.syntax.writer import write
 
@@ -135,7 +136,9 @@ def analyze(
     else:
         python_error = None
 
-    if modular and isinstance(python_error, KirSyntaxError):
+    if isinstance(python_error, KirSyntaxError) and (
+        modular or re.search(r"^\s*@use\b", text, re.MULTILINE)
+    ):
         # A half-typed call must not erase the imported completion catalog.
         # This recovery supplies queries only; the selected core diagnoses the
         # original, unmodified source below.
@@ -151,7 +154,7 @@ def analyze(
         except (KirSyntaxError, KirSignatureError):
             pass
     locations = (
-        exported_definitions(program, env, base, source_name, modules)
+        exported_definitions(program, env, base, source_name, modules, sig_path)
         if modular and program is not None and env is not None
         else {}
     )
@@ -187,7 +190,7 @@ def analyze(
             return Analysis(program, env, [syntax(str(exc), exc.line, exc.column)], locations)
         if isinstance(python_error, KirSignatureError) and not modular:
             return Analysis(program, None, [found("E002", "error", str(python_error), None)])
-        if modular:
+        if modular or (env is not None and env.record_schemas()):
             try:
                 compiled = compile_program(
                     program,
@@ -195,7 +198,9 @@ def analyze(
                     sig_path=[Path(p) for p in sig_path],
                     passes=[],
                     modules=modules,
-                    source_name=source_name,
+                    # Single-document LSP ranges already identify this source;
+                    # retain the legacy/native check message shape outside modules.
+                    source_name=source_name if modular else "<text>",
                 )
                 checked = compiled.diagnostics
             except KirCheckError as exc:
@@ -267,11 +272,36 @@ def hover(a: Analysis, text: str, line: int, character: int) -> str | None:
     r = a.env.resolve(word)
     if isinstance(r, Resolved):
         lib = r.library.name if r.library else ("@def" if r.definition else "@typehint")
-        result = signature_markdown(r.signature, lib)
+        try:
+            signature = replace(
+                r.signature,
+                inputs=tuple(
+                    replace(p, type=a.env.record_type(p.type)) for p in r.signature.inputs
+                ),
+                outputs=tuple(
+                    replace(p, type=a.env.record_type(p.type)) for p in r.signature.outputs
+                ),
+            )
+        except KirSignatureError as exc:
+            return str(exc)
+        result = signature_markdown(signature, lib)
         location = a.imported_definitions.get(word)
         if location:
             result += f"\n\nsource `{location.path}` (line {location.line + 1})"
         return result
+    try:
+        canonical = a.env.record_type(TypeExpr("name", word)).name
+        schema = a.env.record_schemas().get(canonical)
+    except KirSignatureError as exc:
+        return str(exc)
+    if schema is not None:
+        fields = []
+        for member in schema.fields:
+            field_text = f"`{member.name}: {type_text(member.type)}`"
+            if member.has_default:
+                field_text += f" = `{thaw_default(member.default)!r}`"
+            fields.append(f"- {field_text}")
+        return f"record `{word}` · canonical `{schema.schema_id}`\n\n" + "\n".join(fields)
     if a.program is not None:
         for s in walk(a.program.body):
             if isinstance(s, Namespace) and s.label == word:
@@ -280,7 +310,7 @@ def hover(a: Analysis, text: str, line: int, character: int) -> str | None:
 
 
 def completions(a: Analysis | None, text: str, line: int, character: int) -> list[tuple[str, str]]:
-    """``(label, kind)`` pairs; kind is "node", "builtin", "label", "directive" or "def"."""
+    """``(label, kind)`` pairs: nodes, builtins, labels, directives, defs and schema types."""
     current = text.splitlines()[line] if line < len(text.splitlines()) else ""
     before = current[:character]
     if before.rstrip().endswith("@") or re.search(r"@\w*$", before):
@@ -297,6 +327,16 @@ def completions(a: Analysis | None, text: str, line: int, character: int) -> lis
             names |= {f"{alias}.{n}" if alias else n for n in lib.signatures}
         out += [(d, "def") for d in sorted(a.env.defs)]
         names |= set(a.env.typehints)
+        record_names = set(a.env.record_schemas())
+        for lib, alias in a.env.libraries:
+            for name in lib.records:
+                visible = f"{alias}.{name}" if alias else name
+                try:
+                    a.env.record_type(TypeExpr("name", visible))
+                except KirSignatureError:
+                    continue  # Do not suggest an ambiguous unaliased type.
+                record_names.add(visible)
+        out += [(name, "type") for name in sorted(record_names)]
     out += [(n, "node") for n in sorted(names)]
     return out
 

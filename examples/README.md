@@ -13,6 +13,7 @@ python examples/run_examples.py
 | `gbc/` | Graph-Based Captioning for one image as one sequential job, with stand-in nodes |
 | `comfyui/` | A ComfyUI UI workflow and an API prompt, for `kohakunode.comfyui` |
 | [`modules/`](modules/README.md) | Imported KIR library with branch + `each`, two call sites, lightweight hosts and source-origin sidecars; run separately with `python examples/modules/run.py` |
+| [`records/`](records/README.md) | Signature-only nested `Request`/`Point` records, explicit field operations, list alias safety and reference/lowering/graph equivalence; run separately with `python examples/records/run.py` |
 
 Any of them works with the CLI too, for example:
 

@@ -32,6 +32,12 @@ models). A node library therefore exports a signature file.
 - `default` is a JSON literal; an input without it is required.
 - `flags` may be omitted when empty.
 
+Libraries containing typed record schemas use `"kirsig": 2` and an ordered
+`records` array; node-only libraries retain format 1. Schema fields require explicit
+types, and construction/projection/replacement signatures are derived on load
+rather than duplicated in `nodes`. See [records.md](records.md) for the schema,
+value semantics, validation, and compatibility contract.
+
 ## `@use`
 
 ```

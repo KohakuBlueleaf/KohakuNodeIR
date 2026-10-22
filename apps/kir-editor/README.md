@@ -113,6 +113,39 @@ parameters override them for one page load:
 - Screenshots: `npm run shots -- <dir> [filter]` saves one image per view ×
   style (light, plus a dark round).
 
+## Record signature files
+
+The signature-file loader accepts both `kirsig: 1` and `kirsig: 2`. A format-2
+file can declare immutable record schemas alongside ordinary host nodes:
+
+```json
+{
+  "kirsig": 2,
+  "library": "geometry",
+  "nodes": [],
+  "records": [{
+    "name": "Point",
+    "fields": [
+      {"name": "x", "type": "int"},
+      {"name": "y", "type": "int", "default": 0}
+    ]
+  }]
+}
+```
+
+Loading it adds `Point.make`, `Point.get.x`, `Point.get.y`, `Point.with.x`, and
+`Point.with.y` to the palette, with canonical `geometry.Point` port types.
+These schema-derived operations run without host implementation imports;
+`with` returns an updated value rather than mutating its input. Ordinary host
+nodes in the same file still need implementations to execute.
+
+The browser keeps the original schema declaration in API payloads, not duplicate
+generated node entries. Uploaded libraries take precedence over catalog entries
+with the same library name. The backend validates field types/defaults, references,
+cycles, and generated-name collisions. Text and graph authoring preserve aliases
+such as `g.Point` from `@use "geometry" as g`; checking resolves them to the
+canonical schema identity without modifying authored text.
+
 ## API
 
 Every POST body may carry `signatures` (parsed `.kirsig.json` files the user

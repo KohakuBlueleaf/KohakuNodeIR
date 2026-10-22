@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 
 use crate::flow::cfg::{build_cfg, reaching, UNDEF};
 use crate::flow::order::sort_dataflow;
-use crate::sig::env::{NodeEnv, Resolution};
+use crate::sig::env::{qualify_record_types, NodeEnv, Resolution};
 use crate::sig::types::{fits, literal_type, type_text};
 use crate::syntax::ast::{walk, Def, Expr, Kind, Origin, Program, Stmt, TypeExpr};
 use crate::util::pyfmt::{str_list_repr, str_repr};
@@ -473,8 +473,34 @@ fn expr_type(e: &Expr, types: &HashMap<String, TypeExpr>) -> Option<TypeExpr> {
 
 /// All diagnostics for a program, errors and warnings, in source order.
 pub fn check(program: &Program, env: &NodeEnv) -> Vec<Diagnostic> {
+    let mut normalized_env;
+    let mut copy;
+    let env = if env.libraries.iter().any(|(lib, _)| !lib.records.is_empty()) {
+        copy = match qualify_record_types(program, env) {
+            Ok(p) => p,
+            Err(error) => return vec![Diagnostic::new("E002", error.to_string(), None)],
+        };
+        normalized_env = env.clone();
+        normalized_env.defs.clear();
+        for stmt in walk(&copy.body) {
+            if let Kind::Def(d) = &stmt.kind {
+                normalized_env.defs.insert(d.name.clone(), d.clone());
+            }
+        }
+        for signature in normalized_env.typehints.values_mut() {
+            for port in signature.inputs.iter_mut().chain(&mut signature.outputs) {
+                port.ty = match env.record_type(&port.ty) {
+                    Ok(ty) => ty,
+                    Err(error) => return vec![Diagnostic::new("E002", error.to_string(), None)],
+                };
+            }
+        }
+        &normalized_env
+    } else {
+        copy = program.clone();
+        env
+    };
     let mut c = Checker { env, out: Vec::new() };
-    let mut copy = program.clone();
     c.program(&mut copy);
     let mut out = c.out;
     out.sort_by(|a, b| {

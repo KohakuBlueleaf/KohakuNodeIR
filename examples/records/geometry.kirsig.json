@@ -1,0 +1,25 @@
+{
+  "kirsig": 2,
+  "library": "geometry",
+  "nodes": [],
+  "records": [
+    {
+      "name": "Point",
+      "fields": [
+        {"name": "x", "type": "float"},
+        {"name": "y", "type": "float", "default": 0.0},
+        {"name": "label", "type": "str?", "default": null},
+        {"name": "tags", "type": "list[str]", "default": []}
+      ]
+    },
+    {
+      "name": "Request",
+      "fields": [
+        {"name": "id", "type": "str"},
+        {"name": "point", "type": "Point"},
+        {"name": "tags", "type": "list[str]", "default": []},
+        {"name": "fallback", "type": "Point?", "default": null}
+      ]
+    }
+  ]
+}

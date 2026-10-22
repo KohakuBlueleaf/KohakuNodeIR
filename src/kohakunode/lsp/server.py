@@ -24,6 +24,7 @@ from kohakunode.lsp.analysis import (
 SEVERITY = {"error": types.DiagnosticSeverity.Error, "warning": types.DiagnosticSeverity.Warning}
 KINDS = {
     "node": types.CompletionItemKind.Function,
+    "type": types.CompletionItemKind.Struct,
     "def": types.CompletionItemKind.Module,
     "builtin": types.CompletionItemKind.Keyword,
     "label": types.CompletionItemKind.Reference,

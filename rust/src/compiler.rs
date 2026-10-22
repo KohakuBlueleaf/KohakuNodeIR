@@ -7,7 +7,7 @@ use crate::check::{check, Diagnostic};
 use crate::errors::{KirError, Result};
 use crate::lower::{full_hash, run_passes, semantic_hash};
 use crate::modules::{link_program, sha256, ModuleMap};
-use crate::sig::env::{build_env, NodeEnv};
+use crate::sig::env::{build_env, qualify_record_types, NodeEnv};
 use crate::sig::model::Library;
 use crate::syntax::ast::Program;
 use crate::util::json::Json;
@@ -72,8 +72,13 @@ pub fn compile_program_with_modules(
             KirError::Signature(m) => KirError::Check(vec![Diagnostic::new("E002", m, None)]),
             other => other,
         })?;
-    let program = linked.program;
+    let mut program = linked.program;
     let mut env = env_for(&program, &linked.libraries, base_dir, sig_path)?;
+    if env.libraries.iter().any(|(lib, _)| !lib.records.is_empty()) {
+        program = qualify_record_types(&program, &env)
+            .map_err(|e| KirError::Check(vec![Diagnostic::new("E002", e.to_string(), None)]))?;
+        env = env_for(&program, &linked.libraries, base_dir, sig_path)?;
+    }
     let diagnostics = check(&program, &env);
     if diagnostics.iter().any(Diagnostic::is_error) {
         return Err(KirError::Check(diagnostics));

@@ -113,6 +113,10 @@ nodes and never needs to know how the KIR was made.
   isolated; dependency manifests are portable across checkout locations. Structured
   origins retain definition and call-site ancestry through transformations
   ([modules and origins](docs/spec/modules.md)).
+- **Typed records.** Signature schemas derive ordinary construction, field-read,
+  and value-update nodes. Nominal immutable values isolate mutable containers;
+  explicit codecs connect host representations without reflective properties
+  ([record specification](docs/spec/records.md), [example](examples/records)).
 - **A static checker.** Undefined reads on any path, wrong port counts, type
   mismatches, ambiguous names, bad labels, dataflow cycles: one code per rule
   ([checks.md](docs/spec/checks.md)).

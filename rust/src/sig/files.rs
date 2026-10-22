@@ -1,9 +1,11 @@
 //! Signature files (`<library>.kirsig.json`) and `@use` resolution.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use crate::errors::{KirError, Result};
 use crate::sig::model::{Library, Port, Signature};
+use crate::sig::records::{default_equal, record_signatures, RecordField, RecordSchema};
 use crate::sig::types::{parse_type, type_text};
 use crate::syntax::ast::TypeExpr;
 use crate::syntax::value::Value;
@@ -12,6 +14,7 @@ use crate::util::pyfmt::{path_str, str_list_repr, str_repr};
 
 pub const SUFFIX: &str = ".kirsig.json";
 pub const FORMAT: i64 = 1;
+pub const RECORD_FORMAT: i64 = 2;
 
 fn sig_err(m: impl Into<String>) -> KirError {
     KirError::Signature(m.into())
@@ -31,9 +34,42 @@ fn string<'a>(obj: &'a Json, k: &str) -> Result<&'a str> {
     key(obj, k)?.as_str().ok_or_else(|| bad(format!("{} must be a string", str_repr(k))))
 }
 
+fn same_signature(a: &Signature, b: &Signature) -> bool {
+    let ports = |a: &[Port], b: &[Port]| {
+        a.len() == b.len()
+            && a.iter().zip(b).all(|(a, b)| {
+                a.name == b.name
+                    && a.ty == b.ty
+                    && match (&a.default, &b.default) {
+                        (None, None) => true,
+                        (Some(a), Some(b)) => default_equal(a, b),
+                        _ => false,
+                    }
+            })
+    };
+    a.name == b.name
+        && a.mutates == b.mutates
+        && a.ordered == b.ordered
+        && a.doc == b.doc
+        && ports(&a.inputs, &b.inputs)
+        && ports(&a.outputs, &b.outputs)
+}
+
 pub fn library_to_json(lib: &Library) -> Result<Json> {
+    let mut generated = HashSet::new();
+    for schema in lib.records.values() {
+        for signature in record_signatures(schema) {
+            if !lib.signatures.get(&signature.name).is_some_and(|s| same_signature(s, &signature)) {
+                return Err(sig_err(format!("generated record node {} was modified", str_repr(&signature.name))));
+            }
+            generated.insert(signature.name);
+        }
+    }
     let mut nodes = Vec::with_capacity(lib.signatures.len());
     for sig in lib.signatures.values() {
+        if generated.contains(&sig.name) {
+            continue;
+        }
         let mut entry = Json::Object(vec![
             ("name".into(), Json::str(&sig.name)),
             ("inputs".into(), Json::Array(sig.inputs.iter().map(|p| port_json(p, true)).collect::<Result<_>>()?)),
@@ -53,11 +89,37 @@ pub fn library_to_json(lib: &Library) -> Result<Json> {
         }
         nodes.push(entry);
     }
-    Ok(Json::Object(vec![
-        ("kirsig".into(), Json::int(FORMAT)),
+    let mut result = Json::Object(vec![
+        ("kirsig".into(), Json::int(if lib.records.is_empty() { FORMAT } else { RECORD_FORMAT })),
         ("library".into(), Json::str(&lib.name)),
         ("nodes".into(), Json::Array(nodes)),
-    ]))
+    ]);
+    if !lib.records.is_empty() {
+        let records = lib
+            .records
+            .values()
+            .map(|schema| {
+                let fields = schema
+                    .fields()
+                    .iter()
+                    .map(|field| {
+                        let mut f = Json::Object(vec![("name".into(), Json::str(field.name()))]);
+                        f.insert("type", Json::str(type_text(Some(field.ty()))));
+                        if let Some(default) = field.default() {
+                            f.insert("default", default.to_json().map_err(sig_err)?);
+                        }
+                        Ok(f)
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                Ok(Json::Object(vec![
+                    ("name".into(), Json::str(schema.name())),
+                    ("fields".into(), Json::Array(fields)),
+                ]))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        result.insert("records", Json::Array(records));
+    }
+    Ok(result)
 }
 
 fn port_json(p: &Port, with_default: bool) -> Result<Json> {
@@ -74,10 +136,43 @@ fn port_json(p: &Port, with_default: bool) -> Result<Json> {
 
 pub fn library_from_json(data: &Json) -> Result<Library> {
     let format = data.get("kirsig").map_or(Value::None, Value::from_json);
-    if !format.py_eq(&Value::int(FORMAT)) {
+    if !matches!(&format, Value::Int(n) if n == &FORMAT.into() || n == &RECORD_FORMAT.into()) {
         return Err(sig_err(format!("unsupported signature format {}", format.repr())));
     }
+    let is_records = format.py_eq(&Value::int(RECORD_FORMAT));
+    if !is_records && data.get("records").is_some_and(Json::truthy) {
+        return Err(sig_err("record schemas require signature format 2"));
+    }
     let mut lib = Library::new(string(data, "library")?);
+    load_nodes(&mut lib, data)?;
+    if is_records {
+        let load = (|| -> Result<()> {
+            if let Some(records) = data.get("records") {
+                for record in records.as_array().ok_or_else(|| bad("'records' must be a list"))? {
+                    let fields = key(record, "fields")?
+                        .as_array()
+                        .ok_or_else(|| bad("'fields' must be a list"))?
+                        .iter()
+                        .map(|field| {
+                            let text = field
+                                .get("type")
+                                .and_then(Json::as_str)
+                                .ok_or_else(|| bad("record field type must be an explicit string (use '_' for any)"))?;
+                            let ty = parse_type(text).map_err(bad)?;
+                            RecordField::new(string(field, "name")?, ty, field.get("default").map(Value::from_json))
+                        })
+                        .collect::<Result<Vec<_>>>()?;
+                    lib.add_record(RecordSchema::new(string(record, "name")?, fields)?)?;
+                }
+            }
+            Ok(())
+        })();
+        load.map_err(|e| sig_err(format!("invalid record schema: {e}")))?;
+    }
+    Ok(lib)
+}
+
+fn load_nodes(lib: &mut Library, data: &Json) -> Result<()> {
     let nodes = key(data, "nodes")?.as_array().ok_or_else(|| bad("'nodes' must be a list"))?;
     for entry in nodes {
         let empty = Json::Object(vec![]);
@@ -112,9 +207,13 @@ pub fn library_from_json(data: &Json) -> Result<Library> {
                 None => String::new(),
                 Some(d) => d.as_str().ok_or_else(|| bad("'doc' must be a string"))?.to_string(),
             },
+        })
+        .map_err(|e| match e {
+            KirError::Value(message) => sig_err(message),
+            other => other,
         })?;
     }
-    Ok(lib)
+    Ok(())
 }
 
 fn port_from(p: &Json, with_default: bool) -> Result<Port> {

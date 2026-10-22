@@ -149,7 +149,14 @@ class Toolchain:
                 except KirSignatureError as exc:
                     out.append({"source": path.name, "error": str(exc), "nodes": []})
                     continue
-                out.append({"source": path.name, "runnable": False, **library_to_json(lib)})
+                data = library_to_json(lib)
+                out.append(
+                    {
+                        "source": path.name,
+                        "runnable": bool(lib.records) and not data["nodes"],
+                        **data,
+                    }
+                )
         return out
 
     # ------------------------------------------------------------ views
@@ -159,7 +166,7 @@ class Toolchain:
             env = build_env(program, self.libraries(program, scope), None, self.settings.sig_dirs)
         except KirError as exc:
             return None, _from_error(exc)
-        if program.imports or program.exports:
+        if program.imports or program.exports or env.record_schemas():
             try:
                 compiled = compile_program(
                     program,

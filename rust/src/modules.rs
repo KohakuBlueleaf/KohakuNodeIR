@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use crate::errors::{KirError, Result};
 use crate::lower::semantic_hash;
 use crate::origins::stamp_origins;
-use crate::sig::env::{build_env, NodeEnv, Resolution};
+use crate::sig::env::{build_env, build_env_with_record_validation, NodeEnv, Resolution};
 use crate::sig::files::library_to_json;
 use crate::sig::model::Library;
 use crate::sig::std::{std_library, std_library_arc};
@@ -100,6 +100,9 @@ pub fn contract_hash(lib: &Library) -> Result<String> {
             }
         }
         nodes.sort_by(|a, b| a.get("name").and_then(Json::as_str).cmp(&b.get("name").and_then(Json::as_str)));
+    }
+    if let Some(Json::Array(records)) = contract.get_mut("records") {
+        records.sort_by(|a, b| a.get("name").and_then(Json::as_str).cmp(&b.get("name").and_then(Json::as_str)));
     }
     Ok(sha256(&canonical(&contract)))
 }
@@ -308,7 +311,8 @@ impl Linker<'_> {
         }
         let parent = name.rsplit_once('/').map_or("", |(p, _)| p);
         let base = self.base.map(|b| b.join(parent));
-        let env = build_env(&program, self.libraries, base.as_deref(), self.search, false)?;
+        let env =
+            build_env_with_record_validation(&program, self.libraries, base.as_deref(), self.search, false, false)?;
         let aliases: HashSet<_> = program.uses.iter().filter_map(|u| u.alias.as_deref()).collect();
         if aliases.iter().any(|a| a.starts_with("_kir_")) {
             return Err(error("signature aliases cannot use reserved prefix '_kir_'"));
@@ -381,6 +385,12 @@ impl Linker<'_> {
                     return Err(error(format!("{}: type {} is not public", module.name, str_repr(name))));
                 }
                 return self.type_name(target, rest);
+            }
+        }
+        let record_type = module.env.record_type(&TypeExpr::name(name))?;
+        if let TypeExpr::Name(canonical) = record_type {
+            if canonical != name {
+                return Ok(canonical);
             }
         }
         Ok(if name.is_empty() || builtin(name) || host_types(module).contains(name) {
@@ -558,11 +568,37 @@ pub fn link_program(
 ) -> Result<Linked> {
     let root = if source_name == "<text>" { source_name.into() } else { module_id(source_name, "")? };
     if program.imports.is_empty() && program.exports.is_empty() {
-        return Ok(Linked {
-            program: stamp_origins(program, &root),
-            libraries: libraries.to_vec(),
-            dependencies: Json::Object(vec![]),
-        });
+        let mut result = stamp_origins(program, &root);
+        let env = build_env(&result, libraries, base_dir, search, false)?;
+        if !env.record_schemas()?.is_empty() {
+            let resolved: IndexMap<String, Arc<Library>> =
+                env.libraries.iter().map(|(lib, _)| (lib.name.clone(), lib.clone())).collect();
+            let mut sorted: Vec<_> = resolved.iter().collect();
+            sorted.sort_by_key(|(name, _)| *name);
+            let signatures = sorted
+                .into_iter()
+                .map(|(name, lib)| {
+                    Ok(Json::Object(vec![
+                        ("library".into(), Json::str(name)),
+                        ("hash".into(), Json::str(contract_hash(lib)?)),
+                    ]))
+                })
+                .collect::<Result<Vec<_>>>()?;
+            let mut dependencies = Json::Object(vec![
+                ("version".into(), Json::int(1)),
+                ("modules".into(), Json::Array(vec![])),
+                ("signatures".into(), Json::Array(signatures)),
+            ]);
+            dependencies.insert("hash", Json::str(sha256(&canonical(&dependencies))));
+            result.uses = result
+                .uses
+                .iter()
+                .zip(&env.libraries)
+                .map(|(u, (lib, _))| Use { library: lib.name.clone(), alias: u.alias.clone() })
+                .collect();
+            return Ok(Linked { program: result, libraries: resolved.into_values().collect(), dependencies });
+        }
+        return Ok(Linked { program: result, libraries: libraries.to_vec(), dependencies: Json::Object(vec![]) });
     }
     let mut linker = Linker {
         libraries,
@@ -585,10 +621,9 @@ pub fn link_program(
         body.extend(linker.rewrite(&module)?);
     }
     body.extend(linker.rewrite(&entry)?);
+    let program = Program { uses: linker.uses.clone(), body, mode: entry.program.mode, ..Program::default() };
+    let libraries: Vec<_> = linker.hosts.values().cloned().collect();
+    build_env(&program, &libraries, base_dir, search, false)?;
     let dependencies = linker.manifest()?;
-    Ok(Linked {
-        program: Program { uses: linker.uses, body, mode: entry.program.mode, ..Program::default() },
-        libraries: linker.hosts.into_values().collect(),
-        dependencies,
-    })
+    Ok(Linked { program, libraries, dependencies })
 }

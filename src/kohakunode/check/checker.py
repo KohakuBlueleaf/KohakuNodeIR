@@ -1,11 +1,12 @@
 """The checker: every rule of checks.md."""
 
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
+from kohakunode.errors import KirSignatureError
 from kohakunode.flow.cfg import UNDEF, build_cfg, defs_of, reaching
 from kohakunode.flow.order import DataflowCycle, is_simple, sort_dataflow
-from kohakunode.sig.env import NodeEnv, Resolved
+from kohakunode.sig.env import NodeEnv, Resolved, qualify_record_types
 from kohakunode.sig.types import fits, literal_type, type_text
 from kohakunode.syntax.ast import (
     ANY,
@@ -293,6 +294,25 @@ def _scope_walk(stmts: list[Stmt]):
 
 def check(program: Program, env: NodeEnv) -> list[Diagnostic]:
     """All diagnostics for a program, errors and warnings, in source order."""
+    if env.record_schemas():
+        try:
+            program = qualify_record_types(program, env)
+        except KirSignatureError as exc:
+            return [Diagnostic("E002", str(exc))]
+        env = copy.copy(env)
+        env.defs = {s.name: s for s in walk(program.body) if isinstance(s, Def)}
+        env.typehints = {
+            name: replace(
+                signature,
+                inputs=tuple(
+                    replace(port, type=env.record_type(port.type)) for port in signature.inputs
+                ),
+                outputs=tuple(
+                    replace(port, type=env.record_type(port.type)) for port in signature.outputs
+                ),
+            )
+            for name, signature in env.typehints.items()
+        }
     c = _Checker(env)
     c.program(copy.deepcopy(program))
     return sorted(set(c.out), key=lambda d: (d.line or 0, d.code, d.message))
