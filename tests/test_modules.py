@@ -302,7 +302,7 @@ def test_signature_paths_and_documentation_do_not_change_dependency_identity(tmp
         save_library(Library("host", {"identity": replace(sig, doc=doc)}), signature)
         (folder / "lib.kir").write_text(
             f'@use "{signature.as_posix()}" as h\n@export identity\n'
-            '@def (x)identity(y):\n    (x)h.identity(y)\n',
+            "@def (x)identity(y):\n    (x)h.identity(y)\n",
             encoding="utf-8",
         )
         (folder / "main.kir").write_text(
