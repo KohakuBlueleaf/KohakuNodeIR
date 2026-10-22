@@ -41,6 +41,26 @@
       "\t$0"
     ]
   },
+  "Collect": {
+    "prefix": "collect",
+    "description": "Collect a value at each normal body end into a result list",
+    "body": [
+      "(${1:items})collect(${2:item}, `${3:body}`, ${4:value} -> ${5:results})",
+      "${3:body}:",
+      "\t${4:value} = ${2:item}",
+      "$0"
+    ]
+  },
+  "Collect with index": {
+    "prefix": "collecti",
+    "description": "Collect with a 0-based index and deferred capture",
+    "body": [
+      "(${1:items})collect(${2:item}, ${3:index}, `${4:body}`, ${5:value} -> ${6:results})",
+      "${4:body}:",
+      "\t${5:value} = ${2:item}",
+      "$0"
+    ]
+  },
   "Loop with jump": {
     "prefix": "loop",
     "description": "Namespace entered by a jump and re-entered from inside",

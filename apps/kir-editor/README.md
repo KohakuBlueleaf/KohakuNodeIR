@@ -113,6 +113,30 @@ parameters override them for one page load:
 - Screenshots: `npm run shots -- <dir> [filter]` saves one image per view ×
   style (light, plus a dark round).
 
+## Collect loops
+
+The **collect** palette item creates a loop that captures one value at each
+normal body end and publishes the ordered result list after completion:
+
+```text
+xs = [1, 2]
+(xs)collect(item, i, `body`, value -> results)
+body:
+    (item, 1)add(value)
+```
+
+Blocks and Sequence group the body like `each`, but show a **capture at body end**
+expression and result-list name. Node/flowchart views use `body` / `done` control
+outputs and the returning `next` input. Their `value` data input is marked
+`deferred: "body_end"`; it is not read eagerly on entry. The Inspector exposes
+that timing and the result target. Both graph data styles and AST editing retain
+the capture expression, optional index/discards, and target name.
+
+The Lower panel obtains `expand_collect` from the backend pass catalog. Default
+lowering removes `collect`; disabling passes retains authored collect syntax.
+The checker reports invalid body/target interactions rather than changing their
+meaning during editing. No parallel scheduling is implied by the collection.
+
 ## Record signature files
 
 The signature-file loader accepts both `kirsig: 1` and `kirsig: 2`. A format-2

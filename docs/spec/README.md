@@ -10,6 +10,7 @@ written line by line, and its meaning is a sequential run of that text.
 | [signatures.md](signatures.md) | Node signatures, the signature file, `@use`, the Python registry |
 | [modules.md](modules.md) | Source imports/exports, deterministic linking, dependency manifests, structured origins |
 | [records.md](records.md) | Nominal schemas, generated field operations, immutable values, portable codecs |
+| [collect.md](collect.md) | Ordered collection results, carried state, precise failures, initial mutation restrictions |
 | [graph.md](graph.md) | The graph view (`.kirgraph`) and how it maps to and from text |
 | [passes.md](passes.md) | Optimization passes, the fully optimized form, program hashes |
 | [checks.md](checks.md) | Every rule the checker enforces |

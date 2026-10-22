@@ -17,6 +17,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Dataflow,
     Def,
     Each,
@@ -223,6 +224,9 @@ class _ToAst(Transformer):
     def out_default(self, _, tok):
         return ("default", str(tok)[1:-1])
 
+    def out_collect(self, value, target):
+        return ("collect", value, str(target))
+
     @v_args(meta=True, inline=True)
     def call(self, meta, *parts):
         ins, name, outs = [], None, []
@@ -318,7 +322,9 @@ def _labels(outs, line):
 
 def _build_call(name: str, ins: list[Arg], outs: list[tuple], line: int) -> Stmt:
     positional = [a for a in ins if a.key is None]
-    if name in ("branch", "switch", "each") and (len(ins) != 1 or ins[0].key is not None):
+    if name in ("branch", "switch", "each", "collect") and (
+        len(ins) != 1 or ins[0].key is not None
+    ):
         raise KirSyntaxError(f"{name} takes exactly one positional input", line)
     if name in ("jump", "parallel") and ins:
         raise KirSyntaxError(f"{name} takes no inputs", line)
@@ -348,6 +354,27 @@ def _build_call(name: str, ins: list[Arg], outs: list[tuple], line: int) -> Stmt
             if not labels:
                 raise KirSyntaxError("parallel needs at least one label", line)
             return Parallel(labels, line=line)
+        case "collect":
+            if (
+                len(outs) not in (3, 4)
+                or outs[-1][0] != "collect"
+                or outs[-2][0] != "label"
+                or any(o[0] != "name" for o in outs[:-2])
+            ):
+                raise KirSyntaxError(
+                    "collect outputs are item[, index], `label`, value -> target", line
+                )
+            names = [o[1] for o in outs[:-2]]
+            return Collect(
+                positional[0].value,
+                names[0],
+                names[1] if len(names) == 2 else None,
+                outs[-2][1],
+                outs[-1][1],
+                outs[-1][2],
+                len(names) == 2,
+                line=line,
+            )
         case "each":
             if not outs or outs[-1][0] != "label" or any(o[0] != "name" for o in outs[:-1]):
                 raise KirSyntaxError("each outputs are item[, index], `label`", line)

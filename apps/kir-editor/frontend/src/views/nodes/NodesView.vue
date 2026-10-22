@@ -35,7 +35,7 @@ import WireEdge from "@/views/shared/WireEdge.vue"
 
 const NODE_TYPES = { card: CardNode, region: RegionNode, group: GroupNode }
 const EDGE_TYPES = { wire: WireEdge }
-const CONTROL_KINDS = new Set(["branch", "switch", "each", "parallel", "try", "merge"])
+const CONTROL_KINDS = new Set(["branch", "switch", "each", "collect", "parallel", "try", "merge"])
 
 const docStore = useDocumentStore()
 const ui = useUiStore()

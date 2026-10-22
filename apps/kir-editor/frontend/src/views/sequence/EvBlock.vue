@@ -14,10 +14,11 @@
         <EvParam v-else-if="s.type === 'assign'" :expr="s.value" label="value" :type="s.vtype" @update="(e) => set(() => (s.value = e))" />
         <EvParam v-else-if="s.type === 'branch'" :expr="s.cond" label="cond" type="bool" @update="(e) => set(() => (s.cond = e))" />
         <EvParam v-else-if="s.type === 'switch'" :expr="s.value" label="value" @update="(e) => set(() => (s.value = e))" />
-        <EvParam v-else-if="s.type === 'each'" :expr="s.items" label="items" @update="(e) => set(() => (s.items = e))" />
+        <EvParam v-else-if="['each', 'collect'].includes(s.type)" :expr="s.items" label="items" @update="(e) => set(() => (s.items = e))" />
         <span v-else-if="s.type === 'jump'" class="ev-tile__note">{{ s.label }}</span>
         <span v-else-if="s.type === 'typehints'" class="ev-tile__note">{{ s.entries.map((e) => e.name).join(", ") }}</span>
         <span v-else-if="s.type === 'parallel'" class="ev-tile__note">{{ s.labels.join(" · ") }}</span>
+        <EvParam v-if="s.type === 'collect'" :expr="s.value" label="capture at body end" @update="(e) => set(() => (s.value = e))" />
       </div>
       <div v-if="plugs.length" class="ev-tile__plugs">
         <span v-for="p in plugs" :key="p.i" class="ev-plug" :data-wr="p.name" :style="{ '--ev-color': colorOf(p.name) }" :title="`output → ${p.name ?? '_'}`">
@@ -33,7 +34,7 @@
         <span class="ev-cont__title">{{ contTitle }}</span>
         <EvParam v-if="item.t === 'group' && s.type === 'branch'" :expr="s.cond" label="cond" type="bool" @update="(e) => set(() => (s.cond = e))" />
         <EvParam v-else-if="item.t === 'group' && s.type === 'switch'" :expr="s.value" label="value" @update="(e) => set(() => (s.value = e))" />
-        <template v-else-if="item.t === 'group' && s.type === 'each'">
+        <template v-else-if="item.t === 'group' && ['each', 'collect'].includes(s.type)">
           <EvParam :expr="s.items" label="items" @update="(e) => set(() => (s.items = e))" />
           <span class="ev-plug" :data-wr="s.item" :style="{ '--ev-color': colorOf(s.item) }" title="item"><ScratchName :value="s.item" allow-empty @update="(n) => set(() => (s.item = n))" /></span>
           <span v-if="s.has_index" class="ev-plug" :data-wr="s.index" :style="{ '--ev-color': colorOf(s.index) }" title="index"><ScratchName :value="s.index" allow-empty @update="(n) => set(() => (s.index = n))" /></span>
@@ -54,6 +55,12 @@
             <EvSeq :list="l.list" :loops="l.loops" />
           </div>
         </template>
+      </div>
+      <div v-if="s?.type === 'collect'" class="ev-cont__head">
+        <EvParam :expr="s.value" label="capture at body end" @update="(e) => set(() => (s.value = e))" />
+        <span class="ev-plug" :data-wr="s.target" :style="{ '--ev-color': colorOf(s.target) }" title="results (after completion)">
+          <ScratchName :value="s.target" @update="(n) => set(() => (s.target = n))" />
+        </span>
       </div>
     </div>
   </div>
@@ -102,6 +109,7 @@ const ICONS = {
   branch: "i-carbon-flow-connection",
   switch: "i-carbon-tree-view-alt",
   each: "i-carbon-repeat",
+  collect: "i-carbon-repeat",
   parallel: "i-carbon-split",
   loop: "i-carbon-renew",
   try: "i-carbon-warning-alt",
@@ -143,7 +151,7 @@ const plugs = computed(() => {
   const st = s.value
   if (st.type === "call")
     return st.outs.map((o, i) => ({ i, name: o, allowEmpty: true, rename: (n) => set(() => (st.outs[i] = n)) }))
-  if (st.type === "assign") return [{ i: 0, name: st.target, rename: (n) => set(() => (st.target = n)) }]
+  if (st.type === "assign" || st.type === "collect") return [{ i: 0, name: st.target, rename: (n) => set(() => (st.target = n)) }]
   return []
 })
 
@@ -151,7 +159,7 @@ const colorOf = (name) => EV_COLOR[ev.kinds.value.get(name) || "other"]
 
 const contKind = computed(() => {
   const it = props.item
-  if (it.t === "group") return s.value.type === "each" ? "loop" : s.value.type === "parallel" ? "parallel" : "switch"
+  if (it.t === "group") return ["each", "collect"].includes(s.value.type) ? "loop" : s.value.type === "parallel" ? "parallel" : "switch"
   return it.t
 })
 
@@ -159,7 +167,7 @@ const contTitle = computed(() => {
   const it = props.item
   if (it.t === "group") {
     const st = s.value
-    if (st.type === "each") return `each ${[st.item || "_", ...(st.has_index ? [st.index || "_"] : [])].join(", ")} in`
+    if (["each", "collect"].includes(st.type)) return `${st.type} ${[st.item || "_", ...(st.has_index ? [st.index || "_"] : [])].join(", ")} in`
     return st.type
   }
   if (it.t === "loop") return `loop ${it.ns.label}`

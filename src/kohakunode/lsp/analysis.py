@@ -11,6 +11,7 @@ import re
 import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
+from functools import lru_cache
 from pathlib import Path
 
 try:
@@ -44,6 +45,16 @@ DIRECTIVES = [
     "typehint",
     "mode",
 ]
+COLLECT_SIGNATURE = "(items)collect(item[, index], `body`, value -> results)"
+COLLECT_HELP = (
+    f"```kir\n{COLLECT_SIGNATURE}\n```\n\n"
+    "builtin `collect` is a control operation, not an ordinary runtime node call. "
+    "Its `value` input is deferred (`body_end`): capture at each normal body end, in input order. "
+    "Publish the fresh `results` list only after all iterations complete (empty input yields `[]`). "
+    "The body must not read or write the result target; escaping jumps and global mutations are prohibited. "
+    "Call a host node named collect through an alias such as `h.collect`."
+)
+_COLLECT_CALL = re.compile(r"\)\s*collect\s*\(")
 _MODULE_DIRECTIVE = re.compile(r"^\s*@(?:import|export)\b", re.MULTILINE)
 CORES = ("python", "rust")
 _WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_.]*")
@@ -70,6 +81,29 @@ def _module_core(core: str, modular: bool) -> str:
         warnings.warn(
             "The installed Rust extension lacks source-module support; using the Python "
             "reference for this document. Rebuild kohakunode._rs to use the native linker.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        return "python"
+    return core
+
+
+@lru_cache(maxsize=4)
+def _native_collect_supported(native) -> bool:
+    try:
+        result = json.loads(
+            native.parse_to_json("([])collect(item, `body`, item -> results)\nbody:\n")
+        )
+        return any(stmt.get("kind") == "collect" for stmt in result["body"])
+    except native.KirError:
+        return False
+
+
+def _collect_core(core: str, text: str) -> str:
+    if core == "rust" and _COLLECT_CALL.search(text) and not _native_collect_supported(_rs):
+        warnings.warn(
+            "The installed Rust extension lacks collect syntax support; using the Python "
+            "reference for this document. Rebuild kohakunode._rs to use native collect support.",
             RuntimeWarning,
             stacklevel=3,
         )
@@ -106,7 +140,7 @@ def analyze(
 ) -> Analysis:
     core = _core(core)
     modular = bool(_MODULE_DIRECTIVE.search(text))
-    core = _module_core(core, modular)
+    core = _collect_core(_module_core(core, modular), text)
     source_name = source_name or (Path(path).name if path else "<text>")
     lines = text.splitlines() or [""]
 
@@ -264,11 +298,15 @@ def signature_markdown(sig: Signature, library: str | None) -> str:
 
 def hover(a: Analysis, text: str, line: int, character: int) -> str | None:
     w = word_at(text, line, character)
-    if w is None or a.env is None:
+    if w is None:
         return None
     word = w[0]
+    if word == "collect":
+        return COLLECT_HELP
     if word in BUILTINS:
         return f"builtin `{word}`"
+    if a.env is None:
+        return None
     r = a.env.resolve(word)
     if isinstance(r, Resolved):
         lib = r.library.name if r.library else ("@def" if r.definition else "@typehint")
@@ -386,7 +424,8 @@ def signature_help(a: Analysis, text: str, line: int, character: int) -> str | N
 
 
 def format_text(text: str, core: str | None = None) -> str | None:
-    if _module_core(_core(core), bool(_MODULE_DIRECTIVE.search(text))) == "rust":
+    selected = _collect_core(_module_core(_core(core), bool(_MODULE_DIRECTIVE.search(text))), text)
+    if selected == "rust":
         try:
             return _rs.format(text)
         except _rs.KirError:

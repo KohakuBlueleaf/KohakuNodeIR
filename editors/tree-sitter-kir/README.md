@@ -16,9 +16,13 @@ Tree-sitter grammar for KIR v2 (Kohaku Node IR). It follows
   tuples are `()`, `(x,)`, `(x, y)`; numbers use ASCII digits only.
   The `reserved` grammar field needs tree-sitter-cli 0.25 or newer.
 - `queries/highlights.scm` — directives, builtins (`branch switch jump parallel
-  each`), node names and `@use` prefixes, labels and namespaces, types,
+  each collect`), node names and `@use` prefixes, labels and namespaces, types,
   literals, `##` section comments. The patterns do not overlap, so the result
   is the same in editors where the first match wins and where the last wins.
+- Collect captures use a `collect_capture` node with `value` and `target`
+  fields for `value -> results` inside the call's output list. The capture arrow
+  is an operator; value and target names are variable highlights. Arity and
+  collect-body restrictions remain checker responsibilities.
 - `queries/folds.scm`, `queries/locals.scm`.
 - `test/corpus/` — parse-tree tests, including `:error` cases for every
   lexical rule above; `test/highlight/` — highlight assertions.

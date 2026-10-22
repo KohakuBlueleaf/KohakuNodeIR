@@ -80,6 +80,7 @@ not runtime nodes. `uses` retains its existing host-library meaning.
 | `switch` | `value` | — | `in` | `case_0` … `case_n`, `default` | `cases`, `labels` |
 | `merge` | — | — | `in_0` … `in_n` | `out` | `label` (loop entry only) |
 | `each` | `items` | `item`, `index` | `in`, `next` | `body`, `done` | `label`, `item`, `index`, `has_index` |
+| `collect` | `items`, deferred `value` | `item`, `index`, `results` | `in`, `next` | `body`, `done` | `label`, `item`, `index`, `has_index`, `target` |
 | `parallel` | — | — | `in` | `out_0` … `out_n` | `labels` |
 | `try` | — | `error` (when named) | `in` | `try`, `except` | `error_name` |
 | `dataflow` | — | — | `in` | `out` | `members` (node ids, in order) |
@@ -117,6 +118,70 @@ not runtime nodes. `uses` retains its existing host-library meaning.
 ```
 
 `kind` is `data` or `ctrl`. An input port takes at most one data edge.
+
+## Collect: a deferred body-end input
+
+The control form ``(items)collect(item[, index], `body`, value -> results)``
+is a distinct `collect` node, not an ordinary eager call. Its wire-style shape
+is:
+
+```json
+{
+  "id": "collect_1",
+  "kind": "collect",
+  "props": {
+    "label": "body",
+    "item": "item",
+    "index": null,
+    "has_index": false,
+    "target": "results"
+  },
+  "inputs": [
+    {"port": "items"},
+    {"port": "value", "deferred": "body_end"}
+  ],
+  "outputs": [
+    {"port": "item", "var": "item"},
+    {"port": "index", "var": null},
+    {"port": "results", "var": "results"}
+  ],
+  "ctrl_in": ["in", "next"],
+  "ctrl_out": ["body", "done"]
+}
+```
+
+`items` is read on entry. `body` enters the owned namespace with item/index
+bindings; each normal body end returns through `next`. Only then is the
+`value` input sampled for that iteration. The `deferred: "body_end"` marker
+is required: a body-produced value is **not** an input needed before entering
+the collect. A literal sample uses the same input with a `value` literal box,
+including explicit `null`; a named sample has a data edge to that input.
+
+In wire style, that edge comes from definitions reaching the body's normal
+end, not definitions reaching collect entry. With multiple possible writers,
+or in variable style, a `get` feeds the deferred input instead. Feedback such
+as collect `item` → body computation → collect `value` is intentional control
+iteration, not an eager dataflow dependency cycle.
+
+The `results` output becomes available only on successful completion through
+`done`, including an empty list for zero iterations. It does not publish a
+partial result at `next` or on an exception. In variable style its `set` names
+the destination; otherwise the output's `var` and `props.target` retain the
+source target. The body cannot read or write this target. Full validation and
+execution rules are specified in [collect.md](collect.md).
+
+A collect owns the namespace named by `props.label`, even when that namespace
+was declared before the collect in source. The encoder emits the body once,
+from the owning node; reconstruction writes the collect and its body namespace
+before continuing from `done`. Nested collects have separate body/next/done
+regions. A root collect is recognized by its unconnected `in` port even if a
+body back edge enters `next`.
+
+The collect statement uses ordinary node `origin`; its namespace origin is
+stored under `namespace_origins.body`, independently of editor metadata.
+These additions affect only collect graphs: existing `each` and ordinary-call
+serialization is unchanged. Older graph readers without `collect` support
+must not interpret its deferred input as an eager call argument.
 
 ## Source provenance
 

@@ -35,6 +35,7 @@ enum Out {
     Label(String),
     Case(Value, String),
     Default(String),
+    Collect(Expr, String),
 }
 
 fn err(message: impl Into<String>) -> KirError {
@@ -186,6 +187,10 @@ impl Builder<'_> {
             Rule::out_discard => Out::Name(None),
             Rule::out_label => Out::Label(label_text(inner.next().expect("label"))),
             Rule::out_name => Out::Name(Some(inner.next().expect("name").as_str().to_string())),
+            Rule::out_collect => Out::Collect(
+                self.expr(inner.next().expect("collected value"))?,
+                inner.next().expect("collect target").as_str().to_string(),
+            ),
             Rule::out_case => {
                 let value = inner.next().expect("case value");
                 let label = inner.next().expect("label");
@@ -361,7 +366,7 @@ fn labels(outs: Vec<Out>, line: usize) -> Result<Vec<String>> {
 fn build_call(name: String, ins: Vec<Arg>, outs: Vec<Out>, line: usize) -> Result<Stmt> {
     let at = |m: String| KirError::syntax(m, Some(line), None);
     let n = name.as_str();
-    if matches!(n, "branch" | "switch" | "each") && (ins.len() != 1 || ins[0].key.is_some()) {
+    if matches!(n, "branch" | "switch" | "each" | "collect") && (ins.len() != 1 || ins[0].key.is_some()) {
         return Err(at(format!("{n} takes exactly one positional input")));
     }
     if matches!(n, "jump" | "parallel") && !ins.is_empty() {
@@ -405,6 +410,26 @@ fn build_call(name: String, ins: Vec<Arg>, outs: Vec<Out>, line: usize) -> Resul
                 return Err(at("parallel needs at least one label".into()));
             }
             Kind::Parallel { labels: l }
+        }
+        "collect" => {
+            if !(3..=4).contains(&outs.len())
+                || !matches!(outs.last(), Some(Out::Collect(_, _)))
+                || !matches!(&outs[outs.len() - 2], Out::Label(_))
+                || !outs[..outs.len() - 2].iter().all(|o| matches!(o, Out::Name(_)))
+            {
+                return Err(at("collect outputs are item[, index], `label`, value -> target".into()));
+            }
+            let mut outs = outs;
+            let Some(Out::Collect(value, target)) = outs.pop() else { unreachable!() };
+            let Some(Out::Label(label)) = outs.pop() else { unreachable!() };
+            let has_index = outs.len() == 2;
+            let mut names = outs.into_iter().map(|o| match o {
+                Out::Name(name) => name,
+                _ => unreachable!(),
+            });
+            let item = names.next().expect("item");
+            let index = names.next().flatten();
+            Kind::Collect { items: first(), item, index, label, value, target, has_index }
         }
         "each" => {
             let shape_ok = matches!(outs.last(), Some(Out::Label(_)))

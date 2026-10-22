@@ -57,6 +57,11 @@ export function itemFor(spec, tree) {
       const s = { type: "each", items: { lit: [] }, item: fresh(names, "item"), index: fresh(names, "i"), label: fresh(names, "body"), has_index: true, line: null }
       return group([s, ns(s.label)])[0]
     }
+    case "collect": {
+      const item = fresh(names, "item")
+      const s = { type: "collect", items: { lit: [] }, item, index: fresh(names, "i"), label: fresh(names, "body"), value: { name: item }, target: fresh(names, "results"), has_index: true, line: null }
+      return group([s, ns(s.label)])[0]
+    }
     case "parallel": {
       const s = { type: "parallel", labels: [fresh(names, "left"), fresh(names, "right")], line: null }
       return group([s, ...s.labels.map(ns)])[0]

@@ -20,6 +20,8 @@ pub enum NodeKind {
     Entry,
     Exit,
     Bind,
+    CollectSample,
+    CollectDone,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -50,6 +52,8 @@ pub struct Cfg<'a> {
     pub owners: HashMap<Uid, Vec<&'a Stmt>>,
     /// `each` / `@try` uid -> its bind node.
     pub binds: HashMap<Uid, usize>,
+    pub samples: HashMap<Uid, usize>,
+    pub completions: HashMap<Uid, usize>,
 }
 
 impl Cfg<'_> {
@@ -97,8 +101,10 @@ impl<'a> Builder<'a> {
         self.g.nodes.push(CNode { kind, stmt, writes, reads });
         self.g.succ.push(Vec::new());
         let n = self.g.nodes.len() - 1;
-        if let Some(s) = stmt {
-            self.g.node_of.insert(s.uid, n);
+        if kind == NodeKind::Stmt {
+            if let Some(s) = stmt {
+                self.g.node_of.insert(s.uid, n);
+            }
         }
         n
     }
@@ -145,8 +151,20 @@ impl<'a> Builder<'a> {
                     after[i] = body_entry;
                 }
                 _ => {
-                    let writes = if matches!(s.kind, Kind::Each { .. }) { vec![] } else { owned(s.writes()) };
+                    let writes = if matches!(s.kind, Kind::Each { .. } | Kind::Collect { .. }) {
+                        vec![]
+                    } else {
+                        owned(s.writes())
+                    };
                     let n = self.new_node(NodeKind::Stmt, Some(s), writes, owned(s.reads()));
+                    if let Kind::Collect { target, .. } = &s.kind {
+                        let sample = self.new_node(NodeKind::CollectSample, Some(s), vec![], owned(s.deferred_reads()));
+                        let done = self.new_node(NodeKind::CollectDone, Some(s), vec![target.clone()], vec![]);
+                        self.g.samples.insert(s.uid, sample);
+                        self.g.completions.insert(s.uid, done);
+                        self.g.succ[sample].push((n, EdgeKind::Flow));
+                        self.edge_later(done, nxt, EdgeKind::Flow);
+                    }
                     nodes.push((i, n));
                     after[i] = Target::Node(n);
                 }
@@ -170,9 +188,10 @@ impl<'a> Builder<'a> {
                         cont_of.insert(ns.uid, target);
                     }
                 }
-                Kind::Each { label, .. } => {
+                Kind::Each { label, .. } | Kind::Collect { label, .. } => {
                     if let Some(ns) = local.get(label.as_str()) {
-                        cont_of.insert(ns.uid, Target::Node(n));
+                        let end = self.g.samples.get(&stmts[i].uid).copied().unwrap_or(n);
+                        cont_of.insert(ns.uid, Target::Node(end));
                     }
                 }
                 _ => {}
@@ -222,7 +241,7 @@ impl<'a> Builder<'a> {
                     self.edge_later(n, t, EdgeKind::Flow);
                 }
             }
-            Kind::Each { label, item, index, .. } => {
+            Kind::Each { label, item, index, .. } | Kind::Collect { label, item, index, .. } => {
                 if let Some(t) = self.enter(s, label, &[local]) {
                     let names: Vec<String> = item.iter().chain(index.iter()).cloned().collect();
                     let bind = self.new_node(NodeKind::Bind, None, names, vec![]);
@@ -230,7 +249,11 @@ impl<'a> Builder<'a> {
                     self.g.succ[n].push((bind, EdgeKind::Flow));
                     self.edge_later(bind, t, EdgeKind::Flow);
                 }
-                self.edge_later(n, nxt, EdgeKind::Flow);
+                if let Some(done) = self.g.completions.get(&s.uid) {
+                    self.g.succ[n].push((*done, EdgeKind::Flow));
+                } else {
+                    self.edge_later(n, nxt, EdgeKind::Flow);
+                }
             }
             _ => self.edge_later(n, nxt, EdgeKind::Flow),
         }

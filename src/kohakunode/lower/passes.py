@@ -11,6 +11,7 @@ import hashlib
 from collections.abc import Callable
 
 from kohakunode.flow.order import sort_dataflow
+from kohakunode.lower.collect import CollectExpander
 from kohakunode.lower.each import EachExpander
 from kohakunode.lower.inline import Inliner
 from kohakunode.lower.versions import version_program
@@ -19,6 +20,7 @@ from kohakunode.sig.env import NodeEnv, Resolved
 from kohakunode.syntax.ast import (
     Assign,
     Call,
+    Collect,
     Dataflow,
     Program,
     Stmt,
@@ -44,6 +46,11 @@ def order_dataflow(p: Program, env: NodeEnv) -> None:
 
     sort_dataflow(p, is_ordered)
     p.mode = None
+
+
+def expand_collect(p: Program, env: NodeEnv) -> None:
+    """Lower collect to a private fresh-list accumulator, each, and final publication."""
+    p.body = CollectExpander(p).block(p.body)
 
 
 def inline(p: Program, env: NodeEnv) -> None:
@@ -78,6 +85,7 @@ def strip_meta(p: Program, env: NodeEnv) -> None:
 # control flow inlining and each expansion produce.
 PASSES: dict[str, Pass] = {
     "order_dataflow": order_dataflow,
+    "expand_collect": expand_collect,
     "inline": inline,
     "expand_each": expand_each,
     "version": version,
@@ -104,6 +112,10 @@ def run_passes(program: Program, env: NodeEnv, names: list[str] | None = None) -
             )
     p = copy.deepcopy(program)
     for name in names:
+        if name in ("expand_each", "version") and any(
+            isinstance(stmt, Collect) for stmt in walk(p.body)
+        ):
+            raise ValueError(f"pass {name!r} needs 'expand_collect' while collect remains")
         PASSES[name](p, env)
     return p
 

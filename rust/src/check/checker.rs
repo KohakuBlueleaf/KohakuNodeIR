@@ -54,6 +54,7 @@ fn is_control(s: &Stmt) -> bool {
             | Kind::Jump { .. }
             | Kind::Parallel { .. }
             | Kind::Each { .. }
+            | Kind::Collect { .. }
             | Kind::Namespace { .. }
             | Kind::Try { .. }
     )
@@ -107,6 +108,19 @@ impl Checker<'_> {
     // ------------------------------------------------------------ whole program
     fn program(&mut self, p: &mut Program) {
         self.reserved(p);
+        if walk(&p.body).iter().any(|s| matches!(s.kind, Kind::Collect { .. })) {
+            for stmt in walk(&p.body) {
+                if let Kind::Call { name, .. } = &stmt.kind {
+                    if self.env.resolve(name).found().is_some_and(|r| !r.signature.mutates.is_empty()) {
+                        self.add_at(
+                            "E072",
+                            "collect programs cannot contain declared mutates calls".into(),
+                            Some(stmt),
+                        );
+                    }
+                }
+            }
+        }
         if p.mode.as_deref() == Some("dataflow") {
             if let Some(s) = walk(&p.body).into_iter().find(|s| is_control(s)) {
                 self.add_at("E060", "@mode dataflow file contains control flow".into(), Some(s));
@@ -144,6 +158,7 @@ impl Checker<'_> {
         for s in walk(&p.body) {
             let mut names: Vec<&str> = s.writes();
             names.extend(s.reads());
+            names.extend(s.deferred_reads());
             names.extend(s.labels_entered());
             match &s.kind {
                 Kind::Namespace { label, .. } => names.push(label),
@@ -242,18 +257,28 @@ impl Checker<'_> {
             if owners.is_empty() {
                 self.add_at("W001", format!("namespace `{label}` is never entered"), Some(ns));
             }
-            if owners.iter().any(|o| matches!(o.kind, Kind::Each { .. })) {
+            if owners.iter().any(|o| matches!(o.kind, Kind::Each { .. } | Kind::Collect { .. })) {
                 let inside: HashSet<usize> = walk(ns_body).iter().map(|x| x.uid).collect();
                 for o in owners {
                     if matches!(o.kind, Kind::Jump { .. }) && !inside.contains(&o.uid) {
-                        self.add_at("E032", format!("jump into the body of each `{label}`"), Some(o));
+                        let kind = if owners.iter().any(|owner| matches!(owner.kind, Kind::Collect { .. })) {
+                            "collect"
+                        } else {
+                            "each"
+                        };
+                        self.add_at("E032", format!("jump into the body of {kind} `{label}`"), Some(o));
                     }
                 }
             }
         }
+        for stmt in &local {
+            if matches!(stmt.kind, Kind::Collect { .. }) {
+                self.collect(stmt, &local, &g);
+            }
+        }
         let mut names: BTreeSet<String> = BTreeSet::new();
         for s in &local {
-            names.extend(s.writes().into_iter().chain(s.reads()).map(str::to_string));
+            names.extend(s.writes().into_iter().chain(s.reads()).chain(s.deferred_reads()).map(str::to_string));
         }
         for p in params {
             names.remove(p);
@@ -313,6 +338,44 @@ impl Checker<'_> {
         }
     }
 
+    fn collect(&mut self, stmt: &Stmt, local: &[&Stmt], graph: &crate::flow::cfg::Cfg) {
+        let Kind::Collect { target, item, index, .. } = &stmt.kind else { unreachable!() };
+        if item.as_ref() == Some(target)
+            || index.as_ref() == Some(target)
+            || stmt.deferred_reads().contains(&target.as_str())
+        {
+            self.add_at("E070", "collect target cannot be an iteration binding or result input".into(), Some(stmt));
+        }
+        let namespaces: Vec<_> = local.iter().copied().filter(|s| matches!(s.kind, Kind::Namespace { .. })).collect();
+        let owned = |ns: &Stmt, owner: &Stmt| {
+            graph.owners.get(&ns.uid).is_some_and(|owners| owners.iter().any(|o| o.uid == owner.uid))
+        };
+        let Some(body) = namespaces.iter().find(|ns| owned(ns, stmt)) else { return };
+        let Kind::Namespace { body: statements, .. } = &body.kind else { unreachable!() };
+        let inside = scope_walk(statements);
+        let mut inner_ids = HashSet::from([body.uid]);
+        inner_ids.extend(inside.iter().filter(|s| matches!(s.kind, Kind::Namespace { .. })).map(|s| s.uid));
+        for child in inside {
+            let mut names: Vec<_> =
+                child.reads().into_iter().chain(child.deferred_reads()).chain(child.writes()).collect();
+            if let Kind::Try { error_name: Some(name), .. } = &child.kind {
+                names.push(name);
+            }
+            if names.contains(&target.as_str()) {
+                self.add_at(
+                    "E070",
+                    format!("collect target {} cannot be referenced in its body", str_repr(target)),
+                    Some(child),
+                );
+            }
+            if matches!(child.kind, Kind::Jump { .. })
+                && namespaces.iter().any(|ns| owned(ns, child) && !inner_ids.contains(&ns.uid))
+            {
+                self.add_at("E071", "jump cannot leave a collect body".into(), Some(child));
+            }
+        }
+    }
+
     fn parallel(&mut self, s: &Stmt, labels: &[String], table: &HashMap<&str, &Stmt>) {
         let arms: Vec<(&str, &Vec<Stmt>)> = labels
             .iter()
@@ -326,7 +389,14 @@ impl Checker<'_> {
             walk(body).into_iter().flat_map(|x| f(x).into_iter().map(str::to_string).collect::<Vec<_>>()).collect()
         };
         let w: Vec<BTreeSet<String>> = arms.iter().map(|(_, b)| collect(b, Stmt::writes)).collect();
-        let r: Vec<BTreeSet<String>> = arms.iter().map(|(_, b)| collect(b, Stmt::reads)).collect();
+        let r: Vec<BTreeSet<String>> = arms
+            .iter()
+            .map(|(_, b)| {
+                let mut names = collect(b, Stmt::reads);
+                names.extend(collect(b, Stmt::deferred_reads));
+                names
+            })
+            .collect();
         for i in 0..arms.len() {
             for j in 0..arms.len() {
                 if i == j {
@@ -448,7 +518,7 @@ impl Checker<'_> {
                         }
                     }
                 }
-                Kind::Each { item, index, .. } => {
+                Kind::Each { item, index, .. } | Kind::Collect { item, index, .. } => {
                     for n in item.iter().chain(index.iter()) {
                         note(n, None);
                     }
@@ -456,6 +526,45 @@ impl Checker<'_> {
                 Kind::Try { error_name: Some(e), .. } => note(e, Some(TypeExpr::name("dict"))),
                 _ => {}
             }
+        }
+        let mut pending: Vec<&Stmt> =
+            local.iter().copied().filter(|s| matches!(s.kind, Kind::Collect { .. })).collect();
+        while !pending.is_empty() {
+            let targets: HashSet<&str> = pending
+                .iter()
+                .filter_map(|s| match &s.kind {
+                    Kind::Collect { target, .. } => Some(target.as_str()),
+                    _ => None,
+                })
+                .collect();
+            let ready: Vec<&Stmt> = pending
+                .iter()
+                .copied()
+                .filter(|s| !s.deferred_reads().iter().any(|name| targets.contains(name)))
+                .collect();
+            if ready.is_empty() {
+                // Cyclic carried dependencies must not grow recursive list types.
+                for stmt in &pending {
+                    if let Kind::Collect { target, .. } = &stmt.kind {
+                        seen.entry(target.clone())
+                            .or_default()
+                            .insert(TypeExpr::Generic("list".into(), vec![TypeExpr::Any]));
+                    }
+                }
+                break;
+            }
+            for stmt in &ready {
+                let Kind::Collect { value, target, .. } = &stmt.kind else { unreachable!() };
+                let known: HashMap<String, TypeExpr> = seen
+                    .iter()
+                    .filter(|(_, ts)| ts.len() == 1 && !ts.contains(&TypeExpr::Any))
+                    .map(|(name, ts)| (name.clone(), ts.iter().next().unwrap().clone()))
+                    .collect();
+                let element = expr_type(value, &known).unwrap_or(TypeExpr::Any);
+                seen.entry(target.clone()).or_default().insert(TypeExpr::Generic("list".into(), vec![element]));
+            }
+            let ready_ids: HashSet<_> = ready.iter().map(|s| s.uid).collect();
+            pending.retain(|s| !ready_ids.contains(&s.uid));
         }
         seen.into_iter()
             .filter(|(_, ts)| ts.len() == 1 && !ts.contains(&TypeExpr::Any))

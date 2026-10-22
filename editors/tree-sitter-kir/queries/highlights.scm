@@ -26,10 +26,10 @@
 
 ; Node names: builtins, library prefixes, nodes.
 ((node_name . (identifier) @function.builtin .)
-  (#any-of? @function.builtin "branch" "switch" "jump" "parallel" "each"))
+  (#any-of? @function.builtin "branch" "switch" "jump" "parallel" "each" "collect"))
 (node_name (identifier) @module . (identifier))
 ((node_name (identifier) @function.call .)
-  (#not-any-of? @function.call "branch" "switch" "jump" "parallel" "each"))
+  (#not-any-of? @function.call "branch" "switch" "jump" "parallel" "each" "collect"))
 
 (subgraph name: (identifier) @function)
 
@@ -45,6 +45,8 @@
 (keyword_argument value: (identifier) @variable)
 (output_list (identifier) @variable)
 (case value: (identifier) @variable)
+(collect_capture value: (identifier) @variable)
+(collect_capture target: (identifier) @variable)
 (parameter name: (identifier) @variable.parameter)
 (parameter default: (identifier) @variable)
 (subgraph_output name: (identifier) @variable)
@@ -76,6 +78,6 @@
 (none) @constant.builtin
 
 ; Operators and punctuation
-["=" "=>" "|" "?"] @operator
+["=" "=>" "->" "|" "?"] @operator
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 ["," ":" "."] @punctuation.delimiter

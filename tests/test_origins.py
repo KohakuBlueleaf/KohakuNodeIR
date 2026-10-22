@@ -8,7 +8,17 @@ import pytest
 from kohakunode import build_env, parse, write
 from kohakunode.lower import full_hash, run_passes, semantic_hash
 from kohakunode.origins import derive_origin, stamp_origins
-from kohakunode.syntax.ast import Assign, Call, Dataflow, Each, Namespace, Origin, Try, walk
+from kohakunode.syntax.ast import (
+    Assign,
+    Call,
+    Collect,
+    Dataflow,
+    Each,
+    Namespace,
+    Origin,
+    Try,
+    walk,
+)
 
 INLINE = """@def (x)inner(y):
     (x)identity(y)
@@ -278,6 +288,45 @@ def test_origins_and_metadata_do_not_change_text_hashes_or_ast_equality():
     assert all(s.origin is None for s in walk(lowered[0].body))
     assert all(s.origin is not None for s in walk(lowered[1].body))
     assert all(s.origin is not None for s in walk(lowered[2].body))
+
+
+def test_collect_generated_origins_and_preserved_inline_ancestry():
+    source = (
+        "@def (items)gather(result):\n"
+        "    (items)collect(item, `body`, value -> result)\n"
+        "    body:\n"
+        "        (item)identity(value)\n"
+        "([1, 2])gather(a)\n"
+        "([3, 4])gather(b)\n"
+    )
+    p = stamp_origins(parse(source), "collect.kir")
+    collect_origin = p.body[0].body[0].origin
+    expanded = lower(p, ["expand_collect"])
+    generated = [s for s in walk(expanded.body) if s.origin.generated is not None]
+    assert {s.origin.generated for s in generated} == {
+        "collect.init",
+        "collect.items",
+        "collect.append",
+        "collect.result",
+    }
+    assert all(s.origin.node_id == collect_origin.node_id for s in generated)
+    assert all(s.origin.line == collect_origin.line for s in generated)
+    assert all(s.origin.definition == "gather" for s in generated)
+    for names in (
+        ["order_dataflow", "inline", "strip_meta"],
+        ["order_dataflow", "expand_collect", "inline", "strip_meta"],
+        None,
+    ):
+        lowered = lower(p, names)
+        copies = [s for s in walk(lowered.body) if s.origin.node_id == collect_origin.node_id]
+        assert copies
+        assert {s.origin.calls for s in copies} == {(p.body[1].origin,), (p.body[2].origin,)}
+        assert all(s.origin is not None for s in walk(lowered.body))
+    kept = lower(p, ["order_dataflow", "inline"])
+    assert len([s for s in walk(kept.body) if isinstance(s, Collect)]) == 2
+    assert write(lower(p)) == write(lower(parse(source)))
+    assert semantic_hash(lower(p)) == semantic_hash(lower(parse(source)))
+    assert full_hash(lower(p)) == full_hash(lower(parse(source)))
 
 
 def test_inlined_each_retains_nested_ancestry_through_all_passes():

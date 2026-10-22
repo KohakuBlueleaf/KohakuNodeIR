@@ -42,7 +42,8 @@ in_list: in_item ("," in_item)* ","?
         | expr              -> posarg
 
 out_list: out_item ("," out_item)* ","?
-?out_item: WILDCARD "=>" LABEL   -> out_default
+?out_item: expr "->" NAME       -> out_collect
+         | WILDCARD "=>" LABEL   -> out_default
          | expr "=>" LABEL       -> out_case
          | LABEL                 -> out_label
          | NAME                  -> out_name

@@ -19,6 +19,7 @@ const ICON = {
   switch: "i-carbon-tree-view-alt",
   parallel: "i-carbon-split",
   each: "i-carbon-repeat",
+  collect: "i-carbon-repeat",
   loop: "i-carbon-renew",
   try: "i-carbon-warning-alt",
   except: "i-carbon-warning-alt-filled",

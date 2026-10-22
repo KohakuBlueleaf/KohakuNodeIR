@@ -30,6 +30,7 @@ from kohakunode.syntax.ast import (
     TypeExpr,
     TypeHints,
     Use,
+    deferred_reads,
     labels_entered,
     reads,
     walk,
@@ -221,7 +222,7 @@ class _Linker:
                     raise KirModuleError("imported modules contain declarations only")
             definitions: dict[str, Def] = {}
             for stmt in walk(program.body):
-                names = reads(stmt) + writes(stmt) + labels_entered(stmt)
+                names = reads(stmt) + deferred_reads(stmt) + writes(stmt) + labels_entered(stmt)
                 match stmt:
                     case Def():
                         names += [

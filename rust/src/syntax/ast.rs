@@ -135,6 +135,16 @@ pub enum Kind {
         label: String,
         has_index: bool,
     },
+    /// Snapshot items, sample `value` at normal body end, publish target only on completion.
+    Collect {
+        items: Expr,
+        item: Option<String>,
+        index: Option<String>,
+        label: String,
+        value: Expr,
+        target: String,
+        has_index: bool,
+    },
     Namespace {
         label: String,
         body: Vec<Stmt>,
@@ -196,7 +206,7 @@ pub struct Program {
     pub mode: Option<String>,
 }
 
-pub const BUILTINS: [&str; 5] = ["branch", "switch", "jump", "parallel", "each"];
+pub const BUILTINS: [&str; 6] = ["branch", "switch", "jump", "parallel", "each", "collect"];
 
 impl Stmt {
     pub fn new(kind: Kind, line: Option<usize>) -> Stmt {
@@ -242,7 +252,7 @@ impl Stmt {
             Kind::Switch { cases, default, .. } => {
                 cases.iter().map(|(_, l)| l.as_str()).chain(default.as_deref()).collect()
             }
-            Kind::Jump { label } | Kind::Each { label, .. } => vec![label],
+            Kind::Jump { label } | Kind::Each { label, .. } | Kind::Collect { label, .. } => vec![label],
             Kind::Parallel { labels } => labels.iter().map(String::as_str).collect(),
             _ => vec![],
         }
@@ -255,7 +265,16 @@ impl Stmt {
             Kind::Call { args, .. } => args.iter().filter_map(|a| a.value.name()).collect(),
             Kind::Branch { cond: Expr::Name(n), .. }
             | Kind::Switch { value: Expr::Name(n), .. }
-            | Kind::Each { items: Expr::Name(n), .. } => vec![n],
+            | Kind::Each { items: Expr::Name(n), .. }
+            | Kind::Collect { items: Expr::Name(n), .. } => vec![n],
+            _ => vec![],
+        }
+    }
+
+    /// Names sampled only after a collect body completes normally.
+    pub fn deferred_reads(&self) -> Vec<&str> {
+        match &self.kind {
+            Kind::Collect { value: Expr::Name(name), .. } => vec![name],
             _ => vec![],
         }
     }
@@ -266,6 +285,9 @@ impl Stmt {
             Kind::Assign { target, .. } => vec![target],
             Kind::Call { outs, .. } => outs.iter().filter_map(|o| o.as_deref()).collect(),
             Kind::Each { item, index, .. } => item.as_deref().into_iter().chain(index.as_deref()).collect(),
+            Kind::Collect { item, index, target, .. } => {
+                item.as_deref().into_iter().chain(index.as_deref()).chain(std::iter::once(target.as_str())).collect()
+            }
             _ => vec![],
         }
     }

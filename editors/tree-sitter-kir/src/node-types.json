@@ -299,6 +299,64 @@
     }
   },
   {
+    "type": "collect_capture",
+    "named": true,
+    "fields": {
+      "target": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "dict",
+            "named": true
+          },
+          {
+            "type": "false",
+            "named": true
+          },
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "list",
+            "named": true
+          },
+          {
+            "type": "none",
+            "named": true
+          },
+          {
+            "type": "string",
+            "named": true
+          },
+          {
+            "type": "true",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "dataflow_block",
     "named": true,
     "fields": {
@@ -801,6 +859,10 @@
       "types": [
         {
           "type": "case",
+          "named": true
+        },
+        {
+          "type": "collect_capture",
           "named": true
         },
         {
@@ -1337,6 +1399,10 @@
   },
   {
     "type": ",",
+    "named": false
+  },
+  {
+    "type": "->",
     "named": false
   },
   {

@@ -8,7 +8,7 @@
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language"
 import { tags as t } from "@lezer/highlight"
 
-const BUILTINS = new Set(["branch", "switch", "jump", "parallel", "each"])
+const BUILTINS = new Set(["branch", "switch", "jump", "parallel", "each", "collect"])
 const ATOMS = new Set(["True", "False", "None", "_"])
 
 const kirMode = {
@@ -40,7 +40,7 @@ const kirMode = {
     }
     if (stream.match(/^"(?:[^"\\]|\\.)*"?/) || stream.match(/^'(?:[^'\\]|\\.)*'?/)) return "string"
     if (stream.match(/^(?:0[xob][0-9a-f_]+|\d[\d_]*(?:\.\d*)?(?:e[+-]?\d+)?|\.\d+)/i)) return "number"
-    if (stream.match("=>")) return "operator"
+    if (stream.match("=>") || stream.match("->")) return "operator"
     if (stream.sol() || stream.column() === stream.indentation()) {
       if (stream.match(/^[A-Za-z_]\w*(?=:\s*(#.*)?$)/)) return "namespace"
     }

@@ -112,16 +112,20 @@ export function makeNode(graph, spec) {
       }
     case "merge":
       return { ...base, ctrl_in: [], ctrl_out: ["out"] }
-    case "each": {
+    case "each":
+    case "collect": {
+      const collecting = spec.kind === "collect"
       const item = fresh(names, "item")
       const index = fresh(names, "i")
+      const target = collecting ? fresh(names, "results") : null
       return {
         ...base,
-        props: { label: fresh(labels, "body"), item, index, has_index: true },
-        inputs: [{ port: "items" }],
+        props: { label: fresh(labels, "body"), item, index, has_index: true, ...(collecting ? { target } : {}) },
+        inputs: [{ port: "items" }, ...(collecting ? [{ port: "value", deferred: "body_end", value: null }] : [])],
         outputs: [
           { port: "item", var: item },
           { port: "index", var: index },
+          ...(collecting ? [{ port: "results", var: target }] : []),
         ],
         ctrl_in: ["in", "next"],
         ctrl_out: ["body", "done"],
@@ -152,16 +156,24 @@ export function makeNode(graph, spec) {
 // ---------------------------------------------------------------- edges
 
 /** Whether a drag from one handle to another can become an edge. */
-export function isValidConnection(c) {
-  if (!c.sourceHandle || !c.targetHandle || c.source === c.target) return false
+export function isValidConnection(c, graph = null) {
+  if (!c.sourceHandle || !c.targetHandle) return false
   const s = parseHandle(c.sourceHandle)
   const t = parseHandle(c.targetHandle)
-  return s.dir === "out" && t.dir === "in" && s.flow === t.flow
+  if (s.dir !== "out" || t.dir !== "in" || s.flow !== t.flow) return false
+  if (c.source !== c.target) return true
+  const node = graph?.nodes.find((n) => n.id === c.target)
+  // The loop binding exists before body-end capture. No other self dependency
+  // is valid: in particular results cannot feed their own unfinished collection.
+  return node?.kind === "collect" && s.flow === "data" && ["item", "index"].includes(s.name)
+    && (s.name !== "index" || node.props?.has_index)
+    && node.outputs?.some((p) => p.port === s.name && p.var)
+    && t.name === "value" && node.inputs?.some((p) => p.port === "value" && p.deferred === "body_end")
 }
 
 /** Add the edge a connection describes; returns false when it is not valid. */
 export function connect(graph, c) {
-  if (!isValidConnection(c)) return false
+  if (!isValidConnection(c, graph)) return false
   const s = parseHandle(c.sourceHandle)
   const t = parseHandle(c.targetHandle)
   const target = graph.nodes.find((n) => n.id === c.target)

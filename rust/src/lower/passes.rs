@@ -9,17 +9,19 @@ use sha2::{Digest, Sha256};
 
 use crate::errors::{KirError, Result};
 use crate::flow::order::sort_dataflow;
+use crate::lower::collect::CollectExpander;
 use crate::lower::each::EachExpander;
 use crate::lower::inline::Inliner;
 use crate::lower::versions::version_program;
 use crate::origins::derive_origin;
 use crate::sig::env::NodeEnv;
-use crate::syntax::ast::{walk_mut, Kind, Program, Stmt};
+use crate::syntax::ast::{walk, walk_mut, Kind, Program, Stmt};
 use crate::syntax::writer::write;
 use crate::util::pyfmt::{str_list_repr, str_repr};
 
 /// The passes in their run order.
-pub const PASSES: [&str; 6] = ["order_dataflow", "inline", "expand_each", "version", "group", "strip_meta"];
+pub const PASSES: [&str; 7] =
+    ["order_dataflow", "expand_collect", "inline", "expand_each", "version", "group", "strip_meta"];
 
 /// Passes that must have run earlier in the same list.
 fn requires(name: &str) -> &'static [&'static str] {
@@ -97,6 +99,7 @@ fn group_run(body: Vec<Stmt>) -> Stmt {
 fn run_pass(name: &str, p: &mut Program, env: &NodeEnv) -> Result<()> {
     match name {
         "order_dataflow" => order_dataflow(p, env)?,
+        "expand_collect" => p.body = CollectExpander::new(p).block(std::mem::take(&mut p.body))?,
         "inline" => p.body = Inliner::new(p).block(std::mem::take(&mut p.body)),
         "expand_each" => p.body = EachExpander::default().block(std::mem::take(&mut p.body)),
         "version" => version_program(p)?,
@@ -125,6 +128,14 @@ pub fn run_passes(program: &Program, env: &NodeEnv, names: Option<&[&str]>) -> R
     }
     let mut p = program.clone();
     for name in names {
+        if matches!(name, "expand_each" | "version")
+            && walk(&p.body).iter().any(|s| matches!(s.kind, Kind::Collect { .. }))
+        {
+            return Err(KirError::Value(format!(
+                "pass {} needs 'expand_collect' while collect remains",
+                str_repr(name)
+            )));
+        }
         run_pass(name, &mut p, env)?;
     }
     Ok(p)

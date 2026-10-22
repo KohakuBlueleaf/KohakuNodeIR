@@ -80,6 +80,7 @@ const BUILTINS = [
   { kind: "switch", icon: "i-carbon-tree-view-alt", hint: "(value)switch(1=>`a`, _=>`b`)" },
   { kind: "merge", icon: "i-carbon-direction-merge", hint: "join control paths; with a label it is a loop entry (in the statement views: a loop)" },
   { kind: "each", icon: "i-carbon-repeat", hint: "(items)each(item, index, `body`)" },
+  { kind: "collect", icon: "i-carbon-repeat", hint: "(items)collect(item, index, `body`, value -> results); capture at each normal body end" },
   { kind: "parallel", icon: "i-carbon-split", hint: "()parallel(`a`, `b`)" },
   { kind: "try", icon: "i-carbon-warning-alt", hint: "@try: … @except err: …" },
 ]

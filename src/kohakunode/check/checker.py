@@ -13,6 +13,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Dataflow,
     Def,
     Each,
@@ -25,13 +26,14 @@ from kohakunode.syntax.ast import (
     Switch,
     Try,
     TypeExpr,
+    deferred_reads,
     labels_entered,
     reads,
     walk,
     writes,
 )
 
-CONTROL = (Branch, Switch, Jump, Parallel, Each, Namespace, Try)
+CONTROL = (Branch, Switch, Jump, Parallel, Each, Collect, Namespace, Try)
 
 
 @dataclass(frozen=True)
@@ -65,6 +67,14 @@ class _Checker:
     # ------------------------------------------------------------ whole program
     def program(self, p: Program) -> None:
         self.reserved(p)
+        if any(isinstance(s, Collect) for s in walk(p.body)):
+            for stmt in walk(p.body):
+                if isinstance(stmt, Call):
+                    resolved = self.env.resolve(stmt.name)
+                    if isinstance(resolved, Resolved) and resolved.signature.mutates:
+                        self.add(
+                            "E072", "collect programs cannot contain declared mutates calls", stmt
+                        )
         if p.mode == "dataflow":
             for s in walk(p.body):
                 if isinstance(s, CONTROL):
@@ -94,7 +104,7 @@ class _Checker:
 
     def reserved(self, p: Program) -> None:
         for s in walk(p.body):
-            names = writes(s) + reads(s) + labels_entered(s)
+            names = writes(s) + reads(s) + deferred_reads(s) + labels_entered(s)
             if isinstance(s, Namespace):
                 names.append(s.label)
             if isinstance(s, Def):
@@ -146,12 +156,20 @@ class _Checker:
                 self.add("E031", f"namespace `{ns.label}` is entered by more than one builtin", ns)
             if not owners:
                 self.add("W001", f"namespace `{ns.label}` is never entered", ns)
-            if any(isinstance(o, Each) for o in owners):
+            if any(isinstance(o, (Each, Collect)) for o in owners):
                 inside = {id(x) for x in walk(ns.body)}
                 for o in owners:
                     if isinstance(o, Jump) and id(o) not in inside:
-                        self.add("E032", f"jump into the body of each `{ns.label}`", o)
-        names = {n for s in local for n in writes(s) + reads(s)} - set(params)
+                        kind = (
+                            "collect"
+                            if any(isinstance(owner, Collect) for owner in owners)
+                            else "each"
+                        )
+                        self.add("E032", f"jump into the body of {kind} `{ns.label}`", o)
+        for stmt in local:
+            if isinstance(stmt, Collect):
+                self.collect(stmt, local, g)
+        names = {n for s in local for n in writes(s) + reads(s) + deferred_reads(s)} - set(params)
         inn = reaching(g, tuple(sorted(names)))
         reach = g.reachable()
         read_names = set()
@@ -177,10 +195,46 @@ class _Checker:
                     if name not in read_names:
                         self.add("W020", f"{name!r} is written but never read", s)
 
+    def collect(self, stmt: Collect, local: list[Stmt], graph) -> None:
+        """Collection completion owns its target; body control cannot escape it."""
+        if stmt.target in (stmt.item, stmt.index) or stmt.target in deferred_reads(stmt):
+            self.add("E070", "collect target cannot be an iteration binding or result input", stmt)
+        namespaces = [s for s in local if isinstance(s, Namespace)]
+        body = next(
+            (
+                ns
+                for ns in namespaces
+                if any(owner is stmt for owner in graph.owners.get(id(ns), []))
+            ),
+            None,
+        )
+        if body is None:
+            return
+        inside = list(_scope_walk(body.body))
+        inner_ids = {id(body), *(id(s) for s in inside if isinstance(s, Namespace))}
+        for child in inside:
+            names = reads(child) + deferred_reads(child) + writes(child)
+            if isinstance(child, Try) and child.error_name is not None:
+                names.append(child.error_name)
+            if stmt.target in names:
+                self.add(
+                    "E070",
+                    f"collect target {stmt.target!r} cannot be referenced in its body",
+                    child,
+                )
+            if isinstance(child, Jump):
+                targets = [
+                    ns
+                    for ns in namespaces
+                    if any(owner is child for owner in graph.owners.get(id(ns), []))
+                ]
+                if any(id(ns) not in inner_ids for ns in targets):
+                    self.add("E071", "jump cannot leave a collect body", child)
+
     def parallel(self, s: Parallel, table: dict[str, Namespace]) -> None:
         arms = [table[label] for label in s.labels if label in table]
         w = [{n for x in walk(a.body) for n in writes(x)} for a in arms]
-        r = [{n for x in walk(a.body) for n in reads(x)} for a in arms]
+        r = [{n for x in walk(a.body) for n in reads(x) + deferred_reads(x)} for a in arms]
         for i in range(len(arms)):
             for j in range(len(arms)):
                 if i == j:
@@ -269,12 +323,31 @@ class _Checker:
                 for i, o in enumerate(s.outs):
                     if o is not None:
                         note(o, outs[i].type if i < len(outs) else None)
-            elif isinstance(s, Each):
+            elif isinstance(s, (Each, Collect)):
                 for n in (s.item, s.index):
                     if n is not None:
                         note(n, None)
             elif isinstance(s, Try) and s.error_name:
                 note(s.error_name, TypeExpr("name", "dict"))
+        # Resolve collection-to-collection type dependencies, independent of declaration order.
+        pending = [stmt for stmt in local if isinstance(stmt, Collect)]
+        while pending:
+            targets = {stmt.target for stmt in pending}
+            ready = [stmt for stmt in pending if not targets.intersection(deferred_reads(stmt))]
+            if not ready:
+                # Cyclic carried type dependencies remain conservative rather than growing
+                # an unbounded nesting of list types. Definite assignment is checked by CFG.
+                for stmt in pending:
+                    note(stmt.target, TypeExpr("generic", "list", (ANY,)))
+                break
+            for stmt in ready:
+                known = {
+                    n: next(iter(ts)) for n, ts in seen.items() if len(ts) == 1 and ANY not in ts
+                }
+                element = self.expr_type(stmt.value, known) or ANY
+                note(stmt.target, TypeExpr("generic", "list", (element,)))
+            ready_ids = {id(stmt) for stmt in ready}
+            pending = [stmt for stmt in pending if id(stmt) not in ready_ids]
         return {n: next(iter(ts)) for n, ts in seen.items() if len(ts) == 1 and ANY not in ts}
 
 

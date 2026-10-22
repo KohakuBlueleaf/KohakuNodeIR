@@ -117,6 +117,15 @@ pub fn write_statement(s: &Stmt) -> Result<String> {
             outs.push(label(l));
             call_head(&[write_expr(items)?], "each", &outs)
         }
+        Kind::Collect { items, item, index, label: l, value, target, has_index } => {
+            let mut outs = vec![item.clone().unwrap_or_else(|| "_".into())];
+            if *has_index {
+                outs.push(index.clone().unwrap_or_else(|| "_".into()));
+            }
+            outs.push(label(l));
+            outs.push(format!("{} -> {target}", write_expr(value)?));
+            call_head(&[write_expr(items)?], "collect", &outs)
+        }
         _ => return Err(KirError::Value("not a simple statement".into())),
     })
 }

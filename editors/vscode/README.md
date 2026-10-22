@@ -8,7 +8,7 @@ Editing support for KIR v2 (Kohaku Node IR) `.kir` files. No build step.
   | Element | Scope |
   |---|---|
   | `@use @def @meta @hint @mode @dataflow @try @except @typehint` | `keyword.control.directive` |
-  | `branch switch jump parallel each` | `support.function.builtin` |
+  | `branch switch jump parallel each collect` | `support.function.builtin` |
   | node names, `@use` prefixes (`g.` in `g.entity`) | `entity.name.function.call`, `entity.name.namespace` |
   | `@def` names | `entity.name.function.definition` |
   | `` `labels` `` and `namespace:` | `entity.name.tag.label` |
@@ -20,7 +20,7 @@ Editing support for KIR v2 (Kohaku Node IR) `.kir` files. No build step.
 - Comment toggling, bracket matching and auto-closing (including backticks),
   indentation after a line ending in `:` and dedent on `@except`,
   indentation-based folding.
-- Snippets: `branch`, `switch`, `each`, `eachi`, `loop` (namespace entered by
+- Snippets: `branch`, `switch`, `each`, `eachi`, `collect`, `collecti`, `loop` (namespace entered by
   `jump`), `parallel`, `@def`, `@try`, `@dataflow`, `@use`.
 - `.kirgraph` files open as JSON.
 - Language server client (`extension.js`): on opening a `.kir` file it starts
@@ -29,6 +29,21 @@ Editing support for KIR v2 (Kohaku Node IR) `.kir` files. No build step.
   go-to-definition for labels and `@def`. Install the server with
   `pip install "kohakunode[lsp]"` (the Rust core ships inside the kohakunode
   wheel). Command palette: **KIR: Restart Language Server**.
+
+## Collect loops
+
+``(items)collect(item[, index], `body`, value -> results)`` captures `value` at
+normal body completion, not at loop entry. Use the `collect` / `collecti`
+snippets for a body and capture expression. Completion, hover and signature help
+explain the deferred capture and final result publication; the arrow `->` is
+highlighted separately from the switch arrow `=>`.
+
+The checker diagnoses result-target references inside the body, escaping jumps,
+and prohibited global mutations. The CLI/editor pass list includes
+`expand_collect`. A Rust-selected language server uses native collect support
+when available; an older extension without the syntax emits a warning before
+using the Python reference for that document. Rebuild the extension to enable
+the native path.
 
 ## Record schemas
 

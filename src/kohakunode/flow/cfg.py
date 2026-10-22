@@ -2,7 +2,9 @@
 
 Nodes are simple statements (assignments, calls, builtins) plus synthetic
 ``entry``, ``exit`` and ``bind`` nodes. A ``bind`` node sits at the start of an
-``each`` body and writes the item and index names. Edges carry a kind:
+``each``/``collect`` body and writes the item and index names. A collect's
+``collect_sample`` reads its value only at normal body end; ``collect_done``
+writes the target only after successful completion. Edges carry a kind:
 ``flow`` or ``exc`` (from a statement inside a `@try` body to the handler,
 taken *before* the statement's writes).
 
@@ -14,6 +16,7 @@ from dataclasses import dataclass, field
 
 from kohakunode.syntax.ast import (
     Branch,
+    Collect,
     Dataflow,
     Def,
     Each,
@@ -24,6 +27,7 @@ from kohakunode.syntax.ast import (
     Switch,
     Try,
     TypeHints,
+    deferred_reads,
     reads,
     writes,
 )
@@ -50,7 +54,9 @@ class CFG:
     owners: dict[int, list[Stmt]] = field(
         default_factory=dict
     )  # id(namespace) -> entering builtins
-    binds: dict[int, int] = field(default_factory=dict)  # id(Each or Try) -> its bind node
+    binds: dict[int, int] = field(default_factory=dict)  # id(Each, Collect or Try) -> bind
+    samples: dict[int, int] = field(default_factory=dict)  # id(Collect) -> body-end value read
+    completions: dict[int, int] = field(default_factory=dict)  # id(Collect) -> result write
 
     def preds(self) -> list[list[tuple[int, str]]]:
         p: list[list[tuple[int, str]]] = [[] for _ in self.nodes]
@@ -82,7 +88,7 @@ class _Builder:
         self.g.nodes.append(CNode(kind, stmt, tuple(w), tuple(r)))
         self.g.succ.append([])
         n = len(self.g.nodes) - 1
-        if stmt is not None:
+        if stmt is not None and kind == "stmt":
             self.g.node_of[id(stmt)] = n
         return n
 
@@ -120,7 +126,16 @@ class _Builder:
                         self.edge_later(n, handler_entry, "exc")
                 after[i] = body_entry
             else:
-                n = self.new("stmt", s, writes(s) if not isinstance(s, Each) else (), reads(s))
+                n = self.new(
+                    "stmt", s, writes(s) if not isinstance(s, (Each, Collect)) else (), reads(s)
+                )
+                if isinstance(s, Collect):
+                    sample = self.new("collect_sample", s, r=deferred_reads(s))
+                    done = self.new("collect_done", s, w=(s.target,))
+                    self.g.samples[id(s)] = sample
+                    self.g.completions[id(s)] = done
+                    self.g.succ[sample].append((n, "flow"))
+                    self.edge_later(done, nxt)
                 nodes[i] = n
                 after[i] = lambda n=n: n
         # Namespace bodies: continuation depends on the builtin that owns them.
@@ -138,10 +153,11 @@ class _Builder:
                             cont_of[id(ns)] = self.ns_target(arms[k + 1])
                         else:
                             cont_of[id(ns)] = after[i + 1]
-                case Each():
+                case Each() | Collect():
                     ns = local.get(s.label)
                     if ns is not None:
-                        cont_of[id(ns)] = lambda n=nodes[i]: n
+                        end = self.g.samples[id(s)] if isinstance(s, Collect) else nodes[i]
+                        cont_of[id(ns)] = lambda n=end: n
         for i, s in enumerate(stmts):
             if isinstance(s, Namespace):
                 cont_ns = cont_of.get(id(s), after[i + 1])
@@ -179,7 +195,7 @@ class _Builder:
                 t = enter(s.label, chain)
                 if t is not None:
                     self.edge_later(n, t)
-            case Each():
+            case Each() | Collect():
                 t = enter(s.label, [local])
                 if t is not None:
                     names = [x for x in (s.item, s.index) if x is not None]
@@ -187,7 +203,10 @@ class _Builder:
                     self.g.binds[id(s)] = bind
                     self.g.succ[n].append((bind, "flow"))
                     self.edge_later(bind, t)
-                self.edge_later(n, nxt)
+                if isinstance(s, Collect):
+                    self.g.succ[n].append((self.g.completions[id(s)], "flow"))
+                else:
+                    self.edge_later(n, nxt)
             case _:
                 self.edge_later(n, nxt)
 

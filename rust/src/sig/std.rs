@@ -79,6 +79,8 @@ pub fn internal_library() -> &'static Library {
                 sig("kir.to_list", &[("items", "_")], &[("result", "list")]),
                 sig("kir.item_at", &[("items", "list"), ("index", "int")], &[("item", "_"), ("more", "_")]),
                 sig("kir.next_index", &[("index", "int")], &[("result", "int")]),
+                sig("kir.collect_items", &[("items", "_")], &[("result", "list")]),
+                sig("kir.collect_append", &[("items", "list"), ("item", "_")], &[("result", "list")]),
             ],
         )
     })

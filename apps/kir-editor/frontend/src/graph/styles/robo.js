@@ -58,8 +58,9 @@ function ctrlPort(dir, name, x, y, side = dir === "in" ? "top" : "bottom", extra
 }
 
 function inputLabel(p) {
-  if ("value" in p) return `${p.port} = ${shortLiteral(p.value, 16)}`
-  return p.type ? `${p.port}: ${p.type}` : p.port
+  const name = p.deferred === "body_end" ? `${p.port} (body end)` : p.port
+  if ("value" in p) return `${name} = ${shortLiteral(p.value, 16)}`
+  return p.type ? `${name}: ${p.type}` : name
 }
 
 function outputLabel(p) {
@@ -80,14 +81,16 @@ const RECT_TITLE = {
   },
 }
 
-const RECT_SHAPE = { inputs: "io", outputs: "io", try: "try", each: "each" }
+RECT_TITLE.collect = (n) => `collect → ${n.props?.target || "results"} (body end)`
 
-const CTRL_OUT_LABEL = { try: ["try", "except"], each: ["body", "done"] }
+const RECT_SHAPE = { inputs: "io", outputs: "io", try: "try", each: "each", collect: "each" }
+
+const CTRL_OUT_LABEL = { try: ["try", "except"], each: ["body", "done"], collect: ["body", "done"] }
 
 function rectGeometry(node, ctx) {
   const ins = node.inputs || []
   const outs = node.outputs || []
-  const isEach = node.kind === "each"
+  const isEach = ["each", "collect"].includes(node.kind)
   const title =
     node.kind === "call" ? node.name : (RECT_TITLE[node.kind] || (() => node.kind))(node)
   const inLabels = ins.map(inputLabel)

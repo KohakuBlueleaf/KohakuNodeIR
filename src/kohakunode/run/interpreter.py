@@ -3,7 +3,7 @@
 Runs any program, before or after any optimization pass. Control is a program counter ``(block, index)``; where
 a block ends is decided by what contains it, statically:
 
-- a namespace entered by ``each`` returns to the ``each``;
+- a namespace entered by ``each`` or ``collect`` returns to its owner;
 - a ``parallel`` arm continues with the next arm, the last one after the ``parallel``;
 - any other namespace continues after its own definition;
 - `@dataflow:` and `@try` bodies continue after their statement;
@@ -23,6 +23,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Dataflow,
     Def,
     Each,
@@ -112,7 +113,7 @@ class Interpreter:
 
     def _owner(self, ns: Namespace, block: list[Stmt]) -> tuple[Stmt, int] | None:
         for i, s in enumerate(block):
-            if isinstance(s, Each) and s.label == ns.label:
+            if isinstance(s, (Each, Collect)) and s.label == ns.label:
                 return s, i
             if isinstance(s, Parallel) and ns.label in s.labels:
                 return s, i
@@ -141,17 +142,40 @@ class Interpreter:
         pos = _Pos(root, 0)
         each_state: dict[int, tuple[list, int]] = {}
         resume_each: set[int] = set()
-        while True:
-            if pos.index >= len(pos.block):
-                if pos.block is root:
-                    return
-                pos = self._block_end(pos.block, resume_each)
-                continue
-            s = pos.block[pos.index]
-            try:
-                pos = self._exec(s, pos, each_state, resume_each)
-            except NodeFailure as exc:
-                pos = self._handle(s, pos.block, exc)
+        collected: dict[int, list] = {}
+        try:
+            while True:
+                if pos.index >= len(pos.block):
+                    if pos.block is root:
+                        return
+                    pos = self._block_end(pos.block, resume_each)
+                    continue
+                s = pos.block[pos.index]
+                try:
+                    pos = self._exec(s, pos, each_state, resume_each, collected)
+                except NodeFailure as exc:
+                    pos = self._handle(s, pos.block, exc)
+                    self._abandon_collects(pos.block, collected, each_state, resume_each)
+        finally:
+            # Drop private references on every exit, including control errors and
+            # cancellation. Published lists and ordinary scope values stay intact.
+            self._abandon_collects(None, collected, each_state, resume_each)
+
+    def _abandon_collects(self, block, collected, each_state, resume_each) -> None:
+        """Release builders whose owned bodies a failure has exited, including nested ones."""
+        active = set()
+        while block is not None and id(block) in self.parent:
+            parent, _, container = self.parent[id(block)]
+            if isinstance(container, Namespace):
+                owner = self._owner(container, parent)
+                if owner is not None and isinstance(owner[0], Collect):
+                    active.add(id(owner[0]))
+            block = parent
+        for key in tuple(collected):
+            if key not in active:
+                del collected[key]
+                each_state.pop(key, None)
+                resume_each.discard(key)
 
     def _block_end(self, block: list[Stmt], resume_each: set[int]) -> _Pos:
         pblock, i, container = self.parent[id(block)]
@@ -159,7 +183,7 @@ class Interpreter:
             owner = self._owner(container, pblock)
             if owner is not None:
                 stmt, oi = owner
-                if isinstance(stmt, Each):
+                if isinstance(stmt, (Each, Collect)):
                     resume_each.add(id(stmt))
                     return _Pos(pblock, oi)
                 labels = stmt.labels
@@ -191,7 +215,7 @@ class Interpreter:
             b = pblock
         raise exc
 
-    def _exec(self, s: Stmt, pos: _Pos, each_state, resume_each) -> _Pos:
+    def _exec(self, s: Stmt, pos: _Pos, each_state, resume_each, collected) -> _Pos:
         nxt = _Pos(pos.block, pos.index + 1)
         match s:
             case Namespace() | Def() | TypeHints():
@@ -225,15 +249,35 @@ class Interpreter:
                 return self._enter(pos.block, s.label, True)
             case Parallel():
                 return self._enter(pos.block, s.labels[0], False)
-            case Each():
+            case Each() | Collect():
                 if id(s) in resume_each:
                     resume_each.discard(id(s))
                     items, k = each_state[id(s)]
+                    if isinstance(s, Collect):
+                        # Normal completion only: retain the yielded reference in
+                        # a private builder, with no host hook or deep copy.
+                        collected[id(s)].append(self._value(s.value))
                     k += 1
                 else:
-                    items, k = list(self._value(s.items)), 0
+                    if isinstance(s, Collect):
+                        value = self._value(s.items)
+                        try:
+                            items = list(value)
+                        except KirRuntimeError:
+                            raise
+                        except Exception as exc:
+                            raise NodeFailure(
+                                "kir.collect_items", exc, s.line, origin=s.origin
+                            ) from exc
+                        k = 0
+                        collected[id(s)] = []
+                    else:
+                        items, k = list(self._value(s.items)), 0
                 each_state[id(s)] = (items, k)
                 if k >= len(items):
+                    if isinstance(s, Collect):
+                        self.scope.set(s.target, collected.pop(id(s)))
+                        each_state.pop(id(s))
                     return nxt
                 if s.item is not None:
                     self.scope.set(s.item, items[k])

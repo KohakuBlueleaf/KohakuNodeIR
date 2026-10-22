@@ -54,7 +54,7 @@ for `\N{...}` string escapes: 1.9 MB of wasm with it, 1.0 MB without
 | `format(source)` | canonical text |
 | `parse_to_json(source)` | the AST as JSON: `{uses, mode, body}`; statements have `kind`, `line`, `meta`, `hint` and their fields; expressions `{"name"}` / `{"literal"}`; types as text |
 | `check(source, sigs=[], *, base=None, sig_path=[])` | JSON list of `{code, message, line, severity}`; an unresolvable `@use` is `E002` |
-| `lower(source, sigs=[], passes=None, *, base=None, sig_path=[])` | text after the passes (default all: `order_dataflow, inline, expand_each, version, group, strip_meta`) |
+| `lower(source, sigs=[], passes=None, *, base=None, sig_path=[])` | text after the passes (default all: `order_dataflow, expand_collect, inline, expand_each, version, group, strip_meta`) |
 | `hashes(source, sigs=[], passes=None, *, base=None, sig_path=[])` | `hashes.json` text: `{"semantic", "full"}` |
 | `to_graph(source, sigs=[], data="wires", *, base=None, sig_path=[])` | `.kirgraph` text (`json.dumps(indent=2, ensure_ascii=False) + "\n"`); `data="variables"` draws every read as a `get` node and every write as a `set` node |
 | `from_graph(graph, with_meta=True)` | canonical text of a `.kirgraph` |
@@ -162,4 +162,43 @@ Record checks:
 cargo test --manifest-path rust/Cargo.toml --test records
 python rust/tests/parity/records.py
 node rust/tests/wasm/records.cjs
+```
+
+## Result-producing iteration (`collect`)
+
+The Rust parser, checker, graph conversion, compiler, Python extension and WASM
+exports support explicit collection without introducing expression evaluation:
+
+```text
+xs = [1, 2]
+(xs)collect(item, index, `body`, value -> results)
+body:
+    (item, index)add(value)
+```
+
+The item/index bindings follow `each` scope rules. Input is eagerly snapshotted;
+the value expression is sampled at each normal body end, and the ordered list is
+published to the target only after complete success (empty input produces `[]`).
+The checker models sampling/completion as distinct CFG nodes. The graph has a
+`collect` control node, `value` input marked `deferred: "body_end"`, and `results`
+output. The target cannot be read or written in its body, jumps cannot escape the
+body, and this initial increment rejects declared `mutates` calls anywhere in a
+program containing collection.
+
+`expand_collect` is a correctness fallback using the reserved
+`kir.collect_items` snapshot operation, a private accumulator, `each`, and
+`kir.collect_append` fresh-list appends. Snapshot evaluation precedes accumulator
+initialization, preserving failure attribution and leaving any prior target value
+untouched. It runs after `order_dataflow` and
+before `inline` in the default pass sequence. Explicit `expand_each` or `version`
+requires collection expansion first when any `collect` remains; legacy programs
+without collection retain their old pass choices and hashes. Source origins
+remain attached to generated operations. The Rust KIR library provides tooling
+and lowering, not an interpreter; direct execution is provided by the reference
+and Togeari runtimes.
+
+```sh
+cargo test --manifest-path rust/Cargo.toml --test collect
+python rust/tests/parity/collect.py
+node rust/tests/wasm/collect.cjs
 ```

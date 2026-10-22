@@ -24,7 +24,7 @@ import { Background } from "@vue-flow/background"
 import { ControlButton, Controls } from "@vue-flow/controls"
 import { MiniMap } from "@vue-flow/minimap"
 
-import { isValidConnection } from "@/graph/edit"
+import { isValidConnection as validConnection } from "@/graph/edit"
 import { useDocumentStore } from "@/stores/document"
 
 /**
@@ -51,6 +51,7 @@ const props = defineProps({
 
 const DRAG_MIME = "application/x-kir-node"
 const docStore = useDocumentStore()
+const isValidConnection = (connection) => validConnection(connection, docStore.graph)
 const root = ref(null)
 const layingOut = ref(false)
 const layoutError = ref(null)

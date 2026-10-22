@@ -240,7 +240,7 @@
     },
 
     "builtin-outputs": {
-      "begin": "(?<=\\))\\s*(branch|switch|jump|parallel|each)\\s*(\\()",
+      "begin": "(?<=\\))\\s*(branch|switch|jump|parallel|each|collect)\\s*(\\()",
       "beginCaptures": {
         "1": { "name": "support.function.builtin.kir" },
         "2": { "name": "punctuation.section.parens.begin.kir" }
@@ -274,7 +274,7 @@
       "patterns": [
         { "include": "#comment" },
         {
-          "match": "=>",
+          "match": "=>|->",
           "name": "keyword.operator.arrow.kir"
         },
         { "include": "#expression" }

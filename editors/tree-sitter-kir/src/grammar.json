@@ -460,6 +460,10 @@
                     {
                       "type": "SYMBOL",
                       "name": "case"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "collect_capture"
                     }
                   ]
                 },
@@ -490,6 +494,10 @@
                           {
                             "type": "SYMBOL",
                             "name": "case"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "collect_capture"
                           }
                         ]
                       }
@@ -518,6 +526,31 @@
         {
           "type": "STRING",
           "value": ")"
+        }
+      ]
+    },
+    "collect_capture": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expression"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "->"
+        },
+        {
+          "type": "FIELD",
+          "name": "target",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
         }
       ]
     },

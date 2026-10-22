@@ -72,11 +72,12 @@
         <InspectorField label="loop label (empty: a plain join)" :value="node.props?.label || ''" :commit="(t) => edit(setMergeLabel(t))" />
         <div class="text-[11px] text-warm-500">{{ node.ctrl_in.length }} incoming paths; a free slot on top takes one more.</div>
       </section>
-      <section v-else-if="node.kind === 'each'" class="grid grid-cols-2 gap-2">
+      <section v-else-if="['each', 'collect'].includes(node.kind)" class="grid grid-cols-2 gap-2">
         <InspectorField label="body namespace" :value="node.props.label" :commit="(t) => edit((n) => (n.props.label = ident(t)))" />
         <InspectorField label="item name" :value="node.props.item || ''" :commit="(t) => edit(setEachName('item', t))" />
         <InspectorField label="index name" :value="node.props.index || ''" :commit="(t) => edit(setEachName('index', t))" />
         <label class="flex items-center gap-1.5 text-[11px] text-warm-600 dark:text-warm-400 self-end pb-1"><input type="checkbox" class="accent-iolite" :checked="node.props.has_index" @change="edit((n) => (n.props.has_index = !n.props.has_index))" />bind index</label>
+        <InspectorField v-if="node.kind === 'collect'" label="result list (after completion)" :value="node.props.target" :commit="(t) => edit(setCollectTarget(t))" />
       </section>
       <section v-else-if="node.kind === 'parallel'" class="flex flex-col gap-2">
         <InspectorField v-for="port in node.ctrl_out" :key="port" :label="`${port} → namespace`" :value="node.props.labels[port]" :commit="(t) => edit((n) => (n.props.labels[port] = ident(t)))" />
@@ -99,6 +100,7 @@
               <span class="text-warm-800 dark:text-warm-100">{{ p.port }}</span>
               <span class="text-warm-500">{{ p.type || "_" }}</span>
               <span v-if="p.keyword" class="chip-warm">kw</span>
+              <span v-if="p.deferred === 'body_end'" class="chip-warm" title="Read after each normal body completion, not at loop entry">body end</span>
               <span class="flex-1" />
               <span v-if="wiredFrom(p.port)" class="text-iolite dark:text-iolite-light truncate" :title="wiredFrom(p.port)">← {{ wiredFrom(p.port) }}</span>
             </div>
@@ -204,6 +206,13 @@ const setEachName = (which, text) => (n) => {
   const name = text.trim() ? ident(text) : null
   n.props[which] = name
   const out = n.outputs.find((o) => o.port === which)
+  if (out) out.var = name
+}
+
+const setCollectTarget = (text) => (n) => {
+  const name = ident(text)
+  n.props.target = name
+  const out = n.outputs.find((o) => o.port === "results")
   if (out) out.var = name
 }
 

@@ -60,6 +60,14 @@ pub fn rename(stmts: &mut [Stmt], f: &dyn Fn(&str) -> String) {
                 rename_opt(index, f);
                 *label = f(label);
             }
+            Kind::Collect { items, item, index, label, value, target, .. } => {
+                rename_expr(items, f);
+                rename_opt(item, f);
+                rename_opt(index, f);
+                *label = f(label);
+                rename_expr(value, f);
+                *target = f(target);
+            }
             Kind::Namespace { label, .. } => *label = f(label),
             Kind::Try { error_name, .. } => rename_opt(error_name, f),
             _ => {}

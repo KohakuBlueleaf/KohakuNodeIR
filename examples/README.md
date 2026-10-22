@@ -14,6 +14,7 @@ python examples/run_examples.py
 | `comfyui/` | A ComfyUI UI workflow and an API prompt, for `kohakunode.comfyui` |
 | [`modules/`](modules/README.md) | Imported KIR library with branch + `each`, two call sites, lightweight hosts and source-origin sidecars; run separately with `python examples/modules/run.py` |
 | [`records/`](records/README.md) | Signature-only nested `Request`/`Point` records, explicit field operations, list alias safety and reference/lowering/graph equivalence; run separately with `python examples/records/run.py` |
+| [`collect/`](collect/README.md) | Ordered branch/nested collection, private-builder reference versus append baseline, graph roundtrips and allocation-work methodology; run separately with `python examples/collect/run.py` |
 
 Any of them works with the CLI too, for example:
 

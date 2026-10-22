@@ -6,6 +6,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Each,
     Jump,
     Literal,
@@ -26,6 +27,8 @@ class EachExpander:
         owned = {s.label for s in stmts if isinstance(s, Each)}
         out: list[Stmt] = []
         for s in stmts:
+            if isinstance(s, Collect):
+                raise ValueError("expand_each needs expand_collect while collect remains")
             if isinstance(s, Namespace) and s.label in owned:
                 continue
             if isinstance(s, Each):

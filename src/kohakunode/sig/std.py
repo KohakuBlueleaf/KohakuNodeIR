@@ -140,9 +140,16 @@ def print_value(value: Any) -> None:
     print(value)
 
 
+# The collect baseline uses the same fresh-list operation without user shadowing.
+INTERNAL.node("kir.collect_append")(append)
+
+
 @INTERNAL.node("kir.to_list")
 def to_list(items: Any) -> list:
     return list(items)
+
+
+INTERNAL.node("kir.collect_items")(to_list)
 
 
 @INTERNAL.node("kir.item_at", outputs=["item", "more"])

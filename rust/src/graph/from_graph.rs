@@ -478,16 +478,27 @@ impl<'g> GraphView<'g> {
                     out.push(self.decorate(Stmt::new(Kind::Dataflow { body }, None), n)?);
                     self.next_of(&c, "out")
                 }
-                "each" => {
+                "each" | "collect" => {
                     let items_port = array(n, "inputs")?.first().ok_or_else(|| gerr("each node without input"))?;
                     let items = self.expr(&c, items_port)?.unwrap_or(Expr::Literal(Value::List(vec![])));
                     let label = prop(n, "label").and_then(Json::as_str).ok_or_else(|| gerr("each without label"))?;
-                    let each = Kind::Each {
-                        items,
-                        item: self.bound(&c, "item", prop(n, "item"))?,
-                        index: self.bound(&c, "index", prop(n, "index"))?,
-                        label: label.to_string(),
-                        has_index: prop(n, "has_index").is_some_and(Json::truthy),
+                    let item = self.bound(&c, "item", prop(n, "item"))?;
+                    let index = self.bound(&c, "index", prop(n, "index"))?;
+                    let has_index = prop(n, "has_index").is_some_and(Json::truthy);
+                    let each = if kind == "collect" {
+                        let value_port = array(n, "inputs")?
+                            .iter()
+                            .find(|p| p.get("port").and_then(Json::as_str) == Some("value"))
+                            .filter(|p| p.get("deferred").and_then(Json::as_str) == Some("body_end"))
+                            .ok_or_else(|| gerr("collect requires a value input deferred to body_end"))?;
+                        let value = self.expr(&c, value_port)?;
+                        let target = self.bound(&c, "results", prop(n, "target"))?;
+                        let (Some(value), Some(target)) = (value, target.filter(|s| !s.is_empty())) else {
+                            return Err(gerr("collect requires a value expression and result target"));
+                        };
+                        Kind::Collect { items, item, index, label: label.to_string(), value, target, has_index }
+                    } else {
+                        Kind::Each { items, item, index, label: label.to_string(), has_index }
                     };
                     out.push(self.decorate(Stmt::new(each, None), n)?);
                     let mut inner_stop = stop.clone();
@@ -501,8 +512,10 @@ impl<'g> GraphView<'g> {
                 "outputs" | "get" | "set" | "value" => None,
                 other => return Err(gerr(format!("unknown node kind '{other}'"))),
             };
-            incoming_origin = if matches!(kind, "call" | "assign" | "dataflow" | "inputs" | "each") {
-                self.ctrl_origins.get(&(c.clone(), if kind == "each" { "done" } else { "out" }.into())).cloned()
+            incoming_origin = if matches!(kind, "call" | "assign" | "dataflow" | "inputs" | "each" | "collect") {
+                self.ctrl_origins
+                    .get(&(c.clone(), if matches!(kind, "each" | "collect") { "done" } else { "out" }.into()))
+                    .cloned()
             } else {
                 None
             };
@@ -620,7 +633,7 @@ impl<'g> GraphView<'g> {
             // entry marker, not provenance, determines whether a merge executes.
             let primary =
                 n.get("ctrl_in").and_then(Json::as_array).and_then(|ports| ports.first()).and_then(Json::as_str);
-            let source_entry = matches!(kind, "each" | "merge")
+            let source_entry = matches!(kind, "each" | "collect" | "merge")
                 && primary.is_some_and(|port| !self.ctrl_out.values().any(|dst| dst.0 == nid && dst.1 == port));
             if !self.ctrl_in[nid].is_empty() && kind != "inputs" && !source_entry {
                 continue;

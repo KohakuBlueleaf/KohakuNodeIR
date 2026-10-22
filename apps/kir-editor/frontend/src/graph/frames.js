@@ -20,7 +20,7 @@ const SAT_GAP = 8
 const HEAD = 26
 const PAD = 14
 
-const CONTROLLERS = new Set(["branch", "switch", "each", "parallel"])
+const CONTROLLERS = new Set(["branch", "switch", "each", "collect", "parallel"])
 
 /** Labels a controller statement enters, with a region title for each. */
 function armsOf(s) {
@@ -37,9 +37,10 @@ function armsOf(s) {
       ]
     case "parallel":
       return s.labels.map((l) => [l, `parallel · ${l}`])
-    case "each": {
+    case "each":
+    case "collect": {
       const names = [s.item || "_", ...(s.has_index ? [s.index || "_"] : [])].join(", ")
-      return [[s.label, `each ${names} · ${s.label}`]]
+      return [[s.label, `${s.type} ${names} · ${s.label}`]]
     }
     default:
       return []

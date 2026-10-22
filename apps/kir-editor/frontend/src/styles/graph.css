@@ -420,15 +420,18 @@ html.dark .kir-region__head {
   color: var(--kt-color-iolite-light);
 }
 .kir-region--loop,
+.kir-region--collect,
 .kir-region--each {
   border-color: rgb(212 146 10 / 0.5);
   background: rgb(212 146 10 / 0.05);
 }
 .kir-region--loop .kir-region__head,
+.kir-region--collect .kir-region__head,
 .kir-region--each .kir-region__head {
   color: var(--kt-color-amber-shadow);
 }
 html.dark .kir-region--loop .kir-region__head,
+html.dark .kir-region--collect .kir-region__head,
 html.dark .kir-region--each .kir-region__head {
   color: var(--kt-color-amber-light);
 }

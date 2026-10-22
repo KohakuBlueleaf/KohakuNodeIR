@@ -146,6 +146,19 @@ class Each(Stmt):
 
 
 @dataclass(eq=False)
+class Collect(Stmt):
+    """Collect ``value`` at each normal body end, publishing ``target`` on completion."""
+
+    items: Expr
+    item: str | None
+    index: str | None
+    label: str
+    value: Expr
+    target: str
+    has_index: bool = False
+
+
+@dataclass(eq=False)
 class Namespace(Stmt):
     label: str
     body: list[Stmt]
@@ -217,7 +230,7 @@ class Program:
     exports: list[str] = field(default_factory=list)
 
 
-BUILTINS = frozenset({"branch", "switch", "jump", "parallel", "each"})
+BUILTINS = frozenset({"branch", "switch", "jump", "parallel", "each", "collect"})
 
 
 def walk(stmts: list[Stmt]):
@@ -248,7 +261,7 @@ def labels_entered(s: Stmt) -> list[str]:
             return [s.label]
         case Parallel():
             return list(s.labels)
-        case Each():
+        case Each() | Collect():
             return [s.label]
     return []
 
@@ -260,8 +273,20 @@ def reads(s: Stmt) -> list[str]:
             return [n]
         case Call():
             return [a.value.id for a in s.args if isinstance(a.value, Name)]
-        case Branch(cond=Name(id=n)) | Switch(value=Name(id=n)) | Each(items=Name(id=n)):
+        case (
+            Branch(cond=Name(id=n))
+            | Switch(value=Name(id=n))
+            | Each(items=Name(id=n))
+            | Collect(items=Name(id=n))
+        ):
             return [n]
+    return []
+
+
+def deferred_reads(s: Stmt) -> list[str]:
+    """Names sampled at normal body end, never at the control statement's entry."""
+    if isinstance(s, Collect) and isinstance(s.value, Name):
+        return [s.value.id]
     return []
 
 
@@ -274,4 +299,6 @@ def writes(s: Stmt) -> list[str]:
             return [o for o in s.outs if o is not None]
         case Each():
             return [n for n in (s.item, s.index) if n is not None]
+        case Collect():
+            return [n for n in (s.item, s.index, s.target) if n is not None]
     return []

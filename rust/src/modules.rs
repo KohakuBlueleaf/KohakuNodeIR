@@ -268,6 +268,7 @@ impl Linker<'_> {
         let mut definitions = BTreeMap::new();
         for s in walk(&program.body) {
             let mut names = s.reads();
+            names.extend(s.deferred_reads());
             names.extend(s.writes());
             names.extend(s.labels_entered());
             match &s.kind {

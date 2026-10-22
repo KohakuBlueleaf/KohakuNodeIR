@@ -346,6 +346,18 @@ fn stmt_json(s: &Stmt) -> Json {
                 ("has_index", Json::Bool(*has_index)),
             ],
         ),
+        Kind::Collect { items, item, index, label, value, target, has_index } => (
+            "collect",
+            vec![
+                ("items", expr_json(items)),
+                ("item", opt(item)),
+                ("index", opt(index)),
+                ("label", Json::str(label)),
+                ("value", expr_json(value)),
+                ("target", Json::str(target)),
+                ("has_index", Json::Bool(*has_index)),
+            ],
+        ),
         Kind::Namespace { label, body } => ("namespace", vec![("label", Json::str(label)), ("body", stmts_json(body))]),
         Kind::Dataflow { body } => ("dataflow", vec![("body", stmts_json(body))]),
         Kind::Try { body, handler, error_name } => {

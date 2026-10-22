@@ -53,7 +53,7 @@ label:
 ```
 
 A labelled block. It is skipped when reached in sequence and entered only by
-`branch`, `switch`, `jump`, `parallel` or `each` (semantics.md).
+`branch`, `switch`, `jump`, `parallel`, `each` or `collect` (semantics.md).
 
 ### Builtins
 
@@ -67,6 +67,11 @@ All builtins use the node-call form; labels sit in the output list.
 | ``()parallel(`a`, `b`, ...)`` | enter every label; no order between them |
 | ``(items)each(item, `body`)`` | enter `body` once per element of `items`, bound to `item` |
 | ``(items)each(item, index, `body`)`` | the same, also binding the 0-based `index` |
+| ``(items)collect(item, `body`, value -> results)`` | collect the value read at each normal body completion; publish ordered `results` only on success |
+| ``(items)collect(item, index, `body`, value -> results)`` | the same, also binding the 0-based `index` |
+
+The collection result input is deferred, not read on entry. See [collect.md](collect.md)
+for carried state, exception behavior, target/control restrictions and initial mutation safety.
 
 ### Directives
 
@@ -120,7 +125,7 @@ call          = "(" [ in_list ] ")" FUNC "(" [ out_list ] ")" ;
 in_list       = in_item { "," in_item } [ "," ] ;
 in_item       = expr | IDENT "=" expr ;
 out_list      = out_item { "," out_item } [ "," ] ;
-out_item      = IDENT | "_" | LABEL | expr "=>" LABEL | "_" "=>" LABEL ;
+out_item      = IDENT | "_" | LABEL | expr "=>" LABEL | "_" "=>" LABEL | expr "->" IDENT ;
 
 namespace     = IDENT ":" NEWLINE [ INDENT { statement } DEDENT ] ;
 subgraph      = "@def" "(" [ params ] ")" IDENT "(" [ def_outs ] ")" ":" block ;

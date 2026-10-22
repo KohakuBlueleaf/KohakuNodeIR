@@ -41,10 +41,16 @@
       <template v-else-if="s.type === 'parallel'">
         <span class="sb-text">parallel → {{ s.labels.join(" / ") }}</span>
       </template>
-      <template v-else-if="s.type === 'each'">
-        <span class="sb-text">each {{ s.item }} in</span>
+      <template v-else-if="['each', 'collect'].includes(s.type)">
+        <span class="sb-text">{{ s.type }} {{ s.item }} in</span>
         <ScratchSlot :expr="s.items" @update="(e) => set(() => (s.items = e))" />
         <span class="sb-text">→ {{ s.label }}</span>
+        <template v-if="s.type === 'collect'">
+          <span class="sb-text">capture at body end</span>
+          <ScratchSlot :expr="s.value" @update="(e) => set(() => (s.value = e))" />
+          <span class="sb-text">→</span>
+          <ScratchName :value="s.target" @update="(n) => set(() => (s.target = n))" />
+        </template>
       </template>
       <span v-if="s.hint" class="sb-text sb-text--hint" :title="hintText">@hint</span>
       <button class="sb-del" title="Delete this block" @click.stop="remove"><span class="i-carbon-close" /></button>
@@ -64,9 +70,9 @@
               <span class="sb-text">switch</span>
               <ScratchSlot :expr="s.value" @update="(e) => set(() => (s.value = e))" />
             </template>
-            <template v-else-if="item.t === 'group' && s.type === 'each'">
+            <template v-else-if="item.t === 'group' && ['each', 'collect'].includes(s.type)">
               <span class="i-carbon-repeat text-xs" />
-              <span class="sb-text">for each</span>
+              <span class="sb-text">{{ s.type === 'collect' ? 'collect for each' : 'for each' }}</span>
               <ScratchName :value="s.item" allow-empty @update="(n) => set(() => (s.item = n))" />
               <template v-if="s.has_index">
                 <span class="sb-text">,</span>
@@ -117,6 +123,12 @@
         </div>
       </template>
       <div class="sb-block sb-c__bar sb-c__bar--bottom">
+        <template v-if="s?.type === 'collect'">
+          <span class="sb-text">capture at body end</span>
+          <ScratchSlot :expr="s.value" @update="(e) => set(() => (s.value = e))" />
+          <span class="sb-text">→</span>
+          <ScratchName :value="s.target" @update="(n) => set(() => (s.target = n))" />
+        </template>
         <span v-if="item.t === 'loop'" class="sb-text sb-text--foot">↺ repeats when the body jumps to {{ item.ns.label }}</span>
       </div>
     </div>
@@ -179,7 +191,7 @@ const mouths = computed(() => {
           const index = st.cases.findIndex((c) => c[1] === label)
           head = index >= 0 ? { kind: "case", index, label } : { text: "default", label }
         } else if (st.type === "parallel") head = { text: "arm", label }
-        else if (st.type === "each") head = { text: "do", label }
+        else if (["each", "collect"].includes(st.type)) head = { text: "do", label }
         return { list: a.items, loops, head }
       })
     }

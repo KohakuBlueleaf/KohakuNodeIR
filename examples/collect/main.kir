@@ -1,0 +1,18 @@
+@def (items: list)map_values(result: list):
+    (items)collect(item, index, `body`, value -> result)
+    body:
+        (item, 0)less(negative)
+        (negative)branch(`below_zero`, `nonnegative`)
+        below_zero:
+            value = None
+        nonnegative:
+            (item, index)add(value)
+
+([3, -1, 5])map_values(result)
+
+([0, 2, 3])collect(count, `row`, values -> rows)
+row:
+    (count)range(items)
+    (items)collect(item, `cell`, squared -> values)
+    cell:
+        (item, item)mul(squared)

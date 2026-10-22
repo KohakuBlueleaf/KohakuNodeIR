@@ -35,7 +35,8 @@ kwarg   = { name ~ "=" ~ expr }
 posarg  = { expr }
 
 out_list    = { out_item ~ ("," ~ out_item)* ~ ","? }
-out_item    = _{ out_default | out_discard | out_case | out_label | out_name }
+out_item    = _{ out_default | out_collect | out_discard | out_case | out_label | out_name }
+out_collect = { expr ~ "->" ~ name }
 out_default = { WILDCARD ~ "=>" ~ label }
 out_discard = { WILDCARD }
 out_case    = { expr ~ "=>" ~ label }

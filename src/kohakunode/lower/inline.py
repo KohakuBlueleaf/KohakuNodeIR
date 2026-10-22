@@ -8,6 +8,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Def,
     Each,
     Jump,
@@ -49,11 +50,14 @@ def rename(stmts: list[Stmt], f) -> None:
                 s.label = f(s.label)
             case Parallel():
                 s.labels = [f(x) for x in s.labels]
-            case Each():
+            case Each() | Collect():
                 s.items = _rename_expr(s.items, f)
                 s.item = f(s.item) if s.item else None
                 s.index = f(s.index) if s.index else None
                 s.label = f(s.label)
+                if isinstance(s, Collect):
+                    s.value = _rename_expr(s.value, f)
+                    s.target = f(s.target)
             case Namespace():
                 s.label = f(s.label)
             case Try():

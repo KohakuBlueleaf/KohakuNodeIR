@@ -1,0 +1,9 @@
+(xs)collect(item, i, `body`, value -> results)
+#    ^ function.builtin
+#           ^ variable
+#                    ^ label
+#                            ^ variable
+#                                  ^ operator
+#                                     ^ variable
+body:
+    value = item

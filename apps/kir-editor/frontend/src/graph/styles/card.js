@@ -37,6 +37,7 @@ function ctrlLabel(node, dir, name) {
     case "parallel":
       return p.labels?.[name] ?? name
     case "each":
+    case "collect":
       return name === "body" ? `body · ${p.label ?? ""}` : "done"
     default:
       return name
@@ -49,6 +50,7 @@ const TITLE = {
   switch: () => "switch",
   merge: (n) => (n.props?.label ? `loop ${n.props.label}` : "merge"),
   each: () => "each",
+  collect: () => "collect · capture at body end",
   parallel: () => "parallel",
   try: (n) => (n.props?.error_name ? `try · except ${n.props.error_name}` : "try"),
   inputs: () => "inputs",
@@ -64,6 +66,7 @@ export const ACCENT = {
   switch: "iolite",
   merge: "iolite",
   each: "iolite",
+  collect: "iolite",
   parallel: "iolite",
   try: "coral",
   inputs: "sage",
@@ -119,7 +122,7 @@ export function cardGeometry(node, ctx = {}) {
   const headOut = ctrlOut.length === 1 ? ctrlOut[0] : null
   const left = [
     ...ctrlIn.filter((c) => c !== headIn).map((c) => ({ flow: "ctrl", name: c, label: ctrlLabel(node, "in", c), free: c === mergeSlot(node) && node.kind === "merge" })),
-    ...(node.inputs || []).map((p) => ({ flow: "data", p, label: p.port })),
+    ...(node.inputs || []).map((p) => ({ flow: "data", p, label: p.deferred === "body_end" ? `${p.port} (body end)` : p.port })),
   ]
   const right = [
     ...ctrlOut.filter((c) => c !== headOut).map((c) => ({ flow: "ctrl", name: c, label: ctrlLabel(node, "out", c) })),

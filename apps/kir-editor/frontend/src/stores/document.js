@@ -372,7 +372,7 @@ export const useDocumentStore = defineStore("document", {
     },
 
     connect(connection) {
-      if (!isValidConnection(connection)) return
+      if (!isValidConnection(connection, this.graph)) return
       this.record()
       if (connect(this.graph, connection)) this.commitGraph()
       else this.dropRecord()

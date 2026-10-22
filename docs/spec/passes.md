@@ -5,7 +5,7 @@ editors) or as text, and it can be rewritten by optimization passes. Each pass
 takes a KIR program and returns a simpler KIR program with the same meaning,
 so the program after any number of passes is still valid KIR and runs on the
 interpreter. Running every pass gives the most directly interpretable form:
-no `@def`, no `each`, every name versioned, straight runs grouped. Which form
+no `@def`, no `each` or `collect`, every name versioned, straight runs grouped. Which form
 a tool uses is its own choice; nothing in the text marks it.
 
 Passes run in this order; a pass may need earlier ones, as listed. Every name
@@ -15,6 +15,7 @@ only on programs that pass the checker (checks.md).
 | Pass | Needs | Does |
 |---|---|---|
 | `order_dataflow` | — | order each `@dataflow:` block by data; apply `@mode dataflow` |
+| `expand_collect` | — | lower ordered collection to private accumulation and `each` |
 | `inline` | `order_dataflow` | replace `@def` calls by renamed copies of their bodies |
 | `expand_each` | — | rewrite `each` as a loop of builtins and internal nodes |
 | `version` | `order_dataflow`, `inline`, `expand_each` | one version per write; home versions at merges |
@@ -31,6 +32,21 @@ among themselves. A cycle is an error (`E033`). The `@mode` line is dropped.
 
 Interpreters apply the same ordering when they run a program, so this pass
 changes nothing about what the program does.
+
+## `expand_collect`
+
+Each collection receives a hygienic private accumulator. `kir.collect_items`
+snapshots the input; `each` executes the body; `kir.collect_append` appends its
+body-end result by returning a fresh list; a final assignment publishes the user
+target only on successful completion. Both helpers are reserved deterministic
+internal nodes, not calls that host-library shadowing can change. Origins mark
+items/init/append/result operations. The direct reference and native runtime may
+use private linear accumulation instead of the quadratic copying baseline.
+
+`expand_collect` normally precedes `inline`, but supports already-inlined bodies.
+`expand_each` and `version` reject a remaining collection; custom pass sequences
+without collections retain their existing requirements. See [collect.md](collect.md)
+for control, exception, alias restrictions and replay behavior.
 
 ## `inline`
 

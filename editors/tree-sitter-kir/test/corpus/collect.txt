@@ -1,0 +1,44 @@
+================================================================================
+Collect captures at body end with optional index
+================================================================================
+
+(xs)collect(item, i, `body`, value -> results)
+body:
+    value = item
+([])collect(_, `empty`, None -> values)
+empty:
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (call
+    (input_list (identifier))
+    (node_name (identifier))
+    (output_list (identifier) (identifier) (label)
+      (collect_capture (identifier) (identifier))))
+  (namespace (identifier) (block (assignment (identifier) (identifier))))
+  (call
+    (input_list (list))
+    (node_name (identifier))
+    (output_list (wildcard) (label) (collect_capture (none) (identifier))))
+  (namespace (identifier)))
+
+================================================================================
+Collect capture target cannot be discarded
+:error
+================================================================================
+
+(xs)collect(item, `body`, item -> _)
+body:
+
+---
+
+================================================================================
+Capture arrow needs a value and target
+:error
+================================================================================
+
+(xs)collect(item, `body`, -> results)
+body:
+
+---

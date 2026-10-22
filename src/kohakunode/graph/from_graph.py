@@ -17,6 +17,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Dataflow,
     Def,
     Each,
@@ -301,14 +302,27 @@ class _Graph:
                     )
                 )
                 nxt = self.next_of(cur)
-            elif kind == "each":
+            elif kind in ("each", "collect"):
                 p = n["props"]
                 items = self.expr(cur, n["inputs"][0]) or Literal([])
                 item = self.bound(cur, "item", p.get("item"))
                 index = self.bound(cur, "index", p.get("index"))
-                out.append(
-                    self.decorate(Each(items, item, index, p["label"], bool(p.get("has_index"))), n)
-                )
+                if kind == "collect":
+                    value_port = next(
+                        (port for port in n["inputs"] if port["port"] == "value"), None
+                    )
+                    if value_port is None or value_port.get("deferred") != "body_end":
+                        raise KirGraphError("collect requires a value input deferred to body_end")
+                    value = self.expr(cur, value_port)
+                    target = self.bound(cur, "results", p.get("target"))
+                    if value is None or not isinstance(target, str) or not target:
+                        raise KirGraphError("collect requires a value expression and result target")
+                    statement = Collect(
+                        items, item, index, p["label"], value, target, bool(p.get("has_index"))
+                    )
+                else:
+                    statement = Each(items, item, index, p["label"], bool(p.get("has_index")))
+                out.append(self.decorate(statement, n))
                 out.append(
                     self.namespace(
                         p["label"], self.chain(self.next_of(cur, "body"), stop | {cur}), n, "body"
@@ -391,7 +405,7 @@ class _Graph:
             # input identifies it; an explicit entry marker below determines
             # whether a labelled merge is entered or only declares a namespace.
             source_entry = (
-                n["kind"] in ("each", "merge")
+                n["kind"] in ("each", "collect", "merge")
                 and n.get("ctrl_in")
                 and not any(dst[:2] == (nid, n["ctrl_in"][0]) for dst in self.ctrl_out.values())
             )

@@ -16,7 +16,7 @@
  * of its namespaces) unchanged.
  */
 
-export const CONTROLLERS = new Set(["branch", "switch", "each", "parallel"])
+export const CONTROLLERS = new Set(["branch", "switch", "each", "collect", "parallel"])
 
 /** Labels a controller statement enters, in the order its arms are shown. */
 export function armLabels(s) {
@@ -28,6 +28,7 @@ export function armLabels(s) {
     case "parallel":
       return [...s.labels]
     case "each":
+    case "collect":
       return [s.label]
     default:
       return []
@@ -189,7 +190,8 @@ export function variables(tree) {
     for (const s of stmts) {
       if (s.type === "assign") out.add(s.target)
       for (const o of s.outs || []) if (o) out.add(o)
-      if (s.type === "each") for (const n of [s.item, s.index]) if (n) out.add(n)
+      if (s.type === "each" || s.type === "collect") for (const n of [s.item, s.index]) if (n) out.add(n)
+      if (s.type === "collect") out.add(s.target)
       if (s.type === "try" && s.error_name) out.add(s.error_name)
       for (const p of s.params || []) out.add(p.name)
       for (const k of ["body", "handler"]) if (Array.isArray(s[k])) walk(s[k])

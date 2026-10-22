@@ -14,6 +14,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Dataflow,
     Def,
     Each,
@@ -114,6 +115,12 @@ def _simple(s: Stmt) -> str:
             return _call_head([], "jump", [f"`{s.label}`"])
         case Parallel():
             return _call_head([], "parallel", [f"`{x}`" for x in s.labels])
+        case Collect():
+            outs = [s.item or "_"]
+            if s.has_index:
+                outs.append(s.index or "_")
+            outs += [f"`{s.label}`", f"{write_expr(s.value)} -> {s.target}"]
+            return _call_head([write_expr(s.items)], "collect", outs)
         case Each():
             outs = [s.item or "_"]
             if s.has_index:

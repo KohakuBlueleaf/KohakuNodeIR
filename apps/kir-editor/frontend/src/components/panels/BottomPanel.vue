@@ -55,7 +55,7 @@
           <button v-for="p in docStore.passCatalog" :key="p.name" class="kir-pass" :class="{ 'kir-pass--on': docStore.passesOn.includes(p.name) }" :title="`${p.doc}${p.needs.length ? `\nneeds: ${p.needs.join(', ')}` : ''}`" @click="docStore.togglePass(p.name)">{{ p.name }}</button>
           <span class="text-[11px] text-warm-500 ml-1">{{ passSummary }} · Lower and Run use this selection</span>
         </div>
-        <div v-if="!docStore.lowerResult" class="text-warm-500">Lower shows the program after the selected passes (all of them: no @def, no each, versioned names, straight runs grouped) and its hashes.</div>
+        <div v-if="!docStore.lowerResult" class="text-warm-500">Lower shows the program after the selected passes (all of them: no @def, no collect or each, versioned names, straight runs grouped) and its hashes.</div>
         <template v-else-if="docStore.lowerResult.lowered != null">
           <div class="flex flex-wrap gap-x-4 gap-y-1 mb-2 font-mono text-[11px]">
             <span><span class="text-warm-500">semantic</span> {{ docStore.lowerResult.semantic_hash }}</span>

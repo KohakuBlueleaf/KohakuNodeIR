@@ -52,6 +52,7 @@ const ICON = {
   switch: "i-carbon-tree-view-alt",
   merge: "i-carbon-direction-merge",
   each: "i-carbon-repeat",
+  collect: "i-carbon-repeat",
   parallel: "i-carbon-split",
   try: "i-carbon-warning-alt",
   inputs: "i-carbon-login",

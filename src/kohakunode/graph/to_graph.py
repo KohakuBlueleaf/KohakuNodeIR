@@ -8,6 +8,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Dataflow,
     Def,
     Each,
@@ -273,6 +274,12 @@ class _Scope:
                     continue
                 case Namespace():
                     if id(s) not in self.emitted:
+                        # A collect body can be declared before its controller.
+                        # Its body runs from the collect, never by declaration order.
+                        if any(
+                            isinstance(owner, Collect) for owner in self.cfg.owners.get(id(s), [])
+                        ):
+                            continue
                         # Never entered: keep it as an unreachable labelled chain.
                         m = self.labelled_merge(s)
                         self.pending.setdefault(id(s), []).extend(self.namespace(s, [(m, "out")]))
@@ -354,19 +361,28 @@ class _Scope:
                         if ns is not None:
                             self.emitted.add(id(ns))
                             incoming += self.namespace(ns, [(n["id"], port)])
-                case Each():
+                case Each() | Collect():
+                    collecting = isinstance(s, Collect)
+                    kind = "collect" if collecting else "each"
+                    props = {
+                        "label": s.label,
+                        "item": s.item,
+                        "index": s.index,
+                        "has_index": s.has_index,
+                    }
+                    inputs = [{"port": "items"}]
+                    outputs = [self.out_entry("item", s.item), self.out_entry("index", s.index)]
+                    if collecting:
+                        props["target"] = s.target
+                        inputs.append({"port": "value", "deferred": "body_end"})
+                        outputs.append(self.out_entry("results", s.target))
                     n = self.node(
-                        "each",
-                        "each",
+                        kind,
+                        kind,
                         s,
-                        props={
-                            "label": s.label,
-                            "item": s.item,
-                            "index": s.index,
-                            "has_index": s.has_index,
-                        },
-                        inputs=[{"port": "items"}],
-                        outputs=[self.out_entry("item", s.item), self.out_entry("index", s.index)],
+                        props=props,
+                        inputs=inputs,
+                        outputs=outputs,
                         ctrl_in=["in", "next"],
                         ctrl_out=["body", "done"],
                     )
@@ -374,11 +390,20 @@ class _Scope:
                     self.join(incoming, (n["id"], "in"))
                     self.bind_out((n["id"], "item"), s.item)
                     self.bind_out((n["id"], "index"), s.index)
+                    if collecting:
+                        self.bind_out((n["id"], "results"), s.target)
                     ns = local.get(s.label)
                     if ns is not None:
                         self.emitted.add(id(ns))
                         ends = self.namespace(ns, [(n["id"], "body")])
                         self.join(ends, (n["id"], "next"))
+                    if collecting:
+                        # This input is sampled only after the namespace ends.
+                        # Emit its wire after all body writers have graph nodes.
+                        if isinstance(s.value, Literal):
+                            inputs[1]["value"] = _json_literal(s.value.value)
+                        else:
+                            self.wire_read(self.cfg.samples[id(s)], s.value.id, (n["id"], "value"))
                     incoming = [(n["id"], "done")]
                 case Jump():
                     edge_start = len(self.edges)

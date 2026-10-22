@@ -31,6 +31,7 @@ struct PortEntry {
     var: Option<Option<String>>,
     ty: Option<String>,
     value: Option<Json>,
+    deferred: Option<&'static str>,
 }
 
 impl PortEntry {
@@ -48,6 +49,9 @@ impl PortEntry {
         }
         if let Some(t) = &self.ty {
             o.push(("type".into(), Json::str(t)));
+        }
+        if let Some(deferred) = self.deferred {
+            o.push(("deferred".into(), Json::str(deferred)));
         }
         if let Some(v) = &self.value {
             o.push(("value".into(), v.clone()));
@@ -517,6 +521,14 @@ impl<'a> Scope<'a> {
                 Kind::Def(_) | Kind::TypeHints { .. } => continue,
                 Kind::Namespace { .. } => {
                     if !self.emitted.contains(&s.uid) {
+                        if self
+                            .cfg
+                            .owners
+                            .get(&s.uid)
+                            .is_some_and(|owners| owners.iter().any(|owner| matches!(owner.kind, Kind::Collect { .. })))
+                        {
+                            continue;
+                        }
                         // Never entered: keep it as an unreachable labelled chain.
                         let m = self.labelled_merge(s, None)?;
                         let ends = self.namespace(s, vec![port_ref(&m, "out")])?;
@@ -604,29 +616,54 @@ impl<'a> Scope<'a> {
                         }
                     }
                 }
-                Kind::Each { items, item, index, label, has_index } => {
-                    let g = GNode::new("each").props(vec![
+                Kind::Each { items, item, index, label, has_index }
+                | Kind::Collect { items, item, index, label, has_index, .. } => {
+                    let collect = match &s.kind {
+                        Kind::Collect { value, target, .. } => Some((value, target)),
+                        _ => None,
+                    };
+                    let kind = if collect.is_some() { "collect" } else { "each" };
+                    let mut g = GNode::new(kind).props(vec![
                         ("label", Json::str(label)),
                         ("item", Json::opt_str(item.as_deref())),
                         ("index", Json::opt_str(index.as_deref())),
                         ("has_index", Json::Bool(*has_index)),
                     ]);
-                    let outputs = vec![
+                    let mut outputs = vec![
                         self.out_entry("item", item.as_deref(), None),
                         self.out_entry("index", index.as_deref(), None),
                     ];
-                    let g = GNode { inputs: Some(vec![PortEntry::named("items")]), outputs: Some(outputs), ..g }
+                    let mut inputs = vec![PortEntry::named("items")];
+                    if let Some((_, target)) = collect {
+                        g.props.as_mut().unwrap().insert("target", Json::str(target));
+                        inputs.push(PortEntry { deferred: Some("body_end"), ..PortEntry::named("value") });
+                        outputs.push(self.out_entry("results", Some(target), None));
+                    }
+                    let g = GNode { inputs: Some(inputs), outputs: Some(outputs), ..g }
                         .ctrl(&["in", "next"], &["body", "done"]);
-                    let n = self.node(g, "each", Some(s))?;
+                    let n = self.node(g, kind, Some(s))?;
                     let id = self.id(n);
                     self.read_expr(s, items, port_ref(&id, "items"), n)?;
                     self.join(incoming, port_ref(&id, "in"))?;
                     self.bind_out(port_ref(&id, "item"), item.as_deref())?;
                     self.bind_out(port_ref(&id, "index"), index.as_deref())?;
+                    if let Some((_, target)) = collect {
+                        self.bind_out(port_ref(&id, "results"), Some(target))?;
+                    }
                     if let Some(&ns) = local.get(label.as_str()) {
                         self.emitted.insert(ns.uid);
                         let ends = self.namespace(ns, vec![port_ref(&id, "body")])?;
                         self.join(ends, port_ref(&id, "next"))?;
+                    }
+                    if let Some((value, _)) = collect {
+                        match value {
+                            Expr::Literal(value) => {
+                                self.nodes[n].inputs.as_mut().unwrap()[1].value = Some(json_literal(value))
+                            }
+                            Expr::Name(name) => {
+                                self.wire_read(self.cfg.samples[&s.uid], name, port_ref(&id, "value"))?
+                            }
+                        }
                     }
                     incoming = vec![port_ref(&id, "done")];
                 }

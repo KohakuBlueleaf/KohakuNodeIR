@@ -71,7 +71,10 @@ module.exports = grammar({
 
     keyword_argument: ($) => seq(field("name", $.identifier), "=", field("value", $._expression)),
 
-    output_list: ($) => seq("(", optional(commaSep1(choice($.identifier, $.wildcard, $.label, $.case))), ")"),
+    output_list: ($) => seq("(", optional(commaSep1(choice($.identifier, $.wildcard, $.label, $.case, $.collect_capture))), ")"),
+
+    collect_capture: ($) =>
+      seq(field("value", $._expression), "->", field("target", $.identifier)),
 
     case: ($) =>
       seq(field("value", choice($._literal, $.identifier, $.wildcard)), "=>", field("label", $.label)),

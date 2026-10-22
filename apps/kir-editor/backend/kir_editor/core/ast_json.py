@@ -14,6 +14,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Dataflow,
     Def,
     Each,
@@ -133,6 +134,17 @@ def stmt_to_json(s: Stmt) -> dict:
                 "label": s.label,
                 "has_index": s.has_index,
             }
+        case Collect():
+            out |= {
+                "type": "collect",
+                "items": _expr(s.items),
+                "item": s.item,
+                "index": s.index,
+                "label": s.label,
+                "value": _expr(s.value),
+                "target": s.target,
+                "has_index": s.has_index,
+            }
         case Namespace():
             out |= {"type": "namespace", "label": s.label, "body": block_to_json(s.body)}
         case Dataflow():
@@ -227,6 +239,16 @@ def _build(d: dict) -> Stmt:
                 d.get("item"),
                 d.get("index"),
                 d["label"],
+                bool(d.get("has_index")),
+            )
+        case "collect":
+            return Collect(
+                _expr_from(d["items"]),
+                d.get("item"),
+                d.get("index"),
+                d["label"],
+                _expr_from(d["value"]),
+                d["target"],
                 bool(d.get("has_index")),
             )
         case "namespace":

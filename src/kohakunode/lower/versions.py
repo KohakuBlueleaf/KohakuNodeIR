@@ -14,6 +14,7 @@ from kohakunode.syntax.ast import (
     Assign,
     Branch,
     Call,
+    Collect,
     Name,
     Program,
     Stmt,
@@ -29,6 +30,8 @@ def _home(name: str) -> str:
 
 
 def version_program(program: Program) -> None:
+    if any(isinstance(stmt, Collect) for stmt in walk(program.body)):
+        raise ValueError("version needs expand_collect while collect remains")
     g = build_cfg(program.body)
     inn = reaching(g)
     # Version numbers in text order.

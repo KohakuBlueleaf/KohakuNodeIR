@@ -20,7 +20,7 @@ export const targetHandle = (e) => handleId(e.kind === "ctrl" ? "ctrl" : "data",
 export function isBackEdge(e, byId) {
   if (e.kind !== "ctrl") return false
   const target = byId.get(e.to.node)
-  if (target?.kind === "each") return e.to.port === "next"
+  if (["each", "collect"].includes(target?.kind)) return e.to.port === "next"
   if (target?.kind !== "merge" || !target.props?.label) return false
   // The first entry into a loop merge comes from before the loop; the others come back to it.
   return e.to.port !== "in_0"

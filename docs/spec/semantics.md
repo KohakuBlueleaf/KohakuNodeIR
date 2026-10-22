@@ -75,6 +75,13 @@ did not declare.
   returns to `each` for the next element. After the last element (or none),
   execution continues after the body's namespace. A `jump` out of the body
   ends the loop.
+- **`collect`**: snapshots the finite input and executes its body like `each`,
+  reading one yielded expression at each normal body completion. Results are a
+  fresh list in input order, assigned only after complete success. Carried state
+  and prior writes/effects retain sequential meaning. Escaping jumps and target
+  references inside the body are rejected. Initially, programs containing this
+  construct cannot call declared `mutates` nodes, to avoid unsafe container aliases.
+  See [collect.md](collect.md) for precise failure and lowering behavior.
 
 ## Subgraphs
 
