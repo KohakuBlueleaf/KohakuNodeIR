@@ -9,7 +9,7 @@ use pest_derive::Parser;
 
 use crate::errors::{KirError, Result};
 use crate::syntax::ast::{
-    Arg, Def, Directives, Expr, Kind, OutParam, Param, Program, Stmt, TypeExpr, TypeHintEntry, Use,
+    Arg, Def, Directives, Expr, Import, Kind, OutParam, Param, Program, Stmt, TypeExpr, TypeHintEntry, Use,
 };
 use crate::syntax::indenter::{self, Marked};
 use crate::syntax::strlit;
@@ -25,6 +25,8 @@ enum Item {
     Meta(Directives),
     Hint(Directives),
     Use(Use),
+    Import(Import),
+    Export(String),
     Mode(String),
 }
 
@@ -129,7 +131,7 @@ impl Builder<'_> {
             _ => {}
         }
         let mut inner = p.into_inner();
-        let name = inner.next().expect("type name").as_str().to_string();
+        let name = func_name(inner.next().expect("type name"));
         let mut t = TypeExpr::Name(name.clone());
         for part in inner {
             match part.as_rule() {
@@ -205,6 +207,13 @@ impl Builder<'_> {
                 let library = self.string(&inner.next().expect("library"))?;
                 Item::Use(Use { library, alias: inner.next().map(|a| a.as_str().to_string()) })
             }
+            Rule::import_decl => {
+                let mut inner = p.into_inner();
+                let module = self.string(&inner.next().expect("module"))?;
+                let alias = inner.next().expect("alias").as_str().to_string();
+                Item::Import(Import { module, alias })
+            }
+            Rule::export_decl => Item::Export(p.into_inner().next().expect("export").as_str().to_string()),
             Rule::meta => Item::Meta(self.directives(p)?),
             Rule::hint => Item::Hint(self.directives(p)?),
             Rule::mode => Item::Mode(p.into_inner().next().expect("mode").as_str().to_string()),
@@ -461,6 +470,8 @@ fn attach(items: Vec<Item>) -> Result<Vec<Stmt>> {
                 out.push(*s);
             }
             Item::Use(_) => return Err(err("@use is only allowed at the top of a file")),
+            Item::Import(_) => return Err(err("@import is only allowed at the top of a file")),
+            Item::Export(_) => return Err(err("@export is only allowed at the top of a file")),
             Item::Mode(_) => return Err(err("@mode is only allowed at the top of a file")),
         }
     }
@@ -551,9 +562,11 @@ pub fn parse(source: &str) -> Result<Program> {
         file.into_inner().filter(|p| p.as_rule() != Rule::EOI).map(|p| b.item(p)).collect::<Result<Vec<_>>>()?;
     let mut program = Program::default();
     let mut rest = items.into_iter().peekable();
-    while let Some(Item::Use(_) | Item::Mode(_)) = rest.peek() {
+    while let Some(Item::Use(_) | Item::Import(_) | Item::Export(_) | Item::Mode(_)) = rest.peek() {
         match rest.next() {
             Some(Item::Use(u)) => program.uses.push(u),
+            Some(Item::Import(i)) => program.imports.push(i),
+            Some(Item::Export(e)) => program.exports.push(e),
             Some(Item::Mode(m)) => program.mode = Some(m),
             _ => unreachable!("peeked"),
         }

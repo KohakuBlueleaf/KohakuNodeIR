@@ -14,6 +14,7 @@ from kohakunode.flow.order import sort_dataflow
 from kohakunode.lower.each import EachExpander
 from kohakunode.lower.inline import Inliner
 from kohakunode.lower.versions import version_program
+from kohakunode.origins import derive_origin
 from kohakunode.sig.env import NodeEnv, Resolved
 from kohakunode.syntax.ast import (
     Assign,
@@ -68,7 +69,7 @@ def group(p: Program, env: NodeEnv) -> None:
 
 
 def strip_meta(p: Program, env: NodeEnv) -> None:
-    """Drop `@meta` (editor data); `@hint` stays."""
+    """Drop `@meta` (editor data); `@hint` and source origins stay."""
     for s in walk(p.body):
         s.meta = {}
 
@@ -112,6 +113,12 @@ def lower(program: Program, env: NodeEnv) -> Program:
     return run_passes(program, env)
 
 
+def _group_run(run: list[Stmt]) -> Dataflow:
+    """Attribute a new wrapper to its first sourced statement; retain all child origins."""
+    origin = next((s.origin for s in run if s.origin is not None), None)
+    return Dataflow(run, origin=derive_origin(origin, generated="group"))
+
+
 def _group(stmts: list[Stmt]) -> list[Stmt]:
     """Wrap straight runs of assignments and calls in `@dataflow:` blocks.
 
@@ -133,19 +140,19 @@ def _group(stmts: list[Stmt]) -> list[Stmt]:
     for s in flat:
         if isinstance(s, (Assign, Call)):
             if read & set(writes(s)):
-                out.append(Dataflow(run))
+                out.append(_group_run(run))
                 run, read = [], set()
             run.append(s)
             read |= set(reads(s))
             continue
         if run:
-            out.append(Dataflow(run))
+            out.append(_group_run(run))
             run, read = [], set()
         for body in children(s):
             body[:] = _group(body)
         out.append(s)
     if run:
-        out.append(Dataflow(run))
+        out.append(_group_run(run))
     return out
 
 

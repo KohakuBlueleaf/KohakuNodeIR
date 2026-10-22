@@ -8,6 +8,7 @@ the paths out of a failing `@try` body.
 """
 
 from kohakunode.flow.cfg import UNDEF, build_cfg, defs_of, reaching
+from kohakunode.origins import derive_origin
 from kohakunode.syntax.ast import (
     Arg,
     Assign,
@@ -73,14 +74,28 @@ def version_program(program: Program) -> None:
                     old = s.target
                     s.target = wv(n, old)
                     if old in homes:
-                        copies.append(Assign(_home(old), Name(s.target), line=s.line))
+                        copies.append(
+                            Assign(
+                                _home(old),
+                                Name(s.target),
+                                line=s.line,
+                                origin=derive_origin(s.origin, generated="version.home"),
+                            )
+                        )
                 case Call():
                     s.args = [Arg(read(n, a.value), a.key) for a in s.args]
                     olds = s.outs
                     s.outs = [wv(n, o) for o in olds]
                     for old, new in zip(olds, s.outs):
                         if old is not None and old in homes:
-                            copies.append(Assign(_home(old), Name(new), line=s.line))
+                            copies.append(
+                                Assign(
+                                    _home(old),
+                                    Name(new),
+                                    line=s.line,
+                                    origin=derive_origin(s.origin, generated="version.home"),
+                                )
+                            )
                 case Branch():
                     s.cond = read(n, s.cond)
                 case Switch():
@@ -90,7 +105,12 @@ def version_program(program: Program) -> None:
                         old = s.error_name
                         s.error_name = version[(g.binds[id(s)], old)]
                         if old in homes:
-                            handler_copy = Assign(_home(old), Name(s.error_name), line=s.line)
+                            handler_copy = Assign(
+                                _home(old),
+                                Name(s.error_name),
+                                line=s.line,
+                                origin=derive_origin(s.origin, generated="version.handler"),
+                            )
             for body in children(s):
                 body[:] = rewrite(body)
             # Added after the handler is rewritten: the copy is already versioned.

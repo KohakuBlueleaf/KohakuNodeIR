@@ -30,6 +30,10 @@
             "named": true
           },
           {
+            "type": "qualified_type",
+            "named": true
+          },
+          {
             "type": "type_identifier",
             "named": true
           },
@@ -191,10 +195,6 @@
         },
         {
           "type": "typehint_block",
-          "named": true
-        },
-        {
-          "type": "use_directive",
           "named": true
         }
       ]
@@ -438,6 +438,22 @@
     }
   },
   {
+    "type": "export_directive",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "generic_type",
     "named": true,
     "fields": {
@@ -445,6 +461,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "qualified_type",
+            "named": true
+          },
           {
             "type": "type_identifier",
             "named": true
@@ -466,6 +486,10 @@
         },
         {
           "type": "optional_type",
+          "named": true
+        },
+        {
+          "type": "qualified_type",
           "named": true
         },
         {
@@ -492,6 +516,32 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "import_directive",
+    "named": true,
+    "fields": {
+      "alias": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "module": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -731,6 +781,10 @@
           "named": true
         },
         {
+          "type": "qualified_type",
+          "named": true
+        },
+        {
           "type": "type_identifier",
           "named": true
         }
@@ -837,6 +891,10 @@
             "named": true
           },
           {
+            "type": "qualified_type",
+            "named": true
+          },
+          {
             "type": "type_identifier",
             "named": true
           },
@@ -858,6 +916,21 @@
       "types": [
         {
           "type": "parameter",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "qualified_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
           "named": true
         }
       ]
@@ -921,7 +994,15 @@
           "named": true
         },
         {
+          "type": "export_directive",
+          "named": true
+        },
+        {
           "type": "hint_directive",
+          "named": true
+        },
+        {
+          "type": "import_directive",
           "named": true
         },
         {
@@ -1029,6 +1110,10 @@
           },
           {
             "type": "optional_type",
+            "named": true
+          },
+          {
+            "type": "qualified_type",
             "named": true
           },
           {
@@ -1156,6 +1241,10 @@
           "named": true
         },
         {
+          "type": "qualified_type",
+          "named": true
+        },
+        {
           "type": "type_identifier",
           "named": true
         },
@@ -1199,6 +1288,10 @@
         },
         {
           "type": "optional_type",
+          "named": true
+        },
+        {
+          "type": "qualified_type",
           "named": true
         },
         {
@@ -1279,7 +1372,15 @@
     "named": false
   },
   {
+    "type": "@export",
+    "named": false
+  },
+  {
     "type": "@hint",
+    "named": false
+  },
+  {
+    "type": "@import",
     "named": false
   },
   {

@@ -33,6 +33,8 @@ enum TokenType {
     TRY,
     EXCEPT,
     TYPEHINT,
+    IMPORT,
+    EXPORT,
     ERROR_SENTINEL,
 };
 
@@ -40,6 +42,7 @@ static const char *const DIRECTIVES[] = {
     [USE] = "use",      [DEF] = "def",           [META] = "meta",
     [HINT] = "hint",    [MODE] = "mode",         [DATAFLOW] = "dataflow",
     [TRY] = "try",      [EXCEPT] = "except",     [TYPEHINT] = "typehint",
+    [IMPORT] = "import", [EXPORT] = "export",
 };
 
 #define TAB_WIDTH 4
@@ -90,7 +93,7 @@ static bool scan_directive(TSLexer *lexer, const bool *valid_symbols) {
     word[len < MAX_WORD ? len : MAX_WORD] = '\0';
     lexer->result_symbol = ERROR_SENTINEL;
     if (len > MAX_WORD) return true;
-    for (int t = USE; t <= TYPEHINT; t++) {
+    for (int t = USE; t <= EXPORT; t++) {
         if (valid_symbols[t] && strcmp(word, DIRECTIVES[t]) == 0) {
             lexer->result_symbol = t;
             break;
@@ -106,7 +109,7 @@ bool tree_sitter_kir_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[ERROR_SENTINEL]) return false;
 
     bool directive_valid = false;
-    for (int t = USE; t <= TYPEHINT; t++) directive_valid |= valid_symbols[t];
+    for (int t = USE; t <= EXPORT; t++) directive_valid |= valid_symbols[t];
     /* `@def` is valid exactly where a statement may start. */
     bool statement_start = valid_symbols[DEF] && !valid_symbols[INDENT] && !valid_symbols[NEWLINE];
 

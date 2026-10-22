@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from kohakunode.compiler import compile_program
+from kohakunode.compiler import compile_file
 from kohakunode.errors import KirError
 from kohakunode.graph import DATA_STYLES, from_graph, to_graph
 from kohakunode.lower import PASSES
@@ -43,13 +43,10 @@ def _passes(text: str | None) -> list[str] | None:
 
 
 def _compile(args):
-    path = Path(args.file)
-    program = parse(path.read_text(encoding="utf-8"))
     try:
-        return compile_program(
-            program,
+        return compile_file(
+            args.file,
             load_libraries(args.lib),
-            path.parent,
             [Path(p) for p in args.sig_path],
             _passes(getattr(args, "passes", None)),
         )
@@ -59,11 +56,8 @@ def _compile(args):
 
 def cmd_check(args) -> int:
     path = Path(args.file)
-    program = parse(path.read_text(encoding="utf-8"))
     try:
-        compiled = compile_program(
-            program, load_libraries(args.lib), path.parent, [Path(p) for p in args.sig_path]
-        )
+        compiled = _compile(args)
     except KirError as exc:
         diagnostics = getattr(exc, "diagnostics", None)
         for d in diagnostics or [exc]:
@@ -210,12 +204,34 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _error_text(exc: BaseException) -> str:
+    """Render provenance at the CLI boundary, leaving runtime handler payloads alone."""
+    message = str(exc)
+    origin = getattr(exc, "origin", None)
+    if origin is None:
+        return message
+
+    def location(site) -> str:
+        where = site.module
+        if site.line is not None:
+            where += f":{site.line}"
+        if site.definition is not None:
+            where += f" (@def {site.definition})"
+        return where
+
+    message += f"\n  source: {location(origin)}"
+    if origin.calls:
+        message += "\n  call chain: " + " -> ".join(location(site) for site in origin.calls)
+    return message
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.fn(args)
-    except KirError as exc:
-        print(f"error: {exc}", file=sys.stderr)
+    except (KirError, OSError, UnicodeError) as exc:
+        source = f"{args.file}: " if hasattr(args, "file") else ""
+        print(f"error: {source}{_error_text(exc)}", file=sys.stderr)
         return 1
 
 

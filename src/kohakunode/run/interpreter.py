@@ -13,7 +13,7 @@ a block ends is decided by what contains it, statically:
 import copy
 import re
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from kohakunode.errors import KirRuntimeError, NodeFailure
@@ -276,7 +276,16 @@ class Interpreter:
                 inputs[port.name] = _fresh(port.default)
         if r.definition is not None:
             # The interpreter's own (sorted, indexed) copy, not the env's original.
-            result = self._call_def(self.defs[s.name], inputs)
+            try:
+                result = self._call_def(self.defs[s.name], inputs)
+            except NodeFailure as exc:
+                if exc.origin is not None and s.origin is not None:
+                    ancestry = (*s.origin.calls, s.origin, *exc.origin.calls)
+                    exc.origin = replace(
+                        exc.origin,
+                        calls=tuple(replace(site, calls=()) for site in ancestry),
+                    )
+                raise
         else:
             fn = self.nodes.get(s.name) or self.env.impl(s.name)
             if fn is None:
@@ -290,7 +299,7 @@ class Interpreter:
             except KirRuntimeError:
                 raise
             except Exception as exc:
-                raise NodeFailure(s.name, exc, s.line) from exc
+                raise NodeFailure(s.name, exc, s.line, origin=s.origin) from exc
         self._bind(s, len(sig.outputs), result)
 
     def _bind(self, s: Call, n_out: int, result: Any) -> None:

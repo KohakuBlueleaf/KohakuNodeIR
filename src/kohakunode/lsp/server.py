@@ -4,6 +4,8 @@ initializationOptions: ``sigPath`` (signature directories) and ``core``
 ("rust" or "python"; default "rust" when ``kohakunode._rs`` is built).
 """
 
+from pathlib import Path
+
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
@@ -12,9 +14,11 @@ from kohakunode.lsp.analysis import (
     analyze,
     completions,
     default_core,
-    definition,
+    definition_location,
     format_text,
     hover,
+    signature_help,
+    word_at,
 )
 
 SEVERITY = {"error": types.DiagnosticSeverity.Error, "warning": types.DiagnosticSeverity.Warning}
@@ -74,7 +78,23 @@ def did_change(params: types.DidChangeTextDocumentParams) -> None:
 
 @server.feature(types.TEXT_DOCUMENT_DID_SAVE)
 def did_save(params: types.DidSaveTextDocumentParams) -> None:
-    refresh(params.text_document.uri)
+    uri = params.text_document.uri
+    refresh(uri)
+    # Saved transitive dependencies can affect any open modular document.
+    # Rebuild their small authoring indexes rather than leaving cached exports
+    # and definition locations stale until the importer itself changes.
+    for other, analysis in list(state["analyses"].items()):
+        if other != uri and analysis.program is not None and analysis.program.imports:
+            refresh(other)
+
+
+@server.feature(types.TEXT_DOCUMENT_DID_CLOSE)
+def did_close(params: types.DidCloseTextDocumentParams) -> None:
+    uri = params.text_document.uri
+    state["analyses"].pop(uri, None)
+    server.text_document_publish_diagnostics(
+        types.PublishDiagnosticsParams(uri=uri, diagnostics=[])
+    )
 
 
 def _analysis(uri: str) -> Analysis:
@@ -91,29 +111,76 @@ def on_hover(params: types.HoverParams) -> types.Hover | None:
 
 
 @server.feature(
-    types.TEXT_DOCUMENT_COMPLETION, types.CompletionOptions(trigger_characters=["@", "`", ")"])
+    types.TEXT_DOCUMENT_COMPLETION, types.CompletionOptions(trigger_characters=["@", "`", ")", "."])
 )
 def on_completion(params: types.CompletionParams) -> types.CompletionList:
     doc = server.workspace.get_text_document(params.text_document.uri)
     items = completions(
         state["analyses"].get(doc.uri), doc.source, params.position.line, params.position.character
     )
+    word = word_at(doc.source, params.position.line, params.position.character)
+    start = word[1] if word else params.position.character
+    replacement = types.Range(
+        start=types.Position(line=params.position.line, character=start),
+        end=(
+            types.Position(line=params.position.line, character=word[2])
+            if word
+            else params.position
+        ),
+    )
     return types.CompletionList(
         is_incomplete=False,
-        items=[types.CompletionItem(label=label, kind=KINDS[kind]) for label, kind in items],
+        items=[
+            types.CompletionItem(
+                label=label,
+                kind=KINDS[kind],
+                text_edit=types.TextEdit(range=replacement, new_text=label),
+            )
+            for label, kind in items
+        ],
     )
 
 
 @server.feature(types.TEXT_DOCUMENT_DEFINITION)
 def on_definition(params: types.DefinitionParams) -> types.Location | None:
     doc = server.workspace.get_text_document(params.text_document.uri)
-    line = definition(
-        _analysis(doc.uri), doc.source, params.position.line, params.position.character
+    target = definition_location(
+        _analysis(doc.uri),
+        doc.source,
+        params.position.line,
+        params.position.character,
+        doc.path,
     )
-    if line is None:
+    if target is None:
         return None
-    pos = types.Position(line=line, character=0)
-    return types.Location(uri=doc.uri, range=types.Range(start=pos, end=pos))
+    pos = types.Position(line=target.line, character=0)
+    uri = Path(target.path).resolve().as_uri() if target.path else doc.uri
+    return types.Location(uri=uri, range=types.Range(start=pos, end=pos))
+
+
+@server.feature(
+    types.TEXT_DOCUMENT_SIGNATURE_HELP, types.SignatureHelpOptions(trigger_characters=["(", ","])
+)
+def on_signature_help(params: types.SignatureHelpParams) -> types.SignatureHelp | None:
+    doc = server.workspace.get_text_document(params.text_document.uri)
+    markdown = signature_help(
+        _analysis(doc.uri),
+        doc.source,
+        params.position.line,
+        params.position.character,
+    )
+    if markdown is None or not markdown.startswith("```kir\n"):
+        return None
+    label = markdown.split("\n", 2)[1]
+    return types.SignatureHelp(
+        signatures=[
+            types.SignatureInformation(
+                label=label,
+                documentation=types.MarkupContent(kind=types.MarkupKind.Markdown, value=markdown),
+            )
+        ],
+        active_signature=0,
+    )
 
 
 @server.feature(types.TEXT_DOCUMENT_FORMATTING)

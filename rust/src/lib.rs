@@ -11,6 +11,8 @@ pub mod errors;
 pub mod flow;
 pub mod graph;
 pub mod lower;
+pub mod modules;
+pub mod origins;
 pub mod sig;
 pub mod syntax;
 pub mod util;

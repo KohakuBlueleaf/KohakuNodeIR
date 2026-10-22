@@ -4,7 +4,8 @@ use std::collections::HashMap;
 
 use indexmap::IndexMap;
 
-use crate::syntax::ast::{walk, Arg, Def, Expr, Kind, Program, Stmt};
+use crate::origins::derive_origin;
+use crate::syntax::ast::{walk, walk_mut, Arg, Def, Expr, Kind, Origin, Program, Stmt};
 use crate::syntax::value::Value;
 
 fn rename_expr(e: &mut Expr, f: &dyn Fn(&str) -> String) {
@@ -72,18 +73,23 @@ pub fn rename(stmts: &mut [Stmt], f: &dyn Fn(&str) -> String) {
 /// Inlines the `@def`s of a program (its own, already sorted, copies).
 pub struct Inliner {
     defs: IndexMap<String, Def>,
+    origins: HashMap<String, Origin>,
     counter: HashMap<String, usize>,
 }
 
 impl Inliner {
     pub fn new(program: &Program) -> Inliner {
         let mut defs = IndexMap::new();
+        let mut origins = HashMap::new();
         for s in walk(&program.body) {
             if let Kind::Def(d) = &s.kind {
                 defs.insert(d.name.clone(), d.clone());
+                if let Some(origin) = &s.origin {
+                    origins.insert(d.name.clone(), origin.clone());
+                }
             }
         }
-        Inliner { defs, counter: HashMap::new() }
+        Inliner { defs, origins, counter: HashMap::new() }
     }
 
     pub fn block(&mut self, stmts: Vec<Stmt>) -> Vec<Stmt> {
@@ -123,23 +129,35 @@ impl Inliner {
                 given.insert(key, &a.value);
             }
         }
+        let source = call.origin.as_ref().or_else(|| self.origins.get(&d.name)).cloned();
         let mut out = Vec::new();
         for p in &d.params {
             let value = match given.get(p.name.as_str()) {
                 Some(e) => (*e).clone(),
                 None => p.default.clone().unwrap_or(Expr::Literal(Value::None)),
             };
-            out.push(Stmt::assign(f(&p.name), value, call.line));
+            let mut stmt = Stmt::assign(f(&p.name), value, call.line);
+            stmt.origin = derive_origin(source.as_ref(), Some("inline.arg"), &[]);
+            out.push(stmt);
         }
         let mut body = d.body.clone();
         for s in &mut body {
             s.renew_uids();
         }
+        if let Some(origin) = &call.origin {
+            let mut ancestry = origin.calls.clone();
+            ancestry.push(origin.clone());
+            walk_mut(&mut body, &mut |stmt| {
+                stmt.origin = derive_origin(stmt.origin.as_ref(), None, &ancestry);
+            });
+        }
         rename(&mut body, &f);
         out.extend(self.block(body));
         for (o, target) in d.outputs.iter().zip(targets) {
             if let Some(t) = target {
-                out.push(Stmt::assign(t.clone(), Expr::Name(f(&o.name)), call.line));
+                let mut stmt = Stmt::assign(t.clone(), Expr::Name(f(&o.name)), call.line);
+                stmt.origin = derive_origin(source.as_ref(), Some("inline.output"), &[]);
+                out.push(stmt);
             }
         }
         if let Some(first) = out.first_mut() {

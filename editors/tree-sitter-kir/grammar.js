@@ -11,7 +11,7 @@
 
 const commaSep1 = (rule) => seq(rule, repeat(seq(",", rule)), optional(","));
 
-const DIRECTIVES = ["@use", "@def", "@meta", "@hint", "@mode", "@dataflow", "@try", "@except", "@typehint"];
+const DIRECTIVES = ["@use", "@def", "@meta", "@hint", "@mode", "@dataflow", "@try", "@except", "@typehint", "@import", "@export"];
 
 module.exports = grammar({
   name: "kir",
@@ -29,12 +29,15 @@ module.exports = grammar({
   },
 
   rules: {
-    source_file: ($) => repeat($._statement),
+    source_file: ($) => seq(
+      repeat(seq(choice($.use_directive, $.import_directive, $.export_directive), $._newline)),
+      repeat($._statement),
+    ),
 
     _statement: ($) => choice(seq($._simple_statement, $._newline), $._compound_statement),
 
     _simple_statement: ($) =>
-      choice($.use_directive, $.assignment, $.call, $.meta_directive, $.hint_directive, $.mode_directive),
+      choice($.assignment, $.call, $.meta_directive, $.hint_directive, $.mode_directive),
 
     _compound_statement: ($) =>
       choice($.namespace, $.subgraph, $.dataflow_block, $.try_block, $.typehint_block),
@@ -45,6 +48,11 @@ module.exports = grammar({
 
     use_directive: ($) =>
       seq("@use", field("library", $.string), optional(seq("as", field("alias", $.identifier)))),
+
+    import_directive: ($) =>
+      seq("@import", field("module", $.string), "as", field("alias", $.identifier)),
+
+    export_directive: ($) => seq("@export", field("name", $.identifier)),
 
     assignment: ($) =>
       seq(
@@ -141,7 +149,9 @@ module.exports = grammar({
         $.optional_type,
       ),
 
-    _type_identifier: ($) => alias($.identifier, $.type_identifier),
+    _type_identifier: ($) => choice(alias($.identifier, $.type_identifier), $.qualified_type),
+
+    qualified_type: ($) => seq($.identifier, repeat1(seq(".", $.identifier))),
 
     generic_type: ($) =>
       seq(field("name", $._type_identifier), "[", $._type, repeat(seq(",", $._type)), "]"),

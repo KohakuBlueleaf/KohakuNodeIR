@@ -159,6 +159,7 @@ pub struct Stmt {
     pub line: Option<usize>,
     pub meta: Directives,
     pub hint: Directives,
+    pub origin: Option<Origin>,
     pub kind: Kind,
 }
 
@@ -168,9 +169,29 @@ pub struct Use {
     pub alias: Option<String>,
 }
 
+/// A source module import, distinct from a host signature `Use`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Import {
+    pub module: String,
+    pub alias: String,
+}
+
+/// Durable source identity, independent of editor metadata and semantic hashes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Origin {
+    pub module: String,
+    pub node_id: String,
+    pub line: Option<num_bigint::BigInt>,
+    pub definition: Option<String>,
+    pub calls: Vec<Origin>,
+    pub generated: Option<String>,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Program {
     pub uses: Vec<Use>,
+    pub imports: Vec<Import>,
+    pub exports: Vec<String>,
     pub body: Vec<Stmt>,
     pub mode: Option<String>,
 }
@@ -179,7 +200,7 @@ pub const BUILTINS: [&str; 5] = ["branch", "switch", "jump", "parallel", "each"]
 
 impl Stmt {
     pub fn new(kind: Kind, line: Option<usize>) -> Stmt {
-        Stmt { uid: fresh_uid(), line, meta: Directives::new(), hint: Directives::new(), kind }
+        Stmt { uid: fresh_uid(), line, meta: Directives::new(), hint: Directives::new(), origin: None, kind }
     }
 
     pub fn assign(target: impl Into<String>, value: Expr, line: Option<usize>) -> Stmt {

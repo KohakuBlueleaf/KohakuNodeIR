@@ -19,7 +19,15 @@ fn py_err(e: CoreError) -> PyErr {
     let msg = e.to_string();
     match e {
         CoreError::Syntax { .. } => KirSyntaxError::new_err(msg),
-        CoreError::Check(_) => KirCheckError::new_err(msg),
+        CoreError::Check(diagnostics) => {
+            let error = KirCheckError::new_err(msg);
+            if let Err(attribute_error) =
+                Python::attach(|py| error.value(py).setattr("diagnostics", api::diagnostics_json(&diagnostics).dumps()))
+            {
+                return attribute_error;
+            }
+            error
+        }
         CoreError::Signature(_) => KirSignatureError::new_err(msg),
         CoreError::Graph(_) => KirGraphError::new_err(msg),
         CoreError::Value(_) => PyValueError::new_err(msg),
@@ -115,6 +123,29 @@ fn std_signatures() -> PyResult<String> {
     api::std_signatures().map_err(py_err)
 }
 
+/// Link portable source resources without filesystem source resolution.
+#[pyfunction]
+#[pyo3(signature = (source, modules, source_name = "<text>", sigs = Vec::new()))]
+fn link_modules(source: &str, modules: &str, source_name: &str, sigs: Vec<String>) -> PyResult<String> {
+    api::link_modules(source, modules, source_name, api::Signatures::texts(&sigs)).map_err(py_err)
+}
+
+/// Compile portable source resources, returning text, AST origins, and dependency identity.
+#[pyfunction]
+#[pyo3(signature = (source, modules = None, source_name = "<text>", sigs = Vec::new(), passes = None, *, base = None, sig_path = Vec::new()))]
+fn compile_modules(
+    source: &str,
+    modules: Option<&str>,
+    source_name: &str,
+    sigs: Vec<String>,
+    passes: Option<Vec<String>>,
+    base: Option<PathBuf>,
+    sig_path: Vec<PathBuf>,
+) -> PyResult<String> {
+    api::compile_sources(source, modules, source_name, Where::new(base, sig_path).with(&sigs), passes.as_deref())
+        .map_err(py_err)
+}
+
 #[pymodule]
 #[pyo3(name = "_rs")]
 fn kohakunode_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -126,6 +157,8 @@ fn kohakunode_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(to_graph, m)?)?;
     m.add_function(wrap_pyfunction!(from_graph, m)?)?;
     m.add_function(wrap_pyfunction!(std_signatures, m)?)?;
+    m.add_function(wrap_pyfunction!(link_modules, m)?)?;
+    m.add_function(wrap_pyfunction!(compile_modules, m)?)?;
     let py = m.py();
     m.add("KirError", py.get_type::<KirError>())?;
     m.add("KirSyntaxError", py.get_type::<KirSyntaxError>())?;

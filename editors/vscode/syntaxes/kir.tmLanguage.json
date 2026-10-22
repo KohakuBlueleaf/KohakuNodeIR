@@ -6,6 +6,8 @@
   "patterns": [
     { "include": "#comment" },
     { "include": "#use" },
+    { "include": "#import" },
+    { "include": "#export" },
     { "include": "#mode" },
     { "include": "#attributes" },
     { "include": "#subgraph" },
@@ -40,6 +42,24 @@
         "2": { "name": "string.quoted.kir" },
         "3": { "name": "keyword.other.as.kir" },
         "4": { "name": "entity.name.namespace.kir" }
+      }
+    },
+
+    "import": {
+      "match": "(@import)\\s+(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')\\s+(as)\\s+([A-Za-z_][A-Za-z0-9_]*)(?![A-Za-z0-9_])",
+      "captures": {
+        "1": { "name": "keyword.control.directive.kir" },
+        "2": { "name": "string.quoted.kir" },
+        "3": { "name": "keyword.other.as.kir" },
+        "4": { "name": "entity.name.namespace.kir" }
+      }
+    },
+
+    "export": {
+      "match": "(@export)\\s+([A-Za-z_][A-Za-z0-9_]*)(?![A-Za-z0-9_])",
+      "captures": {
+        "1": { "name": "keyword.control.directive.kir" },
+        "2": { "name": "entity.name.function.definition.kir" }
       }
     },
 

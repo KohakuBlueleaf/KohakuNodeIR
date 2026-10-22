@@ -54,6 +54,11 @@ class _Checker:
         self.out: list[Diagnostic] = []
 
     def add(self, code: str, message: str, s: Stmt | None = None) -> None:
+        if s is not None and s.origin is not None and s.origin.module != "<text>":
+            context = s.origin.module
+            if s.origin.definition is not None:
+                context += f"::{s.origin.definition}"
+            message = f"{context}: {message}"
         self.out.append(Diagnostic(code, message, s.line if s is not None else None))
 
     # ------------------------------------------------------------ whole program

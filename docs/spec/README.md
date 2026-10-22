@@ -8,6 +8,7 @@ written line by line, and its meaning is a sequential run of that text.
 | [language.md](language.md) | Lexical structure, statements, builtins, directives, grammar |
 | [semantics.md](semantics.md) | What a program means: the sequential run, parallel by default, scopes, `each`, errors, node flags |
 | [signatures.md](signatures.md) | Node signatures, the signature file, `@use`, the Python registry |
+| [modules.md](modules.md) | Source imports/exports, deterministic linking, dependency manifests, structured origins |
 | [graph.md](graph.md) | The graph view (`.kirgraph`) and how it maps to and from text |
 | [passes.md](passes.md) | Optimization passes, the fully optimized form, program hashes |
 | [checks.md](checks.md) | Every rule the checker enforces |

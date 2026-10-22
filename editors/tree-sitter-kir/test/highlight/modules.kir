@@ -1,0 +1,14 @@
+@import "lib.kir" as lib
+# <- keyword.directive
+#        ^ string
+#                    ^ module
+@export identity
+# <- keyword.directive
+#        ^ function
+@def (x: lib.Box)identity(y: lib.Box):
+#         ^ module
+#             ^ type
+    y = x
+(3)lib.identity(result)
+#   ^ module
+#       ^ function.call

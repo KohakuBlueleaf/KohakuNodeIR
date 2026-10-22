@@ -15,6 +15,7 @@ from kohakunode.syntax.ast import (
     Literal,
     Name,
     Namespace,
+    Origin,
     Parallel,
     Program,
     Stmt,
@@ -90,6 +91,8 @@ class _Scope:
                 n["meta"] = {k: list(v) if isinstance(v, tuple) else v for k, v in meta.items()}
             if stmt.hint:
                 n["hints"] = dict(stmt.hint)
+            if stmt.origin is not None:
+                n["origin"] = _origin(stmt.origin)
             self.stmt_node[id(stmt)] = n["id"]
         self.nodes.append(n)
         return n
@@ -378,6 +381,7 @@ class _Scope:
                         self.join(ends, (n["id"], "next"))
                     incoming = [(n["id"], "done")]
                 case Jump():
+                    edge_start = len(self.edges)
                     target = self.find_namespace(s.label)
                     if target is None:
                         incoming = []
@@ -390,11 +394,31 @@ class _Scope:
                             )
                         m = self.labelled_merge(target, s)
                         self.join(incoming, (m, "in_0"))
+                        jump_edges = self.edges[edge_start:]
                         self.pending.setdefault(id(target), []).extend(
                             self.namespace(target, [(m, "out")])
                         )
                     else:
                         self.loop_back(s.label, incoming)
+                        jump_edges = self.edges[edge_start:]
+                    mid = self.merges[s.label]
+                    if not incoming and any(
+                        node == self.cfg.node_of.get(id(s))
+                        for node, _ in self.cfg.succ[self.cfg.entry]
+                    ):
+                        # Unlike a back edge, entry has no predecessor node. A
+                        # marker distinguishes an initial jump from an unentered
+                        # namespace with otherwise identical topology.
+                        merge = next(n for n in self.nodes if n["id"] == mid)
+                        merge["entry"] = True
+                        if s.origin is not None:
+                            merge["origin"] = _origin(s.origin)
+                    if s.origin is not None:
+                        # Jumps are edges, not runtime nodes. Keep their provenance
+                        # on the edge entering the labelled merge (including back edges).
+                        for edge in jump_edges:
+                            if edge["kind"] == "ctrl" and edge["to"]["node"] == mid:
+                                edge["origin"] = _origin(s.origin)
                     incoming = []
                 case Try():
                     n = self.node(
@@ -445,6 +469,10 @@ class _Scope:
         self.pending.setdefault(id(ns), []).extend(self.namespace(ns, [src]))
 
     def namespace(self, ns: Namespace, incoming: list[Port]) -> list[Port]:
+        if ns.origin is not None:
+            for nid, port in incoming:
+                node = next(n for n in self.nodes if n["id"] == nid)
+                node.setdefault("namespace_origins", {})[port] = _origin(ns.origin)
         return self.block(ns.body, incoming)
 
     def find_namespace(self, label: str) -> Namespace | None:
@@ -519,6 +547,18 @@ class _Scope:
         return g
 
 
+def _origin(origin: Origin) -> dict:
+    """Provenance is JSON data, never editor metadata or a KIR literal."""
+    return {
+        "module": origin.module,
+        "node_id": origin.node_id,
+        "line": origin.line,
+        "definition": origin.definition,
+        "calls": [_origin(call) for call in origin.calls],
+        "generated": origin.generated,
+    }
+
+
 def _json_literal(v):
     if isinstance(v, tuple):
         return {"tuple": [_json_literal(x) for x in v]}
@@ -542,12 +582,19 @@ def to_graph(program: Program, env: NodeEnv | None = None, data: str = "wires") 
     graphs = [_Scope(env, "main", program.body, data=data).build()]
     for s in program.body:
         if isinstance(s, Def):
-            graphs.append(_Scope(env, s.name, s.body, s.params, s.outputs, data).build())
+            graph = _Scope(env, s.name, s.body, s.params, s.outputs, data).build()
+            if s.origin is not None:
+                graph["origin"] = _origin(s.origin)
+            graphs.append(graph)
     out = {
         "kirgraph": FORMAT,
         "uses": [{"library": u.library, "alias": u.alias} for u in program.uses],
         "graphs": graphs,
     }
+    if program.imports:
+        out["imports"] = [{"module": imp.module, "alias": imp.alias} for imp in program.imports]
+    if program.exports:
+        out["exports"] = list(program.exports)
     if program.mode:
         out["mode"] = program.mode
     hints = [s for s in program.body if isinstance(s, TypeHints)]
@@ -561,4 +608,12 @@ def to_graph(program: Program, env: NodeEnv | None = None, data: str = "wires") 
             for h in hints
             for e in h.entries
         ]
+        if any(h.origin is not None for h in hints):
+            out["typehint_groups"] = [
+                {
+                    "count": len(h.entries),
+                    **({"origin": _origin(h.origin)} if h.origin is not None else {}),
+                }
+                for h in hints
+            ]
     return out

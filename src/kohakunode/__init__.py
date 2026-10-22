@@ -11,6 +11,7 @@ from kohakunode.errors import (
     NodeFailure,
 )
 from kohakunode.lower import full_hash, lower, semantic_hash
+from kohakunode.modules import KirModuleError, Linked, link_program
 from kohakunode.run import Interpreter, run
 from kohakunode.sig import STD, Library, NodeLibrary, Port, Signature, build_env
 from kohakunode.syntax import parse, parse_file, write
@@ -22,10 +23,12 @@ __all__ = [
     "Interpreter",
     "KirCheckError",
     "KirError",
+    "KirModuleError",
     "KirRuntimeError",
     "KirSignatureError",
     "KirSyntaxError",
     "Library",
+    "Linked",
     "NodeFailure",
     "NodeLibrary",
     "Port",
@@ -36,6 +39,7 @@ __all__ = [
     "compile_program",
     "compile_source",
     "full_hash",
+    "link_program",
     "lower",
     "parse",
     "parse_file",

@@ -20,10 +20,12 @@ from kohakunode.syntax.ast import (
     Dataflow,
     Def,
     Each,
+    Import,
     Jump,
     Literal,
     Name,
     Namespace,
+    Origin,
     OutParam,
     Parallel,
     Param,
@@ -69,13 +71,39 @@ def _meta_value(v):
     return _finite(tuple(v) if isinstance(v, list) else v)
 
 
+def _origin(value) -> Origin | None:
+    """Decode structured provenance independently of the editor metadata switch."""
+    if value is None:
+        return None
+    if not isinstance(value, dict) or not all(
+        isinstance(value.get(key), str) for key in ("module", "node_id")
+    ):
+        raise KirGraphError("origin requires string module and node_id")
+    if value.get("line") is not None and type(value["line"]) is not int:
+        raise KirGraphError("origin line must be an integer or null")
+    for key in ("definition", "generated"):
+        if value.get(key) is not None and not isinstance(value[key], str):
+            raise KirGraphError(f"origin {key} must be a string or null")
+    calls = value.get("calls", [])
+    if not isinstance(calls, (list, tuple)) or any(call is None for call in calls):
+        raise KirGraphError("origin calls must be a sequence of origins")
+    return Origin(
+        value["module"],
+        value["node_id"],
+        value.get("line"),
+        value.get("definition"),
+        tuple(_origin(call) for call in calls),
+        value.get("generated"),
+    )
+
+
 class _Graph:
     def __init__(self, g: dict, with_meta: bool):
         self.g = g
         self.with_meta = with_meta
         self.nodes = {n["id"]: n for n in g["nodes"]}
         self.order = [n["id"] for n in g["nodes"]]
-        self.ctrl_out: dict[tuple[str, str], tuple[str, str]] = {}
+        self.ctrl_out: dict[tuple[str, str], tuple[str, str, Origin | None]] = {}
         self.ctrl_in: dict[str, list[tuple[str, str]]] = {nid: [] for nid in self.nodes}
         self.data_in: dict[tuple[str, str], tuple[str, str]] = {}
         for e in g["edges"]:
@@ -84,7 +112,7 @@ class _Graph:
             if src[0] not in self.nodes or dst[0] not in self.nodes:
                 raise KirGraphError(f"edge {e} names an unknown node")
             if e["kind"] == "ctrl":
-                self.ctrl_out[src] = dst
+                self.ctrl_out[src] = (*dst, _origin(e.get("origin")))
                 self.ctrl_in[dst[0]].append(src)
             else:
                 if dst in self.data_in:
@@ -139,7 +167,12 @@ class _Graph:
                 k: _meta_value(v) for k, v in n.get("meta", {}).items()
             }
         s.hint = {k: _finite(v) for k, v in n.get("hints", {}).items()}
+        s.origin = _origin(n.get("origin"))
         return s
+
+    def namespace(self, label: str, body: list[Stmt], n: dict, port: str = "out") -> Namespace:
+        origin = _origin(n.get("namespace_origins", {}).get(port))
+        return Namespace(label, body, origin=origin)
 
     # ------------------------------------------------------------ statements
     def simple(self, n: dict) -> Stmt:
@@ -223,26 +256,37 @@ class _Graph:
     def chain(self, start, stop: frozenset[str]) -> list[Stmt]:
         out: list[Stmt] = []
         cur = start[0] if start else None
+        incoming_origin = start[2] if start and len(start) > 2 else None
         while cur is not None:
             n = self.nodes[cur]
             kind = n["kind"]
             label = n.get("props", {}).get("label") if kind == "merge" else None
             if label and cur in self.emitted:
-                out.append(Jump(label))  # back to a loop entry already written
+                out.append(Jump(label, origin=incoming_origin))  # back to a loop entry
                 break
             if cur in stop:
+                # A shared labelled join is still an explicit jump from this
+                # arm, with or without provenance. Keeping it also makes text
+                # canonicalization stable after origins are erased by writing.
+                if label:
+                    out.append(Jump(label, origin=incoming_origin))
                 break
             if kind == "merge":
                 if not label:
                     nxt = self.next_of(cur)
                     cur = nxt[0] if nxt else None
+                    incoming_origin = nxt[2] if nxt and len(nxt) > 2 else None
                     continue
-                out.append(self.decorate(Jump(label), n))
+                jump = self.decorate(Jump(label), n)
+                if incoming_origin is not None:
+                    jump.origin = incoming_origin
+                out.append(jump)
                 self.emitted.add(cur)
                 exit_ = self.loop_exit(cur, stop)
                 inner_stop = stop | {cur} | ({exit_} if exit_ else set())
-                out.append(Namespace(label, self.chain(self.next_of(cur), inner_stop)))
+                out.append(self.namespace(label, self.chain(self.next_of(cur), inner_stop), n))
                 cur = exit_
+                incoming_origin = None
                 continue
             if cur in self.emitted:
                 break
@@ -266,7 +310,9 @@ class _Graph:
                     self.decorate(Each(items, item, index, p["label"], bool(p.get("has_index"))), n)
                 )
                 out.append(
-                    Namespace(p["label"], self.chain(self.next_of(cur, "body"), stop | {cur}))
+                    self.namespace(
+                        p["label"], self.chain(self.next_of(cur, "body"), stop | {cur}), n, "body"
+                    )
                 )
                 nxt = self.next_of(cur, "done")
             elif kind in ("branch", "switch", "parallel", "try"):
@@ -280,7 +326,9 @@ class _Graph:
                     out.append(self.decorate(Branch(cond, labels["true"], labels["false"]), n))
                     for port in ("true", "false"):
                         out.append(
-                            Namespace(labels[port], self.chain(self.next_of(cur, port), arm_stop))
+                            self.namespace(
+                                labels[port], self.chain(self.next_of(cur, port), arm_stop), n, port
+                            )
                         )
                 elif kind == "switch":
                     labels = n["props"]["labels"]
@@ -292,14 +340,18 @@ class _Graph:
                     out.append(self.decorate(Switch(value, cases, labels.get("default")), n))
                     for port in ports:
                         out.append(
-                            Namespace(labels[port], self.chain(self.next_of(cur, port), arm_stop))
+                            self.namespace(
+                                labels[port], self.chain(self.next_of(cur, port), arm_stop), n, port
+                            )
                         )
                 elif kind == "parallel":
                     labels = n["props"]["labels"]
                     out.append(self.decorate(Parallel([labels[p] for p in ports]), n))
                     for port in ports:
                         out.append(
-                            Namespace(labels[port], self.chain(self.next_of(cur, port), arm_stop))
+                            self.namespace(
+                                labels[port], self.chain(self.next_of(cur, port), arm_stop), n, port
+                            )
                         )
                 else:
                     err = self.bound(cur, "error", n["props"].get("error_name"))
@@ -314,6 +366,7 @@ class _Graph:
             else:
                 raise KirGraphError(f"unknown node kind {kind!r}")
             cur = nxt[0] if nxt else None
+            incoming_origin = nxt[2] if nxt and len(nxt) > 2 else None
         return out
 
     def body(self) -> list[Stmt]:
@@ -334,15 +387,26 @@ class _Graph:
                 continue
             if n["kind"] in ("get", "set", "value", "outputs"):
                 continue
-            if self.ctrl_in[nid] and n["kind"] != "inputs":
+            # Loop back edges do not disqualify a root. An unconnected primary
+            # input identifies it; an explicit entry marker below determines
+            # whether a labelled merge is entered or only declares a namespace.
+            source_entry = (
+                n["kind"] in ("each", "merge")
+                and n.get("ctrl_in")
+                and not any(dst[:2] == (nid, n["ctrl_in"][0]) for dst in self.ctrl_out.values())
+            )
+            if self.ctrl_in[nid] and n["kind"] != "inputs" and not source_entry:
                 continue
             if n["kind"] == "merge" and not n.get("props", {}).get("label"):
                 continue
-            if n["kind"] == "merge":
-                # A labelled merge nothing enters: a namespace never entered.
+            if n["kind"] == "merge" and n.get("entry") is not True:
+                # Never infer execution from provenance. Legacy graphs without
+                # the entry marker conservatively describe an unentered namespace.
                 self.emitted.add(nid)
                 out.append(
-                    Namespace(n["props"]["label"], self.chain(self.next_of(nid), frozenset({nid})))
+                    self.namespace(
+                        n["props"]["label"], self.chain(self.next_of(nid), frozenset({nid})), n
+                    )
                 )
                 continue
             out.extend(self.chain((nid, "in"), frozenset()))
@@ -356,21 +420,31 @@ def from_graph(graph: dict, with_meta: bool = True) -> Program:
     program = Program(
         uses=[Use(u["library"], u.get("alias")) for u in graph.get("uses", [])],
         mode=graph.get("mode"),
+        imports=[Import(imp["module"], imp["alias"]) for imp in graph.get("imports", [])],
+        exports=list(graph.get("exports", [])),
     )
     hints = graph.get("typehints")
-    if hints:
-        program.body.append(
-            TypeHints(
-                [
-                    TypeHintEntry(
-                        h["name"],
-                        tuple(parse_type(t) for t in h["inputs"]),
-                        tuple(parse_type(t) for t in h["outputs"]),
-                    )
-                    for h in hints
-                ]
+    if hints or graph.get("typehint_groups"):
+        entries = [
+            TypeHintEntry(
+                h["name"],
+                tuple(parse_type(t) for t in h["inputs"]),
+                tuple(parse_type(t) for t in h["outputs"]),
             )
-        )
+            for h in hints or []
+        ]
+        groups = graph.get("typehint_groups", [{"count": len(entries)}])
+        offset = 0
+        for group in groups:
+            count = group.get("count")
+            if type(count) is not int or count < 0 or offset + count > len(entries):
+                raise KirGraphError("invalid typehint group count")
+            program.body.append(
+                TypeHints(entries[offset : offset + count], origin=_origin(group.get("origin")))
+            )
+            offset += count
+        if offset != len(entries):
+            raise KirGraphError("typehint groups do not cover all entries")
     main = None
     for g in graph["graphs"]:
         if g["name"] == "main":
@@ -395,7 +469,7 @@ def from_graph(graph: dict, with_meta: bool = True) -> Program:
             OutParam(o["name"], parse_type(o["type"]) if o.get("type") else None)
             for o in g.get("outputs", [])
         ]
-        program.body.append(Def(g["name"], params, outputs, body))
+        program.body.append(Def(g["name"], params, outputs, body, origin=_origin(g.get("origin"))))
     if main is not None:
         program.body.extend(_Graph(main, with_meta).body())
     return program

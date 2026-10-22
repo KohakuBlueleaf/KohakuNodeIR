@@ -10,6 +10,8 @@
 ; Directives
 [
   "@use"
+  "@import"
+  "@export"
   "@def"
   "@meta"
   "@hint"
@@ -51,6 +53,10 @@
 
 ; Directive arguments
 (use_directive alias: (identifier) @module)
+(import_directive alias: (identifier) @module)
+(export_directive name: (identifier) @function)
+(qualified_type (identifier) @module . (identifier))
+(qualified_type (identifier) @type .)
 (mode_directive mode: (identifier) @constant)
 (attribute key: (identifier) @property)
 (attribute value: (identifier) @variable)

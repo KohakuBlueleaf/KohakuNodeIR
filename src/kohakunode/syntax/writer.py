@@ -174,6 +174,10 @@ def write(program: Program) -> str:
     out: list[str] = []
     for u in program.uses:
         out.append(f"@use {write_literal(u.library)}" + (f" as {u.alias}" if u.alias else ""))
+    for imp in program.imports:
+        out.append(f"@import {write_literal(imp.module)} as {imp.alias}")
+    for name in program.exports:
+        out.append(f"@export {name}")
     if program.mode:
         out.append(f"@mode {program.mode}")
     if out:

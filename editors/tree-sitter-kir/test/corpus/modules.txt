@@ -1,0 +1,76 @@
+================================================================================
+Source module declarations and qualified calls
+================================================================================
+
+@use "kir.std"
+@import "lib/identity.kir" as lib
+@export identity
+@export wrapper
+@def (x: lib.Box)wrapper(y: lib.Box):
+    (x)lib.identity(y)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (use_directive (string))
+  (import_directive (string) (identifier))
+  (export_directive (identifier))
+  (export_directive (identifier))
+  (subgraph
+    (parameter_list
+      (parameter (identifier) (qualified_type (identifier) (identifier))))
+    (identifier)
+    (subgraph_output_list
+      (subgraph_output (identifier) (qualified_type (identifier) (identifier))))
+    (block
+      (call
+        (input_list (identifier))
+        (node_name (identifier) (identifier))
+        (output_list (identifier))))))
+
+================================================================================
+Import requires an alias
+:error
+================================================================================
+
+@import "lib.kir"
+
+---
+
+================================================================================
+Import alias keyword has a word boundary
+:error
+================================================================================
+
+@import "lib.kir" aslib
+
+---
+
+================================================================================
+Imports are preamble declarations
+:error
+================================================================================
+
+x = 1
+@import "lib.kir" as lib
+
+---
+
+================================================================================
+Exports are not block statements
+:error
+================================================================================
+
+@def ()f():
+    @export f
+
+---
+
+================================================================================
+Import directive has a word boundary
+:error
+================================================================================
+
+@imported "lib.kir" as lib
+
+---

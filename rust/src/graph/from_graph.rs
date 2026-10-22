@@ -10,13 +10,15 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::errors::{KirError, Result};
+use crate::origins::origin_from_json;
 use crate::sig::types::parse_type;
 use crate::syntax::ast::{
-    Arg, Def, Directives, Expr, Kind, OutParam, Param, Program, Stmt, TypeExpr, TypeHintEntry, Use,
+    Arg, Def, Directives, Expr, Import, Kind, Origin, OutParam, Param, Program, Stmt, TypeExpr, TypeHintEntry, Use,
 };
 use crate::syntax::value::Value;
 use crate::util::json::Json;
 use crate::util::pyfmt::{float_repr, str_repr};
+use num_traits::ToPrimitive;
 
 type PortRef = (String, String);
 
@@ -120,6 +122,7 @@ struct GraphView<'g> {
     nodes: HashMap<&'g str, &'g Json>,
     order: Vec<&'g str>,
     ctrl_out: HashMap<PortRef, PortRef>,
+    ctrl_origins: HashMap<PortRef, Origin>,
     ctrl_in: HashMap<&'g str, Vec<PortRef>>,
     data_in: HashMap<PortRef, PortRef>,
     rename: HashMap<PortRef, String>,
@@ -155,6 +158,7 @@ impl<'g> GraphView<'g> {
             nodes,
             order,
             ctrl_out: HashMap::new(),
+            ctrl_origins: HashMap::new(),
             data_in: HashMap::new(),
             rename: HashMap::new(),
             members: HashSet::new(),
@@ -171,6 +175,9 @@ impl<'g> GraphView<'g> {
             }
             if string(e, "kind")? == "ctrl" {
                 v.ctrl_out.insert(src.clone(), dst.clone());
+                if let Some(origin) = origin_from_json(e.get("origin"))? {
+                    v.ctrl_origins.insert(src.clone(), origin);
+                }
                 let (&k, _) = v.nodes.get_key_value(dst.0.as_str()).expect("checked");
                 v.ctrl_in.get_mut(k).expect("every node").push(src);
             } else {
@@ -273,6 +280,13 @@ impl<'g> GraphView<'g> {
             }
         }
         s.hint = hint;
+        s.origin = origin_from_json(n.get("origin"))?;
+        Ok(s)
+    }
+
+    fn namespace(&self, label: String, body: Vec<Stmt>, n: &Json, port: &str) -> Result<Stmt> {
+        let mut s = Stmt::new(Kind::Namespace { label, body }, None);
+        s.origin = origin_from_json(n.get("namespace_origins").and_then(|o| o.get(port)))?;
         Ok(s)
     }
 
@@ -391,7 +405,16 @@ impl<'g> GraphView<'g> {
     }
 
     // ------------------------------------------------------------ chains
-    fn chain(&mut self, start: Option<String>, stop: &HashSet<String>) -> Result<Vec<Stmt>> {
+    fn chain_next(&mut self, nid: &str, port: &str, stop: &HashSet<String>) -> Result<Vec<Stmt>> {
+        self.chain(self.next_of(nid, port), stop, self.ctrl_origins.get(&(nid.to_string(), port.to_string())).cloned())
+    }
+
+    fn chain(
+        &mut self,
+        start: Option<String>,
+        stop: &HashSet<String>,
+        mut incoming_origin: Option<Origin>,
+    ) -> Result<Vec<Stmt>> {
         let mut out = Vec::new();
         let mut cur = start;
         while let Some(c) = cur.take() {
@@ -400,26 +423,40 @@ impl<'g> GraphView<'g> {
             let label = if kind == "merge" { prop(n, "label").filter(|l| l.truthy()) } else { None };
             let label = label.map(|l| l.as_str().ok_or_else(|| gerr("labels are strings"))).transpose()?;
             if let (Some(l), true) = (label, self.emitted.contains(&c)) {
-                out.push(Stmt::new(Kind::Jump { label: l.to_string() }, None));
+                let mut jump = Stmt::new(Kind::Jump { label: l.to_string() }, None);
+                jump.origin = incoming_origin;
+                out.push(jump);
                 break;
             }
             if stop.contains(&c) {
+                // Shared labelled joins retain explicit arm jumps independently of provenance.
+                if let Some(label) = label {
+                    let mut jump = Stmt::new(Kind::Jump { label: label.to_string() }, None);
+                    jump.origin = incoming_origin;
+                    out.push(jump);
+                }
                 break;
             }
             if kind == "merge" {
                 let Some(label) = label else {
                     cur = self.next_of(&c, "out");
+                    incoming_origin = self.ctrl_origins.get(&(c.clone(), "out".into())).cloned();
                     continue;
                 };
-                out.push(self.decorate(Stmt::new(Kind::Jump { label: label.to_string() }, None), n)?);
+                let mut jump = self.decorate(Stmt::new(Kind::Jump { label: label.to_string() }, None), n)?;
+                if incoming_origin.is_some() {
+                    jump.origin = incoming_origin.take();
+                }
+                out.push(jump);
                 self.emitted.insert(c.clone());
                 let exit = self.loop_exit(&c, stop)?;
                 let mut inner_stop = stop.clone();
                 inner_stop.insert(c.clone());
                 inner_stop.extend(exit.clone());
-                let body = self.chain(self.next_of(&c, "out"), &inner_stop)?;
-                out.push(Stmt::new(Kind::Namespace { label: label.to_string(), body }, None));
+                let body = self.chain_next(&c, "out", &inner_stop)?;
+                out.push(self.namespace(label.to_string(), body, n, "out")?);
                 cur = exit;
+                incoming_origin = None;
                 continue;
             }
             if self.emitted.contains(&c) {
@@ -455,14 +492,19 @@ impl<'g> GraphView<'g> {
                     out.push(self.decorate(Stmt::new(each, None), n)?);
                     let mut inner_stop = stop.clone();
                     inner_stop.insert(c.clone());
-                    let body = self.chain(self.next_of(&c, "body"), &inner_stop)?;
-                    out.push(Stmt::new(Kind::Namespace { label: label.to_string(), body }, None));
+                    let body = self.chain_next(&c, "body", &inner_stop)?;
+                    out.push(self.namespace(label.to_string(), body, n, "body")?);
                     self.next_of(&c, "done")
                 }
                 "branch" | "switch" | "parallel" | "try" => self.branch_like(n, &c, kind, stop, &mut out)?,
                 "inputs" => self.next_of(&c, "out"),
                 "outputs" | "get" | "set" | "value" => None,
                 other => return Err(gerr(format!("unknown node kind '{other}'"))),
+            };
+            incoming_origin = if matches!(kind, "call" | "assign" | "dataflow" | "inputs" | "each") {
+                self.ctrl_origins.get(&(c.clone(), if kind == "each" { "done" } else { "out" }.into())).cloned()
+            } else {
+                None
             };
             cur = nxt;
         }
@@ -506,8 +548,8 @@ impl<'g> GraphView<'g> {
                 };
                 out.push(self.decorate(Stmt::new(s, None), n)?);
                 for port in ["true", "false"] {
-                    let body = self.chain(self.next_of(c, port), &arm_stop)?;
-                    out.push(Stmt::new(Kind::Namespace { label: label_of(port)?, body }, None));
+                    let body = self.chain_next(c, port, &arm_stop)?;
+                    out.push(self.namespace(label_of(port)?, body, n, port)?);
                 }
             }
             "switch" => {
@@ -524,22 +566,22 @@ impl<'g> GraphView<'g> {
                 let s = Kind::Switch { value: input("value")?, cases, default };
                 out.push(self.decorate(Stmt::new(s, None), n)?);
                 for port in &ports {
-                    let body = self.chain(self.next_of(c, port), &arm_stop)?;
-                    out.push(Stmt::new(Kind::Namespace { label: label_of(port)?, body }, None));
+                    let body = self.chain_next(c, port, &arm_stop)?;
+                    out.push(self.namespace(label_of(port)?, body, n, port)?);
                 }
             }
             "parallel" => {
                 let s = Kind::Parallel { labels: ports.iter().map(|p| label_of(p)).collect::<Result<_>>()? };
                 out.push(self.decorate(Stmt::new(s, None), n)?);
                 for port in &ports {
-                    let body = self.chain(self.next_of(c, port), &arm_stop)?;
-                    out.push(Stmt::new(Kind::Namespace { label: label_of(port)?, body }, None));
+                    let body = self.chain_next(c, port, &arm_stop)?;
+                    out.push(self.namespace(label_of(port)?, body, n, port)?);
                 }
             }
             _ => {
                 let error_name = self.bound(c, "error", prop(n, "error_name"))?;
-                let body = self.chain(self.next_of(c, "try"), &arm_stop)?;
-                let handler = self.chain(self.next_of(c, "except"), &arm_stop)?;
+                let body = self.chain_next(c, "try", &arm_stop)?;
+                let handler = self.chain_next(c, "except", &arm_stop)?;
                 out.push(self.decorate(Stmt::new(Kind::Try { body, handler, error_name }, None), n)?);
             }
         }
@@ -574,20 +616,29 @@ impl<'g> GraphView<'g> {
             if matches!(kind, "get" | "set" | "value" | "outputs") {
                 continue;
             }
-            if !self.ctrl_in[nid].is_empty() && kind != "inputs" {
+            // Back edges alone do not disqualify a root each/merge. An explicit
+            // entry marker, not provenance, determines whether a merge executes.
+            let primary =
+                n.get("ctrl_in").and_then(Json::as_array).and_then(|ports| ports.first()).and_then(Json::as_str);
+            let source_entry = matches!(kind, "each" | "merge")
+                && primary.is_some_and(|port| !self.ctrl_out.values().any(|dst| dst.0 == nid && dst.1 == port));
+            if !self.ctrl_in[nid].is_empty() && kind != "inputs" && !source_entry {
                 continue;
             }
             let label = if kind == "merge" { prop(n, "label").filter(|l| l.truthy()) } else { None };
-            if kind == "merge" {
+            if kind == "merge" && label.is_none() {
+                continue;
+            }
+            if kind == "merge" && n.get("entry") != Some(&Json::Bool(true)) {
                 let Some(label) = label else { continue };
                 let label = label.as_str().ok_or_else(|| gerr("labels are strings"))?.to_string();
                 // A labelled merge nothing enters: a namespace never entered.
                 self.emitted.insert(nid.to_string());
-                let body = self.chain(self.next_of(nid, "out"), &HashSet::from([nid.to_string()]))?;
-                out.push(Stmt::new(Kind::Namespace { label, body }, None));
+                let body = self.chain_next(nid, "out", &HashSet::from([nid.to_string()]))?;
+                out.push(self.namespace(label, body, n, "out")?);
                 continue;
             }
-            out.extend(self.chain(Some(nid.to_string()), &HashSet::new())?);
+            out.extend(self.chain(Some(nid.to_string()), &HashSet::new(), None)?);
         }
         Ok(out)
     }
@@ -603,10 +654,18 @@ pub fn from_graph(graph: &Json, with_meta: bool) -> Result<Program> {
     for u in opt_array(graph, "uses")? {
         program.uses.push(Use { library: string(u, "library")?.to_string(), alias: opt_string(u.get("alias"))? });
     }
+    for i in opt_array(graph, "imports")? {
+        program
+            .imports
+            .push(Import { module: string(i, "module")?.to_string(), alias: string(i, "alias")?.to_string() });
+    }
+    for e in opt_array(graph, "exports")? {
+        program.exports.push(e.as_str().ok_or_else(|| gerr("exports must be strings"))?.to_string());
+    }
     program.mode = opt_string(graph.get("mode"))?;
-    if let Some(hints) = graph.get("typehints").filter(|h| h.truthy()) {
+    if graph.get("typehints").is_some_and(Json::truthy) || graph.get("typehint_groups").is_some_and(Json::truthy) {
         let mut entries = Vec::new();
-        for h in hints.as_array().ok_or_else(|| gerr("'typehints' must be a list"))? {
+        for h in opt_array(graph, "typehints")? {
             let types = |k: &str| -> Result<Vec<TypeExpr>> {
                 array(h, k)?
                     .iter()
@@ -619,7 +678,26 @@ pub fn from_graph(graph: &Json, with_meta: bool) -> Result<Program> {
                 outputs: types("outputs")?,
             });
         }
-        program.body.push(Stmt::new(Kind::TypeHints { entries }, None));
+        if graph.contains_key("typehint_groups") {
+            let mut offset = 0;
+            for group in array(graph, "typehint_groups")? {
+                let count = match group.get("count") {
+                    Some(Json::Int(n)) => n.to_usize(),
+                    _ => None,
+                }
+                .filter(|&n| n <= entries.len() - offset)
+                .ok_or_else(|| gerr("invalid typehint group count"))?;
+                let mut stmt = Stmt::new(Kind::TypeHints { entries: entries[offset..offset + count].to_vec() }, None);
+                stmt.origin = origin_from_json(group.get("origin"))?;
+                program.body.push(stmt);
+                offset += count;
+            }
+            if offset != entries.len() {
+                return Err(gerr("typehint groups do not cover all entries"));
+            }
+        } else {
+            program.body.push(Stmt::new(Kind::TypeHints { entries }, None));
+        }
     }
     let mut main = None;
     for g in array(graph, "graphs")? {
@@ -653,7 +731,9 @@ pub fn from_graph(graph: &Json, with_meta: bool) -> Result<Program> {
         for o in opt_array(g, "outputs")? {
             outputs.push(OutParam { name: string(o, "name")?.to_string(), ty: type_of(o)? });
         }
-        program.body.push(Stmt::new(Kind::Def(Def { name: name.to_string(), params, outputs, body }), None));
+        let mut def = Stmt::new(Kind::Def(Def { name: name.to_string(), params, outputs, body }), None);
+        def.origin = origin_from_json(g.get("origin"))?;
+        program.body.push(def);
     }
     if let Some(g) = main {
         program.body.extend(GraphView::new(g, with_meta)?.body()?);

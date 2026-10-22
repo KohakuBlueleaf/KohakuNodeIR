@@ -15,12 +15,14 @@ DEDENT = _{ "\u{E002}" }
 
 file      = { SOI ~ (NL | statement)* ~ EOI }
 statement = _{ simple ~ NL+ | compound }
-simple    = _{ use_decl | meta | hint | mode | call | assignment }
+simple    = _{ use_decl | import_decl | export_decl | meta | hint | mode | call | assignment }
 compound  = _{ namespace | subgraph | dataflow | try_block | typehint_block }
 
 // ---------------------------------------------------------------- simple
 
 use_decl = { USE ~ string ~ (AS ~ name)? }
+import_decl = { IMPORT ~ string ~ AS ~ name }
+export_decl = { EXPORT ~ name }
 
 assignment = { name ~ (":" ~ type_expr)? ~ "=" ~ expr }
 
@@ -79,7 +81,7 @@ type_expr = { type_atom ~ ("|" ~ type_atom)* }
 type_atom = _{ type_any | type_none | type_ref }
 type_any  = @{ "_" ~ !ident_char }
 type_none = @{ "None" ~ !ident_char }
-type_ref  = { name ~ type_args? ~ type_opt? }
+type_ref  = { func_name ~ type_args? ~ type_opt? }
 type_args = { "[" ~ type_expr ~ ("," ~ type_expr)* ~ "]" }
 type_opt  = { "?" }
 
@@ -106,6 +108,8 @@ none_lit  = @{ "None" ~ !ident_char }
 wildcard_tok = @{ "_" ~ !ident_char }
 as_tok       = @{ "as" ~ !ident_char }
 use_tok      = @{ "@use" ~ !ident_char }
+import_tok   = @{ "@import" ~ !ident_char }
+export_tok   = @{ "@export" ~ !ident_char }
 def_tok      = @{ "@def" ~ !ident_char }
 meta_tok     = @{ "@meta" ~ !ident_char }
 hint_tok     = @{ "@hint" ~ !ident_char }
@@ -118,6 +122,8 @@ typehint_tok = @{ "@typehint" ~ !ident_char }
 WILDCARD = _{ &wildcard_tok ~ "_" }
 AS       = _{ &as_tok ~ "as" }
 USE      = _{ &use_tok ~ "@use" }
+IMPORT   = _{ &import_tok ~ "@import" }
+EXPORT   = _{ &export_tok ~ "@export" }
 DEF      = _{ &def_tok ~ "@def" }
 META     = _{ &meta_tok ~ "@meta" }
 HINT     = _{ &hint_tok ~ "@hint" }

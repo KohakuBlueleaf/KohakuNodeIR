@@ -39,7 +39,8 @@ class KirRuntimeError(KirError):
 class NodeFailure(KirRuntimeError):
     """A node call raised; carries the original exception for `@except`."""
 
-    def __init__(self, node: str, error: BaseException, line: int | None = None):
+    def __init__(self, node: str, error: BaseException, line: int | None = None, *, origin=None):
         self.node = node
         self.error = error
+        self.origin = origin
         super().__init__(f"node {node!r} failed: {type(error).__name__}: {error}", line)

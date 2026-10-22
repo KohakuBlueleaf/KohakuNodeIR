@@ -1,6 +1,6 @@
 //! `kir.std`, the standard node library, and the internal `kir.` nodes `expand_each` uses.
 
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use crate::sig::model::{Library, Port, Signature};
 use crate::syntax::ast::TypeExpr;
@@ -61,6 +61,12 @@ pub fn std_library() -> &'static Library {
             ],
         )
     })
+}
+
+/// Shared ownership with stable identity for explicit standard-library uses.
+pub fn std_library_arc() -> Arc<Library> {
+    static STD_ARC: OnceLock<Arc<Library>> = OnceLock::new();
+    STD_ARC.get_or_init(|| Arc::new(std_library().clone())).clone()
 }
 
 /// The internal `kir.` nodes of the `expand_each` pass.

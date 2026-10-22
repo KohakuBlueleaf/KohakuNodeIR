@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::errors::{KirError, Result};
 use crate::flow::cfg::{build_cfg, reaching, UNDEF};
+use crate::origins::derive_origin;
 use crate::syntax::ast::{walk, Expr, Kind, Program, Stmt, Uid};
 use crate::util::pyfmt::str_repr;
 
@@ -81,6 +82,12 @@ impl Versions {
             }
             for body in s.children_mut() {
                 *body = self.rewrite(std::mem::take(body))?;
+            }
+            for copy in &mut copies {
+                copy.origin = derive_origin(s.origin.as_ref(), Some("version.home"), &[]);
+            }
+            if let Some(copy) = &mut handler_copy {
+                copy.origin = derive_origin(s.origin.as_ref(), Some("version.handler"), &[]);
             }
             // Added after the handler is rewritten: the copy is already versioned.
             if let (Some(copy), Kind::Try { handler, .. }) = (handler_copy, &mut s.kind) {

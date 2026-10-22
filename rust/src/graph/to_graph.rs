@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::errors::{KirError, Result};
 use crate::flow::cfg::{build_cfg, reaching, Cfg, NodeKind, Reaching, UNDEF};
+use crate::origins::origin_json;
 use crate::sig::env::NodeEnv;
 use crate::sig::types::type_text;
 use crate::syntax::ast::{Arg, Expr, Kind, OutParam, Param, Program, Stmt, Uid};
@@ -67,6 +68,9 @@ struct GNode {
     ctrl_out: Option<Vec<String>>,
     meta: Option<Json>,
     hints: Option<Json>,
+    origin: Option<Json>,
+    namespace_origins: Option<Json>,
+    entry: bool,
 }
 
 impl GNode {
@@ -101,6 +105,11 @@ impl GNode {
         put("ctrl_out", self.ctrl_out.as_ref().map(|c| Json::strs(c)));
         put("meta", self.meta.clone());
         put("hints", self.hints.clone());
+        put("origin", self.origin.clone());
+        put("namespace_origins", self.namespace_origins.clone());
+        if self.entry {
+            put("entry", Some(Json::Bool(true)));
+        }
         Json::Object(o)
     }
 }
@@ -109,16 +118,21 @@ struct Edge {
     kind: &'static str,
     from: PortRef,
     to: PortRef,
+    origin: Option<Json>,
 }
 
 impl Edge {
     fn to_json(&self) -> Json {
         let end = |p: &PortRef| Json::Object(vec![("node".into(), Json::str(&p.0)), ("port".into(), Json::str(&p.1))]);
-        Json::Object(vec![
+        let mut out = Json::Object(vec![
             ("kind".into(), Json::str(self.kind)),
             ("from".into(), end(&self.from)),
             ("to".into(), end(&self.to)),
-        ])
+        ]);
+        if let Some(origin) = &self.origin {
+            out.insert("origin", origin.clone());
+        }
+        out
     }
 }
 
@@ -259,6 +273,7 @@ impl<'a> Scope<'a> {
     fn node(&mut self, mut n: GNode, base: &str, stmt: Option<&Stmt>) -> Result<usize> {
         n.id = self.new_id(base, stmt);
         if let Some(s) = stmt {
+            n.origin = s.origin.as_ref().map(origin_json);
             let meta: Vec<(String, Json)> = s
                 .meta
                 .iter()
@@ -286,11 +301,11 @@ impl<'a> Scope<'a> {
     }
 
     fn ctrl(&mut self, from: PortRef, to: PortRef) {
-        self.edges.push(Edge { kind: "ctrl", from, to });
+        self.edges.push(Edge { kind: "ctrl", from, to, origin: None });
     }
 
     fn data(&mut self, from: PortRef, to: PortRef) {
-        self.edges.push(Edge { kind: "data", from, to });
+        self.edges.push(Edge { kind: "data", from, to, origin: None });
     }
 
     /// Connect incoming control to `target`, through a merge node when several.
@@ -616,6 +631,12 @@ impl<'a> Scope<'a> {
                     incoming = vec![port_ref(&id, "done")];
                 }
                 Kind::Jump { label } => {
+                    let is_entry = incoming.is_empty()
+                        && self.cfg.succ[self.cfg.entry]
+                            .iter()
+                            .any(|(node, _)| self.cfg.node_of.get(&s.uid) == Some(node));
+                    let edge_start = self.edges.len();
+                    let edge_end;
                     let Some(target) = self.find_namespace(label) else {
                         incoming = vec![];
                         continue;
@@ -628,10 +649,27 @@ impl<'a> Scope<'a> {
                         }
                         let m = self.labelled_merge(target, Some(s))?;
                         self.join(incoming, port_ref(&m, "in_0"))?;
+                        edge_end = self.edges.len();
                         let ends = self.namespace(target, vec![port_ref(&m, "out")])?;
                         self.pending.entry(target.uid).or_default().extend(ends);
                     } else {
                         self.loop_back(label, incoming);
+                        edge_end = self.edges.len();
+                    }
+                    if is_entry {
+                        let node = &mut self.nodes[self.index[&self.merges[label]]];
+                        node.entry = true;
+                        if let Some(origin) = &s.origin {
+                            node.origin = Some(origin_json(origin));
+                        }
+                    }
+                    if let Some(origin) = &s.origin {
+                        let mid = &self.merges[label];
+                        for edge in &mut self.edges[edge_start..edge_end] {
+                            if edge.kind == "ctrl" && &edge.to.0 == mid {
+                                edge.origin = Some(origin_json(origin));
+                            }
+                        }
                     }
                     incoming = vec![];
                 }
@@ -701,6 +739,12 @@ impl<'a> Scope<'a> {
     }
 
     fn namespace(&mut self, ns: &'a Stmt, incoming: Vec<PortRef>) -> Result<Vec<PortRef>> {
+        if let Some(origin) = &ns.origin {
+            for (nid, port) in &incoming {
+                let node = &mut self.nodes[self.index[nid]];
+                node.namespace_origins.get_or_insert_with(|| Json::Object(vec![])).insert(port, origin_json(origin));
+            }
+        }
         match &ns.kind {
             Kind::Namespace { body, .. } => self.block(body, incoming),
             _ => unreachable!("a namespace"),
@@ -819,7 +863,11 @@ pub fn to_graph(program: &Program, env: Option<&NodeEnv>, data: DataStyle) -> Re
     let mut graphs = vec![Scope::new(env, "main", &program.body, &[], &[], data).build()?];
     for s in &program.body {
         if let Kind::Def(d) = &s.kind {
-            graphs.push(Scope::new(env, &d.name, &d.body, &d.params, &d.outputs, data).build()?);
+            let mut graph = Scope::new(env, &d.name, &d.body, &d.params, &d.outputs, data).build()?;
+            if let Some(origin) = &s.origin {
+                graph.insert("origin", origin_json(origin));
+            }
+            graphs.push(graph);
         }
     }
     let uses = program
@@ -837,6 +885,26 @@ pub fn to_graph(program: &Program, env: Option<&NodeEnv>, data: DataStyle) -> Re
         ("uses".to_string(), Json::Array(uses)),
         ("graphs".to_string(), Json::Array(graphs)),
     ];
+    if !program.imports.is_empty() {
+        out.push((
+            "imports".into(),
+            Json::Array(
+                program
+                    .imports
+                    .iter()
+                    .map(|i| {
+                        Json::Object(vec![
+                            ("module".into(), Json::str(&i.module)),
+                            ("alias".into(), Json::str(&i.alias)),
+                        ])
+                    })
+                    .collect(),
+            ),
+        ));
+    }
+    if !program.exports.is_empty() {
+        out.push(("exports".into(), Json::strs(&program.exports)));
+    }
     if let Some(mode) = program.mode.as_deref().filter(|m| !m.is_empty()) {
         out.push(("mode".into(), Json::str(mode)));
     }
@@ -859,6 +927,25 @@ pub fn to_graph(program: &Program, env: Option<&NodeEnv>, data: DataStyle) -> Re
     let has_hints = program.body.iter().any(|s| matches!(s.kind, Kind::TypeHints { .. }));
     if has_hints {
         out.push(("typehints".into(), Json::Array(entries)));
+    }
+    let hints: Vec<&Stmt> = program.body.iter().filter(|s| matches!(s.kind, Kind::TypeHints { .. })).collect();
+    if hints.iter().any(|s| s.origin.is_some()) {
+        out.push((
+            "typehint_groups".into(),
+            Json::Array(
+                hints
+                    .iter()
+                    .map(|s| {
+                        let Kind::TypeHints { entries } = &s.kind else { unreachable!() };
+                        let mut group = Json::Object(vec![("count".into(), Json::Int(entries.len().into()))]);
+                        if let Some(origin) = &s.origin {
+                            group.insert("origin", origin_json(origin));
+                        }
+                        group
+                    })
+                    .collect(),
+            ),
+        ));
     }
     Ok(Json::Object(out))
 }

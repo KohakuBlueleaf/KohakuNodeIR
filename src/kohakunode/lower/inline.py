@@ -2,6 +2,7 @@
 
 import copy
 
+from kohakunode.origins import derive_origin
 from kohakunode.syntax.ast import (
     Arg,
     Assign,
@@ -95,13 +96,31 @@ class Inliner:
         out: list[Stmt] = []
         for p in d.params:
             value = given.get(p.name, p.default if p.default is not None else Literal(None))
-            out.append(Assign(f(p.name), value, line=call.line))
+            out.append(
+                Assign(
+                    f(p.name),
+                    value,
+                    line=call.line,
+                    origin=derive_origin(call.origin or d.origin, generated="inline.arg"),
+                )
+            )
         body = copy.deepcopy(d.body)
+        if call.origin is not None:
+            ancestry = call.origin.calls + (call.origin,)
+            for stmt in walk(body):
+                stmt.origin = derive_origin(stmt.origin, calls=ancestry)
         rename(body, f)
         out.extend(self.block(body))
         for o, target in zip(d.outputs, call.outs):
             if target is not None:
-                out.append(Assign(target, Name(f(o.name)), line=call.line))
+                out.append(
+                    Assign(
+                        target,
+                        Name(f(o.name)),
+                        line=call.line,
+                        origin=derive_origin(call.origin or d.origin, generated="inline.output"),
+                    )
+                )
         if out:
             out[0].hint = call.hint | out[0].hint
         return out

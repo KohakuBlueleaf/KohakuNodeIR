@@ -12,6 +12,7 @@ use crate::flow::order::sort_dataflow;
 use crate::lower::each::EachExpander;
 use crate::lower::inline::Inliner;
 use crate::lower::versions::version_program;
+use crate::origins::derive_origin;
 use crate::sig::env::NodeEnv;
 use crate::syntax::ast::{walk_mut, Kind, Program, Stmt};
 use crate::syntax::writer::write;
@@ -64,7 +65,7 @@ fn group_block(stmts: Vec<Stmt>) -> Vec<Stmt> {
     for mut s in flat {
         if s.is_simple() {
             if s.writes().iter().any(|w| read.contains(*w)) {
-                out.push(Stmt::new(Kind::Dataflow { body: std::mem::take(&mut run) }, None));
+                out.push(group_run(std::mem::take(&mut run)));
                 read.clear();
             }
             read.extend(s.reads().into_iter().map(str::to_string));
@@ -72,7 +73,7 @@ fn group_block(stmts: Vec<Stmt>) -> Vec<Stmt> {
             continue;
         }
         if !run.is_empty() {
-            out.push(Stmt::new(Kind::Dataflow { body: std::mem::take(&mut run) }, None));
+            out.push(group_run(std::mem::take(&mut run)));
             read.clear();
         }
         for body in s.children_mut() {
@@ -81,9 +82,16 @@ fn group_block(stmts: Vec<Stmt>) -> Vec<Stmt> {
         out.push(s);
     }
     if !run.is_empty() {
-        out.push(Stmt::new(Kind::Dataflow { body: run }, None));
+        out.push(group_run(run));
     }
     out
+}
+
+fn group_run(body: Vec<Stmt>) -> Stmt {
+    let origin = derive_origin(body.iter().find_map(|s| s.origin.as_ref()), Some("group"), &[]);
+    let mut stmt = Stmt::new(Kind::Dataflow { body }, None);
+    stmt.origin = origin;
+    stmt
 }
 
 fn run_pass(name: &str, p: &mut Program, env: &NodeEnv) -> Result<()> {

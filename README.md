@@ -108,6 +108,11 @@ nodes and never needs to know how the KIR was made.
 - **Signatures and `@use`.** Node libraries export `.kirsig.json` files
   (ports, types, defaults, flags), so the checker, editors and the language
   server never import node code. `@use "gbc" as g` makes a library callable.
+- **Reusable source modules.** `@import "transforms.kir" as t` links explicitly
+  exported KIR subgraphs before checking and lowering. Private definitions stay
+  isolated; dependency manifests are portable across checkout locations. Structured
+  origins retain definition and call-site ancestry through transformations
+  ([modules and origins](docs/spec/modules.md)).
 - **A static checker.** Undefined reads on any path, wrong port counts, type
   mismatches, ambiguous names, bad labels, dataflow cycles: one code per rule
   ([checks.md](docs/spec/checks.md)).

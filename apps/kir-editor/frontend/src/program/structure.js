@@ -123,11 +123,11 @@ const isHead = (it) => it.t === "def" || (it.t === "stmt" && it.s.type === "type
 export function programTree(ast) {
   const copy = JSON.parse(JSON.stringify(ast))
   const items = group(copy.body)
-  return { uses: copy.uses, mode: copy.mode, head: items.filter(isHead), body: items.filter((it) => !isHead(it)) }
+  return { uses: copy.uses, imports: copy.imports || [], exports: copy.exports || [], mode: copy.mode, head: items.filter(isHead), body: items.filter((it) => !isHead(it)) }
 }
 
 export function treeToAst(tree) {
-  return { uses: tree.uses, mode: tree.mode, body: flatten([...tree.head, ...tree.body]) }
+  return { uses: tree.uses, imports: tree.imports || [], exports: tree.exports || [], mode: tree.mode, body: flatten([...tree.head, ...tree.body]) }
 }
 
 /** The lists of items an item holds, each with a caption (for drop targets and rendering). */

@@ -10,9 +10,11 @@ class ScopedRequest(BaseModel):
 
     signatures: list[dict] = Field(default_factory=list)
     use_demo: bool = True
+    modules: dict[str, str] | None = None
+    source_name: str = "<text>"
 
     def scope(self) -> Scope:
-        return Scope(self.signatures, self.use_demo)
+        return Scope(self.signatures, self.use_demo, self.modules, self.source_name)
 
 
 class SourceRequest(ScopedRequest):

@@ -1,8 +1,9 @@
 """The KIR abstract syntax tree.
 
 Every statement carries ``meta`` (from ``@meta``), ``hint`` (from ``@hint``) and
-the source ``line``. Equality ignores ``line`` so trees from different texts of
-the same program compare equal.
+the source ``line``. Optional ``origin`` records source provenance separately from
+editor metadata. Equality ignores ``line`` and ``origin`` so trees from different
+texts of the same program compare equal.
 """
 
 from dataclasses import dataclass, field
@@ -49,14 +50,29 @@ class Arg:
 # ---------------------------------------------------------------- statements
 
 
+@dataclass(frozen=True)
+class Origin:
+    """Source provenance, including the call sites that generated a statement."""
+
+    module: str
+    node_id: str
+    line: int | None = None
+    definition: str | None = None
+    calls: tuple["Origin", ...] = ()
+    generated: str | None = None
+
+
 @dataclass(eq=False)
 class Stmt:
     meta: dict = field(default_factory=dict, kw_only=True)
     hint: dict = field(default_factory=dict, kw_only=True)
     line: int | None = field(default=None, kw_only=True)
+    origin: Origin | None = field(default=None, kw_only=True, compare=False)
 
     def _key(self) -> tuple:
-        return tuple(getattr(self, f) for f in self.__dataclass_fields__ if f not in ("line",))
+        return tuple(
+            getattr(self, f) for f in self.__dataclass_fields__ if f not in ("line", "origin")
+        )
 
     def __eq__(self, other: object) -> bool:
         return type(self) is type(other) and self._key() == other._key()
@@ -173,11 +189,19 @@ class Use:
     alias: str | None = None
 
 
+@dataclass(frozen=True)
+class Import:
+    module: str
+    alias: str
+
+
 @dataclass
 class Program:
     uses: list[Use] = field(default_factory=list)
     body: list[Stmt] = field(default_factory=list)
     mode: str | None = None
+    imports: list[Import] = field(default_factory=list)
+    exports: list[str] = field(default_factory=list)
 
 
 BUILTINS = frozenset({"branch", "switch", "jump", "parallel", "each"})

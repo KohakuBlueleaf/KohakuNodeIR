@@ -8,7 +8,9 @@ and go-to-definition read the program structure from the Python parser.
 
 import json
 import re
-from dataclasses import dataclass
+import warnings
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from pathlib import Path
 
 try:
@@ -17,7 +19,9 @@ except ImportError:  # a source tree without the built extension
     _rs = None
 
 from kohakunode.check import check
-from kohakunode.errors import KirSignatureError, KirSyntaxError
+from kohakunode.compiler import compile_program
+from kohakunode.errors import KirCheckError, KirSignatureError, KirSyntaxError
+from kohakunode.lsp.modules import DefinitionLocation, exported_definitions
 from kohakunode.sig.env import NodeEnv, Resolved, build_env
 from kohakunode.sig.model import Signature
 from kohakunode.sig.std import STD
@@ -26,7 +30,20 @@ from kohakunode.syntax.ast import BUILTINS, Def, Namespace, Program, walk
 from kohakunode.syntax.parser import parse
 from kohakunode.syntax.writer import write
 
-DIRECTIVES = ["use", "def", "meta", "hint", "dataflow", "try", "except", "typehint", "mode"]
+DIRECTIVES = [
+    "use",
+    "import",
+    "export",
+    "def",
+    "meta",
+    "hint",
+    "dataflow",
+    "try",
+    "except",
+    "typehint",
+    "mode",
+]
+_MODULE_DIRECTIVE = re.compile(r"^\s*@(?:import|export)\b", re.MULTILINE)
 CORES = ("python", "rust")
 _WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_.]*")
 # Both cores end a positioned syntax error message with this (errors.py).
@@ -46,6 +63,19 @@ def _core(core: str | None) -> str:
     return core
 
 
+def _module_core(core: str, modular: bool) -> str:
+    """Older wheels predate module syntax/linking; make that fallback visible."""
+    if core == "rust" and modular and not hasattr(_rs, "compile_modules"):
+        warnings.warn(
+            "The installed Rust extension lacks source-module support; using the Python "
+            "reference for this document. Rebuild kohakunode._rs to use the native linker.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        return "python"
+    return core
+
+
 @dataclass
 class Problem:
     line: int  # 0-based
@@ -61,12 +91,22 @@ class Analysis:
     program: Program | None
     env: NodeEnv | None
     problems: list[Problem]
+    imported_definitions: dict[str, DefinitionLocation] = field(default_factory=dict)
 
 
 def analyze(
-    text: str, path: str | None = None, sig_path: list[str] = (), core: str | None = None
+    text: str,
+    path: str | None = None,
+    sig_path: list[str] = (),
+    core: str | None = None,
+    *,
+    modules: Mapping[str, str] | None = None,
+    source_name: str | None = None,
 ) -> Analysis:
     core = _core(core)
+    modular = bool(_MODULE_DIRECTIVE.search(text))
+    core = _module_core(core, modular)
+    source_name = source_name or (Path(path).name if path else "<text>")
     lines = text.splitlines() or [""]
 
     def whole(line_1: int | None) -> tuple[int, int, int]:
@@ -95,28 +135,94 @@ def analyze(
     else:
         python_error = None
 
+    if modular and isinstance(python_error, KirSyntaxError):
+        # A half-typed call must not erase the imported completion catalog.
+        # This recovery supplies queries only; the selected core diagnoses the
+        # original, unmodified source below.
+        preamble = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith(("#", "@use ", "@import ", "@export ")):
+                break
+            preamble.append(line)
+        try:
+            program = parse("\n".join(preamble) + "\n")
+            env = build_env(program, None, base, [Path(p) for p in sig_path])
+        except (KirSyntaxError, KirSignatureError):
+            pass
+    locations = (
+        exported_definitions(program, env, base, source_name, modules)
+        if modular and program is not None and env is not None
+        else {}
+    )
+
     if core == "rust":
         try:
-            found_json = _rs.check(
-                text, [], base=str(base) if base else None, sig_path=list(sig_path)
-            )
+            if modular:
+                result = _rs.compile_modules(
+                    text,
+                    json.dumps(dict(modules)) if modules is not None else None,
+                    source_name,
+                    passes=[],
+                    base=str(base) if base else None,
+                    sig_path=list(sig_path),
+                )
+                diagnostics = json.loads(result)["diagnostics"]
+            else:
+                diagnostics = json.loads(
+                    _rs.check(text, [], base=str(base) if base else None, sig_path=list(sig_path))
+                )
         except _rs.KirSyntaxError as exc:
             message = str(exc)
             where = _WHERE.search(message)
             line, column = (int(where[1]), int(where[2])) if where else (None, None)
-            return Analysis(None, None, [syntax(message, line, column)])
-        problems = [
-            found(d["code"], d["severity"], d["message"], d["line"]) for d in json.loads(found_json)
+            return Analysis(program, env, [syntax(message, line, column)], locations)
+        except _rs.KirCheckError as exc:
+            diagnostics = json.loads(exc.diagnostics)
+        except _rs.KirSignatureError as exc:
+            diagnostics = [{"code": "E002", "severity": "error", "message": str(exc), "line": None}]
+    else:
+        if isinstance(python_error, KirSyntaxError):
+            exc = python_error
+            return Analysis(program, env, [syntax(str(exc), exc.line, exc.column)], locations)
+        if isinstance(python_error, KirSignatureError) and not modular:
+            return Analysis(program, None, [found("E002", "error", str(python_error), None)])
+        if modular:
+            try:
+                compiled = compile_program(
+                    program,
+                    base_dir=base,
+                    sig_path=[Path(p) for p in sig_path],
+                    passes=[],
+                    modules=modules,
+                    source_name=source_name,
+                )
+                checked = compiled.diagnostics
+            except KirCheckError as exc:
+                checked = exc.diagnostics
+        else:
+            checked = check(program, env)
+        diagnostics = [
+            {"code": d.code, "severity": d.severity, "message": d.message, "line": d.line}
+            for d in checked
         ]
-        return Analysis(program, env, problems)
 
-    if isinstance(python_error, KirSyntaxError):
-        exc = python_error
-        return Analysis(None, None, [syntax(str(exc), exc.line, exc.column)])
-    if isinstance(python_error, KirSignatureError):
-        return Analysis(program, None, [found("E002", "error", str(python_error), None)])
-    problems = [found(d.code, d.severity, d.message, d.line) for d in check(program, env)]
-    return Analysis(program, env, problems)
+    # Imported lines are not positions in this document. Keep the compiler's
+    # source-aware message, and anchor those errors on the import preamble.
+    import_line = next(
+        (i + 1 for i, line in enumerate(lines) if line.lstrip().startswith("@import")), 1
+    )
+    problems = []
+    for d in diagnostics:
+        line, message = d["line"], d["message"]
+        if modular:
+            foreign = re.match(r"([^:]+)(?:::.*)?: ", message)
+            if d["code"] == "E002" or (foreign and foreign[1] != source_name):
+                line = import_line
+            if line != d["line"] and d["line"] is not None:
+                message += f" (source line {d['line']})"
+        problems.append(found(d["code"], d["severity"], message, line))
+    return Analysis(program, env, problems, locations)
 
 
 def word_at(text: str, line: int, character: int) -> tuple[str, int, int] | None:
@@ -161,7 +267,11 @@ def hover(a: Analysis, text: str, line: int, character: int) -> str | None:
     r = a.env.resolve(word)
     if isinstance(r, Resolved):
         lib = r.library.name if r.library else ("@def" if r.definition else "@typehint")
-        return signature_markdown(r.signature, lib)
+        result = signature_markdown(r.signature, lib)
+        location = a.imported_definitions.get(word)
+        if location:
+            result += f"\n\nsource `{location.path}` (line {location.line + 1})"
+        return result
     if a.program is not None:
         for s in walk(a.program.body):
             if isinstance(s, Namespace) and s.label == word:
@@ -204,8 +314,39 @@ def definition(a: Analysis, text: str, line: int, character: int) -> int | None:
     return None
 
 
+def definition_location(
+    a: Analysis,
+    text: str,
+    line: int,
+    character: int,
+    path: str | None = None,
+) -> DefinitionLocation | None:
+    """Cross-file definition target; ``definition`` retains its local-line API."""
+    word = word_at(text, line, character)
+    if word and word[0] in a.imported_definitions:
+        return a.imported_definitions[word[0]]
+    local = definition(a, text, line, character)
+    return None if local is None else DefinitionLocation(path, local)
+
+
+def signature_help(a: Analysis, text: str, line: int, character: int) -> str | None:
+    """Signature at a node name or within its output list (KIR puts inputs first)."""
+    result = hover(a, text, line, character)
+    if result is not None:
+        return result
+    lines = text.splitlines()
+    if line >= len(lines):
+        return None
+    matches = list(
+        re.finditer(r"\)\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\([^)]*$", lines[line][:character])
+    )
+    if not matches:
+        return None
+    return hover(a, text, line, matches[-1].start(1))
+
+
 def format_text(text: str, core: str | None = None) -> str | None:
-    if _core(core) == "rust":
+    if _module_core(_core(core), bool(_MODULE_DIRECTIVE.search(text))) == "rust":
         try:
             return _rs.format(text)
         except _rs.KirError:

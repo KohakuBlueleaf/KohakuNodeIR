@@ -200,6 +200,12 @@ pub fn write(program: &Program) -> Result<String> {
         };
         out.push(format!("@use {}{alias}", write_literal(&Value::str(&u.library))?));
     }
+    for i in &program.imports {
+        out.push(format!("@import {} as {}", json_str(&i.module), i.alias));
+    }
+    for e in &program.exports {
+        out.push(format!("@export {e}"));
+    }
     if let Some(mode) = program.mode.as_deref().filter(|m| !m.is_empty()) {
         out.push(format!("@mode {mode}"));
     }

@@ -46,6 +46,23 @@ pub fn from_graph(graph: &str, with_meta: bool) -> Result<String, JsError> {
     api::from_graph(graph, with_meta).map_err(js_err)
 }
 
+/// Source resources are a JSON object of portable module IDs to source strings.
+#[wasm_bindgen(js_name = linkModules)]
+pub fn link_modules(source: &str, modules: &str, source_name: &str, sigs: Vec<String>) -> Result<String, JsError> {
+    api::link_modules(source, modules, source_name, api::Signatures::texts(&sigs)).map_err(js_err)
+}
+
+#[wasm_bindgen(js_name = compileModules)]
+pub fn compile_modules(
+    source: &str,
+    modules: &str,
+    source_name: &str,
+    sigs: Vec<String>,
+    passes: Option<Vec<String>>,
+) -> Result<String, JsError> {
+    api::compile_modules(source, modules, source_name, api::Signatures::texts(&sigs), passes.as_deref()).map_err(js_err)
+}
+
 #[wasm_bindgen(js_name = stdSignatures)]
 pub fn std_signatures() -> Result<String, JsError> {
     api::std_signatures().map_err(js_err)

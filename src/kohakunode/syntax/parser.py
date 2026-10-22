@@ -20,6 +20,7 @@ from kohakunode.syntax.ast import (
     Dataflow,
     Def,
     Each,
+    Import,
     Jump,
     Literal,
     Name,
@@ -89,6 +90,10 @@ class _Hint(dict):
 
 
 class _Mode(str):
+    pass
+
+
+class _Export(str):
     pass
 
 
@@ -178,6 +183,12 @@ class _ToAst(Transformer):
 
     def use_decl(self, lib, alias=None):
         return Use(pyast.literal_eval(str(lib)), str(alias) if alias is not None else None)
+
+    def import_decl(self, module, alias):
+        return Import(pyast.literal_eval(str(module)), str(alias))
+
+    def export_decl(self, name):
+        return _Export(str(name))
 
     # ---------------------------------------------------------- calls
     def func_name(self, *parts):
@@ -373,7 +384,7 @@ def _attach(items: list) -> list[Stmt]:
             item.hint = hint | item.hint
             meta, hint = {}, {}
             out.append(item)
-        elif isinstance(item, (Use, _Mode)):
+        elif isinstance(item, (Use, Import, _Export, _Mode)):
             raise KirSyntaxError(f"{_directive(item)} is only allowed at the top of a file")
     if meta or hint:
         raise KirSyntaxError("@meta / @hint must be followed by a statement")
@@ -381,7 +392,13 @@ def _attach(items: list) -> list[Stmt]:
 
 
 def _directive(item) -> str:
-    return "@use" if isinstance(item, Use) else "@mode"
+    if isinstance(item, Use):
+        return "@use"
+    if isinstance(item, Import):
+        return "@import"
+    if isinstance(item, _Export):
+        return "@export"
+    return "@mode"
 
 
 _FIRST_CODE = re.compile(r"(?:[\t ]*(?:#[^\r\n]*)?\r?\n)*([\t ]*)")
@@ -409,9 +426,13 @@ def parse(source: str) -> Program:
         raise KirSyntaxError(str(exc.orig_exc)) from None
     program = Program()
     i = 0
-    while i < len(items) and isinstance(items[i], (Use, _Mode)):
+    while i < len(items) and isinstance(items[i], (Use, Import, _Export, _Mode)):
         if isinstance(items[i], Use):
             program.uses.append(items[i])
+        elif isinstance(items[i], Import):
+            program.imports.append(items[i])
+        elif isinstance(items[i], _Export):
+            program.exports.append(str(items[i]))
         else:
             program.mode = str(items[i])
         i += 1

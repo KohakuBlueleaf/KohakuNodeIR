@@ -1,0 +1,24 @@
+// Filesystem-free source module linking and compilation through wasm-bindgen.
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const kir = require(path.resolve(process.argv[2] || path.join(__dirname, '../../target/wasm-node/kohakunode_rs.js')));
+const source = '@import "lib.kir" as lib\n()lib.id(result)\n';
+const modules = JSON.stringify({'lib.kir': '@export id\n@def (x: int = 7)id(y: int):\n    y = x\n'});
+const linked = JSON.parse(kir.linkModules(source, modules, 'main.kir', []));
+const compiled = JSON.parse(kir.compileModules(source, modules, 'main.kir', [], undefined));
+assert.equal(linked.text, compiled.text);
+assert.deepEqual(linked.dependencies, compiled.dependencies);
+assert.equal(compiled.dependencies.modules.length, 2);
+assert.equal(compiled.dependencies.hash.length, 64);
+assert(!compiled.text.includes('@import'));
+assert(!compiled.lowered_text.includes('@def'));
+assert(compiled.lowered_text.includes('7'));
+const walk = (statements) => statements.flatMap(s => [s, ...walk(s.body || []), ...walk(s.handler || [])]);
+assert(walk(compiled.lowered.body).every(s => s.origin));
+assert(walk(compiled.lowered.body).some(s => s.origin.module === 'lib.kir' && s.origin.calls.some(c => c.module === 'main.kir')));
+assert.throws(() => kir.linkModules(source, '{}', 'main.kir', []), /missing from the module map/);
+assert.throws(() => kir.linkModules('@import "../lib.kir" as lib\n', modules, 'main.kir', []), /escapes the package root/);
+const legacy = JSON.parse(kir.compileModules('x = 1\n', '{}', '<text>', [], undefined));
+assert.deepEqual(legacy.dependencies, {});
+assert.equal(legacy.semantic, JSON.parse(kir.hashes('x = 1\n', [], undefined)).semantic);
+console.log('WASM modules: linkage, compilation, origins, dependency hashes, legacy parity, map authority passed');

@@ -3,12 +3,13 @@
 use std::cmp::Reverse;
 use std::collections::{BTreeSet, BinaryHeap, HashMap};
 
-use crate::syntax::ast::{Kind, Program, Stmt};
+use crate::syntax::ast::{Kind, Origin, Program, Stmt};
 
 /// A dependency cycle; holds the line of the first statement left in it.
 #[derive(Debug)]
 pub struct DataflowCycle {
     pub line: Option<usize>,
+    pub origin: Option<Box<Origin>>,
 }
 
 /// Statements after every statement whose output they read; earliest first when tied.
@@ -55,7 +56,7 @@ pub fn order_block(stmts: Vec<Stmt>, is_ordered: &dyn Fn(&Stmt) -> bool) -> Resu
     }
     if order.len() != stmts.len() {
         let first = remaining.iter().position(|&r| r > 0).expect("a statement is left");
-        return Err(DataflowCycle { line: stmts[first].line });
+        return Err(DataflowCycle { line: stmts[first].line, origin: stmts[first].origin.clone().map(Box::new) });
     }
     let mut slots: Vec<Option<Stmt>> = stmts.into_iter().map(Some).collect();
     Ok(order.into_iter().map(|i| slots[i].take().expect("each index once")).collect())

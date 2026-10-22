@@ -51,7 +51,13 @@ def _sort(stmts: list[Stmt], is_ordered) -> list[Stmt]:
     out = []
     for s in stmts:
         if isinstance(s, Dataflow):
-            s = Dataflow(order_block(s.body, is_ordered), meta=s.meta, hint=s.hint, line=s.line)
+            s = Dataflow(
+                order_block(s.body, is_ordered),
+                meta=s.meta,
+                hint=s.hint,
+                line=s.line,
+                origin=s.origin,
+            )
         for body in children(s):
             body[:] = _sort(body, is_ordered)
         out.append(s)

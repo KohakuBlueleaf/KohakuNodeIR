@@ -2,8 +2,9 @@
 
 A `.kirgraph` file is the same program as its text, shown as the node graph an
 editor draws. Graph → text produces canonical text; text → graph → text
-returns that canonical text, and for canonical text the round trip is the
-identity. Behaviour is always preserved.
+returns the graph's canonical text. Graph reconstruction normalizes statement
+layout; source provenance is preserved by graph ↔ AST conversion, not by a
+plain-text hop. Legacy graphs have an entry ambiguity described below.
 
 ## File
 
@@ -26,6 +27,19 @@ identity. Behaviour is always preserved.
 `typehints` appear only when the program has them. Nodes are listed in the
 order they are created (statement order); edges are sorted by (target node,
 target port, source node, source port).
+
+Source-module declarations are optional file-level fields:
+
+```json
+{
+  "imports": [{"module": "relative/helpers.kir", "alias": "helpers"}],
+  "exports": ["expand"]
+}
+```
+
+They retain declaration order within each list and are omitted when empty.
+Imports require aliases; exports are individual names. These are declarations,
+not runtime nodes. `uses` retains its existing host-library meaning.
 
 ## Nodes
 
@@ -84,8 +98,12 @@ target port, source node, source port).
   the same as writing the literal in the input box it feeds.
 - Builtin outputs (`each` item and index, `try` error, `inputs` parameters)
   bind the name of the `set` they feed, else the name in their props.
-- A `merge` with a `label` is a loop entry: `()jump(`label`)` followed by
-  `label:`; every other edge into it is a `jump` back.
+- A `merge` with a `label` represents a namespace: entering control edges are
+  jumps to it. A root merge with **`"entry": true`** explicitly starts with
+  ``()jump(`label`)`` followed by `label:`. The encoder emits this optional node
+  field when a source jump is directly reached from graph entry and has no
+  preceding control edge. Without the marker, an otherwise unentered root
+  merge reconstructs only the namespace, never an executable entry jump.
 - A `dataflow` node stands for a `@dataflow:` block on the control chain; its
   members are free nodes (no control ports).
 - Literals in `value` fields are JSON, except tuples (`{"tuple": [...]}`),
@@ -99,6 +117,49 @@ target port, source node, source port).
 ```
 
 `kind` is `data` or `ctrl`. An input port takes at most one data edge.
+
+## Source provenance
+
+An optional `origin` object is separate from editor `meta` and `hints`:
+
+```json
+{
+  "module": "helpers.kir",
+  "node_id": "source_4",
+  "line": 12,
+  "definition": "expand",
+  "calls": [{"module": "main.kir", "node_id": "call_2", "line": 8}],
+  "generated": "inline"
+}
+```
+
+`module` and `node_id` are required strings. `line` is an integer or null;
+`definition` and `generated` are strings or null; `calls` is a recursive array
+of origins, defaulting to `[]`. The encoder includes all six fields; readers
+accept omitted optional fields. The source `node_id` is independent of the
+editor node's `id`.
+
+- Statement nodes carry `origin`; a definition's graph carries its own
+  `origin` separately from origins on body nodes.
+- Namespaces have no runtime nodes. Their origins appear in the entering
+  node's `namespace_origins` map, keyed by outgoing control port. A labelled
+  merge uses `out`; builtins use their arm/body ports.
+- Explicit jumps carry `origin` on control edges into labelled merges.
+  A merge's node `origin` records the initial jump represented by that merge,
+  including an entry jump without a preceding edge. The `entry` marker, not
+  provenance, determines whether a root merge executes.
+- When any top-level typehint block has an origin, file-level
+  `typehint_groups` contains ordered `{"count": N, "origin": ...}` objects
+  (origin omitted for an unstamped group). Counts partition the existing
+  flattened `typehints` list and preserve block origins.
+
+These fields are omitted when absent. `from_graph(..., with_meta=False)`
+removes editor metadata, **not** provenance. No KIR text origin directive is
+introduced: writing and reparsing text loses origins and their call stacks.
+Consequently, multiple typehint blocks whose distinct origins were preserved
+may merge into one block on the next no-origin graph projection; subsequent
+text normalization is stable. Graph normalization may also synthesize jumps
+or other structure, so provenance is not a bijection with original statements.
 
 ## Text → graph
 
@@ -124,10 +185,32 @@ them freely.
 
 ## Graph → text
 
-The walk starts at each node without incoming control edges. A branch-like
+The walk starts at each node without incoming control edges, and at `each`
+or labelled-merge roots whose primary control input is unconnected even when
+back edges target their other inputs. A marked merge root executes its entry
+jump; an unmarked merge root only declares a namespace. A branch-like
 node (`branch`, `switch`, `parallel`, `try`) writes one namespace per output
 port; each arm stops at the first node every arm reaches inside the current
 loop, and the text continues there. A labelled `merge` writes the loop entry;
 when every path leaving the loop meets at one node, the text continues there
 after the loop's namespace. Free `call` / `assign` nodes (no control ports)
 outside any `dataflow` group form one `@dataflow:` block at the top.
+
+### Compatibility and limits
+
+Older encoders emitted identical graphs for an initial `jump` into a namespace
+and for an unentered namespace with the same body. That information cannot be
+recovered from the old topology, metadata, or origin. An unmarked root is
+therefore conservatively reconstructed as an unentered namespace; regenerate
+such graphs from source to obtain `entry: true`. Older decoders may ignore
+that marker and cannot guarantee correct entry behavior for these graphs.
+The marker is an additive correction for this formerly ambiguous case;
+existing golden graphs are unchanged. Ordinary unstamped programs omit all
+new declaration/provenance fields.
+
+Graph ↔ AST conversion preserves provenance on represented statements, while
+retaining existing graph scope/structuring restrictions. It is not a lossless
+source archive: nested definitions/typehint blocks, unresolved jumps, and
+unsupported combinations of builtin and jump entry are not made representable
+by provenance fields. Text roundtrips preserve declarations but intentionally
+do not preserve origins.

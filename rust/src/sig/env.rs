@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 use crate::errors::Result;
 use crate::sig::files::{load_library, resolve_library, sig_path};
 use crate::sig::model::{Library, Port, Signature};
-use crate::sig::std::{internal_library, std_library};
+use crate::sig::std::{internal_library, std_library, std_library_arc};
 use crate::syntax::ast::{walk, Def, Expr, Kind, Program, TypeExpr};
 
 /// What a node name refers to: a library signature or a `@def`.
@@ -134,7 +134,7 @@ pub fn build_env(
     for u in &program.uses {
         let lib = match libraries.iter().rev().find(|l| l.name == u.library) {
             Some(l) => l.clone(),
-            None if u.library == std_library().name => Arc::new(std_library().clone()),
+            None if u.library == std_library().name => std_library_arc(),
             None => Arc::new(load_library(&resolve_library(&u.library, base_dir, &sig_path(search))?)?),
         };
         used.insert(lib.name.clone());

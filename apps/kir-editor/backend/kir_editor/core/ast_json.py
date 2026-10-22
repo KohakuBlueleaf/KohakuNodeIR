@@ -17,6 +17,7 @@ from kohakunode.syntax.ast import (
     Dataflow,
     Def,
     Each,
+    Import,
     Jump,
     Literal,
     Name,
@@ -182,6 +183,8 @@ def block_to_json(stmts: list[Stmt]) -> list[dict]:
 def program_to_json(p: Program) -> dict:
     return {
         "uses": [{"library": u.library, "alias": u.alias} for u in p.uses],
+        "imports": [{"module": i.module, "alias": i.alias} for i in p.imports],
+        "exports": list(p.exports),
         "mode": p.mode,
         "body": block_to_json(p.body),
     }
@@ -281,8 +284,21 @@ def stmt_from_json(d: dict) -> Stmt:
 def program_from_json(d: dict) -> Program:
     if not isinstance(d, dict):
         raise AstJsonError("a program is an object")
+    imports = d.get("imports", [])
+    exports = d.get("exports", [])
+    if not isinstance(imports, list) or any(
+        not isinstance(i, dict)
+        or not isinstance(i.get("module"), str)
+        or not isinstance(i.get("alias"), str)
+        for i in imports
+    ):
+        raise AstJsonError("imports must be a list of objects with module and alias strings")
+    if not isinstance(exports, list) or any(not isinstance(e, str) for e in exports):
+        raise AstJsonError("exports must be a list of definition names")
     return Program(
         uses=[Use(u["library"], u.get("alias")) for u in d.get("uses", [])],
         body=_block_from(d.get("body", [])),
         mode=d.get("mode"),
+        imports=[Import(i["module"], i["alias"]) for i in imports],
+        exports=list(exports),
     )

@@ -59,6 +59,8 @@ class Scope:
 
     signatures: list[dict] = field(default_factory=list)
     use_demo: bool = True
+    modules: dict[str, str] | None = None
+    source_name: str = "<text>"
 
 
 def diagnostic(code: str, message: str, line: int | None = None, column: int | None = None):
@@ -157,6 +159,20 @@ class Toolchain:
             env = build_env(program, self.libraries(program, scope), None, self.settings.sig_dirs)
         except KirError as exc:
             return None, _from_error(exc)
+        if program.imports or program.exports:
+            try:
+                compiled = compile_program(
+                    program,
+                    self.libraries(program, scope),
+                    None,
+                    self.settings.sig_dirs,
+                    [],
+                    modules=scope.modules,
+                    source_name=scope.source_name,
+                )
+                return env, _found(compiled.diagnostics)
+            except KirError as exc:
+                return env, _from_error(exc)
         return env, _found(check(program, env))
 
     def graph(self, text: str, scope: Scope, data: str = "wires") -> dict:
@@ -220,7 +236,13 @@ class Toolchain:
         program = parse(text)
         try:
             return compile_program(
-                program, self.libraries(program, scope), None, self.settings.sig_dirs, passes
+                program,
+                self.libraries(program, scope),
+                None,
+                self.settings.sig_dirs,
+                passes,
+                modules=scope.modules,
+                source_name=scope.source_name,
             )
         except ValueError as exc:  # an unknown pass, or one listed before a pass it needs
             raise KirError(str(exc)) from None

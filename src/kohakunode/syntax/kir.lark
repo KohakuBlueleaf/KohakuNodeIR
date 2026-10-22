@@ -4,13 +4,15 @@
 
 %declare _INDENT _DEDENT
 
-// `@use` parses as a statement; the transformer rejects one after other statements.
+// Declarations parse as statements; the transformer restricts them to the preamble.
 start: (_NEWLINE | statement)*
 
 ?statement: simple _NEWLINE+
           | compound
 
 ?simple: use_decl
+       | import_decl
+       | export_decl
        | assignment
        | call
        | meta
@@ -26,6 +28,8 @@ start: (_NEWLINE | statement)*
 // ---------------------------------------------------------------- simple
 
 use_decl: _USE STRING (_AS NAME)?
+import_decl: _IMPORT STRING _AS NAME
+export_decl: _EXPORT NAME
 
 assignment: NAME (":" type)? "=" expr
 
@@ -79,10 +83,10 @@ block: _NEWLINE _INDENT (_NEWLINE | statement)+ _DEDENT
 ?type: type_atom ("|" type_atom)+  -> type_union
      | type_atom
 ?type_atom: WILDCARD                                  -> type_any
-          | NAME "?"                                  -> type_optional
-          | NAME "[" type ("," type)* "]" "?"         -> type_generic_optional
-          | NAME "[" type ("," type)* "]"             -> type_generic
-          | NAME                                      -> type_name
+          | func_name "?"                                  -> type_optional
+          | func_name "[" type ("," type)* "]" "?"         -> type_generic_optional
+          | func_name "[" type ("," type)* "]"             -> type_generic
+          | func_name                                 -> type_name
           | NONE                                      -> type_none
 
 // ---------------------------------------------------------------- values
@@ -113,6 +117,8 @@ NONE.2: /None(?![A-Za-z0-9_])/
 WILDCARD.2: /_(?![A-Za-z0-9_])/
 _AS: /as(?![A-Za-z0-9_])/
 _USE: /@use(?![A-Za-z0-9_])/
+_IMPORT: /@import(?![A-Za-z0-9_])/
+_EXPORT: /@export(?![A-Za-z0-9_])/
 _DEF: /@def(?![A-Za-z0-9_])/
 _META: /@meta(?![A-Za-z0-9_])/
 _HINT: /@hint(?![A-Za-z0-9_])/

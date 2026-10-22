@@ -9,7 +9,7 @@ use crate::flow::cfg::{build_cfg, reaching, UNDEF};
 use crate::flow::order::sort_dataflow;
 use crate::sig::env::{NodeEnv, Resolution};
 use crate::sig::types::{fits, literal_type, type_text};
-use crate::syntax::ast::{walk, Def, Expr, Kind, Program, Stmt, TypeExpr};
+use crate::syntax::ast::{walk, Def, Expr, Kind, Origin, Program, Stmt, TypeExpr};
 use crate::util::pyfmt::{str_list_repr, str_repr};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -92,22 +92,34 @@ impl Checker<'_> {
         self.out.push(Diagnostic::new(code, message, line));
     }
 
+    fn add_origin(&mut self, code: &str, mut message: String, line: Option<usize>, origin: Option<&Origin>) {
+        if let Some(origin) = origin.filter(|o| o.module != "<text>") {
+            let definition = origin.definition.as_ref().map_or(String::new(), |d| format!("::{d}"));
+            message = format!("{}{definition}: {message}", origin.module);
+        }
+        self.add(code, message, line);
+    }
+
+    fn add_at(&mut self, code: &str, message: String, stmt: Option<&Stmt>) {
+        self.add_origin(code, message, stmt.and_then(|s| s.line), stmt.and_then(|s| s.origin.as_ref()));
+    }
+
     // ------------------------------------------------------------ whole program
     fn program(&mut self, p: &mut Program) {
         self.reserved(p);
         if p.mode.as_deref() == Some("dataflow") {
             if let Some(s) = walk(&p.body).into_iter().find(|s| is_control(s)) {
-                self.add("E060", "@mode dataflow file contains control flow".into(), s.line);
+                self.add_at("E060", "@mode dataflow file contains control flow".into(), Some(s));
             }
         }
         let mut e061 = Vec::new();
         for s in walk(&p.body) {
             if let Kind::Dataflow { body } = &s.kind {
-                e061.extend(body.iter().filter(|inner| !inner.is_simple()).map(|inner| inner.line));
+                e061.extend(body.iter().filter(|inner| !inner.is_simple()));
             }
         }
-        for line in e061 {
-            self.add("E061", "@dataflow blocks hold only assignments and calls".into(), line);
+        for stmt in e061 {
+            self.add_at("E061", "@dataflow blocks hold only assignments and calls".into(), Some(stmt));
         }
         let env = self.env;
         let is_ordered = |s: &Stmt| match &s.kind {
@@ -115,7 +127,7 @@ impl Checker<'_> {
             _ => false,
         };
         if let Err(cycle) = sort_dataflow(p, &is_ordered) {
-            self.add("E033", "dependency cycle in @dataflow block".into(), cycle.line);
+            self.add_origin("E033", "dependency cycle in @dataflow block".into(), cycle.line, cycle.origin.as_deref());
             return;
         }
         self.recursion(p);
@@ -123,7 +135,7 @@ impl Checker<'_> {
         for s in walk(&p.body) {
             if let Kind::Def(d) = &s.kind {
                 let params: Vec<String> = d.params.iter().map(|x| x.name.clone()).collect();
-                self.scope(&d.body, &params, Some((d, s.line)));
+                self.scope(&d.body, &params, Some((d, s)));
             }
         }
     }
@@ -144,12 +156,16 @@ impl Checker<'_> {
             }
             for n in names {
                 if n.contains("__") {
-                    self.add("E013", format!("name or label {} contains '__', which is reserved", str_repr(n)), s.line);
+                    self.add_at(
+                        "E013",
+                        format!("name or label {} contains '__', which is reserved", str_repr(n)),
+                        Some(s),
+                    );
                 }
             }
             if let Kind::Call { name, .. } = &s.kind {
                 if name.starts_with("kir.") && !self.env.internal {
-                    self.add("E013", format!("node {} uses the reserved 'kir.' prefix", str_repr(name)), s.line);
+                    self.add_at("E013", format!("node {} uses the reserved 'kir.' prefix", str_repr(name)), Some(s));
                 }
             }
         }
@@ -179,7 +195,7 @@ impl Checker<'_> {
             let mut seen = HashSet::new();
             while let Some(n) = stack.pop() {
                 if n == start {
-                    self.add("E050", format!("@def {} calls itself", str_repr(start)), s.line);
+                    self.add_at("E050", format!("@def {} calls itself", str_repr(start)), Some(s));
                     break;
                 }
                 if seen.insert(n) {
@@ -190,7 +206,7 @@ impl Checker<'_> {
     }
 
     // ------------------------------------------------------------ one scope
-    fn scope(&mut self, body: &[Stmt], params: &[String], d: Option<(&Def, Option<usize>)>) {
+    fn scope(&mut self, body: &[Stmt], params: &[String], d: Option<(&Def, &Stmt)>) {
         let local = scope_walk(body);
         let types = self.name_types(&local, d.map(|(d, _)| d));
         for s in &local {
@@ -199,10 +215,10 @@ impl Checker<'_> {
                 Kind::Branch { cond, .. } => {
                     if let Some(t) = expr_type(cond, &types) {
                         if !t.is_any() && !fits(Some(&t), Some(&TypeExpr::name("bool"))) {
-                            self.add(
+                            self.add_at(
                                 "E041",
                                 format!("branch condition has type {}, not bool", type_text(Some(&t))),
-                                s.line,
+                                Some(s),
                             );
                         }
                     }
@@ -212,7 +228,7 @@ impl Checker<'_> {
         }
         let g = build_cfg(body, params);
         for (s, label) in &g.problems {
-            self.add("E030", format!("label `{label}` not found"), s.line);
+            self.add_at("E030", format!("label `{label}` not found"), Some(s));
         }
         let namespaces: Vec<&Stmt> =
             local.iter().copied().filter(|s| matches!(s.kind, Kind::Namespace { .. })).collect();
@@ -221,16 +237,16 @@ impl Checker<'_> {
             let owners = g.owners.get(&ns.uid).map(Vec::as_slice).unwrap_or(&[]);
             let non_jump = owners.iter().filter(|o| !matches!(o.kind, Kind::Jump { .. })).count();
             if non_jump > 1 {
-                self.add("E031", format!("namespace `{label}` is entered by more than one builtin"), ns.line);
+                self.add_at("E031", format!("namespace `{label}` is entered by more than one builtin"), Some(ns));
             }
             if owners.is_empty() {
-                self.add("W001", format!("namespace `{label}` is never entered"), ns.line);
+                self.add_at("W001", format!("namespace `{label}` is never entered"), Some(ns));
             }
             if owners.iter().any(|o| matches!(o.kind, Kind::Each { .. })) {
                 let inside: HashSet<usize> = walk(ns_body).iter().map(|x| x.uid).collect();
                 for o in owners {
                     if matches!(o.kind, Kind::Jump { .. }) && !inside.contains(&o.uid) {
-                        self.add("E032", format!("jump into the body of each `{label}`"), o.line);
+                        self.add_at("E032", format!("jump into the body of each `{label}`"), Some(o));
                     }
                 }
             }
@@ -251,23 +267,22 @@ impl Checker<'_> {
             for name in &node.reads {
                 read_names.insert(name.clone());
                 if inn.defs_of(n, name).contains(&UNDEF) {
-                    let line = node.stmt.and_then(|s| s.line);
-                    self.add("E020", format!("{} may be read before it is written", str_repr(name)), line);
+                    self.add_at("E020", format!("{} may be read before it is written", str_repr(name)), node.stmt);
                 }
             }
         }
-        if let Some((d, line)) = d {
+        if let Some((d, stmt)) = d {
             if reach.contains(&g.exit) {
                 for o in &d.outputs {
                     if inn.defs_of(g.exit, &o.name).contains(&UNDEF) {
-                        self.add(
+                        self.add_at(
                             "E021",
                             format!(
                                 "output {} of @def {} is not set on every path",
                                 str_repr(&o.name),
                                 str_repr(&d.name)
                             ),
-                            line,
+                            Some(stmt),
                         );
                     }
                 }
@@ -291,7 +306,7 @@ impl Checker<'_> {
             for s in &local {
                 for name in s.writes() {
                     if !read_names.contains(name) {
-                        self.add("W020", format!("{} is written but never read", str_repr(name)), s.line);
+                        self.add_at("W020", format!("{} is written but never read", str_repr(name)), Some(s));
                     }
                 }
             }
@@ -325,7 +340,7 @@ impl Checker<'_> {
                         arms[j].0,
                         str_list_repr(&both)
                     );
-                    self.add("W010", msg, s.line);
+                    self.add_at("W010", msg, Some(s));
                 }
                 let crossed: Vec<&String> = w[i].intersection(&r[j]).collect();
                 if !crossed.is_empty() {
@@ -335,7 +350,7 @@ impl Checker<'_> {
                         str_list_repr(&crossed),
                         arms[i].0
                     );
-                    self.add("W010", msg, s.line);
+                    self.add_at("W010", msg, Some(s));
                 }
             }
         }
@@ -346,12 +361,12 @@ impl Checker<'_> {
         let Kind::Call { name, args, outs } = &s.kind else { return };
         let r = match self.env.resolve(name) {
             Resolution::Unknown => {
-                self.add("E010", format!("unknown node {}", str_repr(name)), s.line);
+                self.add_at("E010", format!("unknown node {}", str_repr(name)), Some(s));
                 return;
             }
             Resolution::Reserved => return,
             Resolution::Ambiguous(what) => {
-                self.add("E011", format!("node {} is {what}", str_repr(name)), s.line);
+                self.add_at("E011", format!("node {} is {what}", str_repr(name)), Some(s));
                 return;
             }
             Resolution::Found(r) => r,
@@ -359,7 +374,11 @@ impl Checker<'_> {
         let sig = &r.signature;
         let positional: Vec<&Expr> = args.iter().filter(|a| a.key.is_none()).map(|a| &a.value).collect();
         if positional.len() > sig.inputs.len() {
-            self.add("E012", format!("{name} takes {} inputs, {} given", sig.inputs.len(), positional.len()), s.line);
+            self.add_at(
+                "E012",
+                format!("{name} takes {} inputs, {} given", sig.inputs.len(), positional.len()),
+                Some(s),
+            );
             return;
         }
         let mut bound: IndexMap<String, &Expr> = IndexMap::new();
@@ -369,20 +388,20 @@ impl Checker<'_> {
         for a in args {
             let Some(key) = &a.key else { continue };
             if sig.input(key).is_none() {
-                self.add("E012", format!("{name} has no input {}", str_repr(key)), s.line);
+                self.add_at("E012", format!("{name} has no input {}", str_repr(key)), Some(s));
             } else if bound.contains_key(key) {
-                self.add("E012", format!("{name} input {} given twice", str_repr(key)), s.line);
+                self.add_at("E012", format!("{name} input {} given twice", str_repr(key)), Some(s));
             } else {
                 bound.insert(key.clone(), &a.value);
             }
         }
         for port in &sig.inputs {
             if port.required() && !bound.contains_key(&port.name) {
-                self.add("E012", format!("{name} input {} is required", str_repr(&port.name)), s.line);
+                self.add_at("E012", format!("{name} input {} is required", str_repr(&port.name)), Some(s));
             }
         }
         if outs.len() != sig.outputs.len() {
-            self.add("E012", format!("{name} has {} outputs, {} bound", sig.outputs.len(), outs.len()), s.line);
+            self.add_at("E012", format!("{name} has {} outputs, {} bound", sig.outputs.len(), outs.len()), Some(s));
         }
         for (pname, value) in &bound {
             let port = sig.input(pname).expect("bound names are inputs");
@@ -394,7 +413,7 @@ impl Checker<'_> {
                         type_text(Some(&port.ty)),
                         type_text(Some(&t))
                     );
-                    self.add("E040", msg, s.line);
+                    self.add_at("E040", msg, Some(s));
                 }
             }
         }

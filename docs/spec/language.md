@@ -73,6 +73,8 @@ All builtins use the node-call form; labels sit in the output list.
 | Directive | Attaches to | Meaning |
 |---|---|---|
 | `@use "library"` / `@use "library" as alias` | file (top only) | make a node library's signatures available (signatures.md) |
+| `@import "module.kir" as alias` | file preamble | import exported KIR implementations ([modules.md](modules.md)) |
+| `@export name` | file preamble | export one top-level KIR definition ([modules.md](modules.md)) |
 | `@def (params)name(outputs):` | — | define a subgraph |
 | `@meta key=value ...` | next statement | editor data (ids, positions); never affects results |
 | `@hint key=value ...` | next statement | scheduling hints for executors; never affects results |
@@ -99,13 +101,16 @@ Type := Name | Name "?" | Name "[" Type ("," Type)* "]" | Type "|" Type | "_"
 
 `T?` is `T | None`; `_` is any type. Type names are nominal and opaque to KIR,
 except the literal types `int`, `float`, `str`, `bool`, `None`, `list`,
-`dict`.
+`dict`. Nominal names may be dotted (`library.Token`); source-module qualification
+and visibility are defined in [modules.md](modules.md).
 
 ## Grammar (EBNF)
 
 ```
-program       = { use_decl } { statement } ;
+program       = { use_decl | import_decl | export_decl } { statement } ;
 use_decl      = "@use" STRING [ "as" IDENT ] NEWLINE ;
+import_decl   = "@import" STRING "as" IDENT NEWLINE ;
+export_decl   = "@export" IDENT NEWLINE ;
 statement     = simple NEWLINE | compound ;
 simple        = assignment | call | meta | hint | mode ;
 compound      = namespace | subgraph | dataflow | try_block | typehint ;
@@ -136,7 +141,7 @@ mode          = "@mode" IDENT ;
 
 expr          = literal | IDENT ;
 type          = type_atom { "|" type_atom } ;
-type_atom     = "_" | "None" | IDENT [ "?" ] | IDENT "[" type { "," type } "]" [ "?" ] ;
+type_atom     = "_" | "None" | FUNC [ "?" ] | FUNC "[" type { "," type } "]" [ "?" ] ;
 FUNC          = IDENT { "." IDENT } ;
 LABEL         = "`" IDENT "`" ;
 ```

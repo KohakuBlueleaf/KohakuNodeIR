@@ -12,6 +12,7 @@ python examples/run_examples.py
 | `tour/` | One file per v2 feature: `each`, `@try` / `@except err`, typed `@def` with `@hint`, `@dataflow` with a `mutates` node |
 | `gbc/` | Graph-Based Captioning for one image as one sequential job, with stand-in nodes |
 | `comfyui/` | A ComfyUI UI workflow and an API prompt, for `kohakunode.comfyui` |
+| [`modules/`](modules/README.md) | Imported KIR library with branch + `each`, two call sites, lightweight hosts and source-origin sidecars; run separately with `python examples/modules/run.py` |
 
 Any of them works with the CLI too, for example:
 
