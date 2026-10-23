@@ -166,3 +166,17 @@ def test_program_hash_is_not_a_certificate_of_host_implementation_results():
         outputs.append(interpreter.source_values())
     assert hashes[0] == hashes[1]
     assert outputs == [{"result": 8}, {"result": 9}]
+
+
+@pytest.mark.parametrize("lowered", [False, True])
+def test_equal_input_logical_invocations_replay_distinct_recorded_outcomes(lowered):
+    program = parse('@use "recorded" as r\n(True)r.accept(first)\n(True)r.accept(second)\n')
+    outcomes = [
+        ("r.accept", {"value": True}, 1),
+        ("r.accept", {"value": True}, 2),
+    ]
+    values, calls = _replay(program, outcomes, lowered)
+    assert values == {"first": 1, "second": 2}
+    assert calls == [("r.accept", {"value": True}), ("r.accept", {"value": True})]
+    signature = _library().signatures["accept"]
+    assert signature.mutates == () and signature.ordered is False

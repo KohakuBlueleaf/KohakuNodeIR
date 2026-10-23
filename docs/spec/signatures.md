@@ -95,4 +95,8 @@ def append_jsonl(log: str, record: dict) -> None: ...
   defines the library and writes its signature file.
 
 Executors map node names to implementations themselves; the signature file is
-the only contract between a program and its nodes.
+the static program/node contract for ports, types, defaults, schemas, and effects.
+Execution policy and cross-invocation reuse eligibility are separately bound
+executor contracts. An empty effect declaration does not prove determinism or
+cache eligibility; see [execution-contract.md](execution-contract.md#logical-invocations-attempts-and-reuse-eligibility).
+This distinction adds no KIR syntax or signature flag.

@@ -46,21 +46,46 @@ for example to keep `each` as a single node it schedules itself.
 The reference interpreter defines the result. To check a machine, run sample
 jobs on both and compare. Engines that sample (VLMs) must be replayed: give
 the reference interpreter a call hook that returns the machine's recorded
-result for each request.
+outcome for each logical invocation, not a shared result for each distinct input.
+For a small reference run, an ordered occurrence trace can be consumed as follows:
 
 ```python
+from collections import deque
+from copy import deepcopy
+
+# Each entry belongs to one logical invocation, in reference traversal order.
+# Repeated equal-input calls remain separate entries. `error` is None or the
+# reconstructed exception to expose, not an unprocessed retry-attempt record.
+pending = deque(recorded_occurrences)
+
 def replay(name, inputs, call):
-    return recorded[(name, request_key(inputs))]
+    expected_name, expected_inputs, value, error = pending.popleft()
+    assert name == expected_name and inputs == expected_inputs
+    if error is not None:
+        raise error
+    return deepcopy(value)
 
 interp = Interpreter(compiled.lowered, compiled.env, hook=replay)
 interp.run()
+assert not pending
 assert interp.source_values() == machine_values
 ```
+
+This illustrative queue is not a parallel completion-order log. Associate
+records with dynamic invocations, match them to reference traversal, and account
+for generated administrative calls before constructing it. Input comparison or
+digests must follow the value codec's contract. A dictionary keyed only by
+`(node, input_digest)` is insufficient when repeated requests have distinct
+outcomes. Replay checks control/value consumption under recorded outcomes; it
+does not certify determinism or authorize cross-invocation caching
+([invocations and reuse](../spec/execution-contract.md#logical-invocations-attempts-and-reuse-eligibility)).
 
 A machine whose jobs run one `@def` checks against the program as written,
 where the `@def` still exists:
 
 ```python
+pending = deque(recorded_definition_occurrences)  # a fresh, matched trace
 interp = Interpreter(compiled.program, compiled.env, hook=replay)
 assert interp.call("gbc", job_inputs) == machine_outputs   # outputs by name
+assert not pending
 ```

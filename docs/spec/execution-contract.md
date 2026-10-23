@@ -53,6 +53,35 @@ authors still owe the declared input/effect contract; the executor must not
 assume arbitrary external implementations are interchangeable merely because
 their signatures match.
 
+## Logical invocations, attempts, and reuse eligibility
+
+Each dynamic occurrence of a node call is a distinct **logical invocation**,
+including repeated execution of one source call in a loop. Equal node names and
+equal input values do not collapse two occurrences into one: their supported
+outcomes may differ. This distinction is about invocation identity, not a claim
+of statistical independence or permission to commute arbitrary effects.
+
+An empty `mutates` declaration prohibits changing inputs; it does not establish
+determinism, idempotence, replayability, or cache eligibility. Likewise, the
+absence of `ordered` is not proof that an external implementation returns the
+same value on every equal-input call. Existing signature obligations still
+apply; these distinctions do not excuse undeclared effects.
+
+Content-result reuse or coalescing across distinct invocations requires an
+explicit executor-binding guarantee that the substitution preserves observable
+behavior under the relevant implementation revision, input identity, and policy.
+A deterministic-value guarantee alone does not authorize skipping required
+effects or violating the existing prohibition on replaying `ordered` nodes.
+Missing reuse eligibility must not be inferred from an empty effect list,
+equal inputs, or a program hash. This is an execution contract property, not an
+advisory hint; it introduces no new KIR syntax or signature flag here.
+
+A **retry attempt** belongs to its existing logical invocation, rather than
+creating another source-call occurrence. Attempts have separate identities and
+outcomes; retry policy determines the settled outcome exposed to KIR. Repeating
+an attempt does not roll back its effects, and retry safety is separate from
+whether results may be reused across invocations.
+
 ## Fixed-outcome replay
 
 A reference call hook can inject recorded successful values or raise a recorded
@@ -68,8 +97,12 @@ and entering the correct handler. It does **not** establish:
 
 Record binding identity and relevant policy alongside the trace. For repeated
 calls, an occurrence/call-site identity is needed in addition to the node name.
-An executor's detailed replay format and attempt-level evidence belong to its
-own execution contract.
+A map keyed only by node name and input digest can silently collapse different
+outcomes of equal-input invocations. Replay must consume each invocation's own
+recorded outcome; it does not require or establish cross-invocation cache
+eligibility. Attempt-level retry records must first be associated with their
+logical invocation and its settled outcome. An executor's detailed replay format
+and attempt-level evidence belong to its own execution contract.
 
 ## Resource limits and hashes
 
