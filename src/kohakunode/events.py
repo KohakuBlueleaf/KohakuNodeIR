@@ -7,9 +7,10 @@ representations. Record schemas are needed only for optional decoding.
 
 import math
 from collections.abc import Mapping
-from dataclasses import FrozenInstanceError, dataclass
+from dataclasses import FrozenInstanceError
 from typing import Any
 
+from kohakunode._dataclass import stateful_dataclass
 from kohakunode.records import decode_portable, encode_portable
 from kohakunode.sig.records import (
     FrozenDict,
@@ -69,7 +70,7 @@ def _key(value):
     return (type(value).__name__, value)
 
 
-@dataclass(frozen=True, slots=True, init=False, eq=False)
+@stateful_dataclass(frozen=True, slots=True, init=False, eq=False)
 class Event:
     """A committed reference event: topic and immutable **encoded** payload.
 

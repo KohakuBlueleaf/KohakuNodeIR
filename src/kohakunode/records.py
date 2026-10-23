@@ -10,6 +10,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from kohakunode._dataclass import stateful_dataclass
 from kohakunode.sig.records import RecordSchema, thaw_default
 from kohakunode.syntax.ast import TypeExpr
 
@@ -23,7 +24,7 @@ def _initialize_container(container, items: tuple) -> None:
         raise TypeError("immutable record storage cannot be reinitialized")
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@stateful_dataclass(frozen=True, slots=True, init=False)
 class _FrozenList:
     items: tuple
 
@@ -34,7 +35,7 @@ class _FrozenList:
         raise TypeError("immutable record storage cannot be replaced")
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@stateful_dataclass(frozen=True, slots=True, init=False)
 class _FrozenDict:
     items: tuple[tuple[str, Any], ...]
 
@@ -129,7 +130,7 @@ def _snapshot_fields(schema: RecordSchema, values: dict) -> tuple:
     return tuple(sorted(result))
 
 
-@dataclass(frozen=True, slots=True, init=False, eq=False)
+@stateful_dataclass(frozen=True, slots=True, init=False, eq=False)
 class RecordValue:
     """A validated nominal record; construct with ``RecordValue(schema, **fields)``.
 

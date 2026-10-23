@@ -4,9 +4,10 @@ import json
 import math
 import re
 from collections.abc import Mapping, Sequence
-from dataclasses import FrozenInstanceError, dataclass, replace
+from dataclasses import FrozenInstanceError, replace
 from typing import Any
 
+from kohakunode._dataclass import stateful_dataclass
 from kohakunode.syntax.ast import ANY, TypeExpr
 
 _NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
@@ -29,7 +30,7 @@ def _reject_state(self, state) -> None:
     raise FrozenInstanceError(f"cannot overwrite {type(self).__name__} state")
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@stateful_dataclass(frozen=True, slots=True, init=False)
 class FrozenList:
     """An immutable JSON array, distinct from tuples in the runtime value domain."""
 
@@ -45,7 +46,7 @@ class FrozenList:
     __setstate__ = _reject_state
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@stateful_dataclass(frozen=True, slots=True, init=False)
 class FrozenDict:
     """An immutable JSON object retaining insertion order."""
 
@@ -196,7 +197,7 @@ def default_fits(value: Any, type_: TypeExpr) -> bool:
     }.get(type_.name, False)
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@stateful_dataclass(frozen=True, slots=True, init=False)
 class RecordField:
     name: str
     type: TypeExpr = ANY
@@ -228,7 +229,7 @@ class RecordField:
     __setstate__ = _reject_state
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@stateful_dataclass(frozen=True, slots=True, init=False)
 class RecordSchema:
     name: str
     fields: tuple[RecordField, ...]

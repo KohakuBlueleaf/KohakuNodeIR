@@ -9,10 +9,12 @@ texts of the same program compare equal.
 from dataclasses import FrozenInstanceError, dataclass, field
 from typing import Any
 
+from kohakunode._dataclass import stateful_dataclass
+
 # ---------------------------------------------------------------- types
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@stateful_dataclass(frozen=True, slots=True, init=False)
 class TypeExpr:
     """A type: ``kind`` is "any", "name", "optional", "generic" or "union"."""
 
