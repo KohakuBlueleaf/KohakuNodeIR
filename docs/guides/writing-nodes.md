@@ -9,13 +9,15 @@ from kohakunode import NodeLibrary
 
 lib = NodeLibrary("gbc")
 
+
 @lib.node(outputs=["node"])
 def entity(crop: Image, box: Box, max_tokens: int = 256) -> Node:
     """Caption one crop."""
     ...
 
+
 @lib.node(outputs=["seen", "is_new"])
-def register(seen: list, box: dict) -> tuple:     # several outputs: return a tuple
+def register(seen: list, box: dict) -> tuple:  # several outputs: return a tuple
     ...
 ```
 

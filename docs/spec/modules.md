@@ -66,9 +66,7 @@ from kohakunode import compile_source
 
 compiled = compile_source(
     '@import "identity.kir" as lib\n(7)lib.identity(result)\n',
-    modules={
-        "identity.kir": "@export identity\n@def (x: int)identity(y: int):\n    y = x\n"
-    },
+    modules={"identity.kir": "@export identity\n@def (x: int)identity(y: int):\n    y = x\n"},
     source_name="main.kir",
 )
 ```

@@ -8,9 +8,9 @@ needs to know how the text was made (editor, hand-written, generated).
 Compile once per program:
 
 ```python
-compiled = compile_source(text, libraries)   # check + every optimization pass
-program = compiled.lowered                    # what to execute
-compiled.semantic_hash                        # program component of cache/replay identity
+compiled = compile_source(text, libraries)  # check + every optimization pass
+program = compiled.lowered  # what to execute
+compiled.semantic_hash  # program component of cache/replay identity
 ```
 
 A job is one run of the program (or of one `@def`, chosen by the machine),
@@ -58,12 +58,14 @@ from copy import deepcopy
 # reconstructed exception to expose, not an unprocessed retry-attempt record.
 pending = deque(recorded_occurrences)
 
+
 def replay(name, inputs, call):
     expected_name, expected_inputs, value, error = pending.popleft()
     assert name == expected_name and inputs == expected_inputs
     if error is not None:
         raise error
     return deepcopy(value)
+
 
 interp = Interpreter(compiled.lowered, compiled.env, hook=replay)
 interp.run()
@@ -86,6 +88,6 @@ where the `@def` still exists:
 ```python
 pending = deque(recorded_definition_occurrences)  # a fresh, matched trace
 interp = Interpreter(compiled.program, compiled.env, hook=replay)
-assert interp.call("gbc", job_inputs) == machine_outputs   # outputs by name
+assert interp.call("gbc", job_inputs) == machine_outputs  # outputs by name
 assert not pending
 ```
