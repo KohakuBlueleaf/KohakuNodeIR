@@ -3,7 +3,7 @@
   <strong>A text IR for node graphs: what an editor draws, a person reads, and a machine runs, as one program.</strong>
 </p>
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License: Apache-2.0">
   <img src="https://img.shields.io/pypi/v/kohakunode" alt="PyPI version">
   <a href="https://github.com/KohakuBlueleaf/KohakuNodeIR"><img src="https://img.shields.io/github/stars/KohakuBlueleaf/KohakuNodeIR?style=social" alt="GitHub stars"></a>
@@ -141,7 +141,7 @@ nodes and never needs to know how the KIR was made.
 
 ## Quick start
 
-> **Python** 3.10 or newer. At run time `kohakunode` depends only on `lark`.
+> **Python** 3.11 or newer. At run time `kohakunode` depends only on `lark`.
 
 ### 1. Install
 
@@ -410,7 +410,7 @@ every v1 program; v2 reproduces it except for listed, deliberate differences.
 `kohakunode` is one wheel: the Python reference plus the Rust core as the
 extension module `kohakunode._rs`. The version is `rust/Cargo.toml`'s
 (`pyproject.toml` reads it dynamically). Publishing a GitHub release, or
-pushing a `v*` tag, runs `release.yml`: wheels for CPython 3.10–3.14 on Linux
+pushing a `v*` tag, runs `release.yml`: wheels for CPython 3.11–3.14 on Linux
 x86_64 / aarch64 (manylinux 2_28), Windows x64 and macOS arm64, Android wheels
 (arm64, x86_64; Python 3.13) and the sdist, all uploaded to PyPI and to the
 GitHub release.
