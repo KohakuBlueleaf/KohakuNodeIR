@@ -120,8 +120,10 @@ nodes and never needs to know how the KIR was made.
 - **A static checker.** Undefined reads on any path, wrong port counts, type
   mismatches, ambiguous names, bad labels, dataflow cycles: one code per rule
   ([checks.md](docs/spec/checks.md)).
-- **Program hashes.** A semantic hash (ignores `@meta` and `@hint`) to key
-  caches and reproducibility, and a full hash that also covers hints.
+- **Program hashes.** A semantic hash (ignores `@meta` and `@hint`) provides a
+  program-identity component for executor cache/replay keys; a full hash also
+  covers hints. Neither alone certifies implementation identity or equal results
+  ([identity boundaries](docs/spec/execution-contract.md#identity-layers)).
 - **Hints that never change results.** `@hint lane="vlm"` tells a scheduler
   something; deleting every hint leaves every result unchanged. Observable
   timeouts, retries, cancellation, and work limits are executor binding policy,

@@ -131,9 +131,24 @@ program means the same whether or not anyone sorts it again.
 
 ## Program hashes
 
-Computed on any program, usually the fully optimized one:
+The low-level `semantic_hash(program)` and `full_hash(program)` identify the
+supplied representation, usually the fully optimized one:
 
 - **Semantic hash**: SHA-256 of the canonical text without `@meta` and `@hint`.
-  Two programs with the same semantic hash give the same results.
 - **Full hash**: SHA-256 of the canonical text without `@meta`. It also
   identifies the hints, for run reports.
+
+These helpers do not resolve external dependencies. `Compiled.semantic_hash`
+and `Compiled.full_hash` additionally mix the dependency manifest for source
+modules and record-bearing programs, including resolved signature contracts
+([modules.md](modules.md#dependency-identity)). Legacy compilation without those
+features retains its previous hash construction.
+
+Equal program hashes alone do not certify equal results: inputs, resolved
+contracts, implementation behavior, and exposed outcomes must also correspond.
+The sequential reference defines the result under the same inputs, resolved
+contracts, and supported matched outcomes, with the execution-limit qualifications
+in [execution-contract.md](execution-contract.md). A program hash is a component
+of executor cache/replay identity, not a fingerprint of arbitrary implementations
+or a complete execution manifest. Conversely, semantics-preserving passes can
+change the representation hash without changing behavior.

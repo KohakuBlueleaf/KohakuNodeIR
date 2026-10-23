@@ -10,11 +10,15 @@ Compile once per program:
 ```python
 compiled = compile_source(text, libraries)   # check + every optimization pass
 program = compiled.lowered                    # what to execute
-compiled.semantic_hash                        # cache / reproducibility key
+compiled.semantic_hash                        # program component of cache/replay identity
 ```
 
 A job is one run of the program (or of one `@def`, chosen by the machine),
-with its inputs bound to that `@def`'s parameters.
+with its inputs bound to that `@def`'s parameters. The program hash is not a
+complete cache key: an executor must also account for resolved contracts,
+implementation/binding identity, relevant policy, and inputs. Unknown
+implementation revisions remain unknown, not evidence of a compatible match
+([identity layers](../spec/execution-contract.md#identity-layers)).
 
 A machine may also pick its own passes (`passes=[...]`, docs/spec/passes.md),
 for example to keep `each` as a single node it schedules itself.
@@ -30,8 +34,11 @@ for example to keep `each` as a single node it schedules itself.
   readers and writers unless the machine renames values as it runs.
 - Node flags from the signatures: `ordered` nodes keep program order within a
   job; `mutates` nodes wait for earlier readers of the value they change.
-- `@hint` keys are scheduling hints (lane, retry, max wait, priority). They
-  never change results and are not in the semantic hash.
+- `@hint` keys are advisory scheduling preferences (for example lane or
+  batching preferences). They never change results and are not in the semantic
+  hash. Observable retries, timeouts, cancellation, and work limits belong to
+  executor binding policy, not advisory hints; see the
+  [execution contract](../spec/execution-contract.md).
 - A job's state is its position plus its value slots, so it stays plain data.
 
 ## Correctness check

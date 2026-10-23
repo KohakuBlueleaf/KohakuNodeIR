@@ -169,9 +169,13 @@ does not.
 
 Field types/defaults contribute to signature contract identity. Loaded record
 libraries produce dependency manifests even without source imports (`modules: []`,
-signature contracts present), preventing schema revisions from sharing cache or
-snapshot keys. Legacy programs without records or source modules retain previous
-hash construction.
+signature contracts present), so schema revisions change dependency-aware compiled
+identity. Cache or snapshot keys distinguish these revisions only when they
+include that identity, together with the execution identity required by the
+executor's compatibility contract. A schema ID or program hash alone does not
+identify arbitrary host implementations. Legacy programs without records or
+source modules retain previous hash construction; see
+[execution identity layers](execution-contract.md#identity-layers).
 
 Python/Rust signature loading, generated signatures, checker, graph/text tooling,
 and WASM share the schema contract. The reference and both Togeari cores execute

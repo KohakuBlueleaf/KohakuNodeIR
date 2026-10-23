@@ -143,3 +143,26 @@ def test_recorded_error_selects_handler_without_reference_clock_or_retry(lowered
     assert sum(name == "r.fetch" for name, _ in calls) == 1
     assert "value" not in values
     assert semantic_hash(program) == semantic_hash(stripped)
+
+
+def test_program_hash_is_not_a_certificate_of_host_implementation_results():
+    program = parse('@use "external" as ext\n(7)ext.transform(result)\n')
+    signature = Signature("transform", (Port("value"),), (Port("result"),))
+
+    def first(value):
+        return value + 1
+
+    def second(value):
+        return value + 2
+
+    hashes, outputs = [], []
+    for implementation in (first, second):
+        library = Library("external")
+        library.add_signature(signature, implementation)
+        compiled = compile_program(program, [library])
+        interpreter = Interpreter(compiled.lowered, compiled.env)
+        interpreter.run()
+        hashes.append((compiled.semantic_hash, compiled.full_hash))
+        outputs.append(interpreter.source_values())
+    assert hashes[0] == hashes[1]
+    assert outputs == [{"result": 8}, {"result": 9}]

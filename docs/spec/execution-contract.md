@@ -89,6 +89,38 @@ identify out-of-band binding policy, implementation versions, input values, or
 outcome traces. Executors must include the additional identity required by
 their cache/replay contract; this document does not change KIR hashing.
 
+## Identity layers
+
+Keep the following identities distinct rather than treating one digest as a
+certificate of reproducibility:
+
+1. **Program representation:** KIR's low-level semantic/full hashes describe the
+   supplied canonical representation, not the implementations behind its calls.
+2. **Resolved contracts and dependencies:** module and signature contract hashes
+   describe imported source, ports, defaults, record schemas, and effect flags.
+   Dependency-aware `Compiled` hashes include the manifest when present. Legacy
+   programs without source modules or records retain their historical hashing;
+   their program hash must not be assumed to cover every resolved host signature.
+3. **Executor binding:** a separate execution manifest can identify the selected
+   implementations/adapters, declared revisions, and observable policy under its
+   own versioned contract. An execution digest covers the information actually
+   recorded, not information the executor does not possess.
+4. **Inputs and outcomes:** input identity and the observed dynamic outcome trace
+   describe a particular invocation/run. They are not implied by program or binding
+   identity, and matching identities do not eliminate external nondeterminism.
+
+A missing implementation revision is **unknown**, not a known compatible match.
+Serializing or hashing two unknown markers does not turn them into evidence of
+implementation equality. Do not fabricate a strong fingerprint from a function's
+name, object address, or a partial inspection of its code: these do not establish
+identity of captured state, dependencies, or external services. An executor may
+require explicit revisions, reject reuse, or permit an explicitly documented
+weaker compatibility mode. Its restore/cache policy must state that choice.
+
+This layering adds no new KIR hash field or hashing rule. Runtime manifests and
+their validation APIs belong to the executor; KIR's source-level semantic and
+advisory-hint contracts remain unchanged.
+
 ## Togeari timeout migration boundary
 
 **Compatibility warning:** legacy Togeari interpreted a statement's
