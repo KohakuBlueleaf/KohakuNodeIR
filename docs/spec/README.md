@@ -7,6 +7,7 @@ written line by line, and its meaning is a sequential run of that text.
 |---|---|
 | [language.md](language.md) | Lexical structure, statements, builtins, directives, grammar |
 | [semantics.md](semantics.md) | What a program means: the sequential run, parallel by default, scopes, `each`, errors, node flags |
+| [execution-contract.md](execution-contract.md) | Advisory hints versus observable executor policy, fixed-outcome replay, resource limits, timeout migration |
 | [signatures.md](signatures.md) | Node signatures, the signature file, `@use`, the Python registry |
 | [modules.md](modules.md) | Source imports/exports, deterministic linking, dependency manifests, structured origins |
 | [records.md](records.md) | Nominal schemas, generated field operations, immutable values, portable codecs |

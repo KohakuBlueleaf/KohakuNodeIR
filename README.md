@@ -123,7 +123,11 @@ nodes and never needs to know how the KIR was made.
 - **Program hashes.** A semantic hash (ignores `@meta` and `@hint`) to key
   caches and reproducibility, and a full hash that also covers hints.
 - **Hints that never change results.** `@hint lane="vlm"` tells a scheduler
-  something; deleting every hint leaves every result unchanged.
+  something; deleting every hint leaves every result unchanged. Observable
+  timeouts, retries, cancellation, and work limits are executor binding policy,
+  not advisory hints. The [execution contract](docs/spec/execution-contract.md)
+  distinguishes fixed-outcome replay from physical runs and warns about legacy
+  Togeari `timeout_s` hint inference.
 - **A reference interpreter with a call hook**, so a machine can replay its
   recorded node results and check that it computed what the program means.
 - **Editing support.** A tree-sitter grammar, a VS Code extension, and a

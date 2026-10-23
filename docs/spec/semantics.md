@@ -115,6 +115,14 @@ job's result unchanged. `@meta` is for editors and the `strip_meta` pass
 removes it; `@hint` survives every pass for executors. KIR does not interpret
 hint keys.
 
+Observable timeout, retry, cancellation, and step/work-budget behavior belongs
+to an executor's binding policy, not to advisory hints. A binding may expose a
+failure that selects an ordinary KIR handler; this does not give a hint key
+source-level semantics. The reference defines behavior for supplied node
+outcomes, not elapsed-time deadlines. See [execution-contract.md](execution-contract.md)
+for fixed-outcome replay, resource-limit boundaries, and the explicit warning
+about legacy Togeari `timeout_s` hint inference.
+
 ## Literals and values
 
 Values are opaque to KIR except where the language looks at them: `branch`
