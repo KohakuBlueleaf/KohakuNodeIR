@@ -16,9 +16,11 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Any
 
-from kohakunode.errors import KirRuntimeError, NodeFailure
+from kohakunode.errors import EventDeliveryError, KirRuntimeError, NodeFailure
+from kohakunode.events import Event
 from kohakunode.flow.order import sort_dataflow
 from kohakunode.sig.env import NodeEnv, Resolved
+from kohakunode.sig.std import is_standard_emit
 from kohakunode.syntax.ast import (
     Assign,
     Branch,
@@ -71,11 +73,15 @@ class Interpreter:
         nodes: dict[str, Callable] | None = None,
         hook: CallHook | None = None,
         step_budget: int | None = None,
+        *,
+        events: Callable[[Event], None] | None = None,
     ):
         self.program = copy.deepcopy(program)
         self.env = env
         self.nodes = nodes or {}
         self.hook = hook
+        self.events: list[Event] = []
+        self._event_callback = events
         self.steps = 0
         self.step_budget = step_budget
         sort_dataflow(self.program, self._is_ordered)
@@ -122,6 +128,7 @@ class Interpreter:
     # ------------------------------------------------------------ running
     def run(self) -> dict[str, Any]:
         """Run the top level; return its final values (names, or versions once versioned)."""
+        self.events = []
         self.scope = _Scope()
         self._run_block(self.program.body)
         return dict(self.scope.values)
@@ -306,6 +313,7 @@ class Interpreter:
         if not isinstance(r, Resolved):
             raise KirRuntimeError(f"node {s.name!r} is {r}", s.line)
         sig = r.signature
+        event = None
         inputs: dict[str, Any] = {}
         positional = [a for a in s.args if a.key is None]
         for port, a in zip(sig.inputs, positional):
@@ -335,16 +343,42 @@ class Interpreter:
             if fn is None:
                 raise KirRuntimeError(f"no implementation for node {s.name!r}", s.line)
 
+            preparation_error = None
+            if is_standard_emit(r.library, sig, fn):
+                try:
+                    event = Event.capture(inputs["topic"], inputs["payload"])
+                except Exception as exc:
+                    # The hook must still see invalid emit calls so a recorded
+                    # failure consumes its logical invocation during replay.
+                    preparation_error = exc
+
             def run(fn=fn, inputs=inputs):
+                if preparation_error is not None:
+                    raise preparation_error
                 return fn(**inputs)
 
             try:
                 result = self.hook(s.name, inputs, run) if self.hook else run()
+                if preparation_error is not None:
+                    # A replay cannot turn an invalid payload into a successful
+                    # emission merely by skipping the validation thunk.
+                    raise preparation_error
             except KirRuntimeError:
                 raise
             except Exception as exc:
                 raise NodeFailure(s.name, exc, s.line, origin=s.origin) from exc
         self._bind(s, len(sig.outputs), result)
+        if event is not None:
+            self.events.append(event)
+            if self._event_callback is not None:
+                try:
+                    self._event_callback(event)
+                except Exception as exc:
+                    # Delivery follows commitment. Never reinterpret a failed
+                    # observer as a catchable/retryable source node failure.
+                    raise EventDeliveryError(
+                        f"committed event delivery failed: {type(exc).__name__}: {exc}", s.line
+                    ) from exc
 
     def _bind(self, s: Call, n_out: int, result: Any) -> None:
         if not s.outs:
@@ -363,6 +397,7 @@ class Interpreter:
 
     def call(self, name: str, inputs: dict[str, Any]) -> dict[str, Any]:
         """Run one `@def` as a job: bind ``inputs`` (defaults fill the rest), return its outputs by name."""
+        self.events = []
         d = self.defs.get(name)
         if d is None:
             raise KirRuntimeError(f"no @def {name!r}")
@@ -422,5 +457,7 @@ def run(
     env: NodeEnv,
     nodes: dict[str, Callable] | None = None,
     hook: CallHook | None = None,
+    *,
+    events: Callable[[Event], None] | None = None,
 ) -> dict[str, Any]:
-    return Interpreter(program, env, nodes, hook).run()
+    return Interpreter(program, env, nodes, hook, events=events).run()

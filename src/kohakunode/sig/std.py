@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from kohakunode.events import Event
 from kohakunode.sig.library import NodeLibrary
 
 STD = NodeLibrary("kir.std")
@@ -138,6 +139,21 @@ def identity(value: Any) -> Any:
 @STD.node(ordered=True)
 def print_value(value: Any) -> None:
     print(value)
+
+
+@STD.node(ordered=True)
+def emit(topic: str, payload: Any) -> None:
+    Event.capture(topic, payload)
+
+
+# Capture maintained references once. Name/structural equality alone must not
+# turn a user node, signature clone, or implementation override into an event.
+EMIT_SIGNATURE = STD.signatures["emit"]
+EMIT_IMPL = emit
+
+
+def is_standard_emit(library, signature, implementation) -> bool:
+    return library is STD and signature is EMIT_SIGNATURE and implementation is EMIT_IMPL
 
 
 # The collect baseline uses the same fresh-list operation without user shadowing.

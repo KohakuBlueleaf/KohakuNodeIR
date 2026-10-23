@@ -12,6 +12,7 @@ written line by line, and its meaning is a sequential run of that text.
 | [modules.md](modules.md) | Source imports/exports, deterministic linking, dependency manifests, structured origins |
 | [records.md](records.md) | Nominal schemas, generated field operations, immutable values, portable codecs |
 | [collect.md](collect.md) | Ordered collection results, carried state, precise failures, initial mutation restrictions |
+| [events.md](events.md) | Standard ordered emit, immutable portable event snapshots, reference sidecars and delivery boundary |
 | [graph.md](graph.md) | The graph view (`.kirgraph`) and how it maps to and from text |
 | [passes.md](passes.md) | Optimization passes, the fully optimized form, program hashes |
 | [checks.md](checks.md) | Every rule the checker enforces |

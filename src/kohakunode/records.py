@@ -283,6 +283,16 @@ def _encode(value: Any) -> Any:
     return value
 
 
+def encode_portable(value: Any) -> Any:
+    """Snapshot exact portable scalars, containers and records into tagged data.
+
+    Every container has an explicit tag, so application dictionaries cannot
+    impersonate records. This performs no attribute/property conversion of host
+    objects and does not change process-wide JSON integer limits.
+    """
+    return _encode(_freeze(value, set()))
+
+
 def encode_record(record: RecordValue) -> dict:
     """Encode records and every nested container with explicit collision-safe tags.
 
@@ -379,6 +389,11 @@ def _decode(data: Any, schemas: Mapping[str, RecordSchema], active: set[int]) ->
         )
     finally:
         active.remove(id(data))
+
+
+def decode_portable(data: Any, schemas: Mapping[str, RecordSchema] | None = None) -> Any:
+    """Decode tagged portable data; a registry is needed only for record tags."""
+    return _decode(data, {} if schemas is None else schemas, set())
 
 
 def decode_record(data: Any, schemas: Mapping[str, RecordSchema]) -> RecordValue:

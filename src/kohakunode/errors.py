@@ -36,6 +36,14 @@ class KirRuntimeError(KirError):
         super().__init__(f"{message} (line {line})" if line is not None else message)
 
 
+class EventDeliveryError(KirRuntimeError):
+    """A semantic event committed, but its reference delivery callback failed.
+
+    Unlike NodeFailure, this is not catchable by KIR @except. The interpreter's
+    committed event prefix remains available to the caller.
+    """
+
+
 class NodeFailure(KirRuntimeError):
     """A node call raised; carries the original exception for `@except`."""
 

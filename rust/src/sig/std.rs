@@ -29,6 +29,8 @@ pub fn std_library() -> &'static Library {
         let boolean = [("result", "bool")];
         let mut print_value = sig("print_value", &[("value", "_")], &[]);
         print_value.ordered = true;
+        let mut emit = sig("emit", &[("topic", "str"), ("payload", "_")], &[]);
+        emit.ordered = true;
         library(
             "kir.std",
             vec![
@@ -58,6 +60,7 @@ pub fn std_library() -> &'static Library {
                 sig("to_float", &[("value", "_")], &[("result", "float")]),
                 sig("identity", &[("value", "_")], &any),
                 print_value,
+                emit,
             ],
         )
     })

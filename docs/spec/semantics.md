@@ -108,6 +108,18 @@ An executor that runs `try_body` nodes in parallel must give the same result:
 on failure it cancels the region's pending work where it can and discards the
 results of statements after the failing one.
 
+## Committed events
+
+The standard ordered call `emit(topic, payload)` contributes one portable,
+immutable event to the job's semantic event sequence after successful logical
+call completion. It has no outputs and no special syntax. Equal payloads from
+distinct invocations remain distinct events. Earlier committed events survive
+later failures; `@try` does not roll them back. Speculative or squashed younger
+calls must not publish events. Reference event delivery failure occurs after
+commitment and is a fatal `EventDeliveryError`, not a catchable node failure.
+See [events.md](events.md) for exact standard-node identity, payload capture,
+call-hook replay, and the executor transport boundary.
+
 ## Hints and metadata
 
 `@meta` and `@hint` never change results. Deleting all of them leaves every

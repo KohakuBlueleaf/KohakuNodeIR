@@ -3,6 +3,7 @@
 from kohakunode.check import Diagnostic, check
 from kohakunode.compiler import Compiled, compile_file, compile_program, compile_source
 from kohakunode.errors import (
+    EventDeliveryError,
     KirCheckError,
     KirError,
     KirRuntimeError,
@@ -10,12 +11,15 @@ from kohakunode.errors import (
     KirSyntaxError,
     NodeFailure,
 )
+from kohakunode.events import Event
 from kohakunode.lower import full_hash, lower, semantic_hash
 from kohakunode.modules import KirModuleError, Linked, link_program
 from kohakunode.records import (
     RecordValue,
     construct,
+    decode_portable,
     decode_record,
+    encode_portable,
     encode_record,
     project,
     replace_field,
@@ -29,6 +33,8 @@ __all__ = [
     "STD",
     "Compiled",
     "Diagnostic",
+    "Event",
+    "EventDeliveryError",
     "Interpreter",
     "KirCheckError",
     "KirError",
@@ -51,7 +57,9 @@ __all__ = [
     "compile_program",
     "compile_source",
     "construct",
+    "decode_portable",
     "decode_record",
+    "encode_portable",
     "encode_record",
     "full_hash",
     "link_program",

@@ -64,7 +64,10 @@ Small pure nodes most programs need (`add`, `sub`, `mul`, `div`, `less`,
 `less_equal`, `equal`, `not`, `len`, `item_at`, `append`, `concat`,
 `to_str`, ...). It ships with the reference implementation and the Rust core,
 is always available without `@use`, and is shadowed by any other library or
-`@def` that defines the same name.
+`@def` that defines the same name. It also includes the ordered effects
+`print_value` and `emit(topic: str, payload: _)` (zero outputs). Standard `emit`
+produces a committed semantic event; only the maintained standard identity has
+that behavior, while user shadows remain ordinary calls. See [events.md](events.md).
 
 Separately, the `expand_each` pass uses a few internal nodes under the
 reserved `kir.` prefix (passes.md). Programs may not call them directly.
@@ -76,12 +79,15 @@ from kohakunode import NodeLibrary
 
 lib = NodeLibrary("gbc.nodes")
 
+
 @lib.node(outputs=["node"])
 def entity(crop: Image, box: Box, max_tokens: int = 256) -> Node:
     """Caption one crop."""
 
+
 @lib.node(outputs=["graph"], mutates=["graph"])
 def attach(graph: Graph, node: Node) -> Graph: ...
+
 
 @lib.node(ordered=True)
 def append_jsonl(log: str, record: dict) -> None: ...
