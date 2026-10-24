@@ -223,12 +223,38 @@ def build_cfg(body: list[Stmt], params: tuple[str, ...] = ()) -> CFG:
     return b.g
 
 
-def reaching(g: CFG, undefined: tuple[str, ...] = ()) -> list[frozenset]:
+def back_edges(g: CFG) -> set[tuple[int, int]]:
+    """Edges ``(a, b)`` closing a loop: into a node still open on a depth-first walk from the
+    entry, successors taken in order."""
+    out: set[tuple[int, int]] = set()
+    state = {g.entry: 1}  # 1 open, 2 done
+    stack = [(g.entry, iter(g.succ[g.entry]))]
+    while stack:
+        n, it = stack[-1]
+        nxt = next(it, None)
+        if nxt is None:
+            state[n] = 2
+            stack.pop()
+            continue
+        b = nxt[0]
+        if state.get(b) == 1:
+            out.add((n, b))
+        elif b not in state:
+            state[b] = 1
+            stack.append((b, iter(g.succ[b])))
+    return out
+
+
+def reaching(g: CFG, undefined: tuple[str, ...] = (), forward: bool = False) -> list[frozenset]:
     """IN set of every node: pairs ``(name, defining node)``; ``UNDEF`` marks a path with no write.
 
-    ``undefined`` names start as ``UNDEF`` at the entry.
+    ``undefined`` names start as ``UNDEF`` at the entry. ``forward`` leaves out the edges
+    closing loops (`back_edges`): what reaches a node on the way in.
     """
     preds = g.preds()
+    if forward:
+        back = back_edges(g)
+        preds = [[(p, k) for p, k in ps if (p, n) not in back] for n, ps in enumerate(preds)]
     out: list[frozenset] = [frozenset() for _ in g.nodes]
     inn: list[frozenset] = [frozenset() for _ in g.nodes]
     start = frozenset((x, UNDEF) for x in undefined)

@@ -307,8 +307,43 @@ impl Reaching {
     }
 }
 
+/// Edges `(a, b)` closing a loop: into a node still open on a depth-first walk
+/// from the entry, successors taken in order.
+pub fn back_edges(g: &Cfg) -> BTreeSet<(usize, usize)> {
+    let mut out = BTreeSet::new();
+    // 1 open, 2 done
+    let mut state: HashMap<usize, u8> = HashMap::from([(g.entry, 1)]);
+    let mut stack: Vec<(usize, usize)> = vec![(g.entry, 0)];
+    while let Some(top) = stack.last_mut() {
+        let n = top.0;
+        let Some(&(b, _)) = g.succ[n].get(top.1) else {
+            state.insert(n, 2);
+            stack.pop();
+            continue;
+        };
+        top.1 += 1;
+        match state.get(&b) {
+            Some(1) => {
+                out.insert((n, b));
+            }
+            None => {
+                state.insert(b, 1);
+                stack.push((b, 0));
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
 /// Reaching definitions over `g`; `undefined` names start as `UNDEF` at the entry.
 pub fn reaching(g: &Cfg, undefined: &[String]) -> Reaching {
+    reaching_with(g, undefined, false)
+}
+
+/// `reaching`; `forward` leaves out the edges closing loops (`back_edges`):
+/// what reaches a node on the way in.
+pub fn reaching_with(g: &Cfg, undefined: &[String], forward: bool) -> Reaching {
     let mut ids: HashMap<String, u32> = HashMap::new();
     let intern = |name: &str, ids: &mut HashMap<String, u32>| -> u32 {
         let next = ids.len() as u32;
@@ -322,7 +357,13 @@ pub fn reaching(g: &Cfg, undefined: &[String]) -> Reaching {
         }
     }
     let start: BTreeSet<(u32, i64)> = undefined.iter().map(|x| (intern(x, &mut ids), UNDEF)).collect();
-    let preds = g.preds();
+    let mut preds = g.preds();
+    if forward {
+        let back = back_edges(g);
+        for (n, ps) in preds.iter_mut().enumerate() {
+            ps.retain(|&(p, _)| !back.contains(&(p, n)));
+        }
+    }
     let mut out: Vec<BTreeSet<(u32, i64)>> = vec![BTreeSet::new(); g.nodes.len()];
     let mut inn: Vec<BTreeSet<(u32, i64)>> = vec![BTreeSet::new(); g.nodes.len()];
     let order: Vec<usize> = g.reachable().into_iter().collect();
