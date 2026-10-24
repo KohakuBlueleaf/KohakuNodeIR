@@ -1,0 +1,53 @@
+name: kir-graph release
+
+# A `kir-graph-v<version>` tag packs @kohaku/kir-graph and attaches the tarball
+# to the tag's GitHub release, so an app installs it by URL:
+#   npm install https://github.com/KohakuBlueleaf/KohakuNodeIR/releases/download/kir-graph-v<version>/kohaku-kir-graph-<version>.tgz
+# Run by hand, it packs and uploads the tarball as a workflow artifact only.
+
+on:
+  push:
+    tags:
+      - 'kir-graph-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Pack @kohaku/kir-graph
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/kir-graph
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: packages/kir-graph/package-lock.json
+
+      - run: npm ci
+
+      - name: The tag names the package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: test "kir-graph-v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+
+      - name: Pack (prepack builds dist/)
+        run: npm pack
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kir-graph-tarball
+          path: packages/kir-graph/*.tgz
+          retention-days: 30
+
+      - name: Attach to the GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/kir-graph/*.tgz
+          fail_on_unmatched_files: true

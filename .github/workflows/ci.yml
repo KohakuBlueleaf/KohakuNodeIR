@@ -73,8 +73,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
         run: |
           pip install black ruff
-          black --check src tests examples rust/tests/parity apps/kir-editor/backend
-          ruff check src tests examples rust/tests/parity apps/kir-editor/backend
+          black --check src tests examples rust/tests/parity apps/kir-editor/backend packages/kir-graph/scripts
+          ruff check src tests examples rust/tests/parity apps/kir-editor/backend packages/kir-graph/scripts
 
       - name: Format check (Rust)
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
@@ -168,6 +168,59 @@ jobs:
         run: |
           npm ci
           npm run build
+
+  kir-graph:
+    name: kir-graph (layout checks, library build, installed package)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/kir-graph
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install kohakunode (the example graphs come from it)
+        working-directory: .
+        run: pip install .
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: packages/kir-graph/package-lock.json
+
+      - run: npm ci
+
+      - name: Example graphs
+        # A 400-statement stress program: KIR's reaching definitions grow quadratically
+        run: python scripts/generate/examples.py --large 400
+
+      - name: Layout checks over every example, view and variant
+        run: npm test
+
+      - name: Library build
+        run: npm run build
+
+      - name: The packed tarball, installed and used by a consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONSUMER="$RUNNER_TEMP/consumer"
+          mkdir -p "$CONSUMER"
+          npm pack --pack-destination "$CONSUMER"
+          cp tests/consumer.mjs "$CONSUMER/"
+          EXAMPLE="$(pwd)/dev/examples/gbc__gbc.json"
+          cd "$CONSUMER"
+          npm init -y > /dev/null
+          npm pkg set type=module
+          npm install ./kohaku-kir-graph-*.tgz vue @vue-flow/core @vue-flow/background @vue-flow/controls @vue-flow/minimap elkjs
+          node consumer.mjs "$EXAMPLE"
 
   android-smoke-build:
     # Cross-compile smoke for Android on every PR, so release.yml's matrix

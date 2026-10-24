@@ -418,6 +418,10 @@ x86_64 / aarch64 (manylinux 2_28), Windows x64 and macOS arm64, Android wheels
 (arm64, x86_64; Python 3.13) and the sdist, all uploaded to PyPI and to the
 GitHub release.
 
+`@kohaku/kir-graph` is versioned in `packages/kir-graph/package.json`. Pushing
+a `kir-graph-v<version>` tag runs `kir-graph-release.yml`: the packed tarball
+is attached to the tag's GitHub release, for apps to install by URL.
+
 ## Coming from v1
 
 v2 keeps v1's model (sequential meaning, namespaces entered by builtins,
