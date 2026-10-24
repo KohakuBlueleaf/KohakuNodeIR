@@ -1,0 +1,280 @@
+/* The gallery's chrome, in KohakuTerrarium's colours. */
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+.shell {
+  --bg: #f2eee8;
+  --surface: #ffffff;
+  --surface-alt: #efebe5;
+  --border: #e5dfd7;
+  --text: #2e2a26;
+  --muted: #6c655d;
+  --faint: #8f8880;
+  --iolite: #5a4fcf;
+  --coral: #d46b6b;
+  --sage: #5a9e6f;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.5 Inter, system-ui, sans-serif;
+}
+.shell.dark {
+  --bg: #1a1816;
+  --surface: #252220;
+  --surface-alt: #1e1c1a;
+  --border: #3d3835;
+  --text: #e8e0d8;
+  --muted: #a39a90;
+  --faint: #6f6760;
+  --iolite: #8b83db;
+}
+.bar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--iolite);
+  margin-right: 6px;
+}
+.grow {
+  flex: 1;
+}
+.stat {
+  font: 11px "JetBrains Mono", monospace;
+  color: var(--muted);
+}
+/* A toolbar control: a quiet caption above the control itself */
+.field {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.field__caption {
+  padding-left: 2px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+  cursor: default;
+  user-select: none;
+}
+.field select {
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: 12px "JetBrains Mono", monospace;
+  text-transform: none;
+}
+.seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px;
+  border-radius: 7px;
+  background: rgb(160 154 146 / 0.18);
+}
+.seg__opt {
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: 11.5px Inter, system-ui, sans-serif;
+  cursor: pointer;
+}
+.seg__opt.is-on {
+  background: var(--surface);
+  color: var(--iolite);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.side {
+  width: 250px;
+  flex-shrink: 0;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+  background: var(--surface-alt);
+  padding: 8px;
+}
+.search {
+  width: 100%;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.side__group {
+  margin: 12px 4px 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+.side__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font: 12px "JetBrains Mono", monospace;
+  cursor: pointer;
+}
+.side__item:hover {
+  background: rgb(160 154 146 / 0.16);
+}
+.side__item.is-on {
+  background: color-mix(in srgb, var(--iolite) 14%, transparent);
+  color: var(--iolite);
+}
+.side__item.is-bad {
+  color: var(--faint);
+  cursor: not-allowed;
+}
+.side__title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.side__count {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.main {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  gap: 1px;
+  background: var(--border);
+}
+.grid__cell {
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.grid__head {
+  padding: 2px 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.grid__cell > .kg-root {
+  flex: 1;
+}
+.panel {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border-left: 1px solid var(--border);
+  background: var(--surface-alt);
+  min-height: 0;
+}
+.panel__body {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+.hint {
+  padding: 12px;
+  color: var(--faint);
+}
+.kv {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+.kv > span {
+  width: 56px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.kv code {
+  word-break: break-all;
+  font: 11.5px "JetBrains Mono", monospace;
+}
+.json,
+.listing {
+  margin: 6px 0 0;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: 11px/1.45 "JetBrains Mono", monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.listing__line {
+  display: block;
+  white-space: pre;
+}
+.listing__line i {
+  display: inline-block;
+  width: 2.6em;
+  color: var(--faint);
+  font-style: normal;
+}
+.listing__line.is-on {
+  background: color-mix(in srgb, var(--iolite) 16%, transparent);
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.check b {
+  margin-left: auto;
+}
+.check.is-ok svg {
+  color: var(--sage);
+}
+.check.is-bad svg {
+  color: var(--coral);
+}

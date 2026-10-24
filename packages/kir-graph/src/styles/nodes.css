@@ -1,0 +1,394 @@
+/* Node-view cards and pills, flowchart elements, and the overlay marks every element shares. */
+
+.kg-card {
+  position: relative;
+  border-radius: 8px;
+  background: var(--kg-surface);
+  border: 1px solid var(--kg-border-strong);
+  box-shadow: var(--kg-shadow);
+  --kg-accent: var(--kg-sapphire);
+  --kg-accent-soft: var(--kg-sapphire-light);
+}
+.kg-accent--sapphire { --kg-accent: var(--kg-sapphire); --kg-accent-soft: var(--kg-sapphire-light); }
+.kg-accent--taaffeite { --kg-accent: var(--kg-taaffeite); --kg-accent-soft: var(--kg-taaffeite-light); }
+.kg-accent--amber { --kg-accent: var(--kg-amber); --kg-accent-soft: var(--kg-amber-light); }
+.kg-accent--iolite { --kg-accent: var(--kg-iolite); --kg-accent-soft: var(--kg-iolite-light); }
+.kg-accent--coral { --kg-accent: var(--kg-coral); --kg-accent-soft: var(--kg-coral-light); }
+.kg-accent--sage { --kg-accent: var(--kg-sage); --kg-accent-soft: var(--kg-sage-light); }
+.kg-accent--aquamarine { --kg-accent: var(--kg-aquamarine); --kg-accent-soft: var(--kg-aquamarine-light); }
+
+.kg-card--defcall {
+  box-shadow: 0 0 0 3px var(--kg-surface), 0 0 0 4.5px var(--kg-taaffeite), var(--kg-shadow);
+}
+.kg-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.6rem 0 0.8rem;
+  border-radius: 7px 7px 0 0;
+  background: linear-gradient(90deg, var(--kg-accent) 0 4px, var(--kg-accent-soft) 4px);
+  color: var(--kg-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+:root.dark .kg-root:not(.kg-light) .kg-card__head,
+.kg-dark .kg-card__head {
+  background: linear-gradient(90deg, var(--kg-accent) 0 4px, color-mix(in srgb, var(--kg-accent) 30%, var(--kg-surface)) 4px);
+}
+.kg-card__icon {
+  font-size: 13px;
+  color: var(--kg-accent);
+}
+.kg-card__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--kg-font-mono);
+}
+.kg-card__hint {
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--kg-amber);
+  flex-shrink: 0;
+}
+.kg-card__row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  pointer-events: none;
+}
+.kg-card__label {
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  color: var(--kg-text-muted);
+  white-space: nowrap;
+}
+.kg-card__label--right {
+  margin-left: auto;
+}
+.kg-card__label.is-ctrl {
+  color: var(--kg-ctrl);
+  font-weight: 600;
+}
+.kg-card__ctrl {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.kg-card__label.is-literal {
+  color: var(--kg-text);
+}
+
+.kg-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  border: 1.5px solid;
+  font-family: var(--kg-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--kg-shadow);
+}
+.kg-pill--get,
+.kg-pill--set {
+  background: var(--kg-aquamarine-light);
+  border-color: var(--kg-aquamarine);
+  color: var(--kg-aquamarine-shadow);
+}
+.kg-pill--set {
+  border-style: dashed;
+}
+.kg-pill--value {
+  background: var(--kg-amber-light);
+  border-color: var(--kg-amber);
+  color: var(--kg-amber-shadow);
+}
+:root.dark .kg-root:not(.kg-light) .kg-pill--get,
+:root.dark .kg-root:not(.kg-light) .kg-pill--set,
+.kg-dark .kg-pill--get,
+.kg-dark .kg-pill--set {
+  background: color-mix(in srgb, var(--kg-aquamarine) 28%, var(--kg-surface));
+  color: var(--kg-aquamarine-light);
+}
+:root.dark .kg-root:not(.kg-light) .kg-pill--value,
+.kg-dark .kg-pill--value {
+  background: color-mix(in srgb, var(--kg-amber) 26%, var(--kg-surface));
+  color: var(--kg-amber-light);
+}
+.kg-pill--param {
+  border-radius: 4px;
+  background: var(--kg-sage-light);
+  border-color: var(--kg-sage);
+  color: var(--kg-sage-shadow);
+}
+:root.dark .kg-root:not(.kg-light) .kg-pill--param,
+.kg-dark .kg-pill--param {
+  background: color-mix(in srgb, var(--kg-sage) 28%, var(--kg-surface));
+  color: var(--kg-sage-light);
+}
+.kg-pill__tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.kg-pill__icon {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* ---------------------------------------------------------------- flowchart elements */
+
+.kg-robo {
+  position: relative;
+}
+.kg-robo__svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.kg-robo__shape {
+  fill: var(--kg-robo-fill);
+  stroke: var(--kg-robo-stroke);
+  stroke-width: 1.5;
+}
+.kg-robo__inner {
+  fill: none;
+  stroke: var(--kg-robo-stroke);
+  stroke-width: 1;
+}
+.kg-robo__heat {
+  fill: var(--kg-heat-color);
+  opacity: 0.26;
+}
+.kg-robo__rule {
+  stroke: var(--kg-border-strong);
+}
+.kg-robo--diamond .kg-robo__shape,
+.kg-robo--hexagon .kg-robo__shape {
+  fill: color-mix(in srgb, var(--kg-amber) 16%, var(--kg-robo-fill));
+}
+.kg-robo--funnel .kg-robo__shape,
+.kg-robo--bar .kg-robo__shape {
+  fill: color-mix(in srgb, var(--kg-robo-flow) 14%, var(--kg-robo-fill));
+}
+.kg-robo--join .kg-robo__shape {
+  fill: color-mix(in srgb, var(--kg-taaffeite) 18%, var(--kg-robo-fill));
+  stroke-dasharray: 4 2;
+}
+.kg-robo--flag .kg-robo__shape {
+  fill: color-mix(in srgb, var(--kg-sage) 30%, var(--kg-robo-fill));
+}
+.kg-robo--variable .kg-robo__shape {
+  fill: color-mix(in srgb, var(--kg-ev-number) 30%, var(--kg-robo-fill));
+}
+.kg-robo--pentagon .kg-robo__shape,
+.kg-robo--value .kg-robo__shape {
+  fill: color-mix(in srgb, var(--kg-robo-data) 14%, var(--kg-robo-fill));
+}
+.kg-robo--start .kg-robo__shape,
+.kg-robo--end .kg-robo__shape {
+  fill: color-mix(in srgb, var(--kg-sage) 22%, var(--kg-robo-fill));
+}
+.kg-robo--try .kg-robo__shape {
+  stroke: var(--kg-coral);
+}
+.kg-robo--each .kg-robo__shape {
+  stroke: var(--kg-amber);
+  stroke-width: 2;
+}
+.kg-robo--io .kg-robo__shape {
+  fill: color-mix(in srgb, var(--kg-sage) 14%, var(--kg-robo-fill));
+}
+.kg-robo__text {
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  fill: var(--kg-text);
+}
+.kg-robo__text--title {
+  font-size: 12px;
+  font-weight: 600;
+}
+.kg-robo__text--port,
+.kg-robo__text--muted {
+  fill: var(--kg-text-muted);
+}
+.kg-robo__text--value {
+  fill: var(--kg-robo-data);
+}
+.kg-robo__text--ctrl,
+.kg-robo__text--loop {
+  fill: var(--kg-robo-flow);
+  font-weight: 600;
+}
+.kg-robo__text--terminal {
+  font-weight: 700;
+}
+.kg-robo__text--pill,
+.kg-robo__text--bar {
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- selection and overlay */
+
+.kg-card.is-selected,
+.kg-pill.is-selected {
+  border-color: var(--kg-iolite);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--kg-iolite) 45%, transparent), var(--kg-shadow);
+}
+.kg-robo.is-selected .kg-robo__shape {
+  stroke: var(--kg-iolite);
+  stroke-width: 2.5;
+}
+/* Every element of the variable in focus */
+.kg-pill.is-same {
+  border-color: var(--kg-iolite);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--kg-iolite) 40%, transparent), var(--kg-shadow);
+}
+.kg-robo.is-same .kg-robo__shape {
+  stroke: var(--kg-iolite);
+  stroke-width: 3;
+}
+.kg-robo.is-same {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--kg-iolite) 60%, transparent));
+}
+.kg-card.is-hovered,
+.kg-pill.is-hovered {
+  border-color: color-mix(in srgb, var(--kg-iolite) 60%, var(--kg-border-strong));
+}
+
+/*
+ * Heat: a meter inside the bottom edge of a box (a track, filled as far as the
+ * heat) and a glow that grows with it. Flowchart outlines fill instead
+ * (RoboNode), so the heat follows any shape.
+ */
+.kg-card.is-hot,
+.kg-pill.is-hot,
+.kg-collapsed.is-hot {
+  box-shadow: 0 0 0 calc(var(--kg-heat) * 4px) color-mix(in srgb, var(--kg-heat-color) calc(var(--kg-heat) * 45%), transparent), var(--kg-shadow);
+}
+.kg-card.is-hot::before,
+.kg-collapsed.is-hot::before,
+.kg-card.is-hot::after,
+.kg-collapsed.is-hot::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  bottom: 3px;
+  height: 3px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.kg-card.is-hot::before,
+.kg-collapsed.is-hot::before {
+  right: 8px;
+  background: color-mix(in srgb, var(--kg-heat-color) 14%, transparent);
+}
+.kg-card.is-hot::after,
+.kg-collapsed.is-hot::after {
+  width: calc(var(--kg-heat) * (100% - 16px));
+  background: var(--kg-heat-color);
+}
+.kg-region.is-hot {
+  background: color-mix(in srgb, var(--kg-heat-color) calc(var(--kg-heat) * 10%), transparent);
+}
+.kg-card.is-error,
+.kg-pill.is-error {
+  border-color: var(--kg-coral);
+}
+.kg-robo.is-error .kg-robo__shape {
+  stroke: var(--kg-coral);
+  stroke-width: 2.5;
+}
+
+.kg-marks {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+/* Above the element and no wider, wrapping onto more lines upward rather than cutting anything off;
+   marks never reach a neighbour, and sit over the wire coming in */
+.kg-marks--above {
+  position: absolute;
+  left: 0;
+  width: max-content;
+  max-width: max(100%, 160px);
+  flex-wrap: wrap-reverse;
+  row-gap: 2px;
+  bottom: calc(100% + 3px);
+}
+.kg-marks--inline {
+  margin-left: auto;
+  padding-left: 0.4rem;
+}
+.kg-status {
+  display: inline-flex;
+  font-size: 12px;
+}
+.kg-status--idle { color: var(--kg-status-idle); }
+.kg-status--ok { color: var(--kg-status-ok); }
+.kg-status--waiting { color: var(--kg-status-waiting); }
+.kg-status--running { color: var(--kg-status-running); }
+.kg-status--warn { color: var(--kg-status-warn); }
+.kg-status--error { color: var(--kg-status-error); }
+.kg-status--running .kg-icon,
+.kg-status--waiting .kg-icon {
+  animation: kg-pulse 1.4s ease-in-out infinite;
+}
+@keyframes kg-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.kg-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-family: var(--kg-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  border: 1px solid var(--kg-border);
+  background: var(--kg-surface);
+  color: var(--kg-text-muted);
+}
+.kg-badge--accent {
+  border-color: color-mix(in srgb, var(--kg-iolite) 45%, transparent);
+  color: var(--kg-iolite);
+}
+.kg-badge--good {
+  border-color: color-mix(in srgb, var(--kg-sage) 50%, transparent);
+  color: var(--kg-sage-shadow);
+}
+.kg-badge--warn {
+  border-color: color-mix(in srgb, var(--kg-amber) 55%, transparent);
+  color: var(--kg-amber-shadow);
+}
+.kg-badge--bad {
+  border-color: color-mix(in srgb, var(--kg-coral) 55%, transparent);
+  color: var(--kg-coral-shadow);
+}
+:root.dark .kg-root:not(.kg-light) .kg-badge--good,
+.kg-dark .kg-badge--good { color: var(--kg-sage-light); }
+:root.dark .kg-root:not(.kg-light) .kg-badge--warn,
+.kg-dark .kg-badge--warn { color: var(--kg-amber-light); }
+:root.dark .kg-root:not(.kg-light) .kg-badge--bad,
+.kg-dark .kg-badge--bad { color: var(--kg-coral-light); }
+.kg-note {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--kg-font-mono);
+  font-size: 10px;
+  color: var(--kg-text-muted);
+}

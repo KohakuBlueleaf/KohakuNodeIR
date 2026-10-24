@@ -279,6 +279,7 @@ values ([passes.md](docs/spec/passes.md)).
 | tree-sitter grammar | `editors/tree-sitter-kir/` | highlighting and structure for any tree-sitter editor |
 | VS Code extension | `editors/vscode/` | highlighting, snippets, folding, and a client for `kir-lsp` |
 | Example node editor | `apps/kir-editor/` | Vue 3 + Vue Flow + elkjs + CodeMirror: nodes, flowchart, sequence, blocks and text views of one program |
+| Display library | `packages/kir-graph/` | `@kohaku/kir-graph`: a Vue component drawing a `.kirgraph` as nodes, flowchart, frames, dataflow, blocks or sequence, with live run overlays ([README](packages/kir-graph/README.md)) |
 
 ### Rust core
 
@@ -375,6 +376,7 @@ src/kohakunode/
 rust/          the Rust core, PyO3 and WASM bindings
 editors/       tree-sitter-kir, vscode
 apps/          kir-editor (example node editor)
+packages/      kir-graph (display library for .kirgraph documents)
 examples/      basics (v1 programs), tour (one file per feature), gbc, comfyui
 tests/         unit tests, the v1 reference corpus, the golden corpus
 docs/          spec/, guides/, architecture.md, plan/
@@ -397,6 +399,7 @@ docs/          spec/, guides/, architecture.md, plan/
 pytest                                   # the Python reference: unit tests, golden corpus, v1 parity, generated programs
 cd rust && cargo test                    # the Rust core against the same golden corpus
 cd apps/kir-editor/frontend && npm run test:e2e   # one browser smoke run of the example editor
+cd packages/kir-graph && npm test                 # layout checks of the display library (after scripts/generate/examples.py)
 ```
 
 The golden corpus (`tests/corpus/golden`) holds the canonical text, the fully

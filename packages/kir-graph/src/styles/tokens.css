@@ -1,0 +1,151 @@
+/*
+ * Theme of every kir-graph view: the KohakuTerrarium gem palette and warm
+ * neutrals. Light by default; dark under `html.dark` (unless the graph is
+ * `.kg-light`) or with `.kg-dark`. No colour is written outside this file.
+ */
+
+.kg-root {
+  --kg-sapphire: #0f52ba;
+  --kg-sapphire-light: #d6e3f8;
+  --kg-sapphire-shadow: #082567;
+  --kg-aquamarine: #4c9989;
+  --kg-aquamarine-light: #d4ede8;
+  --kg-aquamarine-shadow: #1b6b5a;
+  --kg-taaffeite: #a57eae;
+  --kg-taaffeite-light: #e8d5ed;
+  --kg-taaffeite-shadow: #6b4670;
+  --kg-iolite: #5a4fcf;
+  --kg-iolite-light: #ddd0f0;
+  --kg-iolite-shadow: #312a7a;
+  --kg-amber: #d4920a;
+  --kg-amber-light: #f5e6c8;
+  --kg-amber-shadow: #8b5e00;
+  --kg-coral: #d46b6b;
+  --kg-coral-light: #f5d5d5;
+  --kg-coral-shadow: #8b3a3a;
+  --kg-sage: #5a9e6f;
+  --kg-sage-light: #d5e8da;
+  --kg-sage-shadow: #3a6b48;
+
+  --kg-bg: #f2eee8;
+  --kg-surface: #ffffff;
+  --kg-surface-alt: #efebe5;
+  --kg-border: #e5dfd7;
+  --kg-border-strong: #cdc5ba;
+  --kg-text: #2e2a26;
+  --kg-text-muted: #6c655d;
+  --kg-text-faint: #8f8880;
+  --kg-grid: #d8d1c7;
+  --kg-shadow: 0 1px 2px rgb(42 39 36 / 0.08), 0 2px 8px rgb(42 39 36 / 0.08);
+  --kg-minimap-node: #c5bfb7;
+  --kg-minimap-mask: rgb(160 154 146 / 0.18);
+
+  --kg-ctrl: var(--kg-iolite);
+  --kg-untyped: #a09a92;
+  --kg-type-int: var(--kg-sapphire);
+  --kg-type-float: var(--kg-aquamarine);
+  --kg-type-str: var(--kg-amber);
+  --kg-type-bool: var(--kg-coral);
+  --kg-type-list: var(--kg-taaffeite);
+  --kg-type-dict: var(--kg-sage);
+  --kg-type-nominal-0: var(--kg-sapphire-shadow);
+  --kg-type-nominal-1: var(--kg-aquamarine-shadow);
+  --kg-type-nominal-2: var(--kg-taaffeite-shadow);
+  --kg-type-nominal-3: var(--kg-amber-shadow);
+  --kg-type-nominal-4: var(--kg-coral-shadow);
+  --kg-type-nominal-5: var(--kg-sage-shadow);
+  --kg-type-nominal-6: #7a6fd8;
+  --kg-type-nominal-7: #b0784a;
+
+  --kg-robo-flow: #1f5fd0;
+  --kg-robo-data: #e08a10;
+  --kg-robo-fill: #ffffff;
+  --kg-robo-stroke: #3a3632;
+  --kg-ev-number: #e8b600;
+  --kg-ev-bool: #3fa34d;
+  --kg-ev-text: #ee7a1f;
+  --kg-ev-other: #8f8f8f;
+
+  /* Heat is a magnitude, not a status: its own hue, never a status colour */
+  --kg-heat-color: var(--kg-sapphire);
+  --kg-status-idle: #a09a92;
+  --kg-status-ok: var(--kg-sage);
+  --kg-status-waiting: var(--kg-amber);
+  --kg-status-running: var(--kg-aquamarine);
+  --kg-status-warn: var(--kg-amber);
+  --kg-status-error: var(--kg-coral);
+
+  --kg-font-mono: "JetBrains Mono", "Fira Code", ui-monospace, Consolas, monospace;
+  --kg-font-sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--kg-bg);
+  color: var(--kg-text);
+  font-family: var(--kg-font-sans);
+  font-size: 12px;
+}
+
+:root.dark .kg-root:not(.kg-light),
+.kg-root.kg-dark {
+  --kg-bg: #1a1816;
+  --kg-surface: #252220;
+  --kg-surface-alt: #1e1c1a;
+  --kg-border: #3d3835;
+  --kg-border-strong: #4a4540;
+  --kg-text: #e8e0d8;
+  --kg-text-muted: #a39a90;
+  --kg-text-faint: #6f6760;
+  --kg-grid: #2e2a27;
+  --kg-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 8px rgb(0 0 0 / 0.25);
+  --kg-minimap-node: #4a4540;
+  --kg-minimap-mask: rgb(0 0 0 / 0.35);
+
+  --kg-ctrl: #8b83db;
+  --kg-untyped: #8a8480;
+  --kg-type-int: #6f9be0;
+  --kg-type-float: #6fb8a8;
+  --kg-type-str: #e0aa3e;
+  --kg-type-bool: #e08c8c;
+  --kg-type-list: #c3a2cb;
+  --kg-type-dict: #82bf95;
+  --kg-type-nominal-0: var(--kg-sapphire-light);
+  --kg-type-nominal-1: var(--kg-aquamarine-light);
+  --kg-type-nominal-2: var(--kg-taaffeite-light);
+  --kg-type-nominal-3: var(--kg-amber-light);
+  --kg-type-nominal-4: var(--kg-coral-light);
+  --kg-type-nominal-5: var(--kg-sage-light);
+  --kg-type-nominal-6: #b3acef;
+  --kg-type-nominal-7: #dcb28c;
+
+  --kg-heat-color: #6f9be0;
+  --kg-robo-flow: #6c9bf0;
+  --kg-robo-data: #f0a84a;
+  --kg-robo-fill: #252220;
+  --kg-robo-stroke: #c5bfb7;
+}
+
+.kg-icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  fill: currentColor;
+  vertical-align: middle;
+}
+
+.kg-spin {
+  animation: kg-spin 1s linear infinite;
+}
+@keyframes kg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.kg-problem {
+  padding: 1rem;
+  color: var(--kg-coral);
+  font-family: var(--kg-font-mono);
+}

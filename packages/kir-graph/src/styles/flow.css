@@ -1,0 +1,301 @@
+/* The graph views: canvas, pins, wires, region boxes, collapsed regions, level of detail. */
+
+.kg-flow {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.kg-defs {
+  position: absolute;
+}
+.kg-flow .vue-flow__node {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  width: auto;
+  font-family: var(--kg-font-sans);
+  color: var(--kg-text);
+  cursor: pointer;
+}
+.kg-flow .vue-flow__node.selected,
+.kg-flow .vue-flow__node:focus,
+.kg-flow .vue-flow__node:focus-visible {
+  box-shadow: none;
+  outline: none;
+}
+.kg-flow .vue-flow__node-region {
+  cursor: default;
+}
+.kg-flow .vue-flow__controls {
+  box-shadow: none;
+  border: 1px solid var(--kg-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.kg-flow .vue-flow__controls-button {
+  background: var(--kg-surface);
+  border-bottom: 1px solid var(--kg-border);
+  color: var(--kg-text);
+  fill: var(--kg-text);
+}
+.kg-flow .vue-flow__minimap {
+  background: var(--kg-surface);
+  border: 1px solid var(--kg-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.kg-flow__status {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- chips */
+
+.kg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid var(--kg-border);
+  background: var(--kg-surface);
+  color: var(--kg-text-muted);
+}
+.kg-chip--accent {
+  border-color: color-mix(in srgb, var(--kg-iolite) 40%, transparent);
+  color: var(--kg-iolite);
+}
+.kg-chip--bad {
+  border-color: color-mix(in srgb, var(--kg-coral) 40%, transparent);
+  color: var(--kg-coral);
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------- pins */
+
+.kg-flow .vue-flow__handle.kg-pin {
+  box-sizing: border-box;
+  padding: 0;
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  border: 2px solid var(--kg-pin);
+  background: var(--kg-surface);
+  border-radius: 999px;
+  /* Pins sit in the borderless node wrapper, so geometry coordinates are exact */
+  margin: 0;
+  transform: translate(-50%, -50%);
+  right: auto;
+  bottom: auto;
+  cursor: default;
+}
+.kg-flow .vue-flow__handle.kg-pin--ctrl {
+  border: 0;
+  border-radius: 0;
+  background: var(--kg-pin);
+  clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%);
+}
+.kg-flow .vue-flow__handle.kg-pin--ctrl.kg-pin--top,
+.kg-flow .vue-flow__handle.kg-pin--ctrl.kg-pin--bottom {
+  clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%);
+}
+.kg-flow .vue-flow__handle.kg-pin--any {
+  opacity: 0.6;
+}
+.kg-palette--robo .vue-flow__handle.kg-pin {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  min-height: 8px;
+}
+.kg-palette--robo .vue-flow__handle.kg-pin--ctrl {
+  --kg-pin: var(--kg-robo-flow) !important;
+}
+.kg-palette--robo .vue-flow__handle.kg-pin--data {
+  --kg-pin: var(--kg-robo-data) !important;
+}
+
+/* ---------------------------------------------------------------- wires */
+
+.kg-wire__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+}
+.kg-wire__line {
+  fill: none;
+  transition: stroke-width 160ms ease;
+}
+.kg-wire__core {
+  fill: none;
+  stroke: var(--kg-bg);
+  pointer-events: none;
+}
+.kg-wire--back .kg-wire__core {
+  stroke-dasharray: 7 4;
+}
+.kg-wire__tail {
+  font-family: var(--kg-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--kg-bg);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.kg-wire--back .kg-wire__line {
+  stroke-dasharray: 7 4;
+}
+.kg-wire.is-active .kg-wire__line {
+  stroke-dasharray: 8 6;
+  animation: kg-flow-dash 0.9s linear infinite;
+}
+@keyframes kg-flow-dash {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+.vue-flow__edge.selected .kg-wire__line,
+.kg-wire.is-selected .kg-wire__line {
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--kg-iolite) 70%, transparent));
+  stroke-width: 3.2 !important;
+}
+.kg-wire__label {
+  font-family: var(--kg-font-mono);
+  font-size: 10px;
+  fill: var(--kg-text-muted);
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--kg-bg);
+  stroke-width: 3px;
+}
+
+/* ---------------------------------------------------------------- region boxes */
+
+.kg-region {
+  position: relative;
+  border-radius: 10px;
+  border: 1.5px solid color-mix(in srgb, var(--kg-region) 38%, transparent);
+  background: color-mix(in srgb, var(--kg-region) 5%, transparent);
+  --kg-region: var(--kg-iolite);
+}
+.kg-region__head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.5rem 0 0.25rem;
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--kg-region) 85%, var(--kg-text));
+  border-bottom: 1px dashed color-mix(in srgb, var(--kg-region) 25%, transparent);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.kg-region__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kg-region__icon {
+  font-size: 11px;
+}
+.kg-region__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  pointer-events: auto;
+}
+.kg-region__toggle:hover {
+  background: color-mix(in srgb, var(--kg-region) 14%, transparent);
+}
+.kg-region--loop,
+.kg-region--each,
+.kg-region--collect {
+  --kg-region: var(--kg-amber);
+}
+.kg-region--try,
+.kg-region--except {
+  --kg-region: var(--kg-coral);
+}
+.kg-region--except {
+  border-style: dashed;
+}
+.kg-region--dataflow {
+  --kg-region: var(--kg-aquamarine);
+  border-style: dashed;
+}
+.kg-region--parallel {
+  --kg-region: var(--kg-taaffeite);
+}
+.kg-region.is-selected,
+.kg-collapsed.is-selected {
+  border-color: var(--kg-iolite);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--kg-iolite) 35%, transparent);
+}
+
+.kg-collapsed {
+  position: relative;
+  border-radius: 10px;
+  border: 1.5px solid color-mix(in srgb, var(--kg-region) 60%, transparent);
+  background: color-mix(in srgb, var(--kg-region) 10%, var(--kg-surface));
+  box-shadow: var(--kg-shadow);
+  --kg-region: var(--kg-iolite);
+}
+.kg-collapsed__head {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 24px;
+  padding: 0 0.5rem 0 0.25rem;
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--kg-region) 85%, var(--kg-text));
+  white-space: nowrap;
+  overflow: hidden;
+}
+.kg-collapsed__sub {
+  padding: 0 0.6rem 0 1.6rem;
+  font-size: 10.5px;
+  color: var(--kg-text-muted);
+}
+
+/* ---------------------------------------------------------------- level of detail */
+
+.kg-lod--mid .kg-card__row,
+.kg-lod--mid .kg-robo__text--port,
+.kg-lod--mid .kg-robo__text--value,
+.kg-lod--mid .kg-badge,
+.kg-lod--mid .kg-note {
+  visibility: hidden;
+}
+.kg-lod--far .kg-card__row,
+.kg-lod--far .kg-card__head > *,
+.kg-lod--far .kg-pill__text,
+.kg-lod--far .kg-robo__text,
+.kg-lod--far .kg-marks,
+.kg-lod--far .kg-region__head > *,
+.kg-lod--far .kg-collapsed__head,
+.kg-lod--far .kg-collapsed__sub,
+.kg-lod--far .vue-flow__handle {
+  visibility: hidden;
+}
+.kg-lod--far .kg-wire__line {
+  stroke-width: 3 !important;
+}

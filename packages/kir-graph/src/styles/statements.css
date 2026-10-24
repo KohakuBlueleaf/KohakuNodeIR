@@ -1,0 +1,423 @@
+/* The statement views: Scratch-style blocks and EV3-style sequence tiles. */
+
+.kg-tone--sapphire { --kg-tone: var(--kg-sapphire); --kg-tone-soft: var(--kg-sapphire-light); }
+.kg-tone--taaffeite { --kg-tone: var(--kg-taaffeite); --kg-tone-soft: var(--kg-taaffeite-light); }
+.kg-tone--amber { --kg-tone: var(--kg-amber); --kg-tone-soft: var(--kg-amber-light); }
+.kg-tone--iolite { --kg-tone: var(--kg-iolite); --kg-tone-soft: var(--kg-iolite-light); }
+.kg-tone--coral { --kg-tone: var(--kg-coral); --kg-tone-soft: var(--kg-coral-light); }
+.kg-tone--sage { --kg-tone: var(--kg-sage); --kg-tone-soft: var(--kg-sage-light); }
+.kg-tone--aquamarine { --kg-tone: var(--kg-aquamarine); --kg-tone-soft: var(--kg-aquamarine-light); }
+.kg-tone--event { --kg-tone: var(--kg-amber); --kg-tone-soft: var(--kg-amber-light); }
+
+/* ---------------------------------------------------------------- slots */
+
+.kg-slot {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--kg-surface);
+  color: var(--kg-text);
+  border: 1px solid color-mix(in srgb, var(--kg-tone, var(--kg-border-strong)) 40%, var(--kg-border));
+}
+.kg-slot--number { color: var(--kg-type-int); }
+.kg-slot--text { color: var(--kg-amber-shadow); }
+.kg-slot--bool { color: var(--kg-coral-shadow); }
+:root.dark .kg-root:not(.kg-light) .kg-slot--text,
+.kg-dark .kg-slot--text { color: var(--kg-amber-light); }
+:root.dark .kg-root:not(.kg-light) .kg-slot--bool,
+.kg-dark .kg-slot--bool { color: var(--kg-coral-light); }
+.kg-slot--name {
+  background: var(--kg-aquamarine-light);
+  border-color: var(--kg-aquamarine);
+  color: var(--kg-aquamarine-shadow);
+  font-weight: 600;
+}
+:root.dark .kg-root:not(.kg-light) .kg-slot--name,
+.kg-dark .kg-slot--name {
+  background: color-mix(in srgb, var(--kg-aquamarine) 26%, var(--kg-surface));
+  color: var(--kg-aquamarine-light);
+}
+.kg-slot--wire {
+  border-style: dashed;
+  color: var(--kg-text-muted);
+}
+.kg-slot--missing {
+  color: var(--kg-text-faint);
+  border-style: dotted;
+}
+
+.kg-fold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+.kg-fold:hover {
+  background: color-mix(in srgb, var(--kg-tone, var(--kg-iolite)) 18%, transparent);
+}
+.kg-folded,
+.kg-empty {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--kg-text-faint);
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- blocks */
+
+.kg-blocks {
+  height: 100%;
+  overflow: auto;
+  padding: 24px;
+  background-image: radial-gradient(var(--kg-grid) 1.1px, transparent 1.1px);
+  background-size: 22px 22px;
+}
+.kg-script {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 100%;
+}
+.kg-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.kg-block {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--kg-tone) 16%, var(--kg-surface));
+  border: 1px solid color-mix(in srgb, var(--kg-tone) 55%, transparent);
+  border-left: 5px solid var(--kg-tone);
+  color: var(--kg-text);
+  cursor: pointer;
+}
+.kg-block__icon {
+  font-size: 13px;
+  color: var(--kg-tone);
+}
+.kg-block__text {
+  font-size: 12px;
+}
+.kg-block__text--name {
+  font-family: var(--kg-font-mono);
+  font-weight: 700;
+}
+.kg-block__text--key {
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  color: var(--kg-text-muted);
+}
+.kg-block__text--arrow {
+  color: var(--kg-text-muted);
+}
+.kg-block__text--foot {
+  font-size: 11px;
+  color: var(--kg-text-muted);
+}
+.kg-block__name {
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--kg-tone);
+  color: var(--kg-surface);
+}
+.kg-block__label {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-family: var(--kg-font-mono);
+  font-size: 10.5px;
+  border: 1px solid color-mix(in srgb, var(--kg-tone) 45%, transparent);
+  color: color-mix(in srgb, var(--kg-tone) 80%, var(--kg-text));
+}
+.kg-block__hint {
+  font-family: var(--kg-font-mono);
+  font-size: 10px;
+  color: var(--kg-amber);
+}
+.kg-block--cap {
+  border-radius: 6px 6px 14px 6px;
+  border-style: dashed;
+  border-left-style: solid;
+}
+.kg-hat {
+  border-radius: 16px 16px 6px 6px;
+  padding-top: 8px;
+  margin-bottom: 2px;
+}
+.kg-cblock {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.kg-cblock__bar {
+  border-radius: 0;
+}
+.kg-cblock__bar--top {
+  border-radius: 6px 6px 0 0;
+}
+.kg-cblock__bar--mid {
+  min-height: 26px;
+  border-top-width: 0;
+}
+.kg-cblock__bar--bottom {
+  min-height: 12px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  border-radius: 0 0 6px 6px;
+  border-top-width: 0;
+}
+.kg-cblock__mouth {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 26px;
+  padding: 4px 0 4px 18px;
+  border-left: 5px solid var(--kg-tone);
+  margin-left: 0;
+}
+.kg-block.is-selected,
+.kg-cblock.is-selected > .kg-cblock__bar--top {
+  outline: 2px solid var(--kg-iolite);
+  outline-offset: 1px;
+}
+.kg-block.is-hovered {
+  border-color: var(--kg-tone);
+}
+.kg-block,
+.kg-tile {
+  position: relative;
+}
+/* Heat: the same meter as a card's, a track inside the bottom edge filled as far as the heat */
+.kg-block.is-hot::before,
+.kg-cblock.is-hot > .kg-cblock__bar--top::before,
+.kg-tile.is-hot::before,
+.kg-block.is-hot::after,
+.kg-cblock.is-hot > .kg-cblock__bar--top::after,
+.kg-tile.is-hot::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  bottom: 2px;
+  height: 3px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.kg-block.is-hot::before,
+.kg-cblock.is-hot > .kg-cblock__bar--top::before,
+.kg-tile.is-hot::before {
+  right: 6px;
+  background: color-mix(in srgb, var(--kg-heat-color) 14%, transparent);
+}
+.kg-block.is-hot::after,
+.kg-cblock.is-hot > .kg-cblock__bar--top::after,
+.kg-tile.is-hot::after {
+  width: calc(var(--kg-heat) * (100% - 12px));
+  background: var(--kg-heat-color);
+}
+
+/* ---------------------------------------------------------------- sequence */
+
+.kg-sequence {
+  height: 100%;
+  overflow: auto;
+  background-image: radial-gradient(var(--kg-grid) 1.1px, transparent 1.1px);
+  background-size: 22px 22px;
+}
+.kg-sequence__content {
+  position: relative;
+  display: inline-block;
+  min-width: 100%;
+  padding: 24px 24px 48px;
+}
+.kg-sequence__wires {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+.kg-sequence__wire {
+  fill: none;
+  stroke-width: 2.5;
+  opacity: 0.75;
+}
+.kg-sequence .kg-script {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0;
+}
+.kg-start {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 52px;
+  padding: 0 12px;
+  border-radius: 10px 0 0 10px;
+  background: var(--kg-sage);
+  color: var(--kg-surface);
+  font-size: 16px;
+}
+.kg-start__name {
+  font-family: var(--kg-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+.kg-beam {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0 0 0 10px;
+  background: linear-gradient(var(--kg-border-strong), var(--kg-border-strong)) 0 26px / 100% 4px no-repeat;
+}
+.kg-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 96px;
+  border-radius: 8px;
+  background: var(--kg-surface);
+  border: 1.5px solid var(--kg-tone);
+  box-shadow: var(--kg-shadow);
+  cursor: pointer;
+}
+.kg-tile__top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px 6px 0 0;
+  background: var(--kg-tone);
+  color: var(--kg-surface);
+}
+.kg-tile__icon {
+  font-size: 14px;
+}
+.kg-tile__name {
+  font-family: var(--kg-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.kg-tile .kg-marks--inline {
+  margin: 4px 8px 0;
+  padding: 0;
+}
+.kg-tile__params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+}
+.kg-param {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.kg-param__label {
+  font-family: var(--kg-font-mono);
+  font-size: 9.5px;
+  color: var(--kg-text-faint);
+}
+.kg-tile__plugs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 8px 8px;
+}
+.kg-plug {
+  padding: 1px 8px;
+  border-radius: 4px 4px 10px 10px;
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--kg-plug, var(--kg-ev-other));
+  color: #fff;
+}
+.kg-cont {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  border: 2px solid var(--kg-tone);
+  background: color-mix(in srgb, var(--kg-tone) 6%, var(--kg-surface));
+}
+.kg-cont__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--kg-tone) 20%, var(--kg-surface));
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+}
+.kg-cont__foot {
+  border-radius: 0 0 8px 8px;
+}
+.kg-cont__title {
+  font-family: var(--kg-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+.kg-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+}
+.kg-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--kg-tone) 40%, transparent);
+}
+.kg-lane__tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--kg-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--kg-tone) 85%, var(--kg-text));
+  cursor: pointer;
+}
+.kg-tile.is-selected,
+.kg-cont.is-selected {
+  outline: 2px solid var(--kg-iolite);
+  outline-offset: 2px;
+}
+.kg-cont.is-hot {
+  background: color-mix(in srgb, var(--kg-heat-color) calc(var(--kg-heat) * 10%), var(--kg-surface));
+}
