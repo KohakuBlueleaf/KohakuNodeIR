@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -24,22 +24,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "x"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "merge_3",
+          "id": "merge_2",
           "kind": "merge",
           "props": {
             "label": "unused"
@@ -52,7 +41,7 @@
           ]
         },
         {
-          "id": "print_4",
+          "id": "print_3",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -67,10 +56,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1/body/0",
+          "region": "body/1"
         },
         {
-          "id": "process_5",
+          "id": "process_4",
           "kind": "call",
           "name": "process",
           "inputs": [
@@ -80,11 +71,24 @@
           ],
           "outputs": [
             {
-              "port": "out0"
+              "port": "out0",
+              "var": "result"
             }
           ],
           "ctrl_in": [
             "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "path": "body/2"
+        },
+        {
+          "id": "merge_5",
+          "kind": "merge",
+          "ctrl_in": [
+            "in_0",
+            "in_1"
           ],
           "ctrl_out": [
             "out"
@@ -103,21 +107,10 @@
           ]
         },
         {
-          "id": "merge_7",
-          "kind": "merge",
-          "ctrl_in": [
-            "in_0",
-            "in_1"
-          ],
-          "ctrl_out": [
-            "out"
-          ]
-        },
-        {
-          "id": "set_8",
+          "id": "set_7",
           "kind": "set",
           "props": {
-            "name": "result"
+            "name": "x"
           },
           "inputs": [
             {
@@ -134,40 +127,40 @@
             "port": "out"
           },
           "to": {
-            "node": "merge_7",
+            "node": "merge_5",
             "port": "in_0"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "print_4",
+            "node": "print_3",
             "port": "out"
           },
           "to": {
-            "node": "merge_7",
+            "node": "merge_5",
             "port": "in_1"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "merge_3",
+            "node": "merge_2",
             "port": "out"
           },
           "to": {
-            "node": "print_4",
+            "node": "print_3",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "merge_7",
+            "node": "merge_5",
             "port": "out"
           },
           "to": {
-            "node": "process_5",
+            "node": "process_4",
             "port": "in"
           }
         },
@@ -178,7 +171,7 @@
             "port": "value"
           },
           "to": {
-            "node": "process_5",
+            "node": "process_4",
             "port": "in0"
           }
         },
@@ -189,20 +182,20 @@
             "port": "value"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_7",
             "port": "value"
           }
-        },
+        }
+      ],
+      "regions": [
         {
-          "kind": "data",
-          "from": {
-            "node": "process_5",
-            "port": "out0"
+          "id": "body/1",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_2",
+            "port": "out"
           },
-          "to": {
-            "node": "set_8",
-            "port": "value"
-          }
+          "label": "unused"
         }
       ]
     }

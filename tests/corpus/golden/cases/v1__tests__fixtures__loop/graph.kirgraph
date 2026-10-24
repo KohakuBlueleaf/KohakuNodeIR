@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -25,7 +25,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "set_2",
@@ -59,7 +60,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "merge_4",
@@ -73,7 +75,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "add_5",
@@ -99,7 +102,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/0",
+          "region": "body/3"
         },
         {
           "id": "get_6",
@@ -111,7 +116,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/3"
         },
         {
           "id": "set_7",
@@ -123,7 +129,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/3"
         },
         {
           "id": "less_than_8",
@@ -148,7 +155,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/1",
+          "region": "body/3"
         },
         {
           "id": "get_9",
@@ -160,7 +169,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/3"
         },
         {
           "id": "branch_10",
@@ -182,7 +192,9 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/3/body/2",
+          "region": "body/3"
         },
         {
           "id": "print_11",
@@ -199,7 +211,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
           "id": "get_12",
@@ -368,6 +381,37 @@
             "node": "set_7",
             "port": "value"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/3",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_4",
+            "port": "out"
+          },
+          "label": "loop_body"
+        },
+        {
+          "id": "body/3/body/3",
+          "kind": "branch",
+          "parent": "body/3",
+          "owner": {
+            "node": "branch_10",
+            "port": "true"
+          },
+          "label": "continue_loop"
+        },
+        {
+          "id": "body/3/body/4",
+          "kind": "branch",
+          "parent": "body/3",
+          "owner": {
+            "node": "branch_10",
+            "port": "false"
+          },
+          "label": "exit_loop"
         }
       ]
     }

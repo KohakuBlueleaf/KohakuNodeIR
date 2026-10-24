@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -22,7 +22,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/0/body/0",
+          "region": "body/0/body"
         },
         {
           "id": "to_float_2",
@@ -41,7 +43,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/0/body/1",
+          "region": "body/0/body"
         },
         {
           "id": "dataflow_3",
@@ -57,7 +61,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "assign_4",
@@ -79,7 +84,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "set_5",
@@ -113,7 +119,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "set_7",
@@ -139,7 +146,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
           "id": "add_9",
@@ -164,7 +172,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/0",
+          "region": "body/4"
         },
         {
           "id": "get_10",
@@ -176,7 +186,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4"
         },
         {
           "id": "set_11",
@@ -188,7 +199,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4"
         },
         {
           "id": "multiply_12",
@@ -209,7 +221,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/4/body/1/body/0",
+          "region": "body/4/body/1/body"
         },
         {
           "id": "add_13",
@@ -230,7 +244,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/4/body/1/body/1",
+          "region": "body/4/body/1/body"
         },
         {
           "id": "get_14",
@@ -242,7 +258,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4/body/1/body"
         },
         {
           "id": "get_15",
@@ -254,7 +271,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4/body/1/body"
         },
         {
           "id": "get_16",
@@ -266,7 +284,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4/body/1/body"
         },
         {
           "id": "set_17",
@@ -278,7 +297,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4/body/1/body"
         },
         {
           "id": "dataflow_18",
@@ -294,7 +314,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/1",
+          "region": "body/4"
         },
         {
           "id": "less_than_19",
@@ -319,7 +341,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/2",
+          "region": "body/4"
         },
         {
           "id": "get_20",
@@ -331,7 +355,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4"
         },
         {
           "id": "branch_21",
@@ -353,7 +378,9 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/4/body/3",
+          "region": "body/4"
         },
         {
           "id": "to_string_22",
@@ -371,7 +398,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/5/body/0",
+          "region": "body/5/body"
         },
         {
           "id": "to_string_23",
@@ -389,7 +418,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/5/body/1",
+          "region": "body/5/body"
         },
         {
           "id": "concat_24",
@@ -411,7 +442,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/5/body/2",
+          "region": "body/5/body"
         },
         {
           "id": "concat_25",
@@ -433,7 +466,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/5/body/3",
+          "region": "body/5/body"
         },
         {
           "id": "concat_26",
@@ -454,7 +489,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/5/body/4",
+          "region": "body/5/body"
         },
         {
           "id": "print_27",
@@ -467,7 +504,9 @@
           ],
           "outputs": [],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/5/body/5",
+          "region": "body/5/body"
         },
         {
           "id": "get_28",
@@ -479,7 +518,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5/body"
         },
         {
           "id": "get_29",
@@ -491,7 +531,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5/body"
         },
         {
           "id": "dataflow_30",
@@ -511,7 +552,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5"
         }
       ],
       "edges": [
@@ -832,6 +874,62 @@
           "to": {
             "node": "to_string_23",
             "port": "v"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/0/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_3",
+            "port": null
+          }
+        },
+        {
+          "id": "body/4",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_8",
+            "port": "out"
+          },
+          "label": "loop"
+        },
+        {
+          "id": "body/4/body/1/body",
+          "kind": "dataflow",
+          "parent": "body/4",
+          "owner": {
+            "node": "dataflow_18",
+            "port": null
+          }
+        },
+        {
+          "id": "body/4/body/4",
+          "kind": "branch",
+          "parent": "body/4",
+          "owner": {
+            "node": "branch_21",
+            "port": "true"
+          },
+          "label": "continue"
+        },
+        {
+          "id": "body/4/body/5",
+          "kind": "branch",
+          "parent": "body/4",
+          "owner": {
+            "node": "branch_21",
+            "port": "false"
+          },
+          "label": "done"
+        },
+        {
+          "id": "body/5/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_30",
+            "port": null
           }
         }
       ]

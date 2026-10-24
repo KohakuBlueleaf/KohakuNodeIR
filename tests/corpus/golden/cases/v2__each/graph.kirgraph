@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -25,7 +25,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "assign_2",
@@ -51,7 +52,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "assign_3",
@@ -73,7 +75,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "set_4",
@@ -118,7 +121,8 @@
           "ctrl_out": [
             "body",
             "done"
-          ]
+          ],
+          "path": "body/3"
         },
         {
           "id": "is_new_6",
@@ -140,7 +144,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/0",
+          "region": "body/4"
         },
         {
           "id": "branch_7",
@@ -162,7 +168,9 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/4/body/1",
+          "region": "body/4"
         },
         {
           "id": "crop_8",
@@ -187,7 +195,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/2/body/0",
+          "region": "body/4/body/2"
         },
         {
           "id": "entity_9",
@@ -212,7 +222,9 @@
           ],
           "hints": {
             "max_wait_ms": 5
-          }
+          },
+          "path": "body/4/body/2/body/1",
+          "region": "body/4/body/2"
         },
         {
           "id": "set_10",
@@ -224,7 +236,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4/body/2"
         },
         {
           "id": "assign_11",
@@ -246,7 +259,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/3/body/0",
+          "region": "body/4/body/3"
         },
         {
           "id": "set_12",
@@ -258,7 +273,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4/body/3"
         },
         {
           "id": "append_13",
@@ -283,7 +299,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/4",
+          "region": "body/4"
         },
         {
           "id": "get_14",
@@ -295,7 +313,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4"
         },
         {
           "id": "get_15",
@@ -307,7 +326,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4"
         },
         {
           "id": "merge_16",
@@ -318,7 +338,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "region": "body/4"
         },
         {
           "id": "set_17",
@@ -330,7 +351,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/4"
         },
         {
           "id": "summarize_18",
@@ -352,7 +374,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5"
         },
         {
           "id": "get_19",
@@ -653,6 +676,37 @@
             "node": "summarize_18",
             "port": "in0"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/4",
+          "kind": "each",
+          "owner": {
+            "node": "each_5",
+            "port": "body"
+          },
+          "label": "body"
+        },
+        {
+          "id": "body/4/body/2",
+          "kind": "branch",
+          "parent": "body/4",
+          "owner": {
+            "node": "branch_7",
+            "port": "true"
+          },
+          "label": "yes"
+        },
+        {
+          "id": "body/4/body/3",
+          "kind": "branch",
+          "parent": "body/4",
+          "owner": {
+            "node": "branch_7",
+            "port": "false"
+          },
+          "label": "no"
         }
       ]
     }

@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -25,7 +25,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "merge_2",
@@ -56,7 +57,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1/body/0",
+          "region": "body/1"
         },
         {
           "id": "process_4",
@@ -78,7 +81,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "merge_5",
@@ -147,6 +151,17 @@
             "node": "process_4",
             "port": "in0"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/1",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_2",
+            "port": "out"
+          },
+          "label": "unused"
         }
       ]
     }

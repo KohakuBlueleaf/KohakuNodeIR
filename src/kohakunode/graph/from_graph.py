@@ -142,8 +142,11 @@ class _Graph:
         if src in self.rename:
             return self.rename[src]
         n = self.nodes[src[0]]
-        if n["kind"] == "get":
+        if n["kind"] in ("get", "join"):
             return n["props"]["name"]
+        # A graph's input port is its parameter, whether or not it names a variable
+        if n["kind"] == "inputs":
+            return src[1]
         for p in n.get("outputs", []):
             if p["port"] == src[1]:
                 if p.get("var"):
@@ -375,6 +378,9 @@ class _Graph:
                 nxt = (join, "in") if join else None
             elif kind in ("inputs",):
                 nxt = self.next_of(cur)
+            elif kind == "join":
+                # Where a value is decided: no statement of its own, the flow runs through
+                nxt = self.next_of(cur) if n.get("ctrl_out") else None
             elif kind in ("outputs", "get", "set", "value"):
                 nxt = None
             else:
@@ -399,7 +405,7 @@ class _Graph:
             n = self.nodes[nid]
             if nid in self.emitted or nid in self.members or nid in free:
                 continue
-            if n["kind"] in ("get", "set", "value", "outputs"):
+            if n["kind"] in ("get", "set", "value", "outputs", "join"):
                 continue
             # Loop back edges do not disqualify a root. An unconnected primary
             # input identifies it; an explicit entry marker below determines
@@ -429,7 +435,8 @@ class _Graph:
 
 def from_graph(graph: dict, with_meta: bool = True) -> Program:
     """The canonical text of a graph view, as a program."""
-    if graph.get("kirgraph") != 2:
+    # Version 3 adds node paths and regions, which the text never needs
+    if graph.get("kirgraph") not in (2, 3):
         raise KirGraphError(f"unsupported kirgraph version {graph.get('kirgraph')!r}")
     program = Program(
         uses=[Use(u["library"], u.get("alias")) for u in graph.get("uses", [])],

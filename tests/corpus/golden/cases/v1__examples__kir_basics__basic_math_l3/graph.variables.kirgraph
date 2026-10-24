@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -24,22 +24,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "x"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "assign_3",
+          "id": "assign_2",
           "kind": "assign",
           "inputs": [
             {
@@ -57,22 +46,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
-          "id": "set_4",
-          "kind": "set",
-          "props": {
-            "name": "y"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "add_5",
+          "id": "add_3",
           "kind": "call",
           "name": "add",
           "inputs": [
@@ -93,7 +71,52 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
+        },
+        {
+          "id": "multiply_4",
+          "kind": "call",
+          "name": "multiply",
+          "inputs": [
+            {
+              "port": "a"
+            },
+            {
+              "port": "b",
+              "value": 3
+            }
+          ],
+          "outputs": [
+            {
+              "port": "result"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "path": "body/3"
+        },
+        {
+          "id": "print_val_5",
+          "kind": "call",
+          "name": "print_val",
+          "inputs": [
+            {
+              "port": "v"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "path": "body/4"
         },
         {
           "id": "get_6",
@@ -120,49 +143,36 @@
           ]
         },
         {
-          "id": "set_8",
-          "kind": "set",
+          "id": "get_8",
+          "kind": "get",
           "props": {
             "name": "sum"
           },
-          "inputs": [
+          "outputs": [
             {
               "port": "value"
             }
           ]
         },
         {
-          "id": "multiply_9",
-          "kind": "call",
-          "name": "multiply",
-          "inputs": [
-            {
-              "port": "a"
-            },
-            {
-              "port": "b",
-              "value": 3
-            }
-          ],
+          "id": "get_9",
+          "kind": "get",
+          "props": {
+            "name": "product"
+          },
           "outputs": [
             {
-              "port": "result"
+              "port": "value"
             }
-          ],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
           ]
         },
         {
-          "id": "get_10",
-          "kind": "get",
+          "id": "set_10",
+          "kind": "set",
           "props": {
-            "name": "sum"
+            "name": "x"
           },
-          "outputs": [
+          "inputs": [
             {
               "port": "value"
             }
@@ -172,7 +182,7 @@
           "id": "set_11",
           "kind": "set",
           "props": {
-            "name": "product"
+            "name": "y"
           },
           "inputs": [
             {
@@ -181,29 +191,24 @@
           ]
         },
         {
-          "id": "print_val_12",
-          "kind": "call",
-          "name": "print_val",
+          "id": "set_12",
+          "kind": "set",
+          "props": {
+            "name": "sum"
+          },
           "inputs": [
             {
-              "port": "v"
+              "port": "value"
             }
-          ],
-          "outputs": [],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
           ]
         },
         {
-          "id": "get_13",
-          "kind": "get",
+          "id": "set_13",
+          "kind": "set",
           "props": {
             "name": "product"
           },
-          "outputs": [
+          "inputs": [
             {
               "port": "value"
             }
@@ -218,7 +223,7 @@
             "port": "value"
           },
           "to": {
-            "node": "add_5",
+            "node": "add_3",
             "port": "a"
           }
         },
@@ -229,18 +234,18 @@
             "port": "value"
           },
           "to": {
-            "node": "add_5",
+            "node": "add_3",
             "port": "b"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "assign_3",
+            "node": "assign_2",
             "port": "out"
           },
           "to": {
-            "node": "add_5",
+            "node": "add_3",
             "port": "in"
           }
         },
@@ -251,59 +256,70 @@
             "port": "out"
           },
           "to": {
-            "node": "assign_3",
+            "node": "assign_2",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_10",
+            "node": "get_8",
             "port": "value"
           },
           "to": {
-            "node": "multiply_9",
+            "node": "multiply_4",
             "port": "a"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "add_5",
+            "node": "add_3",
             "port": "out"
           },
           "to": {
-            "node": "multiply_9",
+            "node": "multiply_4",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "multiply_9",
+            "node": "multiply_4",
             "port": "out"
           },
           "to": {
-            "node": "print_val_12",
+            "node": "print_val_5",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_13",
+            "node": "get_9",
             "port": "value"
           },
           "to": {
-            "node": "print_val_12",
+            "node": "print_val_5",
             "port": "v"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "multiply_9",
-            "port": "result"
+            "node": "assign_1",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_10",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "assign_2",
+            "port": "value"
           },
           "to": {
             "node": "set_11",
@@ -313,33 +329,22 @@
         {
           "kind": "data",
           "from": {
-            "node": "assign_1",
-            "port": "value"
-          },
-          "to": {
-            "node": "set_2",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "assign_3",
-            "port": "value"
-          },
-          "to": {
-            "node": "set_4",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "add_5",
+            "node": "add_3",
             "port": "result"
           },
           "to": {
-            "node": "set_8",
+            "node": "set_12",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "multiply_4",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_13",
             "port": "value"
           }
         }

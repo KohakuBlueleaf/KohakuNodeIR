@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -28,22 +28,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "sizes"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "assign_3",
+          "id": "assign_2",
           "kind": "assign",
           "inputs": [
             {
@@ -66,22 +55,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
-          "id": "set_4",
-          "kind": "set",
-          "props": {
-            "name": "config"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "assign_5",
+          "id": "assign_3",
           "kind": "assign",
           "inputs": [
             {
@@ -98,7 +76,8 @@
           ],
           "outputs": [
             {
-              "port": "value"
+              "port": "value",
+              "var": "nested"
             }
           ],
           "ctrl_in": [
@@ -106,22 +85,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
-          "id": "set_6",
-          "kind": "set",
-          "props": {
-            "name": "nested"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "process_7",
+          "id": "process_4",
           "kind": "call",
           "name": "process",
           "inputs": [
@@ -134,7 +102,8 @@
           ],
           "outputs": [
             {
-              "port": "out0"
+              "port": "out0",
+              "var": "result"
             }
           ],
           "ctrl_in": [
@@ -142,10 +111,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
-          "id": "get_8",
+          "id": "get_5",
           "kind": "get",
           "props": {
             "name": "sizes"
@@ -157,7 +127,7 @@
           ]
         },
         {
-          "id": "get_9",
+          "id": "get_6",
           "kind": "get",
           "props": {
             "name": "config"
@@ -169,10 +139,22 @@
           ]
         },
         {
-          "id": "set_10",
+          "id": "set_7",
           "kind": "set",
           "props": {
-            "name": "result"
+            "name": "sizes"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_8",
+          "kind": "set",
+          "props": {
+            "name": "config"
           },
           "inputs": [
             {
@@ -189,6 +171,17 @@
             "port": "out"
           },
           "to": {
+            "node": "assign_2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "assign_2",
+            "port": "out"
+          },
+          "to": {
             "node": "assign_3",
             "port": "in"
           }
@@ -200,52 +193,30 @@
             "port": "out"
           },
           "to": {
-            "node": "assign_5",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "assign_5",
-            "port": "out"
-          },
-          "to": {
-            "node": "process_7",
+            "node": "process_4",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_8",
+            "node": "get_5",
             "port": "value"
           },
           "to": {
-            "node": "process_7",
+            "node": "process_4",
             "port": "in0"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_9",
+            "node": "get_6",
             "port": "value"
           },
           "to": {
-            "node": "process_7",
+            "node": "process_4",
             "port": "in1"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "process_7",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_10",
-            "port": "value"
           }
         },
         {
@@ -255,29 +226,18 @@
             "port": "value"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_7",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "assign_3",
+            "node": "assign_2",
             "port": "value"
           },
           "to": {
-            "node": "set_4",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "assign_5",
-            "port": "value"
-          },
-          "to": {
-            "node": "set_6",
+            "node": "set_8",
             "port": "value"
           }
         }

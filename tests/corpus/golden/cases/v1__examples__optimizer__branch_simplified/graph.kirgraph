@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -25,7 +25,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "log_2",
@@ -43,7 +44,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "assign_3",
@@ -65,7 +67,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "assign_4",
@@ -87,7 +90,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
           "id": "assign_5",
@@ -109,7 +113,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
           "id": "assign_6",
@@ -131,7 +136,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5"
         },
         {
           "id": "assign_7",
@@ -153,7 +159,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/6"
         },
         {
           "id": "add_8",
@@ -178,7 +185,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/7"
         },
         {
           "id": "assign_9",
@@ -200,7 +208,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/8"
         },
         {
           "id": "normalize_10",
@@ -222,7 +231,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/9"
         },
         {
           "id": "normalize_11",
@@ -244,7 +254,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/10"
         },
         {
           "id": "process_a_12",
@@ -266,7 +277,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/11"
         },
         {
           "id": "process_b_13",
@@ -288,7 +300,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/12"
         },
         {
           "id": "assign_14",
@@ -310,7 +323,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/13"
         },
         {
           "id": "multiply_15",
@@ -336,7 +350,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/14"
         },
         {
           "id": "print_16",
@@ -353,7 +368,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/15"
         }
       ],
       "edges": [

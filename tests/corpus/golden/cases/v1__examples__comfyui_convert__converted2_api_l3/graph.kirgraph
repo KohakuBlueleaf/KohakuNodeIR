@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -26,7 +26,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "cliploader_2",
@@ -57,7 +58,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "primitiveint_3",
@@ -80,7 +82,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "unetloader_4",
@@ -107,7 +110,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
           "id": "vaeloader_5",
@@ -130,7 +134,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
           "id": "cliptextencode_6",
@@ -156,7 +161,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5"
         },
         {
           "id": "tipo_7",
@@ -237,7 +243,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/6"
         },
         {
           "id": "emptylatentimage_8",
@@ -266,7 +273,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/7"
         },
         {
           "id": "cliptextencode_9",
@@ -291,7 +299,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/8"
         },
         {
           "id": "ksampler_10",
@@ -346,7 +355,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/9"
         },
         {
           "id": "vaedecode_11",
@@ -371,7 +381,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/10"
         },
         {
           "id": "imagescaleby_12",
@@ -401,7 +412,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/11"
         },
         {
           "id": "vaeencode_13",
@@ -423,7 +435,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/12"
         },
         {
           "id": "ksampler_14",
@@ -478,7 +491,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/13"
         },
         {
           "id": "vaedecode_15",
@@ -503,7 +517,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/14"
         },
         {
           "id": "saveimage_16",
@@ -524,7 +539,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/15"
         },
         {
           "id": "saveimage_17",
@@ -545,7 +561,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/16"
         },
         {
           "id": "showtext_x7c_pysssss_18",
@@ -566,7 +583,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/17"
         }
       ],
       "edges": [

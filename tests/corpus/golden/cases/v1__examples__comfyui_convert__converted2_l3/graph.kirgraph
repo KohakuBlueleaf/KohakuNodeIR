@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -30,7 +30,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "primitivenode_2",
@@ -53,7 +54,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "primitivenode_3",
@@ -76,7 +78,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "primitiveint_4",
@@ -103,7 +106,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
           "id": "primitivenode_5",
@@ -130,7 +134,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
           "id": "cliploader_6",
@@ -161,7 +166,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5"
         },
         {
           "id": "unetloader_7",
@@ -188,7 +194,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/6"
         },
         {
           "id": "vaeloader_8",
@@ -211,7 +218,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/7"
         },
         {
           "id": "primitivenode_9",
@@ -234,7 +242,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/8"
         },
         {
           "id": "primitivenode_10",
@@ -257,7 +266,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/9"
         },
         {
           "id": "emptylatentimage_11",
@@ -294,7 +304,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/10"
         },
         {
           "id": "cliptextencode_12",
@@ -323,7 +334,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/11"
         },
         {
           "id": "tipo_13",
@@ -436,7 +448,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/12"
         },
         {
           "id": "cliptextencode_14",
@@ -465,7 +478,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/13"
         },
         {
           "id": "showtext_x7c_pysssss_15",
@@ -491,7 +505,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/14"
         },
         {
           "id": "ksampler_16",
@@ -553,7 +568,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/15"
         },
         {
           "id": "vaedecode_17",
@@ -578,7 +594,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/16"
         },
         {
           "id": "imagescaleby_18",
@@ -608,7 +625,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/17"
         },
         {
           "id": "vaeencode_19",
@@ -634,7 +652,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/18"
         },
         {
           "id": "ksampler_20",
@@ -696,7 +715,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/19"
         },
         {
           "id": "vaedecode_21",
@@ -721,7 +741,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/20"
         },
         {
           "id": "saveimage_22",
@@ -742,7 +763,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/21"
         },
         {
           "id": "saveimage_23",
@@ -763,7 +785,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/22"
         }
       ],
       "edges": [

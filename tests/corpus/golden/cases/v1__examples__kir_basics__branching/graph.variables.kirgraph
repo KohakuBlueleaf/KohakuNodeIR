@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -24,22 +24,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "value"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "less_than_3",
+          "id": "less_than_2",
           "kind": "call",
           "name": "less_than",
           "inputs": [
@@ -61,34 +50,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
-          "id": "get_4",
-          "kind": "get",
-          "props": {
-            "name": "value"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_5",
-          "kind": "set",
-          "props": {
-            "name": "is_negative"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "branch_6",
+          "id": "branch_3",
           "kind": "branch",
           "props": {
             "labels": {
@@ -107,22 +73,11 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/2"
         },
         {
-          "id": "get_7",
-          "kind": "get",
-          "props": {
-            "name": "is_negative"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "print_8",
+          "id": "print_4",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -137,10 +92,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/0",
+          "region": "body/3"
         },
         {
-          "id": "greater_than_9",
+          "id": "greater_than_5",
           "kind": "call",
           "name": "greater_than",
           "inputs": [
@@ -162,34 +119,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/0",
+          "region": "body/4"
         },
         {
-          "id": "get_10",
-          "kind": "get",
-          "props": {
-            "name": "value"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_11",
-          "kind": "set",
-          "props": {
-            "name": "is_large"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "branch_12",
+          "id": "branch_6",
           "kind": "branch",
           "props": {
             "labels": {
@@ -208,22 +143,12 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/4/body/1",
+          "region": "body/4"
         },
         {
-          "id": "get_13",
-          "kind": "get",
-          "props": {
-            "name": "is_large"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "print_14",
+          "id": "print_7",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -238,10 +163,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/2/body/0",
+          "region": "body/4/body/2"
         },
         {
-          "id": "print_15",
+          "id": "print_8",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -256,54 +183,99 @@
           ],
           "ctrl_out": [
             "out"
+          ],
+          "path": "body/4/body/3/body/0",
+          "region": "body/4/body/3"
+        },
+        {
+          "id": "get_9",
+          "kind": "get",
+          "props": {
+            "name": "value"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
           ]
+        },
+        {
+          "id": "get_10",
+          "kind": "get",
+          "props": {
+            "name": "is_negative"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_11",
+          "kind": "get",
+          "props": {
+            "name": "value"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/4"
+        },
+        {
+          "id": "get_12",
+          "kind": "get",
+          "props": {
+            "name": "is_large"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/4"
+        },
+        {
+          "id": "set_13",
+          "kind": "set",
+          "props": {
+            "name": "value"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_14",
+          "kind": "set",
+          "props": {
+            "name": "is_negative"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_15",
+          "kind": "set",
+          "props": {
+            "name": "is_large"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/4"
         }
       ],
       "edges": [
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_13",
-            "port": "value"
-          },
-          "to": {
-            "node": "branch_12",
-            "port": "cond"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "greater_than_9",
-            "port": "out"
-          },
-          "to": {
-            "node": "branch_12",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_7",
-            "port": "value"
-          },
-          "to": {
-            "node": "branch_6",
-            "port": "cond"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "less_than_3",
-            "port": "out"
-          },
-          "to": {
-            "node": "branch_6",
-            "port": "in"
-          }
-        },
         {
           "kind": "data",
           "from": {
@@ -311,29 +283,73 @@
             "port": "value"
           },
           "to": {
-            "node": "greater_than_9",
-            "port": "a"
+            "node": "branch_3",
+            "port": "cond"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "branch_6",
-            "port": "false"
+            "node": "less_than_2",
+            "port": "out"
           },
           "to": {
-            "node": "greater_than_9",
+            "node": "branch_3",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_4",
+            "node": "get_12",
             "port": "value"
           },
           "to": {
-            "node": "less_than_3",
+            "node": "branch_6",
+            "port": "cond"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "greater_than_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "branch_6",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_11",
+            "port": "value"
+          },
+          "to": {
+            "node": "greater_than_5",
+            "port": "a"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "branch_3",
+            "port": "false"
+          },
+          "to": {
+            "node": "greater_than_5",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_9",
+            "port": "value"
+          },
+          "to": {
+            "node": "less_than_2",
             "port": "a"
           }
         },
@@ -344,29 +360,18 @@
             "port": "out"
           },
           "to": {
-            "node": "less_than_3",
+            "node": "less_than_2",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "branch_12",
+            "node": "branch_3",
             "port": "true"
           },
           "to": {
-            "node": "print_14",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "branch_12",
-            "port": "false"
-          },
-          "to": {
-            "node": "print_15",
+            "node": "print_4",
             "port": "in"
           }
         },
@@ -375,6 +380,17 @@
           "from": {
             "node": "branch_6",
             "port": "true"
+          },
+          "to": {
+            "node": "print_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "branch_6",
+            "port": "false"
           },
           "to": {
             "node": "print_8",
@@ -384,35 +400,75 @@
         {
           "kind": "data",
           "from": {
-            "node": "greater_than_9",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_11",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
             "node": "assign_1",
             "port": "value"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_13",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "less_than_3",
+            "node": "less_than_2",
             "port": "result"
           },
           "to": {
-            "node": "set_5",
+            "node": "set_14",
             "port": "value"
           }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "greater_than_5",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_15",
+            "port": "value"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/3",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_3",
+            "port": "true"
+          },
+          "label": "handle_negative"
+        },
+        {
+          "id": "body/4",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_3",
+            "port": "false"
+          },
+          "label": "check_positive"
+        },
+        {
+          "id": "body/4/body/2",
+          "kind": "branch",
+          "parent": "body/4",
+          "owner": {
+            "node": "branch_6",
+            "port": "true"
+          },
+          "label": "handle_large"
+        },
+        {
+          "id": "body/4/body/3",
+          "kind": "branch",
+          "parent": "body/4",
+          "owner": {
+            "node": "branch_6",
+            "port": "false"
+          },
+          "label": "handle_normal"
         }
       ]
     }

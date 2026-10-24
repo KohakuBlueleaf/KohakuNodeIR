@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [
     {
       "library": "v1",
@@ -36,7 +36,8 @@
               10,
               20
             ]
-          }
+          },
+          "path": "seed"
         },
         {
           "id": "expand_2",
@@ -66,7 +67,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "expand_3",
@@ -91,7 +93,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
           "id": "assign_4",
@@ -113,7 +116,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
           "id": "switch_5",
@@ -141,7 +145,8 @@
             "case_0",
             "case_1",
             "default"
-          ]
+          ],
+          "path": "body/5"
         },
         {
           "id": "assign_6",
@@ -163,7 +168,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/6/body/0",
+          "region": "body/6"
         },
         {
           "id": "set_7",
@@ -175,7 +182,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/6"
         },
         {
           "id": "assign_8",
@@ -197,7 +205,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/7/body/0",
+          "region": "body/7"
         },
         {
           "id": "set_9",
@@ -209,7 +219,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/7"
         },
         {
           "id": "assign_10",
@@ -231,7 +242,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/8/body/0",
+          "region": "body/8"
         },
         {
           "id": "set_11",
@@ -243,7 +256,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/8"
         },
         {
           "id": "parallel_12",
@@ -260,7 +274,8 @@
           "ctrl_out": [
             "out_0",
             "out_1"
-          ]
+          ],
+          "path": "body/9"
         },
         {
           "id": "merge_13",
@@ -294,7 +309,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/10/body/0",
+          "region": "body/10"
         },
         {
           "id": "assign_15",
@@ -316,7 +333,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/11/body/0",
+          "region": "body/11"
         },
         {
           "id": "g_finish_16",
@@ -334,7 +353,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/12/body/0",
+          "region": "body/12/body"
         },
         {
           "id": "add_17",
@@ -355,7 +376,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/12/body/1",
+          "region": "body/12/body"
         },
         {
           "id": "get_18",
@@ -367,7 +390,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/12/body"
         },
         {
           "id": "dataflow_19",
@@ -383,7 +407,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/12"
         },
         {
           "id": "merge_20",
@@ -425,7 +450,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/13"
         },
         {
           "id": "get_22",
@@ -749,6 +775,61 @@
             "port": "value"
           }
         }
+      ],
+      "regions": [
+        {
+          "id": "body/6",
+          "kind": "switch",
+          "owner": {
+            "node": "switch_5",
+            "port": "case_0"
+          },
+          "label": "one"
+        },
+        {
+          "id": "body/7",
+          "kind": "switch",
+          "owner": {
+            "node": "switch_5",
+            "port": "case_1"
+          },
+          "label": "two"
+        },
+        {
+          "id": "body/8",
+          "kind": "switch",
+          "owner": {
+            "node": "switch_5",
+            "port": "default"
+          },
+          "label": "other"
+        },
+        {
+          "id": "body/10",
+          "kind": "parallel",
+          "owner": {
+            "node": "parallel_12",
+            "port": "out_0"
+          },
+          "label": "left"
+        },
+        {
+          "id": "body/11",
+          "kind": "parallel",
+          "owner": {
+            "node": "parallel_12",
+            "port": "out_1"
+          },
+          "label": "right"
+        },
+        {
+          "id": "body/12/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_19",
+            "port": null
+          }
+        }
       ]
     },
     {
@@ -792,7 +873,8 @@
           "ctrl_out": [
             "try",
             "except"
-          ]
+          ],
+          "path": "body/0/body/0"
         },
         {
           "id": "g_crop_2",
@@ -817,7 +899,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0/body/0/body/0",
+          "region": "body/0/body/0/body"
         },
         {
           "id": "g_entity_3",
@@ -839,7 +923,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0/body/0/body/1",
+          "region": "body/0/body/0/body"
         },
         {
           "id": "set_4",
@@ -851,7 +937,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body/0/body"
         },
         {
           "id": "g_log_error_5",
@@ -868,7 +955,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0/body/0/handler/0",
+          "region": "body/0/body/0/handler"
         },
         {
           "id": "assign_6",
@@ -890,7 +979,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0/body/0/handler/1",
+          "region": "body/0/body/0/handler"
         },
         {
           "id": "set_7",
@@ -902,7 +993,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body/0/handler"
         },
         {
           "id": "outputs",
@@ -1106,6 +1198,24 @@
           "to": {
             "node": "try_1",
             "port": "in"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/0/body/0/body",
+          "kind": "try",
+          "owner": {
+            "node": "try_1",
+            "port": "try"
+          }
+        },
+        {
+          "id": "body/0/body/0/handler",
+          "kind": "try",
+          "owner": {
+            "node": "try_1",
+            "port": "except"
           }
         }
       ],

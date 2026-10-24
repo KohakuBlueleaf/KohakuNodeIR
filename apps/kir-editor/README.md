@@ -82,7 +82,7 @@ parameters override them for one page load:
 |---|---|---|
 | `view` | `nodes` `flowchart` `sequence` `blocks` `text` `split` | the view on screen |
 | `split` | `<view>,<view>` | the two views of `split` |
-| `data` | `variables` (default), `wires` | node view: every read a `get` pill and every write a `set` pill (name → node → name), or reads wired straight to their only write |
+| `data` | `variables` (default), `wires` | node view: values inside the graph go through `get` / `set` pills while the graph's inputs and outputs are wired straight to the statements they reach (docs/spec/graph.md), or reads wired straight to their only write |
 | `control` | `auto` (default), `exec`, `frames` | node view: Unreal-style exec pins and wires; or control as boxing (each namespace, branch arm, loop body, `each` body, `@try` / `@except`, `@dataflow` is a framed region, statements top to bottom, no control wires); `auto` is frames, or nothing when the graph has no control statements |
 | `lanes` | `stacked` (default), `tabs` | sequence view: switch / parallel / try lanes all shown, or one at a time |
 | `sample` | `tour` `factorial` `each` `clamp` | the program to open |

@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -32,7 +32,9 @@
               180,
               100
             ]
-          }
+          },
+          "path": "to_float_1",
+          "region": "body/0/body"
         },
         {
           "id": "value_3",
@@ -60,7 +62,9 @@
               180,
               100
             ]
-          }
+          },
+          "path": "value_3",
+          "region": "body/0/body"
         },
         {
           "id": "value_4",
@@ -88,7 +92,9 @@
               180,
               100
             ]
-          }
+          },
+          "path": "value_4",
+          "region": "body/0/body"
         },
         {
           "id": "dataflow_4",
@@ -105,7 +111,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "to_float_2",
@@ -138,7 +145,8 @@
               180,
               100
             ]
-          }
+          },
+          "path": "to_float_2"
         },
         {
           "id": "merge_1",
@@ -162,7 +170,8 @@
               180,
               80
             ]
-          }
+          },
+          "path": "merge_1"
         },
         {
           "id": "add_5",
@@ -197,7 +206,9 @@
               180,
               140
             ]
-          }
+          },
+          "path": "add_5",
+          "region": "body/3"
         },
         {
           "id": "to_string_11",
@@ -225,7 +236,9 @@
               180,
               100
             ]
-          }
+          },
+          "path": "to_string_11",
+          "region": "body/3/body/1/body"
         },
         {
           "id": "concat_12",
@@ -257,7 +270,9 @@
               180,
               140
             ]
-          }
+          },
+          "path": "concat_12",
+          "region": "body/3/body/1/body"
         },
         {
           "id": "concat_13",
@@ -289,7 +304,9 @@
               180,
               140
             ]
-          }
+          },
+          "path": "concat_13",
+          "region": "body/3/body/1/body"
         },
         {
           "id": "dataflow_11",
@@ -306,7 +323,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/1",
+          "region": "body/3"
         },
         {
           "id": "multiply_6",
@@ -341,7 +360,9 @@
               180,
               140
             ]
-          }
+          },
+          "path": "multiply_6",
+          "region": "body/3"
         },
         {
           "id": "add_7",
@@ -376,7 +397,8 @@
               180,
               140
             ]
-          }
+          },
+          "path": "add_7"
         },
         {
           "id": "less_than_8",
@@ -411,7 +433,8 @@
               180,
               140
             ]
-          }
+          },
+          "path": "less_than_8"
         },
         {
           "id": "branch_9",
@@ -443,7 +466,8 @@
               180,
               100
             ]
-          }
+          },
+          "path": "branch_9"
         },
         {
           "id": "to_string_10",
@@ -475,7 +499,9 @@
               180,
               100
             ]
-          }
+          },
+          "path": "to_string_10",
+          "region": "body/8"
         }
       ],
       "edges": [
@@ -731,6 +757,52 @@
             "node": "to_string_11",
             "port": "v"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/0/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_4",
+            "port": null
+          }
+        },
+        {
+          "id": "body/3",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_1",
+            "port": "out"
+          },
+          "label": "ns_merge_1"
+        },
+        {
+          "id": "body/3/body/1/body",
+          "kind": "dataflow",
+          "parent": "body/3",
+          "owner": {
+            "node": "dataflow_11",
+            "port": null
+          }
+        },
+        {
+          "id": "body/7",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_9",
+            "port": "true"
+          },
+          "label": "branch_9_true"
+        },
+        {
+          "id": "body/8",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_9",
+            "port": "false"
+          },
+          "label": "branch_9_false"
         }
       ]
     }

@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -24,22 +24,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "counter"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "assign_3",
+          "id": "assign_2",
           "kind": "assign",
           "inputs": [
             {
@@ -57,22 +46,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
-          "id": "set_4",
-          "kind": "set",
-          "props": {
-            "name": "limit"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "merge_5",
+          "id": "merge_3",
           "kind": "merge",
           "props": {
             "label": "loop_body"
@@ -83,10 +61,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
-          "id": "add_6",
+          "id": "add_4",
           "kind": "call",
           "name": "add",
           "inputs": [
@@ -108,34 +87,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/0",
+          "region": "body/3"
         },
         {
-          "id": "get_7",
-          "kind": "get",
-          "props": {
-            "name": "counter"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_8",
-          "kind": "set",
-          "props": {
-            "name": "counter"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "less_than_9",
+          "id": "less_than_5",
           "kind": "call",
           "name": "less_than",
           "inputs": [
@@ -156,46 +113,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/1",
+          "region": "body/3"
         },
         {
-          "id": "get_10",
-          "kind": "get",
-          "props": {
-            "name": "counter"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_11",
-          "kind": "get",
-          "props": {
-            "name": "limit"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_12",
-          "kind": "set",
-          "props": {
-            "name": "keep_going"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "branch_13",
+          "id": "branch_6",
           "kind": "branch",
           "props": {
             "labels": {
@@ -214,22 +137,12 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/3/body/2",
+          "region": "body/3"
         },
         {
-          "id": "get_14",
-          "kind": "get",
-          "props": {
-            "name": "keep_going"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "print_15",
+          "id": "print_7",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -243,10 +156,63 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
-          "id": "get_16",
+          "id": "get_8",
+          "kind": "get",
+          "props": {
+            "name": "counter"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "get_9",
+          "kind": "get",
+          "props": {
+            "name": "counter"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "get_10",
+          "kind": "get",
+          "props": {
+            "name": "limit"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "get_11",
+          "kind": "get",
+          "props": {
+            "name": "keep_going"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "get_12",
           "kind": "get",
           "props": {
             "name": "counter"
@@ -256,28 +222,78 @@
               "port": "value"
             }
           ]
+        },
+        {
+          "id": "set_13",
+          "kind": "set",
+          "props": {
+            "name": "counter"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_14",
+          "kind": "set",
+          "props": {
+            "name": "limit"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_15",
+          "kind": "set",
+          "props": {
+            "name": "counter"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "set_16",
+          "kind": "set",
+          "props": {
+            "name": "keep_going"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
         }
       ],
       "edges": [
         {
           "kind": "data",
           "from": {
-            "node": "get_7",
+            "node": "get_8",
             "port": "value"
           },
           "to": {
-            "node": "add_6",
+            "node": "add_4",
             "port": "a"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "merge_5",
+            "node": "merge_3",
             "port": "out"
           },
           "to": {
-            "node": "add_6",
+            "node": "add_4",
             "port": "in"
           }
         },
@@ -288,41 +304,8 @@
             "port": "out"
           },
           "to": {
-            "node": "assign_3",
+            "node": "assign_2",
             "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_14",
-            "port": "value"
-          },
-          "to": {
-            "node": "branch_13",
-            "port": "cond"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "less_than_9",
-            "port": "out"
-          },
-          "to": {
-            "node": "branch_13",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_10",
-            "port": "value"
-          },
-          "to": {
-            "node": "less_than_9",
-            "port": "a"
           }
         },
         {
@@ -332,74 +315,96 @@
             "port": "value"
           },
           "to": {
-            "node": "less_than_9",
+            "node": "branch_6",
+            "port": "cond"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "less_than_5",
+            "port": "out"
+          },
+          "to": {
+            "node": "branch_6",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_9",
+            "port": "value"
+          },
+          "to": {
+            "node": "less_than_5",
+            "port": "a"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_10",
+            "port": "value"
+          },
+          "to": {
+            "node": "less_than_5",
             "port": "b"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "add_6",
+            "node": "add_4",
             "port": "out"
           },
           "to": {
-            "node": "less_than_9",
+            "node": "less_than_5",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "assign_3",
+            "node": "assign_2",
             "port": "out"
           },
           "to": {
-            "node": "merge_5",
+            "node": "merge_3",
             "port": "in_0"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "branch_13",
+            "node": "branch_6",
             "port": "true"
           },
           "to": {
-            "node": "merge_5",
+            "node": "merge_3",
             "port": "in_1"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "branch_13",
+            "node": "branch_6",
             "port": "false"
           },
           "to": {
-            "node": "print_15",
+            "node": "print_7",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_16",
+            "node": "get_12",
             "port": "value"
           },
           "to": {
-            "node": "print_15",
+            "node": "print_7",
             "port": "v"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "less_than_9",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_12",
-            "port": "value"
           }
         },
         {
@@ -409,31 +414,73 @@
             "port": "value"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_13",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "assign_3",
+            "node": "assign_2",
             "port": "value"
           },
           "to": {
-            "node": "set_4",
+            "node": "set_14",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "add_6",
+            "node": "add_4",
             "port": "result"
           },
           "to": {
-            "node": "set_8",
+            "node": "set_15",
             "port": "value"
           }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "less_than_5",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_16",
+            "port": "value"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/3",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_3",
+            "port": "out"
+          },
+          "label": "loop_body"
+        },
+        {
+          "id": "body/3/body/3",
+          "kind": "branch",
+          "parent": "body/3",
+          "owner": {
+            "node": "branch_6",
+            "port": "true"
+          },
+          "label": "continue_loop"
+        },
+        {
+          "id": "body/3/body/4",
+          "kind": "branch",
+          "parent": "body/3",
+          "owner": {
+            "node": "branch_6",
+            "port": "false"
+          },
+          "label": "exit_loop"
         }
       ]
     }

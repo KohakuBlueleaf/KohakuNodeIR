@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -29,31 +29,8 @@
               0,
               0
             ]
-          }
-        },
-        {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "model"
           },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_3",
-          "kind": "set",
-          "props": {
-            "name": "clip"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "1"
         },
         {
           "id": "2",
@@ -84,31 +61,8 @@
               300,
               0
             ]
-          }
-        },
-        {
-          "id": "get_5",
-          "kind": "get",
-          "props": {
-            "name": "clip"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_6",
-          "kind": "set",
-          "props": {
-            "name": "positive"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "2"
         },
         {
           "id": "3",
@@ -143,43 +97,8 @@
               600,
               0
             ]
-          }
-        },
-        {
-          "id": "get_8",
-          "kind": "get",
-          "props": {
-            "name": "model"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_9",
-          "kind": "get",
-          "props": {
-            "name": "positive"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_10",
-          "kind": "set",
-          "props": {
-            "name": "latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "3"
         },
         {
           "id": "4",
@@ -192,7 +111,8 @@
           ],
           "outputs": [
             {
-              "port": "out0"
+              "port": "out0",
+              "var": "image"
             }
           ],
           "ctrl_in": [
@@ -206,10 +126,47 @@
               900,
               0
             ]
-          }
+          },
+          "path": "4"
         },
         {
-          "id": "get_12",
+          "id": "get_5",
+          "kind": "get",
+          "props": {
+            "name": "clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_6",
+          "kind": "get",
+          "props": {
+            "name": "model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_7",
+          "kind": "get",
+          "props": {
+            "name": "positive"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_8",
           "kind": "get",
           "props": {
             "name": "latent"
@@ -221,10 +178,46 @@
           ]
         },
         {
-          "id": "set_13",
+          "id": "set_9",
           "kind": "set",
           "props": {
-            "name": "image"
+            "name": "model"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_10",
+          "kind": "set",
+          "props": {
+            "name": "clip"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_11",
+          "kind": "set",
+          "props": {
+            "name": "positive"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_12",
+          "kind": "set",
+          "props": {
+            "name": "latent"
           },
           "inputs": [
             {
@@ -270,7 +263,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_8",
+            "node": "get_6",
             "port": "value"
           },
           "to": {
@@ -281,7 +274,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_9",
+            "node": "get_7",
             "port": "value"
           },
           "to": {
@@ -303,7 +296,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_12",
+            "node": "get_8",
             "port": "value"
           },
           "to": {
@@ -314,44 +307,11 @@
         {
           "kind": "data",
           "from": {
-            "node": "3",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_10",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "4",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_13",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "1",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_2",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
             "node": "1",
             "port": "out1"
           },
           "to": {
-            "node": "set_3",
+            "node": "set_10",
             "port": "value"
           }
         },
@@ -362,7 +322,29 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_6",
+            "node": "set_11",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "3",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_12",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "1",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_9",
             "port": "value"
           }
         }

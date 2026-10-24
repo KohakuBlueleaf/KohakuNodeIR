@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -28,34 +28,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "x1"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_3",
-          "kind": "set",
-          "props": {
-            "name": "x2"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "process_4",
+          "id": "process_2",
           "kind": "call",
           "name": "process",
           "inputs": [
@@ -68,6 +45,25 @@
           ],
           "outputs": [
             {
+              "port": "out0",
+              "var": "result"
+            }
+          ],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "path": "body/1"
+        },
+        {
+          "id": "generate_3",
+          "kind": "call",
+          "name": "generate",
+          "inputs": [],
+          "outputs": [
+            {
               "port": "out0"
             }
           ],
@@ -76,7 +72,26 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
+        },
+        {
+          "id": "consume_4",
+          "kind": "call",
+          "name": "consume",
+          "inputs": [
+            {
+              "port": "in0"
+            }
+          ],
+          "outputs": [],
+          "ctrl_in": [
+            "in"
+          ],
+          "ctrl_out": [
+            "out"
+          ],
+          "path": "body/3"
         },
         {
           "id": "get_5",
@@ -103,39 +118,34 @@
           ]
         },
         {
-          "id": "set_7",
-          "kind": "set",
+          "id": "get_7",
+          "kind": "get",
           "props": {
-            "name": "result"
+            "name": "value"
           },
-          "inputs": [
+          "outputs": [
             {
               "port": "value"
             }
           ]
         },
         {
-          "id": "generate_8",
-          "kind": "call",
-          "name": "generate",
-          "inputs": [],
-          "outputs": [
+          "id": "set_8",
+          "kind": "set",
+          "props": {
+            "name": "x1"
+          },
+          "inputs": [
             {
-              "port": "out0"
+              "port": "value"
             }
-          ],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
           ]
         },
         {
           "id": "set_9",
           "kind": "set",
           "props": {
-            "name": "value"
+            "name": "x2"
           },
           "inputs": [
             {
@@ -144,29 +154,12 @@
           ]
         },
         {
-          "id": "consume_10",
-          "kind": "call",
-          "name": "consume",
-          "inputs": [
-            {
-              "port": "in0"
-            }
-          ],
-          "outputs": [],
-          "ctrl_in": [
-            "in"
-          ],
-          "ctrl_out": [
-            "out"
-          ]
-        },
-        {
-          "id": "get_11",
-          "kind": "get",
+          "id": "set_10",
+          "kind": "set",
           "props": {
             "name": "value"
           },
-          "outputs": [
+          "inputs": [
             {
               "port": "value"
             }
@@ -177,33 +170,33 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "generate_8",
+            "node": "generate_3",
             "port": "out"
           },
           "to": {
-            "node": "consume_10",
+            "node": "consume_4",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_11",
+            "node": "get_7",
             "port": "value"
           },
           "to": {
-            "node": "consume_10",
+            "node": "consume_4",
             "port": "in0"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "process_4",
+            "node": "process_2",
             "port": "out"
           },
           "to": {
-            "node": "generate_8",
+            "node": "generate_3",
             "port": "in"
           }
         },
@@ -214,7 +207,7 @@
             "port": "out"
           },
           "to": {
-            "node": "process_4",
+            "node": "process_2",
             "port": "in"
           }
         },
@@ -225,7 +218,7 @@
             "port": "value"
           },
           "to": {
-            "node": "process_4",
+            "node": "process_2",
             "port": "in0"
           }
         },
@@ -236,8 +229,19 @@
             "port": "value"
           },
           "to": {
-            "node": "process_4",
+            "node": "process_2",
             "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "generate_3",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_10",
+            "port": "value"
           }
         },
         {
@@ -247,7 +251,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_8",
             "port": "value"
           }
         },
@@ -256,28 +260,6 @@
           "from": {
             "node": "load_data_1",
             "port": "out1"
-          },
-          "to": {
-            "node": "set_3",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "process_4",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_7",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "generate_8",
-            "port": "out0"
           },
           "to": {
             "node": "set_9",

@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -24,22 +24,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "data"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "parallel_3",
+          "id": "parallel_2",
           "kind": "parallel",
           "props": {
             "labels": {
@@ -53,10 +42,11 @@
           "ctrl_out": [
             "out_0",
             "out_1"
-          ]
+          ],
+          "path": "body/1"
         },
         {
-          "id": "concat_4",
+          "id": "concat_3",
           "kind": "call",
           "name": "concat",
           "inputs": [
@@ -78,34 +68,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2/body/0",
+          "region": "body/2"
         },
         {
-          "id": "get_5",
-          "kind": "get",
-          "props": {
-            "name": "data"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_6",
-          "kind": "set",
-          "props": {
-            "name": "result_a"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "print_7",
+          "id": "print_4",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -119,22 +87,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2/body/1",
+          "region": "body/2"
         },
         {
-          "id": "get_8",
-          "kind": "get",
-          "props": {
-            "name": "result_a"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "concat_9",
+          "id": "concat_5",
           "kind": "call",
           "name": "concat",
           "inputs": [
@@ -156,34 +114,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/0",
+          "region": "body/3"
         },
         {
-          "id": "get_10",
-          "kind": "get",
-          "props": {
-            "name": "data"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_11",
-          "kind": "set",
-          "props": {
-            "name": "result_b"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "print_12",
+          "id": "print_6",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -197,22 +133,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/1",
+          "region": "body/3"
         },
         {
-          "id": "get_13",
-          "kind": "get",
-          "props": {
-            "name": "result_b"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "print_14",
+          "id": "print_7",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -227,10 +153,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
-          "id": "merge_15",
+          "id": "merge_8",
           "kind": "merge",
           "ctrl_in": [
             "in_0",
@@ -239,72 +166,162 @@
           "ctrl_out": [
             "out"
           ]
+        },
+        {
+          "id": "get_9",
+          "kind": "get",
+          "props": {
+            "name": "data"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/2"
+        },
+        {
+          "id": "get_10",
+          "kind": "get",
+          "props": {
+            "name": "result_a"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/2"
+        },
+        {
+          "id": "get_11",
+          "kind": "get",
+          "props": {
+            "name": "data"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "get_12",
+          "kind": "get",
+          "props": {
+            "name": "result_b"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "set_13",
+          "kind": "set",
+          "props": {
+            "name": "data"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_14",
+          "kind": "set",
+          "props": {
+            "name": "result_a"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/2"
+        },
+        {
+          "id": "set_15",
+          "kind": "set",
+          "props": {
+            "name": "result_b"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
         }
       ],
       "edges": [
         {
           "kind": "data",
           "from": {
-            "node": "get_5",
+            "node": "get_9",
             "port": "value"
           },
           "to": {
-            "node": "concat_4",
+            "node": "concat_3",
             "port": "a"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "parallel_3",
+            "node": "parallel_2",
             "port": "out_0"
           },
           "to": {
-            "node": "concat_4",
+            "node": "concat_3",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_10",
+            "node": "get_11",
             "port": "value"
           },
           "to": {
-            "node": "concat_9",
+            "node": "concat_5",
             "port": "a"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "parallel_3",
+            "node": "parallel_2",
             "port": "out_1"
           },
           "to": {
-            "node": "concat_9",
+            "node": "concat_5",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "print_7",
+            "node": "print_4",
             "port": "out"
           },
           "to": {
-            "node": "merge_15",
+            "node": "merge_8",
             "port": "in_0"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "print_12",
+            "node": "print_6",
             "port": "out"
           },
           "to": {
-            "node": "merge_15",
+            "node": "merge_8",
             "port": "in_1"
           }
         },
@@ -315,74 +332,63 @@
             "port": "out"
           },
           "to": {
-            "node": "parallel_3",
+            "node": "parallel_2",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "concat_9",
+            "node": "concat_3",
             "port": "out"
           },
           "to": {
-            "node": "print_12",
+            "node": "print_4",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_13",
+            "node": "get_10",
             "port": "value"
           },
           "to": {
-            "node": "print_12",
+            "node": "print_4",
             "port": "v"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "merge_15",
+            "node": "concat_5",
             "port": "out"
           },
           "to": {
-            "node": "print_14",
+            "node": "print_6",
             "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_12",
+            "port": "value"
+          },
+          "to": {
+            "node": "print_6",
+            "port": "v"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "concat_4",
+            "node": "merge_8",
             "port": "out"
           },
           "to": {
             "node": "print_7",
             "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_8",
-            "port": "value"
-          },
-          "to": {
-            "node": "print_7",
-            "port": "v"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "concat_9",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_11",
-            "port": "value"
           }
         },
         {
@@ -392,20 +398,51 @@
             "port": "value"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_13",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "concat_4",
+            "node": "concat_3",
             "port": "result"
           },
           "to": {
-            "node": "set_6",
+            "node": "set_14",
             "port": "value"
           }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "concat_5",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_15",
+            "port": "value"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/2",
+          "kind": "parallel",
+          "owner": {
+            "node": "parallel_2",
+            "port": "out_0"
+          },
+          "label": "process_a"
+        },
+        {
+          "id": "body/3",
+          "kind": "parallel",
+          "owner": {
+            "node": "parallel_2",
+            "port": "out_1"
+          },
+          "label": "process_b"
         }
       ]
     }

@@ -200,7 +200,7 @@ kir check prog.kir --lib my_nodes            # diagnostics with codes (checks.md
 kir fmt prog.kir -w                          # canonical text, in place
 kir lower prog.kir --lib my_nodes            # after every pass
 kir lower prog.kir --passes order_dataflow,inline --hash
-kir graph prog.kir -o prog.kirgraph          # text -> graph view (--data variables: name -> node -> name)
+kir graph prog.kir -o prog.kirgraph          # text -> graph view (--data variables: values through get/set, graph IO wired direct)
 kir text prog.kirgraph                       # graph view -> canonical text (--no-meta to drop ids/positions)
 kir run prog.kir --lib my_nodes              # the reference run; prints final values
 kir-lsp                                      # language server on stdio

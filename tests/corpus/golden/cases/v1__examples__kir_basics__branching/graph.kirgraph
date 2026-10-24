@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -25,7 +25,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "less_than_2",
@@ -51,7 +52,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "branch_3",
@@ -73,7 +75,8 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "print_4",
@@ -91,7 +94,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/0",
+          "region": "body/3"
         },
         {
           "id": "greater_than_5",
@@ -117,7 +122,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/0",
+          "region": "body/4"
         },
         {
           "id": "branch_6",
@@ -139,7 +146,9 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/4/body/1",
+          "region": "body/4"
         },
         {
           "id": "print_7",
@@ -157,7 +166,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/2/body/0",
+          "region": "body/4/body/2"
         },
         {
           "id": "print_8",
@@ -175,7 +186,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/3/body/0",
+          "region": "body/4/body/3"
         }
       ],
       "edges": [
@@ -299,6 +312,46 @@
             "node": "print_8",
             "port": "in"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/3",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_3",
+            "port": "true"
+          },
+          "label": "handle_negative"
+        },
+        {
+          "id": "body/4",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_3",
+            "port": "false"
+          },
+          "label": "check_positive"
+        },
+        {
+          "id": "body/4/body/2",
+          "kind": "branch",
+          "parent": "body/4",
+          "owner": {
+            "node": "branch_6",
+            "port": "true"
+          },
+          "label": "handle_large"
+        },
+        {
+          "id": "body/4/body/3",
+          "kind": "branch",
+          "parent": "body/4",
+          "owner": {
+            "node": "branch_6",
+            "port": "false"
+          },
+          "label": "handle_normal"
         }
       ]
     }

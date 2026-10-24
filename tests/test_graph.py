@@ -9,6 +9,7 @@ import pytest
 
 from kohakunode import Interpreter, build_env, parse, write
 from kohakunode.graph import from_graph, to_graph
+from kohakunode.origins import stamp_origins
 from test_pipeline import EACH, LIB
 from test_v1_parity import EXPECTED, library_for
 
@@ -68,6 +69,73 @@ def test_graph_round_trip(path, data):
     assert write(t2) == write(t1)
     assert g2 == to_graph(t2, build_env(t2, [lib]), data)
     assert run_output(t1, lib) == run_output(program, lib)
+
+
+NESTED = (
+    "@try:\n"
+    "    (xs)each(x, `body`)\n"
+    "    body:\n"
+    "        (x)branch(`big`, `small`)\n"
+    "        big:\n"
+    "            @dataflow:\n"
+    "                (x)identity(y)\n"
+    "        small:\n"
+    "            y = 0\n"
+    "@except err:\n"
+    "    y = 1\n"
+    "()jump(`loop`)\n"
+    "loop:\n"
+    "    (y)identity(y)\n"
+)
+
+
+def region_invariants(graph: dict) -> None:
+    """Every region and node region exists, parents come first, and an owner sits in the
+    region around the one it owns."""
+    regions = {}
+    for r in graph.get("regions", []):
+        assert r["id"] not in regions
+        assert r.get("parent") is None or r["parent"] in regions
+        regions[r["id"]] = r
+    nodes = {n["id"]: n for n in graph["nodes"]}
+    for n in nodes.values():
+        assert n.get("region") is None or n["region"] in regions
+    for r in regions.values():
+        owner = nodes[r["owner"]["node"]]
+        assert owner["kind"] == r["kind"]
+        assert owner.get("region") == r.get("parent")
+
+
+@pytest.mark.parametrize("data", STYLES)
+@pytest.mark.parametrize(
+    "src",
+    [*V2.values(), NESTED, *(p.values[0].read_text(encoding="utf-8") for p in ok_files())],
+)
+def test_paths_are_origin_ids_and_regions_nest(src, data):
+    """A node's path is the node_id ``stamp_origins`` gives its statement (an independent
+    walk), and the regions form a tree their nodes and owners agree with."""
+    program = stamp_origins(parse(src))
+    for graph in to_graph(program, data=data)["graphs"]:
+        for n in graph["nodes"]:
+            if "origin" in n and n["kind"] != "merge":
+                assert n["path"] == n["origin"]["node_id"]
+        region_invariants(graph)
+
+
+def test_nested_regions():
+    g = to_graph(parse(NESTED))["graphs"][0]
+    kinds = [(r["id"], r["kind"], r.get("parent"), r.get("label")) for r in g["regions"]]
+    assert kinds == [
+        ("body/0/body", "try", None, None),
+        ("body/0/body/1", "each", "body/0/body", "body"),
+        ("body/0/body/1/body/1", "branch", "body/0/body/1", "big"),
+        ("body/0/body/1/body/1/body/0/body", "dataflow", "body/0/body/1/body/1", None),
+        ("body/0/body/1/body/2", "branch", "body/0/body/1", "small"),
+        ("body/0/handler", "try", None, None),
+        ("body/2", "merge", None, "loop"),
+    ]
+    identity = next(n for n in g["nodes"] if n.get("path") == "body/0/body/1/body/1/body/0/body/0")
+    assert identity["region"] == "body/0/body/1/body/1/body/0/body"
 
 
 def test_variables_style_shape():

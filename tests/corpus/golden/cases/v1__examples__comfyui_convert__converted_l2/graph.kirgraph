@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -70,7 +70,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_1",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_2",
@@ -123,7 +125,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_2",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_3",
@@ -176,7 +180,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_3",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_4",
@@ -277,7 +283,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_4",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_5",
@@ -329,7 +337,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_5",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_6",
@@ -386,7 +396,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_6",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_7",
@@ -426,7 +438,9 @@
               }
             ],
             "comfyui_outputs": []
-          }
+          },
+          "path": "comfy_7",
+          "region": "body/0/body"
         },
         {
           "id": "get_8",
@@ -438,7 +452,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "dataflow_9",
@@ -459,7 +474,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         }
       ],
       "edges": [
@@ -560,6 +576,16 @@
           "to": {
             "node": "comfy_7",
             "port": "in0"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/0/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_9",
+            "port": null
           }
         }
       ]

@@ -23,13 +23,25 @@ from kohakunode.syntax.ast import (
     Switch,
     Try,
     TypeHints,
+    children,
 )
 from kohakunode.syntax.writer import write_type
 
-FORMAT = 2
+FORMAT = 3
 DATA_STYLES = ("wires", "variables")
 
 Port = tuple[str, str]  # (node id, port name)
+
+
+def _paths(body: list[Stmt], prefix: str, out: dict) -> None:
+    """``id(stmt) -> (path, structural path)``: the path is the statement's origin id
+    (``meta.node_id``, else the structural path), as ``stamp_origins`` assigns it."""
+    for index, stmt in enumerate(body):
+        node_path = f"{prefix}/{index}"
+        node_id = stmt.meta.get("node_id")
+        out[id(stmt)] = (node_path if node_id is None else str(node_id), node_path)
+        for child_index, block in enumerate(children(stmt)):
+            _paths(block, f"{node_path}/{'body' if child_index == 0 else 'handler'}", out)
 
 
 class _Scope:
@@ -43,13 +55,21 @@ class _Scope:
         params=(),
         outputs=(),
         data: str = "wires",
+        prefix: str = "body",
     ):
         self.env = env
         self.name = name
         self.variables = data == "variables"
+        # With variables, reads and writes wait until every write has its node (`resolve_variables`)
+        self.var_reads: list[tuple[int, str, Port, str | None]] = []
+        self.var_writes: list[tuple[Port, str, str | None]] = []
         self.body = body
         self.params = list(params)
         self.outputs = list(outputs)
+        self.paths: dict[int, tuple[str, str]] = {}
+        _paths(body, prefix, self.paths)
+        self.regions: list[dict] = []
+        self.region: str | None = None
         self.nodes: list[dict] = []
         self.edges: list[dict] = []
         self.count = 0
@@ -61,6 +81,7 @@ class _Scope:
         self.stack: list[list[Stmt]] = []
         self.cfg = build_cfg(body, tuple(p.name for p in self.params))
         self.inn = reaching(self.cfg)
+        self.inn_forward = reaching(self.cfg, forward=True) if self.variables else self.inn
         self.multi: set[str] = set()  # names with a read reached by several writes
         for n in self.cfg.reachable():
             for x in self.cfg.nodes[n].reads:
@@ -94,9 +115,27 @@ class _Scope:
                 n["hints"] = dict(stmt.hint)
             if stmt.origin is not None:
                 n["origin"] = _origin(stmt.origin)
+            n["path"] = self.paths[id(stmt)][0]
             self.stmt_node[id(stmt)] = n["id"]
+        if self.region is not None:
+            n["region"] = self.region
         self.nodes.append(n)
         return n
+
+    def open_region(
+        self, rid: str, kind: str, owner: Port | None, label: str | None = None
+    ) -> str | None:
+        """Enter region ``rid``; the region it was opened in is returned for ``close``."""
+        r: dict = {"id": rid, "kind": kind}
+        if self.region is not None:
+            r["parent"] = self.region
+        if owner is not None:
+            r["owner"] = {"node": owner[0], "port": owner[1]}
+        if label is not None:
+            r["label"] = label
+        self.regions.append(r)
+        outer, self.region = self.region, rid
+        return outer
 
     def ctrl(self, src: Port, dst: Port) -> None:
         self.edges.append(
@@ -154,13 +193,22 @@ class _Scope:
         if isinstance(s, Assign):
             return (nid, "value")
         n = next(x for x in self.nodes if x["id"] == nid)
+        # Output ports follow the statement's outputs in order (a port names its variable only in wires)
+        if isinstance(s, Call):
+            for o, p in zip(s.outs, n["outputs"]):
+                if o == name:
+                    return (nid, p["port"])
         for p in n["outputs"]:
             if p.get("var") == name:
                 return (nid, p["port"])
         return None
 
     def wire_read(self, cfg_node: int, name: str, target: Port) -> None:
-        """A read: a direct wire from its only write, or a `get` variable node."""
+        """A read: a direct wire from its only write, or a `get` variable node. With
+        variables it waits until every write has its node (`resolve_variables`)."""
+        if self.variables:
+            self.var_reads.append((cfg_node, name, target, self.region))
+            return
         if not self.variables and name not in self.multi:
             defs = {d for y, d in self.inn[cfg_node] if y == name} - {UNDEF}
             if len(defs) == 1:
@@ -168,8 +216,91 @@ class _Scope:
                 if src is not None:
                     self.data(src, target)
                     return
+        self.get_node(name, target)
+
+    def get_node(self, name: str, target: Port) -> None:
         g = self.node("get", "get", props={"name": name}, outputs=[{"port": "value"}])
         self.data((g["id"], "value"), target)
+
+    def resolve_variables(self) -> None:
+        """The variables style's reads and writes, once every write has its node.
+
+        Inside the graph a value goes through its variable: a `get` reads it, a `set` is
+        drawn for every write of a name some `get` reads. The graph's own inputs and
+        outputs are never wired to a variable. A read only the input reaches on the way
+        in (`reaching(forward=True)`: inside a loop, what entered it) is wired from the
+        input; a graph output only one write decides (the input left out when the program
+        writes the name) is wired from that write. Otherwise an assign statement (`join`)
+        stands where the value is decided: for an output, right before the end, reading
+        the variable; for an input other writes meet, right after the start, writing it.
+        """
+        read_names: set[str] = set()
+        init_names: list[str] = []
+        for cfg_node, name, target, region in self.var_reads:
+            at_exit = cfg_node == self.cfg.exit
+            defs = sorted(
+                {d for y, d in (self.inn if at_exit else self.inn_forward)[cfg_node] if y == name}
+                - {UNDEF}
+            )
+            if at_exit and any(d != self.cfg.entry for d in defs):
+                defs = [d for d in defs if d != self.cfg.entry]
+            srcs = [self.writer_port(d, name) for d in defs]
+            if len(defs) == 1 and srcs[0] is not None and (at_exit or defs[0] == self.cfg.entry):
+                self.data(srcs[0], target)
+                continue
+            if self.cfg.entry in defs and name not in init_names:
+                init_names.append(name)
+            if at_exit and defs:
+                j = self.assign_on_flow(name, target[0], before=True)
+                self.data((j, "value"), target)
+                target = (j, "value")
+            outer, self.region = self.region, region if not at_exit else None
+            self.get_node(name, target)
+            self.region = outer
+            read_names.add(name)
+        for name in init_names:
+            j = self.assign_on_flow(name, "inputs", before=False)
+            self.data(("inputs", name), (j, "value"))
+            self.var_writes.append(((j, "value"), name, None))
+        for src, name, region in self.var_writes:
+            if name in read_names:
+                outer, self.region = self.region, region
+                st = self.node("set", "set", props={"name": name}, inputs=[{"port": "value"}])
+                self.data(src, (st["id"], "value"))
+                self.region = outer
+                continue
+            # A write nothing reads keeps its name on its own port (`var` right after `port`)
+            node = next(n for n in self.nodes if n["id"] == src[0])
+            node["outputs"] = [
+                (
+                    {"port": p["port"], "var": name, **{k: v for k, v in p.items() if k != "port"}}
+                    if p["port"] == src[1]
+                    else p
+                )
+                for p in node.get("outputs", [])
+            ]
+
+    def assign_on_flow(self, name: str, at: str, before: bool) -> str:
+        """An assign statement (`join`, one input) of ``name`` spliced into the control flow
+        right before node ``at`` (into its ``in``) or right after it (out of its ``out``)."""
+        j = self.node(
+            "join",
+            "join",
+            props={"name": name},
+            inputs=[{"port": "value"}],
+            outputs=[{"port": "value"}],
+            ctrl_in=["in"],
+            ctrl_out=["out"],
+        )["id"]
+        end = {"node": at, "port": "in" if before else "out"}
+        for e in self.edges:
+            if e["kind"] == "ctrl" and e["to" if before else "from"] == end:
+                e["to" if before else "from"] = {"node": j, "port": "in" if before else "out"}
+        if before:
+            self.ctrl((j, "out"), (at, "in"))
+        else:
+            self.ctrl((at, "out"), (j, "in"))
+        return j
 
     def out_entry(self, port: str, name: str | None, ptype: str | None = None) -> dict:
         """An output port; with variables, a written name is shown by its `set` node instead."""
@@ -186,6 +317,11 @@ class _Scope:
         """A write: a `set` variable node on the output port (with variables, or for a name
         written on several paths)."""
         if name is None or not (self.variables or name in self.multi):
+            return
+        if self.variables:
+            # The graph's inputs reach their readers directly (`resolve_variables`)
+            if src[0] != "inputs":
+                self.var_writes.append((src, name, self.region))
             return
         st = self.node("set", "set", props={"name": name}, inputs=[{"port": "value"}])
         self.data(src, (st["id"], "value"))
@@ -291,12 +427,16 @@ class _Scope:
                     self.bind_outs(s, n)
                     incoming = [(n["id"], "out")]
                 case Dataflow():
+                    # The members sit in the block's region; its owner is the dataflow node
+                    region = len(self.regions)
+                    outer = self.open_region(f"{self.paths[id(s)][1]}/body", "dataflow", None)
                     members = []
                     for inner in s.body:
                         members.append(self.simple(inner, False))
                     for inner, m in zip(s.body, members):
                         self.wire_simple_inputs(inner, m)
                         self.bind_outs(inner, m)
+                    self.region = outer
                     g = self.node(
                         "dataflow",
                         "dataflow",
@@ -305,6 +445,7 @@ class _Scope:
                         ctrl_in=["in"],
                         ctrl_out=["out"],
                     )
+                    self.regions[region]["owner"] = {"node": g["id"], "port": None}
                     self.join(incoming, (g["id"], "in"))
                     incoming = [(g["id"], "out")]
                 case Branch():
@@ -457,8 +598,13 @@ class _Scope:
                     )
                     self.join(incoming, (n["id"], "in"))
                     self.bind_out((n["id"], "error"), s.error_name)
+                    base = self.paths[id(s)][1]
+                    outer = self.open_region(f"{base}/body", "try", (n["id"], "try"))
                     a = self.block(s.body, [(n["id"], "try")])
+                    self.region = outer
+                    self.open_region(f"{base}/handler", "try", (n["id"], "except"))
                     b = self.block(s.handler, [(n["id"], "except")])
+                    self.region = outer
                     incoming = a + b
         return incoming
 
@@ -498,7 +644,15 @@ class _Scope:
             for nid, port in incoming:
                 node = next(n for n in self.nodes if n["id"] == nid)
                 node.setdefault("namespace_origins", {})[port] = _origin(ns.origin)
-        return self.block(ns.body, incoming)
+
+        # The body's region is owned by the port that enters it, of the owner's kind
+        owner = incoming[0]
+        kind = next(n for n in self.nodes if n["id"] == owner[0])["kind"]
+        outer = self.open_region(self.paths[id(ns)][0], kind, owner, ns.label)
+        try:
+            return self.block(ns.body, incoming)
+        finally:
+            self.region = outer
 
     def find_namespace(self, label: str) -> Namespace | None:
         """Like `jump`: the current block first, then each enclosing block."""
@@ -548,10 +702,14 @@ class _Scope:
             self.join(end, ("outputs", "in"))
             for o in self.outputs:
                 self.wire_read(self.cfg.exit, o.name, ("outputs", o.name))
+        if self.variables:
+            self.resolve_variables()
         self.edges.sort(
             key=lambda e: (e["to"]["node"], e["to"]["port"], e["from"]["node"], e["from"]["port"])
         )
         g = {"name": self.name, "nodes": self.nodes, "edges": self.edges}
+        if self.regions:
+            g["regions"] = self.regions
         if self.name != "main":
             g["params"] = [
                 {
@@ -600,14 +758,17 @@ def to_graph(program: Program, env: NodeEnv | None = None, data: str = "wires") 
     """The graph view of a program.
 
     ``data="wires"`` wires a read straight to its only write; ``data="variables"`` draws
-    every read as a `get` node and every write as a `set` node (name → node → name).
+    a value inside the graph through its variable (`get` and `set` nodes) and wires the
+    graph's own inputs and outputs straight to the statements they reach
+    (`_Scope.resolve_variables`).
     """
     if data not in DATA_STYLES:
         raise ValueError(f"unknown data style {data!r}; known: {list(DATA_STYLES)}")
     graphs = [_Scope(env, "main", program.body, data=data).build()]
-    for s in program.body:
+    for index, s in enumerate(program.body):
         if isinstance(s, Def):
-            graph = _Scope(env, s.name, s.body, s.params, s.outputs, data).build()
+            prefix = f"body/{index}/body"
+            graph = _Scope(env, s.name, s.body, s.params, s.outputs, data, prefix).build()
             if s.origin is not None:
                 graph["origin"] = _origin(s.origin)
             graphs.append(graph)

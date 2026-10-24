@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -21,7 +21,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "assign_2",
@@ -43,7 +44,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "assign_3",
@@ -65,7 +67,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "add_4",
@@ -90,7 +93,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
           "id": "assign_5",
@@ -112,7 +116,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
           "id": "normalize_6",
@@ -134,7 +139,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5"
         },
         {
           "id": "assign_7",
@@ -155,7 +161,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/6"
         },
         {
           "id": "process_a_8",
@@ -177,7 +184,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/7"
         },
         {
           "id": "process_b_9",
@@ -199,7 +207,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/8"
         },
         {
           "id": "multiply_10",
@@ -225,7 +234,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/9"
         },
         {
           "id": "print_11",
@@ -242,7 +252,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/10"
         }
       ],
       "edges": [

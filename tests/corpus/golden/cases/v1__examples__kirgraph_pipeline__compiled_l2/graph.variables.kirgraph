@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -30,7 +30,9 @@
               160,
               100
             ]
-          }
+          },
+          "path": "val_limit",
+          "region": "body/0/body"
         },
         {
           "id": "val_step",
@@ -57,7 +59,9 @@
               160,
               100
             ]
-          }
+          },
+          "path": "val_step",
+          "region": "body/0/body"
         },
         {
           "id": "val_i",
@@ -84,7 +88,9 @@
               160,
               100
             ]
-          }
+          },
+          "path": "val_i",
+          "region": "body/0/body"
         },
         {
           "id": "val_total",
@@ -111,58 +117,12 @@
               160,
               100
             ]
-          }
-        },
-        {
-          "id": "set_5",
-          "kind": "set",
-          "props": {
-            "name": "val_limit_value"
           },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "val_total",
+          "region": "body/0/body"
         },
         {
-          "id": "set_6",
-          "kind": "set",
-          "props": {
-            "name": "val_step_value"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_7",
-          "kind": "set",
-          "props": {
-            "name": "val_i_value"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_8",
-          "kind": "set",
-          "props": {
-            "name": "val_total_value"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "dataflow_9",
+          "id": "dataflow_5",
           "kind": "dataflow",
           "props": {
             "members": [
@@ -177,10 +137,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "assign_10",
+          "id": "assign_6",
           "kind": "assign",
           "inputs": [
             {
@@ -197,31 +158,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
-        },
-        {
-          "id": "get_11",
-          "kind": "get",
-          "props": {
-            "name": "val_i_value"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_12",
-          "kind": "set",
-          "props": {
-            "name": "inc_i_result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "merge_loop",
@@ -245,7 +183,8 @@
               140,
               100
             ]
-          }
+          },
+          "path": "merge_loop"
         },
         {
           "id": "inc_i",
@@ -279,43 +218,9 @@
               180,
               120
             ]
-          }
-        },
-        {
-          "id": "get_15",
-          "kind": "get",
-          "props": {
-            "name": "inc_i_result"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_16",
-          "kind": "get",
-          "props": {
-            "name": "val_step_value"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_17",
-          "kind": "set",
-          "props": {
-            "name": "inc_i_result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "inc_i",
+          "region": "body/3"
         },
         {
           "id": "square",
@@ -345,7 +250,9 @@
               180,
               120
             ]
-          }
+          },
+          "path": "square",
+          "region": "body/3/body/1/body"
         },
         {
           "id": "accum",
@@ -375,82 +282,12 @@
               180,
               120
             ]
-          }
-        },
-        {
-          "id": "get_20",
-          "kind": "get",
-          "props": {
-            "name": "inc_i_result"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "accum",
+          "region": "body/3/body/1/body"
         },
         {
-          "id": "get_21",
-          "kind": "get",
-          "props": {
-            "name": "inc_i_result"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_22",
-          "kind": "set",
-          "props": {
-            "name": "square_result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_23",
-          "kind": "get",
-          "props": {
-            "name": "val_total_value"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_24",
-          "kind": "get",
-          "props": {
-            "name": "square_result"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_25",
-          "kind": "set",
-          "props": {
-            "name": "accum_result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "dataflow_26",
+          "id": "dataflow_11",
           "kind": "dataflow",
           "props": {
             "members": [
@@ -463,7 +300,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/1",
+          "region": "body/3"
         },
         {
           "id": "check",
@@ -497,43 +336,8 @@
               180,
               120
             ]
-          }
-        },
-        {
-          "id": "get_28",
-          "kind": "get",
-          "props": {
-            "name": "inc_i_result"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_29",
-          "kind": "get",
-          "props": {
-            "name": "val_limit_value"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_30",
-          "kind": "set",
-          "props": {
-            "name": "check_result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "check"
         },
         {
           "id": "branch",
@@ -565,19 +369,8 @@
               180,
               120
             ]
-          }
-        },
-        {
-          "id": "get_32",
-          "kind": "get",
-          "props": {
-            "name": "check_result"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "branch"
         },
         {
           "id": "to_str",
@@ -608,31 +401,9 @@
               160,
               100
             ]
-          }
-        },
-        {
-          "id": "get_34",
-          "kind": "get",
-          "props": {
-            "name": "accum_result"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_35",
-          "kind": "set",
-          "props": {
-            "name": "to_str_result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "to_str",
+          "region": "body/7"
         },
         {
           "id": "fmt",
@@ -663,7 +434,9 @@
               180,
               120
             ]
-          }
+          },
+          "path": "fmt",
+          "region": "body/7/body/1/body"
         },
         {
           "id": "out",
@@ -686,46 +459,12 @@
               160,
               100
             ]
-          }
-        },
-        {
-          "id": "get_38",
-          "kind": "get",
-          "props": {
-            "name": "to_str_result"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "out",
+          "region": "body/7/body/1/body"
         },
         {
-          "id": "set_39",
-          "kind": "set",
-          "props": {
-            "name": "fmt_result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_40",
-          "kind": "get",
-          "props": {
-            "name": "fmt_result"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "dataflow_41",
+          "id": "dataflow_17",
           "kind": "dataflow",
           "props": {
             "members": [
@@ -738,7 +477,315 @@
           ],
           "ctrl_out": [
             "out"
+          ],
+          "path": "body/7/body/1",
+          "region": "body/7"
+        },
+        {
+          "id": "get_18",
+          "kind": "get",
+          "props": {
+            "name": "val_i_value"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
           ]
+        },
+        {
+          "id": "get_19",
+          "kind": "get",
+          "props": {
+            "name": "inc_i_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "get_20",
+          "kind": "get",
+          "props": {
+            "name": "val_step_value"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "get_21",
+          "kind": "get",
+          "props": {
+            "name": "inc_i_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3/body/1/body"
+        },
+        {
+          "id": "get_22",
+          "kind": "get",
+          "props": {
+            "name": "inc_i_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3/body/1/body"
+        },
+        {
+          "id": "get_23",
+          "kind": "get",
+          "props": {
+            "name": "val_total_value"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3/body/1/body"
+        },
+        {
+          "id": "get_24",
+          "kind": "get",
+          "props": {
+            "name": "square_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3/body/1/body"
+        },
+        {
+          "id": "get_25",
+          "kind": "get",
+          "props": {
+            "name": "inc_i_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_26",
+          "kind": "get",
+          "props": {
+            "name": "val_limit_value"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_27",
+          "kind": "get",
+          "props": {
+            "name": "check_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_28",
+          "kind": "get",
+          "props": {
+            "name": "accum_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/7"
+        },
+        {
+          "id": "get_29",
+          "kind": "get",
+          "props": {
+            "name": "to_str_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/7/body/1/body"
+        },
+        {
+          "id": "get_30",
+          "kind": "get",
+          "props": {
+            "name": "fmt_result"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/7/body/1/body"
+        },
+        {
+          "id": "set_31",
+          "kind": "set",
+          "props": {
+            "name": "val_limit_value"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_32",
+          "kind": "set",
+          "props": {
+            "name": "val_step_value"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_33",
+          "kind": "set",
+          "props": {
+            "name": "val_i_value"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_34",
+          "kind": "set",
+          "props": {
+            "name": "val_total_value"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_35",
+          "kind": "set",
+          "props": {
+            "name": "inc_i_result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_36",
+          "kind": "set",
+          "props": {
+            "name": "inc_i_result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "set_37",
+          "kind": "set",
+          "props": {
+            "name": "square_result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3/body/1/body"
+        },
+        {
+          "id": "set_38",
+          "kind": "set",
+          "props": {
+            "name": "accum_result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3/body/1/body"
+        },
+        {
+          "id": "set_39",
+          "kind": "set",
+          "props": {
+            "name": "check_result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_40",
+          "kind": "set",
+          "props": {
+            "name": "to_str_result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/7"
+        },
+        {
+          "id": "set_41",
+          "kind": "set",
+          "props": {
+            "name": "fmt_result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/7/body/1/body"
         }
       ],
       "edges": [
@@ -767,29 +814,29 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "dataflow_9",
+            "node": "dataflow_5",
             "port": "out"
           },
           "to": {
-            "node": "assign_10",
+            "node": "assign_6",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_11",
+            "node": "get_18",
             "port": "value"
           },
           "to": {
-            "node": "assign_10",
+            "node": "assign_6",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_32",
+            "node": "get_27",
             "port": "value"
           },
           "to": {
@@ -811,7 +858,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_28",
+            "node": "get_25",
             "port": "value"
           },
           "to": {
@@ -822,7 +869,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_29",
+            "node": "get_26",
             "port": "value"
           },
           "to": {
@@ -833,7 +880,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "dataflow_26",
+            "node": "dataflow_11",
             "port": "out"
           },
           "to": {
@@ -848,7 +895,7 @@
             "port": "out"
           },
           "to": {
-            "node": "dataflow_26",
+            "node": "dataflow_11",
             "port": "in"
           }
         },
@@ -859,14 +906,14 @@
             "port": "out"
           },
           "to": {
-            "node": "dataflow_41",
+            "node": "dataflow_17",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_38",
+            "node": "get_29",
             "port": "value"
           },
           "to": {
@@ -877,7 +924,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_15",
+            "node": "get_19",
             "port": "value"
           },
           "to": {
@@ -888,7 +935,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_16",
+            "node": "get_20",
             "port": "value"
           },
           "to": {
@@ -910,7 +957,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "assign_10",
+            "node": "assign_6",
             "port": "out"
           },
           "to": {
@@ -932,7 +979,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_40",
+            "node": "get_30",
             "port": "value"
           },
           "to": {
@@ -943,88 +990,11 @@
         {
           "kind": "data",
           "from": {
-            "node": "assign_10",
-            "port": "value"
-          },
-          "to": {
-            "node": "set_12",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "inc_i",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_17",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "square",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_22",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "accum",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_25",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "check",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_30",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "to_str",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_35",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "fmt",
-            "port": "result"
-          },
-          "to": {
-            "node": "set_39",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
             "node": "val_limit",
             "port": "value"
           },
           "to": {
-            "node": "set_5",
+            "node": "set_31",
             "port": "value"
           }
         },
@@ -1035,7 +1005,7 @@
             "port": "value"
           },
           "to": {
-            "node": "set_6",
+            "node": "set_32",
             "port": "value"
           }
         },
@@ -1046,7 +1016,7 @@
             "port": "value"
           },
           "to": {
-            "node": "set_7",
+            "node": "set_33",
             "port": "value"
           }
         },
@@ -1057,14 +1027,91 @@
             "port": "value"
           },
           "to": {
-            "node": "set_8",
+            "node": "set_34",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_20",
+            "node": "assign_6",
+            "port": "value"
+          },
+          "to": {
+            "node": "set_35",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "inc_i",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_36",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "square",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_37",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "accum",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_38",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "check",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_39",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "to_str",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_40",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "fmt",
+            "port": "result"
+          },
+          "to": {
+            "node": "set_41",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_21",
             "port": "value"
           },
           "to": {
@@ -1075,7 +1122,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_21",
+            "node": "get_22",
             "port": "value"
           },
           "to": {
@@ -1097,12 +1144,67 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_34",
+            "node": "get_28",
             "port": "value"
           },
           "to": {
             "node": "to_str",
             "port": "v"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/0/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_5",
+            "port": null
+          }
+        },
+        {
+          "id": "body/3",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_loop",
+            "port": "out"
+          },
+          "label": "ns_merge_loop"
+        },
+        {
+          "id": "body/3/body/1/body",
+          "kind": "dataflow",
+          "parent": "body/3",
+          "owner": {
+            "node": "dataflow_11",
+            "port": null
+          }
+        },
+        {
+          "id": "body/6",
+          "kind": "branch",
+          "owner": {
+            "node": "branch",
+            "port": "true"
+          },
+          "label": "branch_true"
+        },
+        {
+          "id": "body/7",
+          "kind": "branch",
+          "owner": {
+            "node": "branch",
+            "port": "false"
+          },
+          "label": "branch_false"
+        },
+        {
+          "id": "body/7/body/1/body",
+          "kind": "dataflow",
+          "parent": "body/7",
+          "owner": {
+            "node": "dataflow_17",
+            "port": null
           }
         }
       ]

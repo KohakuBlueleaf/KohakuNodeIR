@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -24,22 +24,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "x"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "merge_3",
+          "id": "merge_2",
           "kind": "merge",
           "props": {
             "label": "target"
@@ -49,10 +38,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
-          "id": "process_4",
+          "id": "process_3",
           "kind": "call",
           "name": "process",
           "inputs": [
@@ -62,7 +52,8 @@
           ],
           "outputs": [
             {
-              "port": "out0"
+              "port": "out0",
+              "var": "result"
             }
           ],
           "ctrl_in": [
@@ -70,34 +61,12 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/0",
+          "region": "body/3"
         },
         {
-          "id": "get_5",
-          "kind": "get",
-          "props": {
-            "name": "x"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_6",
-          "kind": "set",
-          "props": {
-            "name": "result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "merge_7",
+          "id": "merge_4",
           "kind": "merge",
           "props": {
             "label": "skipped"
@@ -110,7 +79,7 @@
           ]
         },
         {
-          "id": "print_8",
+          "id": "print_5",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -125,6 +94,33 @@
           ],
           "ctrl_out": [
             "out"
+          ],
+          "path": "body/2/body/0",
+          "region": "body/2"
+        },
+        {
+          "id": "get_6",
+          "kind": "get",
+          "props": {
+            "name": "x"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/3"
+        },
+        {
+          "id": "set_7",
+          "kind": "set",
+          "props": {
+            "name": "x"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
           ]
         }
       ],
@@ -136,40 +132,40 @@
             "port": "out"
           },
           "to": {
-            "node": "merge_3",
+            "node": "merge_2",
             "port": "in_0"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "merge_7",
+            "node": "merge_4",
             "port": "out"
           },
           "to": {
-            "node": "print_8",
+            "node": "print_5",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "merge_3",
+            "node": "merge_2",
             "port": "out"
           },
           "to": {
-            "node": "process_4",
+            "node": "process_3",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_5",
+            "node": "get_6",
             "port": "value"
           },
           "to": {
-            "node": "process_4",
+            "node": "process_3",
             "port": "in0"
           }
         },
@@ -180,20 +176,29 @@
             "port": "value"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_7",
             "port": "value"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/3",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_2",
+            "port": "out"
+          },
+          "label": "target"
         },
         {
-          "kind": "data",
-          "from": {
-            "node": "process_4",
-            "port": "out0"
+          "id": "body/2",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_4",
+            "port": "out"
           },
-          "to": {
-            "node": "set_6",
-            "port": "value"
-          }
+          "label": "skipped"
         }
       ]
     }

@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -25,7 +25,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "process_b_2",
@@ -43,7 +44,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/1/body/0",
+          "region": "body/1/body"
         },
         {
           "id": "generate_3",
@@ -57,7 +60,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/1/body/1",
+          "region": "body/1/body"
         },
         {
           "id": "combine_4",
@@ -78,7 +83,9 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/1/body/2",
+          "region": "body/1/body"
         },
         {
           "id": "dataflow_5",
@@ -95,7 +102,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "print_6",
@@ -112,7 +120,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         }
       ],
       "edges": [
@@ -180,6 +189,16 @@
           "to": {
             "node": "process_b_2",
             "port": "in0"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/1/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_5",
+            "port": null
           }
         }
       ]

@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -25,7 +25,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "switch_2",
@@ -56,7 +57,8 @@
             "case_1",
             "case_2",
             "default"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "print_3",
@@ -74,7 +76,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2/body/0",
+          "region": "body/2"
         },
         {
           "id": "print_4",
@@ -92,7 +96,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/0",
+          "region": "body/3"
         },
         {
           "id": "print_5",
@@ -110,7 +116,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4/body/0",
+          "region": "body/4"
         },
         {
           "id": "print_6",
@@ -128,7 +136,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5/body/0",
+          "region": "body/5"
         }
       ],
       "edges": [
@@ -197,6 +207,44 @@
             "node": "switch_2",
             "port": "value"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/2",
+          "kind": "switch",
+          "owner": {
+            "node": "switch_2",
+            "port": "case_0"
+          },
+          "label": "monday"
+        },
+        {
+          "id": "body/3",
+          "kind": "switch",
+          "owner": {
+            "node": "switch_2",
+            "port": "case_1"
+          },
+          "label": "tuesday"
+        },
+        {
+          "id": "body/4",
+          "kind": "switch",
+          "owner": {
+            "node": "switch_2",
+            "port": "case_2"
+          },
+          "label": "wednesday"
+        },
+        {
+          "id": "body/5",
+          "kind": "switch",
+          "owner": {
+            "node": "switch_2",
+            "port": "default"
+          },
+          "label": "other"
         }
       ]
     }

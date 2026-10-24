@@ -255,9 +255,9 @@ def test_explicit_jump_entry_marker_distinguishes_unentered_namespace(
     assert from_graph(entered_graph, with_meta=False) == unentered
 
 
-def test_legacy_graph_shape_has_no_new_empty_fields():
+def test_graph_shape_has_no_empty_fields():
     assert to_graph(parse("x = 1\n")) == {
-        "kirgraph": 2,
+        "kirgraph": 3,
         "uses": [],
         "graphs": [
             {
@@ -270,6 +270,7 @@ def test_legacy_graph_shape_has_no_new_empty_fields():
                         "outputs": [{"port": "value", "var": "x"}],
                         "ctrl_in": ["in"],
                         "ctrl_out": ["out"],
+                        "path": "body/0",
                     }
                 ],
                 "edges": [],

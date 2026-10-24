@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -25,7 +25,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "branch_2",
@@ -47,7 +48,8 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "log_3",
@@ -65,7 +67,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2/body/0",
+          "region": "body/2"
         },
         {
           "id": "log_4",
@@ -83,7 +87,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3/body/0",
+          "region": "body/3"
         },
         {
           "id": "assign_5",
@@ -105,7 +111,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
           "id": "merge_6",
@@ -138,7 +145,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5"
         },
         {
           "id": "assign_8",
@@ -160,7 +168,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/6"
         },
         {
           "id": "assign_9",
@@ -182,7 +191,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/7"
         },
         {
           "id": "assign_10",
@@ -204,7 +214,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/8"
         },
         {
           "id": "add_11",
@@ -229,7 +240,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/9"
         },
         {
           "id": "assign_12",
@@ -251,7 +263,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/10"
         },
         {
           "id": "normalize_13",
@@ -273,7 +286,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/11"
         },
         {
           "id": "assign_14",
@@ -294,7 +308,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/12"
         },
         {
           "id": "process_a_15",
@@ -316,7 +331,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/13"
         },
         {
           "id": "process_b_16",
@@ -338,7 +354,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/14"
         },
         {
           "id": "assign_17",
@@ -360,7 +377,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/15"
         },
         {
           "id": "branch_18",
@@ -382,7 +400,8 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/16"
         },
         {
           "id": "multiply_19",
@@ -408,7 +427,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/17/body/0",
+          "region": "body/17"
         },
         {
           "id": "print_20",
@@ -425,7 +446,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/17/body/1",
+          "region": "body/17"
         },
         {
           "id": "print_21",
@@ -443,7 +466,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/18/body/0",
+          "region": "body/18"
         }
       ],
       "edges": [
@@ -787,6 +812,44 @@
             "node": "process_b_16",
             "port": "in0"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/2",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_2",
+            "port": "true"
+          },
+          "label": "debug_path"
+        },
+        {
+          "id": "body/3",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_2",
+            "port": "false"
+          },
+          "label": "prod_path"
+        },
+        {
+          "id": "body/17",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_18",
+            "port": "true"
+          },
+          "label": "compute"
+        },
+        {
+          "id": "body/18",
+          "kind": "branch",
+          "owner": {
+            "node": "branch_18",
+            "port": "false"
+          },
+          "label": "skip"
         }
       ]
     }

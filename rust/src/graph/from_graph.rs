@@ -230,11 +230,15 @@ impl<'g> GraphView<'g> {
             return Ok(name.clone());
         }
         let n = self.node(&src.0)?;
-        if kind_of(n)? == "get" {
+        if matches!(kind_of(n)?, "get" | "join") {
             return Ok(prop(n, "name")
                 .and_then(Json::as_str)
                 .ok_or_else(|| gerr("get node without name"))?
                 .to_string());
+        }
+        // A graph's input port is its parameter, whether or not it names a variable
+        if kind_of(n)? == "inputs" {
+            return Ok(src.1.clone());
         }
         for p in opt_array(n, "outputs")? {
             if string(p, "port")? == src.1 {
@@ -509,7 +513,11 @@ impl<'g> GraphView<'g> {
                 }
                 "branch" | "switch" | "parallel" | "try" => self.branch_like(n, &c, kind, stop, &mut out)?,
                 "inputs" => self.next_of(&c, "out"),
-                "outputs" | "get" | "set" | "value" => None,
+                // Where a value is decided: no statement of its own, the flow runs through
+                "join" if n.get("ctrl_out").and_then(Json::as_array).is_some_and(|a| !a.is_empty()) => {
+                    self.next_of(&c, "out")
+                }
+                "outputs" | "get" | "set" | "value" | "join" => None,
                 other => return Err(gerr(format!("unknown node kind '{other}'"))),
             };
             incoming_origin = if matches!(kind, "call" | "assign" | "dataflow" | "inputs" | "each" | "collect") {
@@ -626,7 +634,7 @@ impl<'g> GraphView<'g> {
             }
             let n = self.node(nid)?;
             let kind = kind_of(n)?;
-            if matches!(kind, "get" | "set" | "value" | "outputs") {
+            if matches!(kind, "get" | "set" | "value" | "outputs" | "join") {
                 continue;
             }
             // Back edges alone do not disqualify a root each/merge. An explicit
@@ -660,7 +668,8 @@ impl<'g> GraphView<'g> {
 /// The canonical program of a graph view.
 pub fn from_graph(graph: &Json, with_meta: bool) -> Result<Program> {
     let version = graph.get("kirgraph").map_or(Value::None, Value::from_json);
-    if !version.py_eq(&Value::int(2)) {
+    // Version 3 adds node paths and regions, which the text never needs
+    if !version.py_eq(&Value::int(2)) && !version.py_eq(&Value::int(3)) {
         return Err(gerr(format!("unsupported kirgraph version {}", version.repr())));
     }
     let mut program = Program::default();

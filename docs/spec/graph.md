@@ -10,7 +10,7 @@ plain-text hop. Legacy graphs have an entry ambiguity described below.
 
 ```json
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [{"library": "gbc", "alias": null}],
   "graphs": [
     {"name": "main", "nodes": [], "edges": []},
@@ -26,7 +26,9 @@ plain-text hop. Legacy graphs have an entry ambiguity described below.
 `main` is the top level; every `@def` is one more graph. `mode` and
 `typehints` appear only when the program has them. Nodes are listed in the
 order they are created (statement order); edges are sorted by (target node,
-target port, source node, source port).
+target port, source node, source port). A graph with nested bodies lists them
+in `regions` (below). Readers accept versions 2 and 3; version 3 adds node
+`path`, node `region` and graph `regions`, none of which the text needs.
 
 Source-module declarations are optional file-level fields:
 
@@ -68,6 +70,13 @@ not runtime nodes. `uses` retains its existing host-library meaning.
   control chain have `["in"]` / `["out"]`; members of a `dataflow` group have
   none.
 - `hints` (`@hint`) and `meta` (`@meta` without `node_id`) only when present.
+- `path`: on every statement node, the statement's origin id as
+  `stamp_origins` assigns it: `@meta node_id`, else its structural path
+  (`body/3/body/0`; a `@try` handler is `handler`, a definition's body is
+  `body/<i>/body`). A runtime that maps code back to origins finds the node
+  by this value.
+- `region`: the innermost region holding the node; absent at the graph's top
+  level.
 
 | kind | data in | data out | control in | control out | props |
 |---|---|---|---|---|---|
@@ -76,6 +85,7 @@ not runtime nodes. `uses` retains its existing host-library meaning.
 | `value` | — | `value` | — | — | `value` (a literal) |
 | `get` | — | `value` | — | — | `name` |
 | `set` | `value` | — | — | — | `name` |
+| `join` | `value` | `value` | `in` | `out` | `name` |
 | `branch` | `cond` | — | `in` | `true`, `false` | `labels` {port: label} |
 | `switch` | `value` | — | `in` | `case_0` … `case_n`, `default` | `cases`, `labels` |
 | `merge` | — | — | `in_0` … `in_n` | `out` | `label` (loop entry only) |
@@ -95,10 +105,15 @@ not runtime nodes. `uses` retains its existing host-library meaning.
 - **`assign`** is the command `name = value`: its `value` input is a literal
   box or a wire, its output is the variable (a `var` on the port, or a `set`).
   It sits on the control chain like a call.
+- **`join`** marks where the value of `name` is decided: it sits on the
+  control chain, its input is the value and its output is the variable `name`.
+  It is no statement of its own: the text reads its output as `name` and the
+  walk runs through it.
 - **`value`** is a literal as a node, with no control ports; a wire from it is
   the same as writing the literal in the input box it feeds.
-- Builtin outputs (`each` item and index, `try` error, `inputs` parameters)
-  bind the name of the `set` they feed, else the name in their props.
+- Builtin outputs (`each` item and index, `try` error) bind the name of the
+  `set` they feed, else the name in their props. An `inputs` port is the
+  parameter of the same name.
 - A `merge` with a `label` represents a namespace: entering control edges are
   jumps to it. A root merge with **`"entry": true`** explicitly starts with
   ``()jump(`label`)`` followed by `label:`. The encoder emits this optional node
@@ -118,6 +133,35 @@ not runtime nodes. `uses` retains its existing host-library meaning.
 ```
 
 `kind` is `data` or `ctrl`. An input port takes at most one data edge.
+
+## Regions
+
+```json
+"regions": [
+  {"id": "body/4", "kind": "branch", "owner": {"node": "branch_3", "port": "true"}, "label": "yes"},
+  {"id": "body/7/body", "kind": "try", "parent": "body/4", "owner": {"node": "try_9", "port": "try"}},
+  {"id": "body/9/body", "kind": "dataflow", "owner": {"node": "dataflow_12", "port": null}}
+]
+```
+
+A region is a nested body: a namespace, a `@try` body or handler, or a
+`@dataflow:` block. Regions are listed in the order they are entered, a parent
+before its children.
+
+- `id`: a namespace's path; a `@try` body or handler is the try statement's
+  structural path plus `/body` or `/handler`; a dataflow block's is its path
+  plus `/body`.
+- `kind`: the kind of the owner node (`branch`, `switch`, `parallel`, `each`,
+  `collect`, `merge` for a jump target or an unentered namespace, `try`,
+  `dataflow`).
+- `owner`: the node and control port that enter the region (`port` is null for
+  a dataflow block, whose owner node holds it).
+- `parent`: the enclosing region; absent at the top level.
+- `label`: a namespace's label.
+
+A node's own `region` is where it is drawn. An owner node sits in the region
+around the one it owns; a merge joining a region's ends sits after it, in the
+enclosing region.
 
 ## Collect: a deferred body-end input
 
@@ -242,8 +286,17 @@ Data is drawn in one of two styles, chosen by the caller
   from that write's output port (or from the `inputs` node for a parameter).
   A name written on several paths is drawn with variables: a `set` on each of
   its writes and a `get` for each read.
-- **`variables`**: every read is a `get` and every write a `set`, so data
-  always reads name → node → name and control wires stay uncrossed.
+- **`variables`**: inside the graph a value goes through its variable: a read
+  is a `get`, and a write of a name some `get` reads feeds a `set` (a write
+  nothing reads keeps its name as the `var` of its port). The graph's own
+  inputs and outputs are never wired to a variable:
+  - a read only the input reaches on the way in (loop closing edges left out,
+    so inside a loop: what entered it) is a data edge from the `inputs` port;
+  - an output only one write decides (the input left out when the program
+    writes the name) is a data edge from that write;
+  - otherwise a `join` stands where the value is decided: for an output, right
+    before `outputs`, reading the variable; for an input other writes meet,
+    right after `inputs`, writing it.
 
 Both styles convert back to the same canonical text, and an editor may mix
 them freely.

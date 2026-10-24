@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::errors::{KirError, Result};
-use crate::flow::cfg::{build_cfg, reaching, Cfg, NodeKind, Reaching, UNDEF};
+use crate::flow::cfg::{build_cfg, reaching, reaching_with, Cfg, NodeKind, Reaching, UNDEF};
 use crate::origins::origin_json;
 use crate::sig::env::NodeEnv;
 use crate::sig::types::type_text;
@@ -13,7 +13,7 @@ use crate::syntax::writer::write_type;
 use crate::util::json::Json;
 use crate::util::pyfmt::{str_list_repr, str_repr};
 
-pub const FORMAT: i64 = 2;
+pub const FORMAT: i64 = 3;
 
 /// (node id, port name)
 type PortRef = (String, String);
@@ -73,6 +73,8 @@ struct GNode {
     meta: Option<Json>,
     hints: Option<Json>,
     origin: Option<Json>,
+    path: Option<String>,
+    region: Option<String>,
     namespace_origins: Option<Json>,
     entry: bool,
 }
@@ -110,6 +112,8 @@ impl GNode {
         put("meta", self.meta.clone());
         put("hints", self.hints.clone());
         put("origin", self.origin.clone());
+        put("path", self.path.as_deref().map(Json::str));
+        put("region", self.region.as_deref().map(Json::str));
         put("namespace_origins", self.namespace_origins.clone());
         if self.entry {
             put("entry", Some(Json::Bool(true)));
@@ -173,6 +177,51 @@ fn value_json(v: &Value) -> Result<Json> {
     v.to_json().map_err(KirError::Value)
 }
 
+/// `uid -> (path, structural path)`: the path is the statement's origin id (`meta.node_id`,
+/// else the structural path), as `stamp_origins` assigns it.
+fn stmt_paths(body: &[Stmt], prefix: &str, out: &mut HashMap<Uid, (String, String)>) {
+    for (index, stmt) in body.iter().enumerate() {
+        let node_path = format!("{prefix}/{index}");
+        let path = stmt
+            .meta
+            .get("node_id")
+            .filter(|v| !matches!(v, Value::None))
+            .map_or_else(|| node_path.clone(), |v| v.py_str());
+        out.insert(stmt.uid, (path, node_path.clone()));
+        for (child_index, block) in stmt.children().into_iter().enumerate() {
+            let field = if child_index == 0 { "body" } else { "handler" };
+            stmt_paths(block, &format!("{node_path}/{field}"), out);
+        }
+    }
+}
+
+/// One region of a graph: a namespace, try or handler body, or dataflow block.
+struct Region {
+    id: String,
+    kind: &'static str,
+    parent: Option<String>,
+    owner: Option<(String, Option<String>)>,
+    label: Option<String>,
+}
+
+impl Region {
+    fn to_json(&self) -> Json {
+        let mut o = vec![("id".to_string(), Json::str(&self.id)), ("kind".to_string(), Json::str(self.kind))];
+        if let Some(parent) = &self.parent {
+            o.push(("parent".into(), Json::str(parent)));
+        }
+        if let Some((node, port)) = &self.owner {
+            let owner =
+                vec![("node".to_string(), Json::str(node)), ("port".to_string(), Json::opt_str(port.as_deref()))];
+            o.push(("owner".into(), Json::Object(owner)));
+        }
+        if let Some(label) = &self.label {
+            o.push(("label".into(), Json::str(label)));
+        }
+        Json::Object(o)
+    }
+}
+
 /// Builds one graph: the top level or one `@def`.
 struct Scope<'a> {
     env: Option<&'a NodeEnv>,
@@ -180,6 +229,9 @@ struct Scope<'a> {
     body: &'a [Stmt],
     params: &'a [Param],
     outputs: &'a [OutParam],
+    paths: HashMap<Uid, (String, String)>,
+    regions: Vec<Region>,
+    region: Option<String>,
     nodes: Vec<GNode>,
     index: HashMap<String, usize>,
     edges: Vec<Edge>,
@@ -192,11 +244,17 @@ struct Scope<'a> {
     stack: Vec<&'a [Stmt]>,
     cfg: Cfg<'a>,
     inn: Reaching,
+    /// With variables: what reaches each node on the way in (no loop closing edges).
+    inn_forward: Option<Reaching>,
     /// Names with a read reached by several writes.
     multi: HashSet<String>,
     bind_owner: HashMap<usize, Uid>,
-    /// The `variables` data style: every read a `get`, every write a `set`.
+    /// The `variables` data style: a value inside the graph goes through its variable.
     variables: bool,
+    /// With variables, reads `(cfg node, name, target, region)` and writes `(source, name,
+    /// region)` wait until every write has its node (`resolve_variables`).
+    var_reads: Vec<(usize, String, PortRef, Option<String>)>,
+    var_writes: Vec<(PortRef, String, Option<String>)>,
 }
 
 impl<'a> Scope<'a> {
@@ -207,7 +265,10 @@ impl<'a> Scope<'a> {
         params: &'a [Param],
         outputs: &'a [OutParam],
         data: DataStyle,
+        prefix: &str,
     ) -> Self {
+        let mut paths = HashMap::new();
+        stmt_paths(body, prefix, &mut paths);
         let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
         let cfg = build_cfg(body, &param_names);
         let inn = reaching(&cfg, &[]);
@@ -230,12 +291,17 @@ impl<'a> Scope<'a> {
             }
         }
         let bind_owner = cfg.binds.iter().map(|(&owner, &bind)| (bind, owner)).collect();
+        let variables = data == DataStyle::Variables;
+        let inn_forward = variables.then(|| reaching_with(&cfg, &[], true));
         Scope {
             env,
             name: name.to_string(),
             body,
             params,
             outputs,
+            paths,
+            regions: Vec::new(),
+            region: None,
             nodes: Vec::new(),
             index: HashMap::new(),
             edges: Vec::new(),
@@ -248,9 +314,12 @@ impl<'a> Scope<'a> {
             stack: Vec::new(),
             cfg,
             inn,
+            inn_forward,
             multi,
             bind_owner,
-            variables: data == DataStyle::Variables,
+            variables,
+            var_reads: Vec::new(),
+            var_writes: Vec::new(),
         }
     }
 
@@ -291,9 +360,23 @@ impl<'a> Scope<'a> {
                 let hints = s.hint.iter().map(|(k, v)| Ok((k.clone(), value_json(v)?))).collect::<Result<_>>()?;
                 n.hints = Some(Json::Object(hints));
             }
+            n.path = Some(self.paths[&s.uid].0.clone());
             self.stmt_node.insert(s.uid, n.id.clone());
         }
+        n.region = self.region.clone();
         Ok(self.push(n))
+    }
+
+    /// Enter region `id`; the region it was opened in is returned for closing.
+    fn open_region(
+        &mut self,
+        id: String,
+        kind: &'static str,
+        owner: Option<(String, Option<String>)>,
+        label: Option<String>,
+    ) -> Option<String> {
+        self.regions.push(Region { id: id.clone(), kind, parent: self.region.clone(), owner, label });
+        self.region.replace(id)
     }
 
     fn id(&self, n: usize) -> String {
@@ -355,11 +438,14 @@ impl<'a> Scope<'a> {
             return Some(port_ref(nid, "value"));
         }
         let n = self.by_id(nid)?;
-        n.outputs
-            .as_ref()?
-            .iter()
-            .find(|p| matches!(&p.var, Some(Some(v)) if v == name))
-            .map(|p| port_ref(nid, &p.port))
+        let outputs = n.outputs.as_ref()?;
+        // Output ports follow the statement's outputs in order (a port names its variable only in wires)
+        if let Kind::Call { outs, .. } = &s.kind {
+            if let Some((_, p)) = outs.iter().zip(outputs).find(|(o, _)| o.as_deref() == Some(name)) {
+                return Some(port_ref(nid, &p.port));
+            }
+        }
+        outputs.iter().find(|p| matches!(&p.var, Some(Some(v)) if v == name)).map(|p| port_ref(nid, &p.port))
     }
 
     fn get_node(&mut self, name: &str) -> Result<String> {
@@ -369,9 +455,14 @@ impl<'a> Scope<'a> {
         Ok(self.id(n))
     }
 
-    /// A read: a direct wire from its only write, or a `get` variable node.
+    /// A read: a direct wire from its only write, or a `get` variable node. With
+    /// variables it waits until every write has its node (`resolve_variables`).
     fn wire_read(&mut self, cfg_node: usize, name: &str, target: PortRef) -> Result<()> {
-        if !self.variables && !self.multi.contains(name) {
+        if self.variables {
+            self.var_reads.push((cfg_node, name.to_string(), target, self.region.clone()));
+            return Ok(());
+        }
+        if !self.multi.contains(name) {
             let mut defs = self.inn.defs_of(cfg_node, name);
             defs.remove(&UNDEF);
             if defs.len() == 1 {
@@ -400,11 +491,110 @@ impl<'a> Scope<'a> {
     /// name written on several paths).
     fn bind_out(&mut self, src: PortRef, name: Option<&str>) -> Result<()> {
         let Some(name) = name.filter(|n| self.variables || self.multi.contains(*n)) else { return Ok(()) };
+        if self.variables {
+            // The graph's inputs reach their readers directly (`resolve_variables`)
+            if src.0 != "inputs" {
+                self.var_writes.push((src, name.to_string(), self.region.clone()));
+            }
+            return Ok(());
+        }
+        self.set_node(src, name)
+    }
+
+    fn set_node(&mut self, src: PortRef, name: &str) -> Result<()> {
         let g = GNode::new("set").props(vec![("name", Json::str(name))]);
         let st = self.node(GNode { inputs: Some(vec![PortEntry::named("value")]), ..g }, "set", None)?;
         let sid = self.id(st);
         self.data(src, port_ref(&sid, "value"));
         Ok(())
+    }
+
+    /// The variables style's reads and writes, once every write has its node.
+    ///
+    /// Inside the graph a value goes through its variable: a `get` reads it, a `set` is
+    /// drawn for every write of a name some `get` reads. The graph's own inputs and
+    /// outputs are never wired to a variable. A read only the input reaches on the way
+    /// in (forward reaching: inside a loop, what entered it) is wired from the input; a
+    /// graph output only one write decides (the input left out when the program writes
+    /// the name) is wired from that write. Otherwise an assign statement (`join`) stands
+    /// where the value is decided: for an output, right before the end, reading the
+    /// variable; for an input other writes meet, right after the start, writing it.
+    fn resolve_variables(&mut self) -> Result<()> {
+        let entry = self.cfg.entry as i64;
+        let mut read_names: HashSet<String> = HashSet::new();
+        let mut init_names: Vec<String> = Vec::new();
+        for (cfg_node, name, target, region) in std::mem::take(&mut self.var_reads) {
+            let at_exit = cfg_node == self.cfg.exit;
+            let reach = if at_exit { &self.inn } else { self.inn_forward.as_ref().expect("variables") };
+            let mut defs: Vec<i64> = reach.defs_of(cfg_node, &name).into_iter().filter(|&d| d != UNDEF).collect();
+            if at_exit && defs.iter().any(|&d| d != entry) {
+                defs.retain(|&d| d != entry);
+            }
+            let srcs: Vec<Option<PortRef>> = defs.iter().map(|&d| self.writer_port(d, &name)).collect();
+            if defs.len() == 1 && srcs[0].is_some() && (at_exit || defs[0] == entry) {
+                self.data(srcs[0].clone().expect("a source"), target);
+                continue;
+            }
+            if defs.contains(&entry) && !init_names.contains(&name) {
+                init_names.push(name.clone());
+            }
+            let mut target = target;
+            if at_exit && !defs.is_empty() {
+                let j = self.assign_on_flow(&name, &target.0, true)?;
+                self.data(port_ref(&j, "value"), target);
+                target = port_ref(&j, "value");
+            }
+            let outer = std::mem::replace(&mut self.region, if at_exit { None } else { region });
+            let g = self.get_node(&name)?;
+            self.data(port_ref(&g, "value"), target);
+            self.region = outer;
+            read_names.insert(name);
+        }
+        for name in init_names {
+            let j = self.assign_on_flow(&name, "inputs", false)?;
+            self.data(port_ref("inputs", &name), port_ref(&j, "value"));
+            self.var_writes.push((port_ref(&j, "value"), name, None));
+        }
+        for (src, name, region) in std::mem::take(&mut self.var_writes) {
+            if read_names.contains(&name) {
+                let outer = std::mem::replace(&mut self.region, region);
+                self.set_node(src, &name)?;
+                self.region = outer;
+                continue;
+            }
+            // A write nothing reads keeps its name on its own port
+            let n = self.index[&src.0];
+            for p in self.nodes[n].outputs.iter_mut().flatten().filter(|p| p.port == src.1) {
+                p.var = Some(Some(name.clone()));
+            }
+        }
+        Ok(())
+    }
+
+    /// An assign statement (`join`, one input) of `name` spliced into the control flow
+    /// right before node `at` (into its `in`) or right after it (out of its `out`).
+    fn assign_on_flow(&mut self, name: &str, at: &str, before: bool) -> Result<String> {
+        let g = GNode::new("join").props(vec![("name", Json::str(name))]).ctrl(&["in"], &["out"]);
+        let g = GNode {
+            inputs: Some(vec![PortEntry::named("value")]),
+            outputs: Some(vec![PortEntry::named("value")]),
+            ..g
+        };
+        let n = self.node(g, "join", None)?;
+        let j = self.id(n);
+        let end = port_ref(at, if before { "in" } else { "out" });
+        for e in self.edges.iter_mut().filter(|e| e.kind == "ctrl") {
+            let side = if before { &mut e.to } else { &mut e.from };
+            if *side == end {
+                *side = port_ref(&j, if before { "in" } else { "out" });
+            }
+        }
+        if before {
+            self.ctrl(port_ref(&j, "out"), port_ref(at, "in"));
+        } else {
+            self.ctrl(port_ref(at, "out"), port_ref(&j, "in"));
+        }
+        Ok(j)
     }
 
     fn bind_outs(&mut self, s: &Stmt, n: usize) -> Result<()> {
@@ -545,6 +735,10 @@ impl<'a> Scope<'a> {
                     incoming = vec![port_ref(&id, "out")];
                 }
                 Kind::Dataflow { body } => {
+                    // The members sit in the block's region; its owner is the dataflow node
+                    let region = self.regions.len();
+                    let rid = format!("{}/body", self.paths[&s.uid].1);
+                    let outer = self.open_region(rid, "dataflow", None, None);
                     let mut members = Vec::with_capacity(body.len());
                     for inner in body {
                         members.push(self.simple(inner, false)?);
@@ -553,10 +747,12 @@ impl<'a> Scope<'a> {
                         self.wire_simple_inputs(inner, m)?;
                         self.bind_outs(inner, m)?;
                     }
+                    self.region = outer;
                     let ids: Vec<String> = members.iter().map(|&m| self.id(m)).collect();
                     let g = GNode::new("dataflow").props(vec![("members", Json::strs(&ids))]).ctrl(&["in"], &["out"]);
                     let g = self.node(g, "dataflow", Some(s))?;
                     let gid = self.id(g);
+                    self.regions[region].owner = Some((gid.clone(), None));
                     self.join(incoming, port_ref(&gid, "in"))?;
                     incoming = vec![port_ref(&gid, "out")];
                 }
@@ -721,8 +917,14 @@ impl<'a> Scope<'a> {
                     let id = self.id(n);
                     self.join(incoming, port_ref(&id, "in"))?;
                     self.bind_out(port_ref(&id, "error"), error_name.as_deref())?;
+                    let base = self.paths[&s.uid].1.clone();
+                    let owner = |port: &str| Some((id.clone(), Some(port.to_string())));
+                    let outer = self.open_region(format!("{base}/body"), "try", owner("try"), None);
                     let a = self.block(body, vec![port_ref(&id, "try")])?;
+                    self.region = outer.clone();
+                    self.open_region(format!("{base}/handler"), "try", owner("except"), None);
                     let b = self.block(handler, vec![port_ref(&id, "except")])?;
+                    self.region = outer;
                     incoming = a;
                     incoming.extend(b);
                 }
@@ -782,10 +984,16 @@ impl<'a> Scope<'a> {
                 node.namespace_origins.get_or_insert_with(|| Json::Object(vec![])).insert(port, origin_json(origin));
             }
         }
-        match &ns.kind {
-            Kind::Namespace { body, .. } => self.block(body, incoming),
-            _ => unreachable!("a namespace"),
-        }
+        let Kind::Namespace { body, label } = &ns.kind else { unreachable!("a namespace") };
+
+        // The body's region is owned by the port that enters it, of the owner's kind
+        let (node, port) = incoming[0].clone();
+        let kind = self.nodes[self.index[&node]].kind;
+        let rid = self.paths[&ns.uid].0.clone();
+        let outer = self.open_region(rid, kind, Some((node, Some(port))), Some(label.clone()));
+        let r = self.block(body, incoming);
+        self.region = outer;
+        r
     }
 
     /// Like `jump`: the current block first, then each enclosing block.
@@ -833,6 +1041,9 @@ impl<'a> Scope<'a> {
                 self.wire_read(self.cfg.exit, &o.name, port_ref("outputs", &o.name))?;
             }
         }
+        if self.variables {
+            self.resolve_variables()?;
+        }
         self.edges
             .sort_by(|a, b| (&a.to.0, &a.to.1, &a.from.0, &a.from.1).cmp(&(&b.to.0, &b.to.1, &b.from.0, &b.from.1)));
         let mut g = vec![
@@ -840,6 +1051,9 @@ impl<'a> Scope<'a> {
             ("nodes".to_string(), Json::Array(self.nodes.iter().map(GNode::to_json).collect())),
             ("edges".to_string(), Json::Array(self.edges.iter().map(Edge::to_json).collect())),
         ];
+        if !self.regions.is_empty() {
+            g.push(("regions".into(), Json::Array(self.regions.iter().map(Region::to_json).collect())));
+        }
         if !is_main {
             let mut params = Vec::with_capacity(self.params.len());
             for p in self.params {
@@ -897,10 +1111,11 @@ impl DataStyle {
 
 /// The graph view of a program.
 pub fn to_graph(program: &Program, env: Option<&NodeEnv>, data: DataStyle) -> Result<Json> {
-    let mut graphs = vec![Scope::new(env, "main", &program.body, &[], &[], data).build()?];
-    for s in &program.body {
+    let mut graphs = vec![Scope::new(env, "main", &program.body, &[], &[], data, "body").build()?];
+    for (index, s) in program.body.iter().enumerate() {
         if let Kind::Def(d) = &s.kind {
-            let mut graph = Scope::new(env, &d.name, &d.body, &d.params, &d.outputs, data).build()?;
+            let prefix = format!("body/{index}/body");
+            let mut graph = Scope::new(env, &d.name, &d.body, &d.params, &d.outputs, data, &prefix).build()?;
             if let Some(origin) = &s.origin {
                 graph.insert("origin", origin_json(origin));
             }

@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -64,7 +64,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_52",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_8",
@@ -125,7 +127,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_8",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_42",
@@ -185,7 +189,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_42",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_51",
@@ -244,7 +250,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_51",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_29",
@@ -291,7 +299,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_29",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_82",
@@ -308,7 +318,8 @@
           ],
           "outputs": [
             {
-              "port": "out0"
+              "port": "out0",
+              "var": "comfy_82_string"
             }
           ],
           "ctrl_in": [],
@@ -342,7 +353,9 @@
                 "links": null
               }
             ]
-          }
+          },
+          "path": "comfy_82",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_46",
@@ -383,7 +396,9 @@
               }
             ],
             "comfyui_outputs": []
-          }
+          },
+          "path": "comfy_46",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_45",
@@ -424,7 +439,9 @@
               }
             ],
             "comfyui_outputs": []
-          }
+          },
+          "path": "comfy_45",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_18",
@@ -477,7 +494,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_18",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_73",
@@ -525,7 +544,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_73",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_74",
@@ -573,7 +594,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_74",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_7",
@@ -640,7 +663,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_7",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_6",
@@ -707,7 +732,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_6",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_88",
@@ -751,7 +778,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_88",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_71",
@@ -826,7 +855,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_71",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_86",
@@ -874,7 +905,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_86",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_57",
@@ -921,7 +954,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_57",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_87",
@@ -973,7 +1008,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_87",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_3",
@@ -1090,7 +1127,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_3",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_27",
@@ -1137,7 +1176,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_27",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_76",
@@ -1235,10 +1276,12 @@
               "port": "out1"
             },
             {
-              "port": "out2"
+              "port": "out2",
+              "var": "comfy_76_unformatted_prompt"
             },
             {
-              "port": "out3"
+              "port": "out3",
+              "var": "comfy_76_unformatted_user_prompt"
             }
           ],
           "ctrl_in": [],
@@ -1333,7 +1376,9 @@
                 "links": []
               }
             ]
-          }
+          },
+          "path": "comfy_76",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_28",
@@ -1380,7 +1425,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_28",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_41",
@@ -1497,670 +1544,12 @@
                 ]
               }
             ]
-          }
-        },
-        {
-          "id": "get_24",
-          "kind": "get",
-          "props": {
-            "name": "comfy_51_image"
           },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
+          "path": "comfy_41",
+          "region": "body/0/body"
         },
         {
-          "id": "set_25",
-          "kind": "set",
-          "props": {
-            "name": "comfy_52_latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_26",
-          "kind": "get",
-          "props": {
-            "name": "comfy_3_latent"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_27",
-          "kind": "get",
-          "props": {
-            "name": "comfy_88_vae"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_28",
-          "kind": "set",
-          "props": {
-            "name": "comfy_8_image"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_29",
-          "kind": "get",
-          "props": {
-            "name": "comfy_41_latent"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_30",
-          "kind": "get",
-          "props": {
-            "name": "comfy_88_vae"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_31",
-          "kind": "set",
-          "props": {
-            "name": "comfy_42_image"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_32",
-          "kind": "get",
-          "props": {
-            "name": "comfy_8_image"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_33",
-          "kind": "set",
-          "props": {
-            "name": "comfy_51_image"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_34",
-          "kind": "set",
-          "props": {
-            "name": "comfy_29_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_35",
-          "kind": "get",
-          "props": {
-            "name": "comfy_76_prompt"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_36",
-          "kind": "set",
-          "props": {
-            "name": "comfy_82_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_37",
-          "kind": "get",
-          "props": {
-            "name": "comfy_42_image"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_38",
-          "kind": "get",
-          "props": {
-            "name": "comfy_8_image"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_39",
-          "kind": "set",
-          "props": {
-            "name": "comfy_18_int"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_40",
-          "kind": "set",
-          "props": {
-            "name": "comfy_73_int"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_41",
-          "kind": "set",
-          "props": {
-            "name": "comfy_74_int"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_42",
-          "kind": "get",
-          "props": {
-            "name": "comfy_87_clip"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_43",
-          "kind": "get",
-          "props": {
-            "name": "comfy_57_string"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_44",
-          "kind": "set",
-          "props": {
-            "name": "comfy_7_conditioning"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_45",
-          "kind": "get",
-          "props": {
-            "name": "comfy_87_clip"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_46",
-          "kind": "get",
-          "props": {
-            "name": "comfy_76_user_prompt"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_47",
-          "kind": "set",
-          "props": {
-            "name": "comfy_6_conditioning"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_48",
-          "kind": "set",
-          "props": {
-            "name": "comfy_88_vae"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_49",
-          "kind": "get",
-          "props": {
-            "name": "comfy_73_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_50",
-          "kind": "get",
-          "props": {
-            "name": "comfy_74_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_51",
-          "kind": "set",
-          "props": {
-            "name": "comfy_71_latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_52",
-          "kind": "set",
-          "props": {
-            "name": "comfy_86_model"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_53",
-          "kind": "set",
-          "props": {
-            "name": "comfy_57_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_54",
-          "kind": "set",
-          "props": {
-            "name": "comfy_87_clip"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_55",
-          "kind": "get",
-          "props": {
-            "name": "comfy_86_model"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_56",
-          "kind": "get",
-          "props": {
-            "name": "comfy_6_conditioning"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_57",
-          "kind": "get",
-          "props": {
-            "name": "comfy_7_conditioning"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_58",
-          "kind": "get",
-          "props": {
-            "name": "comfy_71_latent"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_59",
-          "kind": "get",
-          "props": {
-            "name": "comfy_18_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_60",
-          "kind": "set",
-          "props": {
-            "name": "comfy_3_latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_61",
-          "kind": "set",
-          "props": {
-            "name": "comfy_27_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_62",
-          "kind": "get",
-          "props": {
-            "name": "comfy_27_string"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_63",
-          "kind": "get",
-          "props": {
-            "name": "comfy_28_string"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_64",
-          "kind": "get",
-          "props": {
-            "name": "comfy_29_string"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_65",
-          "kind": "get",
-          "props": {
-            "name": "comfy_73_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_66",
-          "kind": "get",
-          "props": {
-            "name": "comfy_74_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_67",
-          "kind": "get",
-          "props": {
-            "name": "comfy_18_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_68",
-          "kind": "set",
-          "props": {
-            "name": "comfy_76_prompt"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_69",
-          "kind": "set",
-          "props": {
-            "name": "comfy_76_user_prompt"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_70",
-          "kind": "set",
-          "props": {
-            "name": "comfy_76_unformatted_prompt"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_71",
-          "kind": "set",
-          "props": {
-            "name": "comfy_76_unformatted_user_prompt"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_72",
-          "kind": "set",
-          "props": {
-            "name": "comfy_28_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_73",
-          "kind": "get",
-          "props": {
-            "name": "comfy_86_model"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_74",
-          "kind": "get",
-          "props": {
-            "name": "comfy_6_conditioning"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_75",
-          "kind": "get",
-          "props": {
-            "name": "comfy_7_conditioning"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_76",
-          "kind": "get",
-          "props": {
-            "name": "comfy_52_latent"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_77",
-          "kind": "get",
-          "props": {
-            "name": "comfy_18_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_78",
-          "kind": "set",
-          "props": {
-            "name": "comfy_41_latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "dataflow_79",
+          "id": "dataflow_24",
           "kind": "dataflow",
           "props": {
             "members": [
@@ -2194,14 +1583,691 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
+        },
+        {
+          "id": "get_25",
+          "kind": "get",
+          "props": {
+            "name": "comfy_51_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_26",
+          "kind": "get",
+          "props": {
+            "name": "comfy_3_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_27",
+          "kind": "get",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_28",
+          "kind": "get",
+          "props": {
+            "name": "comfy_41_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_29",
+          "kind": "get",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_30",
+          "kind": "get",
+          "props": {
+            "name": "comfy_8_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_31",
+          "kind": "get",
+          "props": {
+            "name": "comfy_76_prompt"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_32",
+          "kind": "get",
+          "props": {
+            "name": "comfy_42_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_33",
+          "kind": "get",
+          "props": {
+            "name": "comfy_8_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_34",
+          "kind": "get",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_35",
+          "kind": "get",
+          "props": {
+            "name": "comfy_57_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_36",
+          "kind": "get",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_37",
+          "kind": "get",
+          "props": {
+            "name": "comfy_76_user_prompt"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_38",
+          "kind": "get",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_39",
+          "kind": "get",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_40",
+          "kind": "get",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_41",
+          "kind": "get",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_42",
+          "kind": "get",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_43",
+          "kind": "get",
+          "props": {
+            "name": "comfy_71_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_44",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_45",
+          "kind": "get",
+          "props": {
+            "name": "comfy_27_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_46",
+          "kind": "get",
+          "props": {
+            "name": "comfy_28_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_47",
+          "kind": "get",
+          "props": {
+            "name": "comfy_29_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_48",
+          "kind": "get",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_49",
+          "kind": "get",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_50",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_51",
+          "kind": "get",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_52",
+          "kind": "get",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_53",
+          "kind": "get",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_54",
+          "kind": "get",
+          "props": {
+            "name": "comfy_52_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "get_55",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_56",
+          "kind": "set",
+          "props": {
+            "name": "comfy_52_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_57",
+          "kind": "set",
+          "props": {
+            "name": "comfy_8_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_58",
+          "kind": "set",
+          "props": {
+            "name": "comfy_42_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_59",
+          "kind": "set",
+          "props": {
+            "name": "comfy_51_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_60",
+          "kind": "set",
+          "props": {
+            "name": "comfy_29_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_61",
+          "kind": "set",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_62",
+          "kind": "set",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_63",
+          "kind": "set",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_64",
+          "kind": "set",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_65",
+          "kind": "set",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_66",
+          "kind": "set",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_67",
+          "kind": "set",
+          "props": {
+            "name": "comfy_71_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_68",
+          "kind": "set",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_69",
+          "kind": "set",
+          "props": {
+            "name": "comfy_57_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_70",
+          "kind": "set",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_71",
+          "kind": "set",
+          "props": {
+            "name": "comfy_3_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_72",
+          "kind": "set",
+          "props": {
+            "name": "comfy_27_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_73",
+          "kind": "set",
+          "props": {
+            "name": "comfy_76_prompt"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_74",
+          "kind": "set",
+          "props": {
+            "name": "comfy_76_user_prompt"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_75",
+          "kind": "set",
+          "props": {
+            "name": "comfy_28_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
+        },
+        {
+          "id": "set_76",
+          "kind": "set",
+          "props": {
+            "name": "comfy_41_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/0/body"
         }
       ],
       "edges": [
         {
           "kind": "data",
           "from": {
-            "node": "get_55",
+            "node": "get_40",
             "port": "value"
           },
           "to": {
@@ -2212,187 +2278,11 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_56",
+            "node": "get_41",
             "port": "value"
           },
           "to": {
             "node": "comfy_3",
-            "port": "in1"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_57",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_3",
-            "port": "in2"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_58",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_3",
-            "port": "in3"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_59",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_3",
-            "port": "in4"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_73",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_41",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_74",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_41",
-            "port": "in1"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_75",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_41",
-            "port": "in2"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_76",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_41",
-            "port": "in3"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_77",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_41",
-            "port": "in4"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_29",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_42",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_30",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_42",
-            "port": "in1"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_38",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_45",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_37",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_46",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_32",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_51",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_24",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_52",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_45",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_6",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_46",
-            "port": "value"
-          },
-          "to": {
-            "node": "comfy_6",
             "port": "in1"
           }
         },
@@ -2403,8 +2293,8 @@
             "port": "value"
           },
           "to": {
-            "node": "comfy_7",
-            "port": "in0"
+            "node": "comfy_3",
+            "port": "in2"
           }
         },
         {
@@ -2414,6 +2304,182 @@
             "port": "value"
           },
           "to": {
+            "node": "comfy_3",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_44",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_3",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_51",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_52",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_53",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_54",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_55",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_41",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_28",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_42",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_29",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_42",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_33",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_45",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_32",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_46",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_30",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_51",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_25",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_52",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_36",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_6",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_37",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_6",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_34",
+            "port": "value"
+          },
+          "to": {
+            "node": "comfy_7",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_35",
+            "port": "value"
+          },
+          "to": {
             "node": "comfy_7",
             "port": "in1"
           }
@@ -2421,7 +2487,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_49",
+            "node": "get_38",
             "port": "value"
           },
           "to": {
@@ -2432,7 +2498,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_50",
+            "node": "get_39",
             "port": "value"
           },
           "to": {
@@ -2443,7 +2509,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_62",
+            "node": "get_45",
             "port": "value"
           },
           "to": {
@@ -2454,7 +2520,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_63",
+            "node": "get_46",
             "port": "value"
           },
           "to": {
@@ -2465,7 +2531,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_64",
+            "node": "get_47",
             "port": "value"
           },
           "to": {
@@ -2476,7 +2542,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_65",
+            "node": "get_48",
             "port": "value"
           },
           "to": {
@@ -2487,7 +2553,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_66",
+            "node": "get_49",
             "port": "value"
           },
           "to": {
@@ -2498,7 +2564,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_67",
+            "node": "get_50",
             "port": "value"
           },
           "to": {
@@ -2531,7 +2597,7 @@
         {
           "kind": "data",
           "from": {
-            "node": "get_35",
+            "node": "get_31",
             "port": "value"
           },
           "to": {
@@ -2546,7 +2612,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_25",
+            "node": "set_56",
             "port": "value"
           }
         },
@@ -2557,7 +2623,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_28",
+            "node": "set_57",
             "port": "value"
           }
         },
@@ -2568,7 +2634,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_31",
+            "node": "set_58",
             "port": "value"
           }
         },
@@ -2579,7 +2645,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_33",
+            "node": "set_59",
             "port": "value"
           }
         },
@@ -2590,18 +2656,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_34",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "comfy_82",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_36",
+            "node": "set_60",
             "port": "value"
           }
         },
@@ -2612,7 +2667,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_39",
+            "node": "set_61",
             "port": "value"
           }
         },
@@ -2623,7 +2678,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_40",
+            "node": "set_62",
             "port": "value"
           }
         },
@@ -2634,7 +2689,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_41",
+            "node": "set_63",
             "port": "value"
           }
         },
@@ -2645,7 +2700,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_44",
+            "node": "set_64",
             "port": "value"
           }
         },
@@ -2656,7 +2711,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_47",
+            "node": "set_65",
             "port": "value"
           }
         },
@@ -2667,7 +2722,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_48",
+            "node": "set_66",
             "port": "value"
           }
         },
@@ -2678,7 +2733,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_51",
+            "node": "set_67",
             "port": "value"
           }
         },
@@ -2689,7 +2744,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_52",
+            "node": "set_68",
             "port": "value"
           }
         },
@@ -2700,7 +2755,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_53",
+            "node": "set_69",
             "port": "value"
           }
         },
@@ -2711,7 +2766,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_54",
+            "node": "set_70",
             "port": "value"
           }
         },
@@ -2722,7 +2777,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_60",
+            "node": "set_71",
             "port": "value"
           }
         },
@@ -2733,7 +2788,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_61",
+            "node": "set_72",
             "port": "value"
           }
         },
@@ -2744,7 +2799,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_68",
+            "node": "set_73",
             "port": "value"
           }
         },
@@ -2755,29 +2810,7 @@
             "port": "out1"
           },
           "to": {
-            "node": "set_69",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "comfy_76",
-            "port": "out2"
-          },
-          "to": {
-            "node": "set_70",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "comfy_76",
-            "port": "out3"
-          },
-          "to": {
-            "node": "set_71",
+            "node": "set_74",
             "port": "value"
           }
         },
@@ -2788,7 +2821,7 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_72",
+            "node": "set_75",
             "port": "value"
           }
         },
@@ -2799,8 +2832,18 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_78",
+            "node": "set_76",
             "port": "value"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/0/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_24",
+            "port": null
           }
         }
       ]

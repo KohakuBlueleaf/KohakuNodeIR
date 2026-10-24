@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -26,7 +26,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
           "id": "to_float_2",
@@ -49,7 +50,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
           "id": "assign_3",
@@ -71,7 +73,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
           "id": "set_4",
@@ -105,7 +108,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
           "id": "set_6",
@@ -131,7 +135,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
           "id": "add_8",
@@ -156,7 +161,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5/body/0",
+          "region": "body/5"
         },
         {
           "id": "get_9",
@@ -168,7 +175,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5"
         },
         {
           "id": "set_10",
@@ -180,7 +188,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5"
         },
         {
           "id": "multiply_11",
@@ -205,7 +214,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5/body/1",
+          "region": "body/5"
         },
         {
           "id": "get_12",
@@ -217,7 +228,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5"
         },
         {
           "id": "get_13",
@@ -229,7 +241,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5"
         },
         {
           "id": "add_14",
@@ -254,7 +267,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5/body/2",
+          "region": "body/5"
         },
         {
           "id": "get_15",
@@ -266,7 +281,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5"
         },
         {
           "id": "set_16",
@@ -278,7 +294,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5"
         },
         {
           "id": "less_than_17",
@@ -303,7 +320,9 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5/body/3",
+          "region": "body/5"
         },
         {
           "id": "get_18",
@@ -315,7 +334,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/5"
         },
         {
           "id": "branch_19",
@@ -337,7 +357,9 @@
           "ctrl_out": [
             "true",
             "false"
-          ]
+          ],
+          "path": "body/5/body/4",
+          "region": "body/5"
         },
         {
           "id": "to_string_20",
@@ -359,7 +381,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/6"
         },
         {
           "id": "get_21",
@@ -393,7 +416,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/7"
         },
         {
           "id": "get_23",
@@ -431,7 +455,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/8"
         },
         {
           "id": "concat_25",
@@ -457,7 +482,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/9"
         },
         {
           "id": "concat_26",
@@ -482,7 +508,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/10"
         },
         {
           "id": "print_27",
@@ -499,7 +526,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/11"
         }
       ],
       "edges": [
@@ -898,6 +926,37 @@
             "node": "to_string_22",
             "port": "v"
           }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/5",
+          "kind": "merge",
+          "owner": {
+            "node": "merge_7",
+            "port": "out"
+          },
+          "label": "loop"
+        },
+        {
+          "id": "body/5/body/5",
+          "kind": "branch",
+          "parent": "body/5",
+          "owner": {
+            "node": "branch_19",
+            "port": "true"
+          },
+          "label": "continue"
+        },
+        {
+          "id": "body/5/body/6",
+          "kind": "branch",
+          "parent": "body/5",
+          "owner": {
+            "node": "branch_19",
+            "port": "false"
+          },
+          "label": "done"
         }
       ]
     }

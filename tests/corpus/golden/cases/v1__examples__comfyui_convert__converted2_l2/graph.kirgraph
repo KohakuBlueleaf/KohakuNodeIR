@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -65,7 +65,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_52",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_8",
@@ -127,7 +129,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_8",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_42",
@@ -188,7 +192,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_42",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_51",
@@ -248,7 +254,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_51",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_29",
@@ -296,7 +304,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_29",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_82",
@@ -348,7 +358,9 @@
                 "links": null
               }
             ]
-          }
+          },
+          "path": "comfy_82",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_46",
@@ -389,7 +401,9 @@
               }
             ],
             "comfyui_outputs": []
-          }
+          },
+          "path": "comfy_46",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_45",
@@ -430,7 +444,9 @@
               }
             ],
             "comfyui_outputs": []
-          }
+          },
+          "path": "comfy_45",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_18",
@@ -484,7 +500,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_18",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_73",
@@ -533,7 +551,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_73",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_74",
@@ -582,7 +602,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_74",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_7",
@@ -650,7 +672,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_7",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_6",
@@ -718,7 +742,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_6",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_88",
@@ -763,7 +789,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_88",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_71",
@@ -839,7 +867,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_71",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_86",
@@ -888,7 +918,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_86",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_57",
@@ -936,7 +968,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_57",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_87",
@@ -989,7 +1023,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_87",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_3",
@@ -1107,7 +1143,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_3",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_27",
@@ -1155,7 +1193,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_27",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_76",
@@ -1355,7 +1395,9 @@
                 "links": []
               }
             ]
-          }
+          },
+          "path": "comfy_76",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_28",
@@ -1403,7 +1445,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_28",
+          "region": "body/0/body"
         },
         {
           "id": "comfy_41",
@@ -1521,7 +1565,9 @@
                 ]
               }
             ]
-          }
+          },
+          "path": "comfy_41",
+          "region": "body/0/body"
         },
         {
           "id": "get_24",
@@ -1533,7 +1579,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_25",
@@ -1545,7 +1592,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_26",
@@ -1557,7 +1605,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_27",
@@ -1569,7 +1618,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_28",
@@ -1581,7 +1631,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_29",
@@ -1593,7 +1644,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_30",
@@ -1605,7 +1657,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_31",
@@ -1617,7 +1670,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_32",
@@ -1629,7 +1683,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_33",
@@ -1641,7 +1696,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "get_34",
@@ -1653,7 +1709,8 @@
             {
               "port": "value"
             }
-          ]
+          ],
+          "region": "body/0/body"
         },
         {
           "id": "dataflow_35",
@@ -1690,7 +1747,8 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         }
       ],
       "edges": [
@@ -2033,6 +2091,16 @@
           "to": {
             "node": "comfy_82",
             "port": "in0"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/0/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_35",
+            "port": null
           }
         }
       ]

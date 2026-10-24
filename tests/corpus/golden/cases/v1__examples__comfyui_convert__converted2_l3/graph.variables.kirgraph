@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -29,22 +29,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "comfy_74_int"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "primitivenode_3",
+          "id": "primitivenode_2",
           "kind": "call",
           "name": "primitivenode",
           "inputs": [
@@ -63,22 +52,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
-          "id": "set_4",
-          "kind": "set",
-          "props": {
-            "name": "comfy_57_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "primitivenode_5",
+          "id": "primitivenode_3",
           "kind": "call",
           "name": "primitivenode",
           "inputs": [
@@ -97,22 +75,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
-          "id": "set_6",
-          "kind": "set",
-          "props": {
-            "name": "comfy_29_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "primitiveint_7",
+          "id": "primitiveint_4",
           "kind": "call",
           "name": "primitiveint",
           "inputs": [
@@ -135,22 +102,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/3"
         },
         {
-          "id": "set_8",
-          "kind": "set",
-          "props": {
-            "name": "comfy_73_int"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "primitivenode_9",
+          "id": "primitivenode_5",
           "kind": "call",
           "name": "primitivenode",
           "inputs": [
@@ -173,22 +129,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/4"
         },
         {
-          "id": "set_10",
-          "kind": "set",
-          "props": {
-            "name": "comfy_18_int"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "cliploader_11",
+          "id": "cliploader_6",
           "kind": "call",
           "name": "cliploader",
           "inputs": [
@@ -215,22 +160,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/5"
         },
         {
-          "id": "set_12",
-          "kind": "set",
-          "props": {
-            "name": "comfy_87_clip"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "unetloader_13",
+          "id": "unetloader_7",
           "kind": "call",
           "name": "unetloader",
           "inputs": [
@@ -253,22 +187,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/6"
         },
         {
-          "id": "set_14",
-          "kind": "set",
-          "props": {
-            "name": "comfy_86_model"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "vaeloader_15",
+          "id": "vaeloader_8",
           "kind": "call",
           "name": "vaeloader",
           "inputs": [
@@ -287,22 +210,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/7"
         },
         {
-          "id": "set_16",
-          "kind": "set",
-          "props": {
-            "name": "comfy_88_vae"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "primitivenode_17",
+          "id": "primitivenode_9",
           "kind": "call",
           "name": "primitivenode",
           "inputs": [
@@ -321,22 +233,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/8"
         },
         {
-          "id": "set_18",
-          "kind": "set",
-          "props": {
-            "name": "comfy_27_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "primitivenode_19",
+          "id": "primitivenode_10",
           "kind": "call",
           "name": "primitivenode",
           "inputs": [
@@ -355,22 +256,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/9"
         },
         {
-          "id": "set_20",
-          "kind": "set",
-          "props": {
-            "name": "comfy_28_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "emptylatentimage_21",
+          "id": "emptylatentimage_11",
           "kind": "call",
           "name": "emptylatentimage",
           "inputs": [
@@ -403,46 +293,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/10"
         },
         {
-          "id": "get_22",
-          "kind": "get",
-          "props": {
-            "name": "comfy_73_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_23",
-          "kind": "get",
-          "props": {
-            "name": "comfy_74_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_24",
-          "kind": "set",
-          "props": {
-            "name": "comfy_71_latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "cliptextencode_25",
+          "id": "cliptextencode_12",
           "kind": "call",
           "name": "cliptextencode",
           "inputs": [
@@ -467,46 +322,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/11"
         },
         {
-          "id": "get_26",
-          "kind": "get",
-          "props": {
-            "name": "comfy_87_clip"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_27",
-          "kind": "get",
-          "props": {
-            "name": "comfy_57_string"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_28",
-          "kind": "set",
-          "props": {
-            "name": "comfy_7_conditioning"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "tipo_29",
+          "id": "tipo_13",
           "kind": "call",
           "name": "tipo",
           "inputs": [
@@ -601,10 +421,12 @@
               "port": "out1"
             },
             {
-              "port": "out2"
+              "port": "out2",
+              "var": "comfy_76_unformatted_prompt"
             },
             {
-              "port": "out3"
+              "port": "out3",
+              "var": "comfy_76_unformatted_user_prompt"
             }
           ],
           "ctrl_in": [
@@ -612,130 +434,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/12"
         },
         {
-          "id": "get_30",
-          "kind": "get",
-          "props": {
-            "name": "comfy_27_string"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_31",
-          "kind": "get",
-          "props": {
-            "name": "comfy_28_string"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_32",
-          "kind": "get",
-          "props": {
-            "name": "comfy_29_string"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_33",
-          "kind": "get",
-          "props": {
-            "name": "comfy_73_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_34",
-          "kind": "get",
-          "props": {
-            "name": "comfy_74_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_35",
-          "kind": "get",
-          "props": {
-            "name": "comfy_18_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_36",
-          "kind": "set",
-          "props": {
-            "name": "comfy_76_prompt"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_37",
-          "kind": "set",
-          "props": {
-            "name": "comfy_76_user_prompt"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_38",
-          "kind": "set",
-          "props": {
-            "name": "comfy_76_unformatted_prompt"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_39",
-          "kind": "set",
-          "props": {
-            "name": "comfy_76_unformatted_user_prompt"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "cliptextencode_40",
+          "id": "cliptextencode_14",
           "kind": "call",
           "name": "cliptextencode",
           "inputs": [
@@ -760,46 +463,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/13"
         },
         {
-          "id": "get_41",
-          "kind": "get",
-          "props": {
-            "name": "comfy_87_clip"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_42",
-          "kind": "get",
-          "props": {
-            "name": "comfy_76_user_prompt"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_43",
-          "kind": "set",
-          "props": {
-            "name": "comfy_6_conditioning"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "showtext_x7c_pysssss_44",
+          "id": "showtext_x7c_pysssss_15",
           "kind": "call",
           "name": "showtext_x7c_pysssss",
           "inputs": [
@@ -813,7 +481,8 @@
           ],
           "outputs": [
             {
-              "port": "out0"
+              "port": "out0",
+              "var": "comfy_82_string"
             }
           ],
           "ctrl_in": [
@@ -821,34 +490,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/14"
         },
         {
-          "id": "get_45",
-          "kind": "get",
-          "props": {
-            "name": "comfy_76_prompt"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_46",
-          "kind": "set",
-          "props": {
-            "name": "comfy_82_string"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "ksampler_47",
+          "id": "ksampler_16",
           "kind": "call",
           "name": "ksampler",
           "inputs": [
@@ -906,82 +552,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/15"
         },
         {
-          "id": "get_48",
-          "kind": "get",
-          "props": {
-            "name": "comfy_86_model"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_49",
-          "kind": "get",
-          "props": {
-            "name": "comfy_6_conditioning"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_50",
-          "kind": "get",
-          "props": {
-            "name": "comfy_7_conditioning"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_51",
-          "kind": "get",
-          "props": {
-            "name": "comfy_71_latent"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_52",
-          "kind": "get",
-          "props": {
-            "name": "comfy_18_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_53",
-          "kind": "set",
-          "props": {
-            "name": "comfy_3_latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "vaedecode_54",
+          "id": "vaedecode_17",
           "kind": "call",
           "name": "vaedecode",
           "inputs": [
@@ -1002,46 +577,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/16"
         },
         {
-          "id": "get_55",
-          "kind": "get",
-          "props": {
-            "name": "comfy_3_latent"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_56",
-          "kind": "get",
-          "props": {
-            "name": "comfy_88_vae"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_57",
-          "kind": "set",
-          "props": {
-            "name": "comfy_8_image"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "imagescaleby_58",
+          "id": "imagescaleby_18",
           "kind": "call",
           "name": "imagescaleby",
           "inputs": [
@@ -1067,34 +607,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/17"
         },
         {
-          "id": "get_59",
-          "kind": "get",
-          "props": {
-            "name": "comfy_8_image"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_60",
-          "kind": "set",
-          "props": {
-            "name": "comfy_51_image"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "vaeencode_61",
+          "id": "vaeencode_19",
           "kind": "call",
           "name": "vaeencode",
           "inputs": [
@@ -1116,34 +633,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/18"
         },
         {
-          "id": "get_62",
-          "kind": "get",
-          "props": {
-            "name": "comfy_51_image"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_63",
-          "kind": "set",
-          "props": {
-            "name": "comfy_52_latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "ksampler_64",
+          "id": "ksampler_20",
           "kind": "call",
           "name": "ksampler",
           "inputs": [
@@ -1201,82 +695,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/19"
         },
         {
-          "id": "get_65",
-          "kind": "get",
-          "props": {
-            "name": "comfy_86_model"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_66",
-          "kind": "get",
-          "props": {
-            "name": "comfy_6_conditioning"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_67",
-          "kind": "get",
-          "props": {
-            "name": "comfy_7_conditioning"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_68",
-          "kind": "get",
-          "props": {
-            "name": "comfy_52_latent"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_69",
-          "kind": "get",
-          "props": {
-            "name": "comfy_18_int"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_70",
-          "kind": "set",
-          "props": {
-            "name": "comfy_41_latent"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "vaedecode_71",
+          "id": "vaedecode_21",
           "kind": "call",
           "name": "vaedecode",
           "inputs": [
@@ -1297,46 +720,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/20"
         },
         {
-          "id": "get_72",
-          "kind": "get",
-          "props": {
-            "name": "comfy_41_latent"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_73",
-          "kind": "get",
-          "props": {
-            "name": "comfy_88_vae"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_74",
-          "kind": "set",
-          "props": {
-            "name": "comfy_42_image"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "saveimage_75",
+          "id": "saveimage_22",
           "kind": "call",
           "name": "saveimage",
           "inputs": [
@@ -1354,22 +742,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/21"
         },
         {
-          "id": "get_76",
-          "kind": "get",
-          "props": {
-            "name": "comfy_42_image"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "saveimage_77",
+          "id": "saveimage_23",
           "kind": "call",
           "name": "saveimage",
           "inputs": [
@@ -1387,15 +764,628 @@
           ],
           "ctrl_out": [
             "out"
+          ],
+          "path": "body/22"
+        },
+        {
+          "id": "get_24",
+          "kind": "get",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
           ]
         },
         {
-          "id": "get_78",
+          "id": "get_25",
+          "kind": "get",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_26",
+          "kind": "get",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_27",
+          "kind": "get",
+          "props": {
+            "name": "comfy_57_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_28",
+          "kind": "get",
+          "props": {
+            "name": "comfy_27_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_29",
+          "kind": "get",
+          "props": {
+            "name": "comfy_28_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_30",
+          "kind": "get",
+          "props": {
+            "name": "comfy_29_string"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_31",
+          "kind": "get",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_32",
+          "kind": "get",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_33",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_34",
+          "kind": "get",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_35",
+          "kind": "get",
+          "props": {
+            "name": "comfy_76_user_prompt"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_36",
+          "kind": "get",
+          "props": {
+            "name": "comfy_76_prompt"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_37",
+          "kind": "get",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_38",
+          "kind": "get",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_39",
+          "kind": "get",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_40",
+          "kind": "get",
+          "props": {
+            "name": "comfy_71_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_41",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_42",
+          "kind": "get",
+          "props": {
+            "name": "comfy_3_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_43",
+          "kind": "get",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_44",
           "kind": "get",
           "props": {
             "name": "comfy_8_image"
           },
           "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_45",
+          "kind": "get",
+          "props": {
+            "name": "comfy_51_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_46",
+          "kind": "get",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_47",
+          "kind": "get",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_48",
+          "kind": "get",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_49",
+          "kind": "get",
+          "props": {
+            "name": "comfy_52_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_50",
+          "kind": "get",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_51",
+          "kind": "get",
+          "props": {
+            "name": "comfy_41_latent"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_52",
+          "kind": "get",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_53",
+          "kind": "get",
+          "props": {
+            "name": "comfy_42_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "get_54",
+          "kind": "get",
+          "props": {
+            "name": "comfy_8_image"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_55",
+          "kind": "set",
+          "props": {
+            "name": "comfy_74_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_56",
+          "kind": "set",
+          "props": {
+            "name": "comfy_57_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_57",
+          "kind": "set",
+          "props": {
+            "name": "comfy_29_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_58",
+          "kind": "set",
+          "props": {
+            "name": "comfy_73_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_59",
+          "kind": "set",
+          "props": {
+            "name": "comfy_18_int"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_60",
+          "kind": "set",
+          "props": {
+            "name": "comfy_87_clip"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_61",
+          "kind": "set",
+          "props": {
+            "name": "comfy_86_model"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_62",
+          "kind": "set",
+          "props": {
+            "name": "comfy_88_vae"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_63",
+          "kind": "set",
+          "props": {
+            "name": "comfy_27_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_64",
+          "kind": "set",
+          "props": {
+            "name": "comfy_28_string"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_65",
+          "kind": "set",
+          "props": {
+            "name": "comfy_71_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_66",
+          "kind": "set",
+          "props": {
+            "name": "comfy_7_conditioning"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_67",
+          "kind": "set",
+          "props": {
+            "name": "comfy_76_prompt"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_68",
+          "kind": "set",
+          "props": {
+            "name": "comfy_76_user_prompt"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_69",
+          "kind": "set",
+          "props": {
+            "name": "comfy_6_conditioning"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_70",
+          "kind": "set",
+          "props": {
+            "name": "comfy_3_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_71",
+          "kind": "set",
+          "props": {
+            "name": "comfy_8_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_72",
+          "kind": "set",
+          "props": {
+            "name": "comfy_51_image"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_73",
+          "kind": "set",
+          "props": {
+            "name": "comfy_52_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_74",
+          "kind": "set",
+          "props": {
+            "name": "comfy_41_latent"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_75",
+          "kind": "set",
+          "props": {
+            "name": "comfy_42_image"
+          },
+          "inputs": [
             {
               "port": "value"
             }
@@ -1406,22 +1396,22 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "primitivenode_9",
+            "node": "primitivenode_5",
             "port": "out"
           },
           "to": {
-            "node": "cliploader_11",
+            "node": "cliploader_6",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "emptylatentimage_21",
+            "node": "emptylatentimage_11",
             "port": "out"
           },
           "to": {
-            "node": "cliptextencode_25",
+            "node": "cliptextencode_12",
             "port": "in"
           }
         },
@@ -1432,7 +1422,7 @@
             "port": "value"
           },
           "to": {
-            "node": "cliptextencode_25",
+            "node": "cliptextencode_12",
             "port": "in0"
           }
         },
@@ -1443,19 +1433,151 @@
             "port": "value"
           },
           "to": {
-            "node": "cliptextencode_25",
+            "node": "cliptextencode_12",
             "port": "in1"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "tipo_29",
+            "node": "tipo_13",
             "port": "out"
           },
           "to": {
-            "node": "cliptextencode_40",
+            "node": "cliptextencode_14",
             "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_34",
+            "port": "value"
+          },
+          "to": {
+            "node": "cliptextencode_14",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_35",
+            "port": "value"
+          },
+          "to": {
+            "node": "cliptextencode_14",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitivenode_10",
+            "port": "out"
+          },
+          "to": {
+            "node": "emptylatentimage_11",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_24",
+            "port": "value"
+          },
+          "to": {
+            "node": "emptylatentimage_11",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_25",
+            "port": "value"
+          },
+          "to": {
+            "node": "emptylatentimage_11",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "vaedecode_17",
+            "port": "out"
+          },
+          "to": {
+            "node": "imagescaleby_18",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_44",
+            "port": "value"
+          },
+          "to": {
+            "node": "imagescaleby_18",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "showtext_x7c_pysssss_15",
+            "port": "out"
+          },
+          "to": {
+            "node": "ksampler_16",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_37",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_16",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_38",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_16",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_39",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_16",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_40",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_16",
+            "port": "in3"
           }
         },
         {
@@ -1465,85 +1587,41 @@
             "port": "value"
           },
           "to": {
-            "node": "cliptextencode_40",
+            "node": "ksampler_16",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "vaeencode_19",
+            "port": "out"
+          },
+          "to": {
+            "node": "ksampler_20",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_46",
+            "port": "value"
+          },
+          "to": {
+            "node": "ksampler_20",
             "port": "in0"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_42",
+            "node": "get_47",
             "port": "value"
           },
           "to": {
-            "node": "cliptextencode_40",
+            "node": "ksampler_20",
             "port": "in1"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "primitivenode_19",
-            "port": "out"
-          },
-          "to": {
-            "node": "emptylatentimage_21",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_22",
-            "port": "value"
-          },
-          "to": {
-            "node": "emptylatentimage_21",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_23",
-            "port": "value"
-          },
-          "to": {
-            "node": "emptylatentimage_21",
-            "port": "in1"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "vaedecode_54",
-            "port": "out"
-          },
-          "to": {
-            "node": "imagescaleby_58",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_59",
-            "port": "value"
-          },
-          "to": {
-            "node": "imagescaleby_58",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "showtext_x7c_pysssss_44",
-            "port": "out"
-          },
-          "to": {
-            "node": "ksampler_47",
-            "port": "in"
           }
         },
         {
@@ -1553,8 +1631,8 @@
             "port": "value"
           },
           "to": {
-            "node": "ksampler_47",
-            "port": "in0"
+            "node": "ksampler_20",
+            "port": "in2"
           }
         },
         {
@@ -1564,8 +1642,8 @@
             "port": "value"
           },
           "to": {
-            "node": "ksampler_47",
-            "port": "in1"
+            "node": "ksampler_20",
+            "port": "in3"
           }
         },
         {
@@ -1575,128 +1653,29 @@
             "port": "value"
           },
           "to": {
-            "node": "ksampler_47",
-            "port": "in2"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_51",
-            "port": "value"
-          },
-          "to": {
-            "node": "ksampler_47",
-            "port": "in3"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_52",
-            "port": "value"
-          },
-          "to": {
-            "node": "ksampler_47",
+            "node": "ksampler_20",
             "port": "in4"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "vaeencode_61",
+            "node": "primitivenode_3",
             "port": "out"
           },
           "to": {
-            "node": "ksampler_64",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_65",
-            "port": "value"
-          },
-          "to": {
-            "node": "ksampler_64",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_66",
-            "port": "value"
-          },
-          "to": {
-            "node": "ksampler_64",
-            "port": "in1"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_67",
-            "port": "value"
-          },
-          "to": {
-            "node": "ksampler_64",
-            "port": "in2"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_68",
-            "port": "value"
-          },
-          "to": {
-            "node": "ksampler_64",
-            "port": "in3"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_69",
-            "port": "value"
-          },
-          "to": {
-            "node": "ksampler_64",
-            "port": "in4"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "primitivenode_5",
-            "port": "out"
-          },
-          "to": {
-            "node": "primitiveint_7",
+            "node": "primitiveint_4",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "vaeloader_15",
+            "node": "primitivenode_9",
             "port": "out"
           },
           "to": {
-            "node": "primitivenode_17",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "primitivenode_17",
-            "port": "out"
-          },
-          "to": {
-            "node": "primitivenode_19",
+            "node": "primitivenode_10",
             "port": "in"
           }
         },
@@ -1707,6 +1686,17 @@
             "port": "out"
           },
           "to": {
+            "node": "primitivenode_2",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "primitivenode_2",
+            "port": "out"
+          },
+          "to": {
             "node": "primitivenode_3",
             "port": "in"
           }
@@ -1714,7 +1704,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "primitivenode_3",
+            "node": "primitiveint_4",
             "port": "out"
           },
           "to": {
@@ -1725,7 +1715,7 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "primitiveint_7",
+            "node": "vaeloader_8",
             "port": "out"
           },
           "to": {
@@ -1736,100 +1726,45 @@
         {
           "kind": "ctrl",
           "from": {
-            "node": "vaedecode_71",
+            "node": "vaedecode_21",
             "port": "out"
           },
           "to": {
-            "node": "saveimage_75",
+            "node": "saveimage_22",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_76",
+            "node": "get_53",
             "port": "value"
           },
           "to": {
-            "node": "saveimage_75",
+            "node": "saveimage_22",
             "port": "in0"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "saveimage_75",
+            "node": "saveimage_22",
             "port": "out"
           },
           "to": {
-            "node": "saveimage_77",
+            "node": "saveimage_23",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_78",
+            "node": "get_54",
             "port": "value"
           },
           "to": {
-            "node": "saveimage_77",
+            "node": "saveimage_23",
             "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "primitivenode_9",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_10",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "cliploader_11",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_12",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "unetloader_13",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_14",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "vaeloader_15",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_16",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "primitivenode_17",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_18",
-            "port": "value"
           }
         },
         {
@@ -1839,84 +1774,18 @@
             "port": "out0"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_55",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "primitivenode_19",
+            "node": "primitivenode_2",
             "port": "out0"
           },
           "to": {
-            "node": "set_20",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "emptylatentimage_21",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_24",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "cliptextencode_25",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_28",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "tipo_29",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_36",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "tipo_29",
-            "port": "out1"
-          },
-          "to": {
-            "node": "set_37",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "tipo_29",
-            "port": "out2"
-          },
-          "to": {
-            "node": "set_38",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "tipo_29",
-            "port": "out3"
-          },
-          "to": {
-            "node": "set_39",
+            "node": "set_56",
             "port": "value"
           }
         },
@@ -1924,50 +1793,6 @@
           "kind": "data",
           "from": {
             "node": "primitivenode_3",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_4",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "cliptextencode_40",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_43",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "showtext_x7c_pysssss_44",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_46",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "ksampler_47",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_53",
-            "port": "value"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "vaedecode_54",
             "port": "out0"
           },
           "to": {
@@ -1978,18 +1803,29 @@
         {
           "kind": "data",
           "from": {
-            "node": "primitivenode_5",
+            "node": "primitiveint_4",
             "port": "out0"
           },
           "to": {
-            "node": "set_6",
+            "node": "set_58",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "imagescaleby_58",
+            "node": "primitivenode_5",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_59",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliploader_6",
             "port": "out0"
           },
           "to": {
@@ -2000,7 +1836,29 @@
         {
           "kind": "data",
           "from": {
-            "node": "vaeencode_61",
+            "node": "unetloader_7",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_61",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "vaeloader_8",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_62",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "primitivenode_9",
             "port": "out0"
           },
           "to": {
@@ -2011,7 +1869,73 @@
         {
           "kind": "data",
           "from": {
-            "node": "ksampler_64",
+            "node": "primitivenode_10",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_64",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "emptylatentimage_11",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_65",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliptextencode_12",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_66",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "tipo_13",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_67",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "tipo_13",
+            "port": "out1"
+          },
+          "to": {
+            "node": "set_68",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "cliptextencode_14",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_69",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "ksampler_16",
             "port": "out0"
           },
           "to": {
@@ -2022,7 +1946,40 @@
         {
           "kind": "data",
           "from": {
-            "node": "vaedecode_71",
+            "node": "vaedecode_17",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_71",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "imagescaleby_18",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_72",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "vaeencode_19",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_73",
+            "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "ksampler_20",
             "port": "out0"
           },
           "to": {
@@ -2033,22 +1990,198 @@
         {
           "kind": "data",
           "from": {
-            "node": "primitiveint_7",
+            "node": "vaedecode_21",
             "port": "out0"
           },
           "to": {
-            "node": "set_8",
+            "node": "set_75",
             "port": "value"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "cliptextencode_40",
+            "node": "cliptextencode_14",
             "port": "out"
           },
           "to": {
-            "node": "showtext_x7c_pysssss_44",
+            "node": "showtext_x7c_pysssss_15",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_36",
+            "port": "value"
+          },
+          "to": {
+            "node": "showtext_x7c_pysssss_15",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliptextencode_12",
+            "port": "out"
+          },
+          "to": {
+            "node": "tipo_13",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_28",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_13",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_29",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_13",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_30",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_13",
+            "port": "in2"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_31",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_13",
+            "port": "in3"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_32",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_13",
+            "port": "in4"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_33",
+            "port": "value"
+          },
+          "to": {
+            "node": "tipo_13",
+            "port": "in5"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "cliploader_6",
+            "port": "out"
+          },
+          "to": {
+            "node": "unetloader_7",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "ksampler_16",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaedecode_17",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_42",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_17",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_43",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_17",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "ksampler_20",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaedecode_21",
+            "port": "in"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_51",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_21",
+            "port": "in0"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_52",
+            "port": "value"
+          },
+          "to": {
+            "node": "vaedecode_21",
+            "port": "in1"
+          }
+        },
+        {
+          "kind": "ctrl",
+          "from": {
+            "node": "imagescaleby_18",
+            "port": "out"
+          },
+          "to": {
+            "node": "vaeencode_19",
             "port": "in"
           }
         },
@@ -2059,194 +2192,18 @@
             "port": "value"
           },
           "to": {
-            "node": "showtext_x7c_pysssss_44",
+            "node": "vaeencode_19",
             "port": "in0"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "cliptextencode_25",
+            "node": "unetloader_7",
             "port": "out"
           },
           "to": {
-            "node": "tipo_29",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_30",
-            "port": "value"
-          },
-          "to": {
-            "node": "tipo_29",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_31",
-            "port": "value"
-          },
-          "to": {
-            "node": "tipo_29",
-            "port": "in1"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_32",
-            "port": "value"
-          },
-          "to": {
-            "node": "tipo_29",
-            "port": "in2"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_33",
-            "port": "value"
-          },
-          "to": {
-            "node": "tipo_29",
-            "port": "in3"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_34",
-            "port": "value"
-          },
-          "to": {
-            "node": "tipo_29",
-            "port": "in4"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_35",
-            "port": "value"
-          },
-          "to": {
-            "node": "tipo_29",
-            "port": "in5"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "cliploader_11",
-            "port": "out"
-          },
-          "to": {
-            "node": "unetloader_13",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "ksampler_47",
-            "port": "out"
-          },
-          "to": {
-            "node": "vaedecode_54",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_55",
-            "port": "value"
-          },
-          "to": {
-            "node": "vaedecode_54",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_56",
-            "port": "value"
-          },
-          "to": {
-            "node": "vaedecode_54",
-            "port": "in1"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "ksampler_64",
-            "port": "out"
-          },
-          "to": {
-            "node": "vaedecode_71",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_72",
-            "port": "value"
-          },
-          "to": {
-            "node": "vaedecode_71",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_73",
-            "port": "value"
-          },
-          "to": {
-            "node": "vaedecode_71",
-            "port": "in1"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "imagescaleby_58",
-            "port": "out"
-          },
-          "to": {
-            "node": "vaeencode_61",
-            "port": "in"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_62",
-            "port": "value"
-          },
-          "to": {
-            "node": "vaeencode_61",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "ctrl",
-          "from": {
-            "node": "unetloader_13",
-            "port": "out"
-          },
-          "to": {
-            "node": "vaeloader_15",
+            "node": "vaeloader_8",
             "port": "in"
           }
         }

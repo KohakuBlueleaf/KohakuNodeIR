@@ -1,5 +1,5 @@
 {
-  "kirgraph": 2,
+  "kirgraph": 3,
   "uses": [],
   "graphs": [
     {
@@ -24,22 +24,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/0"
         },
         {
-          "id": "set_2",
-          "kind": "set",
-          "props": {
-            "name": "x"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "process_b_3",
+          "id": "process_b_2",
           "kind": "call",
           "name": "process_b",
           "inputs": [
@@ -53,10 +42,12 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/1/body/0",
+          "region": "body/1/body"
         },
         {
-          "id": "generate_4",
+          "id": "generate_3",
           "kind": "call",
           "name": "generate",
           "inputs": [],
@@ -66,10 +57,12 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/1/body/1",
+          "region": "body/1/body"
         },
         {
-          "id": "combine_5",
+          "id": "combine_4",
           "kind": "call",
           "name": "combine",
           "inputs": [
@@ -86,88 +79,18 @@
             }
           ],
           "ctrl_in": [],
-          "ctrl_out": []
+          "ctrl_out": [],
+          "path": "body/1/body/2",
+          "region": "body/1/body"
         },
         {
-          "id": "get_6",
-          "kind": "get",
-          "props": {
-            "name": "x"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_7",
-          "kind": "set",
-          "props": {
-            "name": "z"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_8",
-          "kind": "set",
-          "props": {
-            "name": "y"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_9",
-          "kind": "get",
-          "props": {
-            "name": "y"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "get_10",
-          "kind": "get",
-          "props": {
-            "name": "z"
-          },
-          "outputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "set_11",
-          "kind": "set",
-          "props": {
-            "name": "result"
-          },
-          "inputs": [
-            {
-              "port": "value"
-            }
-          ]
-        },
-        {
-          "id": "dataflow_12",
+          "id": "dataflow_5",
           "kind": "dataflow",
           "props": {
             "members": [
-              "process_b_3",
-              "generate_4",
-              "combine_5"
+              "process_b_2",
+              "generate_3",
+              "combine_4"
             ]
           },
           "ctrl_in": [
@@ -175,10 +98,11 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/1"
         },
         {
-          "id": "print_13",
+          "id": "print_6",
           "kind": "call",
           "name": "print",
           "inputs": [
@@ -192,10 +116,50 @@
           ],
           "ctrl_out": [
             "out"
-          ]
+          ],
+          "path": "body/2"
         },
         {
-          "id": "get_14",
+          "id": "get_7",
+          "kind": "get",
+          "props": {
+            "name": "x"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/1/body"
+        },
+        {
+          "id": "get_8",
+          "kind": "get",
+          "props": {
+            "name": "y"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/1/body"
+        },
+        {
+          "id": "get_9",
+          "kind": "get",
+          "props": {
+            "name": "z"
+          },
+          "outputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/1/body"
+        },
+        {
+          "id": "get_10",
           "kind": "get",
           "props": {
             "name": "result"
@@ -205,9 +169,71 @@
               "port": "value"
             }
           ]
+        },
+        {
+          "id": "set_11",
+          "kind": "set",
+          "props": {
+            "name": "x"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ]
+        },
+        {
+          "id": "set_12",
+          "kind": "set",
+          "props": {
+            "name": "z"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/1/body"
+        },
+        {
+          "id": "set_13",
+          "kind": "set",
+          "props": {
+            "name": "y"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/1/body"
+        },
+        {
+          "id": "set_14",
+          "kind": "set",
+          "props": {
+            "name": "result"
+          },
+          "inputs": [
+            {
+              "port": "value"
+            }
+          ],
+          "region": "body/1/body"
         }
       ],
       "edges": [
+        {
+          "kind": "data",
+          "from": {
+            "node": "get_8",
+            "port": "value"
+          },
+          "to": {
+            "node": "combine_4",
+            "port": "in0"
+          }
+        },
         {
           "kind": "data",
           "from": {
@@ -215,18 +241,7 @@
             "port": "value"
           },
           "to": {
-            "node": "combine_5",
-            "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "get_10",
-            "port": "value"
-          },
-          "to": {
-            "node": "combine_5",
+            "node": "combine_4",
             "port": "in1"
           }
         },
@@ -237,52 +252,41 @@
             "port": "out"
           },
           "to": {
-            "node": "dataflow_12",
+            "node": "dataflow_5",
             "port": "in"
           }
         },
         {
           "kind": "ctrl",
           "from": {
-            "node": "dataflow_12",
+            "node": "dataflow_5",
             "port": "out"
           },
           "to": {
-            "node": "print_13",
+            "node": "print_6",
             "port": "in"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_14",
+            "node": "get_10",
             "port": "value"
           },
           "to": {
-            "node": "print_13",
+            "node": "print_6",
             "port": "v"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "get_6",
+            "node": "get_7",
             "port": "value"
           },
           "to": {
-            "node": "process_b_3",
+            "node": "process_b_2",
             "port": "in0"
-          }
-        },
-        {
-          "kind": "data",
-          "from": {
-            "node": "combine_5",
-            "port": "out0"
-          },
-          "to": {
-            "node": "set_11",
-            "port": "value"
           }
         },
         {
@@ -292,30 +296,51 @@
             "port": "value"
           },
           "to": {
-            "node": "set_2",
+            "node": "set_11",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "process_b_3",
+            "node": "process_b_2",
             "port": "out0"
           },
           "to": {
-            "node": "set_7",
+            "node": "set_12",
             "port": "value"
           }
         },
         {
           "kind": "data",
           "from": {
-            "node": "generate_4",
+            "node": "generate_3",
             "port": "out0"
           },
           "to": {
-            "node": "set_8",
+            "node": "set_13",
             "port": "value"
+          }
+        },
+        {
+          "kind": "data",
+          "from": {
+            "node": "combine_4",
+            "port": "out0"
+          },
+          "to": {
+            "node": "set_14",
+            "port": "value"
+          }
+        }
+      ],
+      "regions": [
+        {
+          "id": "body/1/body",
+          "kind": "dataflow",
+          "owner": {
+            "node": "dataflow_5",
+            "port": null
           }
         }
       ]
