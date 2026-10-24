@@ -4,7 +4,7 @@
  * leads to one place, a merge's input ports are numbered without gaps.
  */
 
-import { edgeKey, isStatement, parseHandle } from "@kohaku/kir-graph"
+import { edgeKey, isStatement, parseHandle } from "@kohaku/kir-graph/model"
 
 /** The free `in_<n>` slot a merge offers for one more incoming path. */
 const mergeSlot = (node) => `in_${(node.ctrl_in || []).length}`

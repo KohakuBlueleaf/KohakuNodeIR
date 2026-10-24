@@ -138,19 +138,20 @@ def test_collect_statement_projection_and_graph_factory(monkeypatch):
     monkeypatch.syspath_prepend(str(ROOT / "apps/kir-editor/backend"))
     ast_json = importlib.import_module("kir_editor.core.ast_json")
     data = ast_json.program_to_json(parse(SOURCE))
-    # Resolve @/ imports through a tiny Node loader, without starting a browser.
+    # Resolve @/ and the display library's model through a tiny Node loader, without a browser.
     script = """
 import {registerHooks} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 registerHooks({resolve(specifier, context, next) {
   if (specifier.startsWith('@/')) return {url: pathToFileURL(resolve('apps/kir-editor/frontend/src', specifier.slice(2) + '.js')).href, shortCircuit: true};
+  if (specifier === '@kohaku/kir-graph/model') return {url: pathToFileURL(resolve('packages/kir-graph/src/model/index.js')).href, shortCircuit: true};
   return next(specifier, context);
 }});
 const {programTree, treeToAst, variables} = await import('./apps/kir-editor/frontend/src/program/structure.js');
 const {itemFor} = await import('./apps/kir-editor/frontend/src/program/create.js');
 const {makeNode, serializeGraph, isValidConnection, connect} = await import('./apps/kir-editor/frontend/src/graph/edit.js');
-const {isBackEdge} = await import('./apps/kir-editor/frontend/src/graph/ports.js');
+const {isBackEdge} = await import('./packages/kir-graph/src/model/index.js');
 const ast = JSON.parse(process.argv[1]);
 const tree = programTree(ast);
 if (tree.body[1].t !== 'group' || tree.body[1].arms.length !== 1) throw new Error('collect body not grouped');

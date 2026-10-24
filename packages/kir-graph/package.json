@@ -15,6 +15,7 @@
   "exports": {
     ".": "./dist/kir-graph.js",
     "./style.css": "./dist/kir-graph-style.css",
+    "./model": "./src/model/index.js",
     "./source": "./src/index.js",
     "./source/style.css": "./src/styles/index.css"
   },

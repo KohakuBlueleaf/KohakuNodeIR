@@ -5,7 +5,7 @@
  * of an older one.
  */
 
-import { checkDocument } from "@kohaku/kir-graph"
+import { checkDocument } from "@kohaku/kir-graph/model"
 
 import { astToText, graphToText, textToGraph } from "@/api/backend"
 import { serializeGraph } from "@/graph/edit"

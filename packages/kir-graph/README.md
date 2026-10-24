@@ -74,7 +74,9 @@ the editing props below, and `layout`, the layout knobs:
 Events: `select`, `hover`, `layout` (`{ms, cached, nodes, regions, edges,
 layout}`), `update:collapsed`. The model, geometry and layout functions
 (`graphModel`, `layoutView`, `checkLayout`, ...) are exported for tools that
-lay graphs out without the component. The default slot is drawn over the
+lay graphs out without the component; `@kohaku/kir-graph/model` is the model
+alone (graph, tree, ports, literals, types) as plain ES modules with no Vue or
+ELK import, for servers, tools and tests. The default slot is drawn over the
 view inside its theme; `.kg-theme` on any host element gives it the theme's
 colour variables (for `typeColor` outside a graph).
 

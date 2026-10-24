@@ -3,7 +3,7 @@
  * entry: the same `spec` the graph views receive (`{kind, name?, sig?, use?}`).
  */
 
-import { formatLiteral, parseLiteral } from "@kohaku/kir-graph"
+import { formatLiteral, parseLiteral } from "@kohaku/kir-graph/model"
 
 import { fresh, group, usedNames } from "@/program/structure"
 

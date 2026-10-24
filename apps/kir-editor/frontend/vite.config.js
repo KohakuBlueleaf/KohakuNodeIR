@@ -14,6 +14,7 @@ export default defineConfig({
       { find: "@", replacement: fileURLToPath(new URL("./src", import.meta.url)) },
       // The display library from its source in this repository (packages/kir-graph)
       { find: /^@kohaku\/kir-graph$/, replacement: graphLib("src/index.js") },
+      { find: /^@kohaku\/kir-graph\/model$/, replacement: graphLib("src/model/index.js") },
       { find: /^@kohaku\/kir-graph\/style\.css$/, replacement: graphLib("src/styles/index.css") },
     ],
     // One copy of what the library shares with the editor, the editor's

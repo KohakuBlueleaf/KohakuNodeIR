@@ -6,18 +6,15 @@
  *
  * `KirGraph` draws one graph in a view (`VIEW_NAMES`) with an overlay of live
  * data, or edits it (`editable`); the model, geometry and layout functions
- * are exported for tools that need them without the component.
+ * are exported for tools that need them without the component; the model
+ * alone, without Vue or ELK, is `@kohaku/kir-graph/model`.
  */
 
 export { default as KirGraph } from "./render/KirGraph.vue"
 export { default as Icon } from "./render/Icon.vue"
 export { default as LiteralWidget } from "./render/flow/LiteralWidget.vue"
 export { GRAPH_VIEWS, STATEMENT_VIEWS, VIEW_NAMES, viewData } from "./views.js"
-export { FORMATS, checkDocument, graphModel, inputExpr, nodeKey, outputNames, regionChain, regionNodes } from "./model/graph.js"
-export { isStatement, statementTree } from "./model/tree.js"
-export { edgeKey, handleId, isBackEdge, parseHandle } from "./model/ports.js"
-export { formatLiteral, parseLiteral, shortLiteral } from "./model/literal.js"
-export { CTRL, typeColor } from "./model/types.js"
+export * from "./model/index.js"
 export { fontsReady, resetMeasure, textWidth } from "./geometry/measure.js"
 export { configureElk } from "./layout/elk.js"
 export { layoutView, planLayout, readLayout } from "./layout/build.js"
