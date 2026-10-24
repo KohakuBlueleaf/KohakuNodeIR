@@ -20,8 +20,10 @@ const KEY = Symbol("kir-graph")
  * The shared state of one KirGraph: overlay maps, the selection and hovered
  * key, the variable name hovered or picked (`hoveredName`, `pickedName`:
  * every element of that name is marked), the collapsed region ids, the wire
- * style ("rail" | "plain"), and the `select(selection)` / `toggle(regionId)`
- * actions the KirGraph installs.
+ * style ("rail" | "plain"), whether the graph is editable, and the
+ * `select(selection)` / `toggle(regionId)` / `edit({id, port, value})`
+ * actions the KirGraph installs, and the `validConnection(c)` check a graph
+ * view gives its pins.
  */
 export function createGraphState() {
   return {
@@ -34,8 +36,11 @@ export function createGraphState() {
     pickedName: ref(null),
     collapsed: ref(new Set()),
     wireStyle: ref("rail"),
+    editable: ref(false),
     select: null,
     toggle: null,
+    edit: null,
+    validConnection: null,
   }
 }
 

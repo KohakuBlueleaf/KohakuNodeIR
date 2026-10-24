@@ -144,6 +144,76 @@
   opacity: 0.8;
 }
 
+/* ---------------------------------------------------------------- input boxes (editing) */
+
+.kg-card__widget {
+  pointer-events: auto;
+  width: 84px;
+  margin-left: 6px;
+}
+.kg-pill__widget {
+  width: calc(100% - 20px);
+  background: transparent !important;
+  border-color: transparent !important;
+  text-align: center;
+}
+.kg-widget {
+  box-sizing: border-box;
+  height: 19px;
+  padding: 0 0.4rem;
+  border-radius: 4px;
+  border: 1px solid var(--kg-border-strong);
+  background: var(--kg-bg);
+  color: var(--kg-text);
+  font-family: var(--kg-font-mono);
+  font-size: 10.5px;
+  outline: none;
+  min-width: 0;
+}
+.kg-widget:focus {
+  border-color: var(--kg-iolite);
+}
+.kg-widget.is-bad {
+  border-color: var(--kg-coral);
+}
+.kg-widget--number {
+  text-align: right;
+  color: var(--kg-type-int);
+}
+.kg-widget--text {
+  color: var(--kg-type-str);
+}
+.kg-widget--bool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+.kg-widget__knob {
+  position: relative;
+  width: 18px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--kg-border-strong);
+}
+.kg-widget__knob::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--kg-surface);
+  transition: left 120ms ease;
+}
+.kg-widget--bool.is-on .kg-widget__knob {
+  background: var(--kg-sage);
+}
+.kg-widget--bool.is-on .kg-widget__knob::after {
+  left: 9px;
+}
+
 /* ---------------------------------------------------------------- flowchart elements */
 
 .kg-robo {

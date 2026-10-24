@@ -1,7 +1,7 @@
 /**
  * KIR literals as the graph JSON holds them: plain JSON values, with tuples as
  * {"tuple": [...]}, string-keyed dicts as {"dict": {...}} and other dicts as
- * {"pairs": [[k, v], ...]}; shown in KIR syntax.
+ * {"pairs": [[k, v], ...]}; shown in KIR syntax and read back from it.
  */
 
 export function formatLiteral(v) {
@@ -23,6 +23,29 @@ export function formatLiteral(v) {
 export function shortLiteral(v, max = 22) {
   const s = formatLiteral(v)
   return s.length > max ? `${s.slice(0, max - 1)}…` : s
+}
+
+/**
+ * A literal typed in KIR syntax, in the graph's JSON form: None/True/False,
+ * numbers, strings, lists, string-keyed dicts. Throws on anything else.
+ */
+export function parseLiteral(text) {
+  const src = text.trim()
+  if (src === "None") return null
+  if (src === "True") return true
+  if (src === "False") return false
+  const json = src
+    .replace(/\bNone\b/g, "null")
+    .replace(/\bTrue\b/g, "true")
+    .replace(/\bFalse\b/g, "false")
+    .replace(/'([^'\\]*)'/g, (_, s) => JSON.stringify(s))
+  return encode(JSON.parse(json))
+}
+
+function encode(v) {
+  if (Array.isArray(v)) return v.map(encode)
+  if (v && typeof v === "object") return { dict: Object.fromEntries(Object.entries(v).map(([k, x]) => [k, encode(x)])) }
+  return v
 }
 
 /** The kind of a literal: number, bool, text or other. */

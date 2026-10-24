@@ -33,7 +33,7 @@
     "prepack": "npm run build",
     "examples": "python scripts/generate/examples.py",
     "icons": "node scripts/generate/icons.mjs",
-    "test": "node --test tests/layout.test.mjs",
+    "test": "node --test tests/layout.test.mjs tests/edit.test.mjs",
     "check": "node scripts/checks/check.mjs",
     "check:anchors": "node scripts/checks/anchors.mjs",
     "check:stable": "node scripts/checks/stability.mjs",

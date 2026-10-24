@@ -10,7 +10,7 @@
     <div class="kg-collapsed__sub">{{ g.sub }}</div>
     <OverlayMarks :entry="entry" />
   </div>
-  <Pins :ports="g.ports" />
+  <Pins :ports="g.ports" fixed />
 </template>
 
 <script setup>

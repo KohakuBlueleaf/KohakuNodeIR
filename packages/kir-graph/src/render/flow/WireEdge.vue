@@ -1,5 +1,5 @@
 <template>
-  <g class="kg-wire" :data-ends="`${data.source}|${data.sourceHandle}|${data.target}|${data.targetHandle}`" :class="[`kg-wire--${data.kind}`, { 'kg-wire--back': data.back, 'is-active': entry?.active, 'is-selected': selected }]">
+  <g class="kg-wire" :data-ends="`${data.source}|${data.sourceHandle}|${data.target}|${data.targetHandle}`" :data-keys="data.keys.join(' ')" :class="[`kg-wire--${data.kind}`, { 'kg-wire--back': data.back, 'is-active': entry?.active, 'is-selected': selected }]">
     <path :d="d" class="kg-wire__hit" />
     <path :d="d" class="kg-wire__line" :style="{ stroke: data.color, strokeWidth: width }" :marker-end="data.arrow ? `url(#${markerId})` : undefined" />
     <path v-if="rail" :d="d" class="kg-wire__core" :style="{ strokeWidth: width * 0.4 }" />
@@ -11,6 +11,7 @@
 <script setup>
 import { computed } from "vue"
 
+import { orthoRoute } from "../../layout/route.js"
 import { useGraphState } from "../overlay.js"
 import { midpoint, roundedPath } from "./paths.js"
 
@@ -20,15 +21,37 @@ import { midpoint, roundedPath } from "./paths.js"
  * one, so the two read apart by shape, not by colour alone; "plain" draws both
  * as solid lines of their colour. Its overlay entry widens it by weight,
  * labels it, or marks it active; a wire leaving a branching element carries
- * the arm's name (`tail`) where it leaves.
+ * the arm's name (`tail`) where it leaves. While an end's element is dragged
+ * away from where the route was made (`sourceAt`, `targetAt`), the wire
+ * follows it on an orthogonal route (layout/route.js).
  */
 const props = defineProps({
   id: { type: String, required: true },
   data: { type: Object, required: true },
   selected: { type: Boolean, default: false },
+  sourceNode: { type: Object, default: null },
+  targetNode: { type: Object, default: null },
 })
 
 const state = useGraphState()
+
+const shift = (node, at) => {
+  const p = node?.position
+  if (!p || !at) return null
+  const d = { x: p.x - at.x, y: p.y - at.y }
+  return Math.abs(d.x) > 0.5 || Math.abs(d.y) > 0.5 ? d : null
+}
+const route = computed(() => {
+  const r = props.data.route
+  if (!r || !state.editable?.value) return r
+  const ds = shift(props.sourceNode, props.data.sourceAt)
+  const dt = shift(props.targetNode, props.data.targetAt)
+  if (!ds && !dt) return r
+  const a = { x: r[0].x + (ds?.x ?? 0), y: r[0].y + (ds?.y ?? 0) }
+  const b = { x: r[r.length - 1].x + (dt?.x ?? 0), y: r[r.length - 1].y + (dt?.y ?? 0) }
+  const box = (node, size) => ({ x: node.position.x, y: node.position.y, ...size })
+  return orthoRoute(a, props.data.sourceSide, b, props.data.targetSide, [box(props.sourceNode, props.data.sourceSize), box(props.targetNode, props.data.targetSize)])
+})
 const entry = computed(() => {
   for (const k of props.data.keys) {
     const e = state.edges.get(k)
@@ -38,8 +61,8 @@ const entry = computed(() => {
 })
 const ctrl = computed(() => props.data.kind === "ctrl")
 const rail = computed(() => ctrl.value && state.wireStyle?.value !== "plain")
-const d = computed(() => (props.data.route ? roundedPath(props.data.route, ctrl.value ? 5 : 10) : ""))
-const mid = computed(() => (props.data.route ? midpoint(props.data.route) : null))
+const d = computed(() => (route.value ? roundedPath(route.value, ctrl.value ? 5 : 10) : ""))
+const mid = computed(() => (route.value ? midpoint(route.value) : null))
 const base = computed(() => {
   if (state.wireStyle?.value === "plain") return ctrl.value ? 2.2 : 1.6
   return ctrl.value ? 4.4 : 1.3
@@ -49,7 +72,7 @@ const markerId = computed(() => `kg-arrow-${props.data.kind}${props.data.palette
 
 // The arm's name beside the first stretch of the wire, clear of the element it leaves
 const tail = computed(() => {
-  const r = props.data.route
+  const r = route.value
   if (!props.data.tail || !r || r.length < 2) return null
   const [a, b] = r
   if (Math.abs(b.x - a.x) > Math.abs(b.y - a.y)) return { x: a.x + Math.sign(b.x - a.x) * 8, y: a.y - 7, anchor: b.x > a.x ? "start" : "end" }

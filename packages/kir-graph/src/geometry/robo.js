@@ -8,7 +8,7 @@
 
 import { shortLiteral } from "../model/literal.js"
 import { textWidth } from "./measure.js"
-import { makePort, spread } from "./port.js"
+import { makePort, spread, withFreeSlot } from "./port.js"
 
 export const HEAD = 26
 export const ROW = 20
@@ -309,7 +309,7 @@ export function roboGeometry(node, ctx = {}) {
     case "switch":
       return switchGeometry(node)
     case "merge":
-      return mergeGeometry(node)
+      return mergeGeometry(withFreeSlot(node, ctx))
     case "parallel":
       return parallelGeometry(node)
     default:

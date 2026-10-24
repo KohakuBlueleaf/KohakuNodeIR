@@ -110,6 +110,32 @@
 .kg-flow .vue-flow__handle.kg-pin--any {
   opacity: 0.6;
 }
+/* While editing a pin takes a wire: a wider hit ring, filled when hovered or offered */
+.kg-flow .vue-flow__handle.kg-pin--wirable {
+  cursor: crosshair;
+}
+.kg-flow .vue-flow__handle.kg-pin--wirable::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+.kg-flow .vue-flow__handle.kg-pin--wirable:hover,
+.kg-flow .vue-flow__handle.kg-pin--wirable.connectingto,
+.kg-flow .vue-flow__handle.kg-pin--wirable.valid {
+  background: var(--kg-pin);
+}
+.kg-flow--editable {
+  outline: none;
+}
+.kg-flow--editable .vue-flow__node-card,
+.kg-flow--editable .vue-flow__node-robo {
+  cursor: grab;
+}
+.kg-flow .vue-flow__connection-path {
+  stroke: var(--kg-iolite);
+  stroke-width: 2.2;
+  stroke-dasharray: 6 4;
+}
 .kg-palette--robo .vue-flow__handle.kg-pin {
   width: 8px;
   height: 8px;

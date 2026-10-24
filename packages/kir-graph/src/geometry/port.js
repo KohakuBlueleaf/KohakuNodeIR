@@ -21,6 +21,13 @@ export function makePort(flow, dir, p, x, y, side, extra = {}) {
   }
 }
 
+/** While editing (`ctx.editable`), a merge offers one more control input than it uses (`free`), to wire a new way in. */
+export function withFreeSlot(node, ctx = {}) {
+  if (!ctx.editable || node.kind !== "merge") return node
+  const free = `in_${(node.ctrl_in || []).length}`
+  return { ...node, free, ctrl_in: [...(node.ctrl_in || []), free] }
+}
+
 /** `n` points evenly spread over `[from, to]`, centred in their slots. */
 export function spread(n, from, to) {
   if (n <= 0) return []

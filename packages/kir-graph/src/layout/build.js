@@ -186,7 +186,9 @@ function spacing(direction, band = 0) {
  * overrides the view's; `opts.satellites === false` lays pills out as nodes
  * of their own instead of beside the port they serve; `opts.layering` and
  * `opts.placement` pick ELK's layering and node placement strategies;
- * `opts.markRows` keeps that many rows of overlay marks clear over every element.
+ * `opts.markRows` keeps that many rows of overlay marks clear over every element;
+ * `opts.editable` gives unwired inputs and literals an input box and every
+ * merge a free slot to wire one more way in.
  */
 export function planLayout(model, view, opts = {}) {
   const showRegions = opts.regions !== false && view.regions !== false && model.regions.size > 0
@@ -204,7 +206,8 @@ export function planLayout(model, view, opts = {}) {
     ctrlFrom.set(`${e.to.node}|${e.to.port}`, { node: byId.get(e.from.node), port: e.from.port, back })
     if (back) backOut.add(`${e.from.node}|${e.from.port}`)
   }
-  const ctx = { defNames: model.defNames, ctrlFrom, backOut, regions: model.regions, direction }
+  const wiredIn = new Set(edges.filter((e) => e.kind !== "ctrl").map((e) => `${e.to.node}|${e.to.port}`))
+  const ctx = { defNames: model.defNames, ctrlFrom, backOut, regions: model.regions, direction, editable: !!opts.editable, wiredIn }
   const hidden = (n) => view.hideMerges && n.kind === "merge"
 
   // A dataflow block's box is its owner node
@@ -478,7 +481,17 @@ export function planLayout(model, view, opts = {}) {
     children: top,
     edges: elkEdges,
   }
-  return { input, plan: { model, view, direction, geoms, elements, drawn, reversed, units } }
+  // Where each element sits in the region tree: its enclosing element and depth (satellites beside their host)
+  const tree = new Map()
+  const walk = (elkNode, parent, depth) => {
+    for (const c of elkNode.children || []) {
+      tree.set(c.id, { parent, depth })
+      for (const s of units.get(c.id)?.satellites || []) tree.set(s.node.id, { parent, depth, host: c.id })
+      walk(c, c.id, depth + 1)
+    }
+  }
+  walk(input, null, 0)
+  return { input, plan: { model, view, direction, geoms, elements, drawn, reversed, units, tree } }
 }
 
 /** The drawn layout from ELK's answer: nodes, region boxes and edges with routes, in page coordinates. */
@@ -562,6 +575,11 @@ export function readLayout(result, plan) {
  */
 export async function layoutView(model, view, opts = {}) {
   const { input, plan } = planLayout(model, view, opts)
+  return layoutPlanned(input, plan, opts)
+}
+
+/** `layoutView` of a plan already made; the result carries the plan. */
+export async function layoutPlanned(input, plan, opts = {}) {
   let run
   try {
     run = await runElk(input)
@@ -578,5 +596,6 @@ export async function layoutView(model, view, opts = {}) {
     if (opts.wrap !== false) layout = wrapColumns(layout, opts.aspect ?? 1.4)
     if (compact && layout.columns) layout = compactLayout(layout, { band })
   }
-  return { ...layout, ms, cached }
+  // The plan rides along unlisted, so a layout still prints and compares as plain data
+  return Object.defineProperty({ ...layout, ms, cached }, "plan", { value: plan, enumerable: false })
 }

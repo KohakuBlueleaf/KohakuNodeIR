@@ -11,7 +11,7 @@
 
 import { shortLiteral } from "../model/literal.js"
 import { textWidth } from "./measure.js"
-import { makePort } from "./port.js"
+import { makePort, withFreeSlot } from "./port.js"
 import { TERMINAL_MARK, trunkPort } from "./robo.js"
 
 export const HEAD = 30
@@ -21,6 +21,9 @@ const FOOT = 9
 const CELL_GAP = 24
 const MIN_W = 150
 const PILL_H = 26
+// An input box beside an unwired input while editing (render/flow/LiteralWidget.vue)
+export const WIDGET_W = 84
+const WIDGET_GAP = 6
 
 const TITLE = {
   assign: (n) => (n.role ? `${n.role} value` : "assign"),
@@ -76,7 +79,7 @@ function armLabel(node, port) {
  * marks a jump back. `from` is the edge into it ({ node, port, back }).
  */
 function mergeInLabel(node, name, from, regions) {
-  if (!from) return name
+  if (!from) return name === node.free ? "+ way in" : name
   if (node.props?.label && !from.back && name === "in_0") return "enter"
   const region = regions?.get(from.node.region)
   const where = armLabel(from.node, from.port) ?? region?.label ?? region?.owner?.port ?? nodeTitle(from.node)
@@ -118,17 +121,29 @@ function inputLabel(p) {
   return "value" in p ? `${name} = ${shortLiteral(p.value, 18)}` : name
 }
 
+/** The row of a data input: its label, and while editing an unwired one, an input box for its literal. */
+function inputRow(node, p, ctx) {
+  if (ctx.editable && !p.label && !ctx.wiredIn?.has(`${node.id}|${p.port}`)) {
+    const label = p.deferred === "body_end" ? `${p.port} (body end)` : p.port
+    return { p, label, literal: "value" in p, widget: { port: p.port, value: p.value, type: p.type ?? null } }
+  }
+  return { p, label: inputLabel(p), literal: "value" in p }
+}
+
+const rowWidth = (r) => textWidth(r.label) + (r.widget ? WIDGET_W + WIDGET_GAP : 0)
+
 function outputLabel(p) {
   return p.var && p.var !== p.port ? `${p.port} → ${p.var}` : p.port
 }
 
 // A pill bound to the graph's own inputs or outputs (`param`) is a parameter of the graph, not a variable
-function pill(node, param = null) {
+function pill(node, param = null, editable = false) {
   if (node.kind === "value") {
     const title = shortLiteral(node.props?.value, 24)
-    const w = Math.max(56, textWidth(title, "title") + 36)
+    const w = Math.max(56, textWidth(title, "title") + 36, editable ? WIDGET_W + 24 : 0)
     const out = (node.outputs || [])[0] || { port: "value" }
-    return { w, h: PILL_H, shape: "pill", variant: "value", title, rows: [], ports: [makePort("data", "out", out, w, PILL_H / 2, "right")] }
+    const widget = editable ? { port: "value", value: node.props?.value, type: null } : null
+    return { w, h: PILL_H, shape: "pill", variant: "value", title, widget, rows: [], ports: [makePort("data", "out", out, w, PILL_H / 2, "right")] }
   }
   const title = node.props?.name ?? "?"
   const w = Math.max(56, textWidth(title, "title") + 40)
@@ -142,10 +157,13 @@ function pill(node, param = null) {
 /**
  * Geometry of one node. `ctx.defNames`: names of the program's `@def` graphs;
  * `ctx.exec`: whether control ports are drawn; `ctx.direction`: the layout's
- * flow ("DOWN" puts control on the top and bottom edges).
+ * flow ("DOWN" puts control on the top and bottom edges); `ctx.editable` with
+ * `ctx.wiredIn` (`node id|port` of every wired input): input boxes and free
+ * merge slots for editing.
  */
-export function cardGeometry(node, ctx = {}) {
-  if (node.kind === "value" || node.kind === "get" || node.kind === "set") return pill(node, node.param ?? null)
+export function cardGeometry(raw, ctx = {}) {
+  if (raw.kind === "value" || raw.kind === "get" || raw.kind === "set") return pill(raw, raw.param ?? null, !!ctx.editable)
+  const node = withFreeSlot(raw, ctx)
   if (ctx.exec && ctx.direction === "DOWN") return downCard(node, ctx)
   const exec = !!ctx.exec
   const ctrlIn = exec ? node.ctrl_in || [] : []
@@ -154,7 +172,7 @@ export function cardGeometry(node, ctx = {}) {
   const headOut = ctrlOut.length === 1 ? ctrlOut[0] : null
   const left = [
     ...ctrlIn.filter((c) => c !== headIn).map((c) => ({ flow: "ctrl", p: c, label: ctrlLabel(node, "in", c, ctx) })),
-    ...(node.inputs || []).map((p) => ({ flow: "data", p, label: inputLabel(p), literal: "value" in p })),
+    ...(node.inputs || []).map((p) => ({ flow: "data", ...inputRow(node, p, ctx) })),
   ]
   const right = [
     ...ctrlOut.filter((c) => c !== headOut).map((c) => ({ flow: "ctrl", p: c, label: ctrlLabel(node, "out", c, ctx) })),
@@ -163,7 +181,7 @@ export function cardGeometry(node, ctx = {}) {
   const isDef = node.kind === "call" && ctx.defNames?.has(node.name)
   const title = nodeTitle(node)
   const n = Math.max(left.length, right.length)
-  const leftW = Math.max(0, ...left.map((r) => textWidth(r.label)))
+  const leftW = Math.max(0, ...left.map(rowWidth))
   const rightW = Math.max(0, ...right.map((r) => textWidth(r.label)))
   const w = Math.max(MIN_W, textWidth(title, "title") + 56, leftW + rightW + CELL_GAP + 28)
   const h = HEAD + n * ROW + FOOT
@@ -180,7 +198,7 @@ export function cardGeometry(node, ctx = {}) {
     if (l) {
       const pt = makePort(l.flow, "in", l.p, 0, y, "left")
       ports.push(pt)
-      row.left = { handle: pt.handle, flow: l.flow, label: l.label, literal: !!l.literal }
+      row.left = { handle: pt.handle, flow: l.flow, label: l.label, literal: !!l.literal, widget: l.widget ?? null }
     }
     if (r) {
       const pt = makePort(r.flow, "out", r.p, w, y, "right")
@@ -210,7 +228,7 @@ function downCard(node, ctx) {
   const exit = ctrlOut.length ? trunkPort(node, ctrlOut, ctx) : null
   const ins = entry ? [{ p: entry, label: entry === "in" ? "" : ctrlLabel(node, "in", entry, ctx) }] : []
   const outs = exit ? [{ p: exit, label: ctrlOut.length > 1 || exit !== "out" ? ctrlLabel(node, "out", exit, ctx) : "" }] : []
-  const left = (node.inputs || []).map((p) => ({ p, label: inputLabel(p), literal: "value" in p }))
+  const left = (node.inputs || []).map((p) => inputRow(node, p, ctx))
   const right = [
     ...ctrlIn.filter((c) => c !== entry).map((c) => ({ p: c, flow: "ctrl", dir: "in", label: ctrlLabel(node, "in", c, ctx) })),
     ...ctrlOut.filter((c) => c !== exit).map((c) => ({ p: c, flow: "ctrl", dir: "out", label: ctrlLabel(node, "out", c, ctx) })),
@@ -220,7 +238,7 @@ function downCard(node, ctx) {
   const title = nodeTitle(node)
   const slots = (list) => list.reduce((sum, c) => sum + textWidth(c.label) + CTRL_SLOT_PAD, 0)
   const n = Math.max(left.length, right.length)
-  const leftW = Math.max(0, ...left.map((r) => textWidth(r.label)))
+  const leftW = Math.max(0, ...left.map(rowWidth))
   const rightW = Math.max(0, ...right.map((r) => textWidth(r.label)))
   const w = Math.max(MIN_W, textWidth(title, "title") + 56, leftW + rightW + CELL_GAP + 28, slots(ins) + 16, slots(outs) + 16)
   const inRow = ins.some((c) => c.label) ? CTRL_ROW : 0
@@ -256,7 +274,7 @@ function downCard(node, ctx) {
     if (l) {
       const pt = makePort("data", "in", l.p, 0, y, "left")
       ports.push(pt)
-      row.left = { handle: pt.handle, flow: "data", label: l.label, literal: !!l.literal }
+      row.left = { handle: pt.handle, flow: "data", label: l.label, literal: !!l.literal, widget: l.widget ?? null }
     }
     if (r) {
       const pt = makePort(r.flow, r.dir, r.p, w, y, "right")

@@ -9,7 +9,7 @@
       <OverlayMarks :entry="entry" placement="inline" />
     </div>
   </div>
-  <Pins v-if="data.ports.length" :ports="data.ports" />
+  <Pins v-if="data.ports.length" :ports="data.ports" fixed />
 </template>
 
 <script setup>

@@ -1,5 +1,5 @@
 <template>
-  <div class="kg-flow" :class="[`kg-lod--${lod}`, `kg-palette--${view.palette || 'gem'}`]">
+  <div ref="root" class="kg-flow" :class="[`kg-lod--${lod}`, `kg-palette--${view.palette || 'gem'}`, { 'kg-flow--editable': editable }]" :tabindex="editable ? 0 : undefined" @keydown="onKey" @dragover="onDragOver" @drop="onDrop">
     <svg class="kg-defs" width="0" height="0" aria-hidden="true">
       <defs>
         <marker v-for="m in MARKERS" :id="m.id" :key="m.id" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse">
@@ -13,9 +13,10 @@
       :edges="edges"
       :node-types="NODE_TYPES"
       :edge-types="EDGE_TYPES"
-      :nodes-draggable="false"
-      :nodes-connectable="false"
+      :nodes-draggable="editable"
+      :nodes-connectable="editable"
       :elements-selectable="true"
+      :connect-on-click="false"
       :only-render-visible-elements="nodes.length > VIRTUALIZE"
       :min-zoom="0.03"
       :max-zoom="2.5"
@@ -24,6 +25,8 @@
       @edge-click="onEdgeClick"
       @node-mouse-enter="onEnter"
       @node-mouse-leave="onLeave"
+      @node-drag-stop="onDragStop"
+      @connect="onConnect"
       @pane-click="onPaneClick"
     >
       <Background :gap="22" :size="1.1" pattern-color="var(--kg-grid)" />
@@ -48,6 +51,7 @@ import { fontsReady } from "../../geometry/measure.js"
 import { nodeKey, regionNodes } from "../../model/graph.js"
 import { isStatement } from "../../model/tree.js"
 import { layoutView } from "../../layout/build.js"
+import { forget, keepLayout, pinAt, placeLayout, remember } from "../../layout/place.js"
 import Icon from "../Icon.vue"
 import { dataName, useGraphState } from "../overlay.js"
 import CardNode from "./CardNode.vue"
@@ -60,6 +64,13 @@ import WireEdge from "./WireEdge.vue"
  * A graph view of one graph: lays it out (layout/build.js) whenever the graph,
  * the view, region drawing or the collapsed set changes, and draws the result.
  * Overlay and selection changes never lay out again or rebuild elements.
+ *
+ * Editable (`editable`, with a `memory` from layout/place.js): elements drag,
+ * pins take new wires, Delete removes the selection, and drops of
+ * `dropTypes` are passed on; all of these come out as events and change
+ * nothing here. A graph change keeps every element where it is
+ * (`keepLayout`); a new `relayoutKey`, view, region drawing or option lays out
+ * afresh.
  */
 const props = defineProps({
   flowId: { type: String, required: true },
@@ -71,8 +82,13 @@ const props = defineProps({
   minimap: { type: Boolean, default: true },
   lodFar: { type: Number, default: 0.22 },
   lodMid: { type: Number, default: 0.5 },
+  editable: { type: Boolean, default: false },
+  memory: { type: Object, default: null },
+  relayoutKey: { default: null },
+  isValidConnection: { type: Function, default: null },
+  dropTypes: { type: Array, default: () => [] },
 })
-const emit = defineEmits(["select", "hover", "layout"])
+const emit = defineEmits(["select", "hover", "layout", "connect", "delete", "drop", "move"])
 
 const NODE_TYPES = { card: markRaw(CardNode), robo: markRaw(RoboNode), region: markRaw(RegionNode), collapsed: markRaw(CollapsedNode) }
 const EDGE_TYPES = { wire: markRaw(WireEdge) }
@@ -85,7 +101,8 @@ const MARKERS = [
 ]
 
 const state = useGraphState()
-const { fitView, viewport, setViewport, onViewportChange } = useVueFlow(props.flowId)
+const { fitView, viewport, setViewport, onViewportChange, screenToFlowCoordinate, getSelectedNodes, getSelectedEdges } = useVueFlow(props.flowId)
+const root = ref(null)
 const nodes = shallowRef([])
 const edges = shallowRef([])
 const busy = ref(false)
@@ -105,7 +122,26 @@ function anchorRegion(rid) {
   const box = layout && [...layout.regions, ...layout.nodes].find((b) => b.region?.id === rid)
   anchor = box ? { rid, x: box.x, y: box.y } : null
 }
-defineExpose({ anchorRegion, fit: () => fitView({ padding: 0.08, maxZoom: 1.1 }) })
+
+/** Put element `id` (a node id) at `position` when it is next drawn. */
+function place(id, position) {
+  props.memory?.placed.set(id, { x: position.x, y: position.y })
+}
+
+/** The page point at the middle of the view. */
+function center() {
+  const r = root.value?.getBoundingClientRect()
+  return r ? screenToFlowCoordinate({ x: r.left + r.width / 2, y: r.top + r.height / 2 }) : { x: 0, y: 0 }
+}
+
+/** Where every statement of the graph is drawn: node id -> {x, y}. */
+function positions() {
+  const out = new Map()
+  for (const n of layout?.nodes || []) if (n.node && props.model.byId.has(n.node.id)) out.set(n.node.id, { x: n.x, y: n.y })
+  return out
+}
+
+defineExpose({ anchorRegion, place, center, positions, relayout: () => relayout(true, true), fit: (opts = {}) => fitView({ padding: 0.08, maxZoom: 1.1, ...opts }) })
 
 function toFlow(l) {
   const model = props.model
@@ -127,6 +163,7 @@ function toFlow(l) {
       zIndex: -100 + r.depth,
       selectable: false,
       focusable: false,
+      draggable: false,
     })
   }
   for (const n of l.nodes) {
@@ -150,21 +187,37 @@ function toFlow(l) {
       position: { x: n.x, y: n.y },
       data: markRaw({ node: n.node, geom: n.geom, key: nodeKey(n.node) }),
       zIndex: 1,
+      // A terminal or flag the view adds stands for no statement
+      draggable: props.editable && model.byId.has(n.id),
     })
   }
+  const index = new Map([...l.nodes, ...l.regions].map((b) => [b.id, b]))
   const wires = l.edges
     .filter((e) => e.route && e.sourceHandle && e.targetHandle)
-    .map((e) => ({
-      id: e.id,
-      type: "wire",
-      source: e.source,
-      target: e.target,
-      sourceHandle: e.sourceHandle,
-      targetHandle: e.targetHandle,
-      data: markRaw({ ...e, palette: props.view.palette }),
-      // Under the elements, so an element's marks lie over a wire running past it
-      zIndex: 0,
-    }))
+    .map((e) => {
+      const s = index.get(e.source)
+      const t = index.get(e.target)
+      return {
+        id: e.id,
+        type: "wire",
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle,
+        targetHandle: e.targetHandle,
+        data: markRaw({
+          ...e,
+          palette: props.view.palette,
+          sourceAt: s && { x: s.x, y: s.y },
+          targetAt: t && { x: t.x, y: t.y },
+          sourceSize: s && { w: s.w, h: s.h },
+          targetSize: t && { w: t.w, h: t.h },
+          sourceSide: pinAt(s, e.sourceHandle)?.side,
+          targetSide: pinAt(t, e.targetHandle)?.side,
+        }),
+        // Under the elements, so an element's marks lie over a wire running past it
+        zIndex: 0,
+      }
+    })
   return { nodes: out, edges: wires }
 }
 
@@ -179,21 +232,30 @@ function toneOf(region) {
   return region.kind === "merge" ? "loop" : region.kind
 }
 
-async function relayout(refit) {
+function show(l) {
+  layout = l
+  if (props.editable && props.memory) remember(props.memory, l)
+  const flow = toFlow(l)
+  nodes.value = flow.nodes
+  edges.value = flow.edges
+}
+
+/** Lay out and draw; `refit` frames the result, `fresh` drops what an editable view kept. */
+async function relayout(refit, fresh = true) {
   const mine = ++run
   busy.value = true
   error.value = null
   planned.value = props.model.graph.nodes.length
+  const opts = { ...props.options, regions: props.regions, collapsed: props.collapsed, editable: props.editable }
+  const keep = props.editable && props.memory && !fresh && props.memory.placed.size > 0
   try {
     await fontsReady()
-    const l = await layoutView(props.model, props.view, { ...props.options, regions: props.regions, collapsed: props.collapsed })
+    const l = keep ? await keepLayout(props.model, props.view, opts, props.memory) : await layoutView(props.model, props.view, opts)
     if (mine !== run) return
+    if (!keep && props.memory) forget(props.memory)
     const before = anchor
     anchor = null
-    layout = l
-    const flow = toFlow(l)
-    nodes.value = flow.nodes
-    edges.value = flow.edges
+    show(l)
     emit("layout", { ms: l.ms, cached: l.cached, nodes: l.nodes.length, regions: l.regions.length, edges: l.edges.length, layout: l })
     await nextTick()
     const box = before && [...l.regions, ...l.nodes].find((b) => b.region?.id === before.rid)
@@ -208,15 +270,26 @@ async function relayout(refit) {
   }
 }
 
+// An editable view keeps its elements across a graph change, unless the change comes with a new relayout key
 watch(
-  () => [props.model, props.view, props.regions, props.options],
-  () => relayout(true),
+  () => [props.model, props.relayoutKey],
+  (now, was) => {
+    const keyChanged = !was || now[1] !== was[1]
+    if (props.editable && !keyChanged) relayout(false, false)
+    else relayout(true, true)
+  },
   { immediate: true },
 )
 watch(
-  () => props.collapsed,
-  () => relayout(false),
+  () => [props.view, props.regions, props.options],
+  () => relayout(true, true),
 )
+watch(
+  () => props.collapsed,
+  () => relayout(false, true),
+)
+
+// ---------------------------------------------------------------- selection and hover
 
 function selectionOf(node) {
   const d = node.data
@@ -247,6 +320,67 @@ function onLeave() {
   state.hovered.value = null
   state.hoveredName.value = null
   emit("hover", null)
+}
+
+// ---------------------------------------------------------------- editing
+
+const isDocNode = (id) => props.model.byId.has(id)
+
+/** Whether a wire being drawn may connect (the pins ask; Vue Flow's own check would also judge the drawn edges). */
+function validConnection(c) {
+  if (!props.editable || !isDocNode(c.source) || !isDocNode(c.target)) return false
+  return props.isValidConnection ? props.isValidConnection(c) : true
+}
+state.validConnection = validConnection
+
+function onConnect(c) {
+  if (validConnection(c)) emit("connect", { source: c.source, sourceHandle: c.sourceHandle, target: c.target, targetHandle: c.targetHandle })
+}
+
+function onDragStop({ nodes: moved }) {
+  if (!props.editable || !props.memory || !layout) return
+  for (const n of moved) place(n.id, n.position)
+  show(placeLayout(layout.plan, props.memory))
+  emit(
+    "move",
+    moved.filter((n) => isDocNode(n.id)).map((n) => ({ id: n.id, position: { x: n.position.x, y: n.position.y } })),
+  )
+}
+
+/** Delete / Backspace: the selected statements, else the selected wires (only what the document holds). */
+function onKey(event) {
+  if (!props.editable || (event.key !== "Delete" && event.key !== "Backspace")) return
+  if (event.target?.closest?.("input, textarea, select, [contenteditable='true']")) return
+  const known = new Set(props.model.edgeKeys)
+  let ids = getSelectedNodes.value.map((n) => n.data?.node?.id).filter((id) => id && isDocNode(id))
+  const keys = getSelectedEdges.value.flatMap((e) => e.data?.keys || []).filter((k) => known.has(k))
+  const picked = state.selected.value
+  if (!ids.length && !keys.length && picked != null) {
+    const n = props.model.graph.nodes.find((x) => x.id === picked || nodeKey(x) === picked)
+    if (n) ids = [n.id]
+  }
+  if (!ids.length && !keys.length) return
+  event.preventDefault()
+  emit("delete", { nodes: ids, edges: ids.length ? [] : keys })
+}
+
+const accepts = (event) => props.editable && props.dropTypes.some((t) => event.dataTransfer?.types?.includes(t))
+
+function onDragOver(event) {
+  if (!accepts(event)) return
+  event.preventDefault()
+  event.dataTransfer.dropEffect = "copy"
+}
+
+/** A drop of an accepted type: where it landed and the innermost region box there. */
+function onDrop(event) {
+  if (!accepts(event)) return
+  event.preventDefault()
+  const position = screenToFlowCoordinate({ x: event.clientX, y: event.clientY })
+  const hits = (layout?.regions || []).filter((r) => position.x >= r.x && position.x <= r.x + r.w && position.y >= r.y && position.y <= r.y + r.h)
+  hits.sort((a, b) => b.depth - a.depth)
+  emit("drop", { event, position, region: hits[0]?.region.id ?? null })
+  root.value?.focus()
 }
 
 const miniColor = (n) => (n.type === "region" ? "transparent" : "var(--kg-minimap-node)")
