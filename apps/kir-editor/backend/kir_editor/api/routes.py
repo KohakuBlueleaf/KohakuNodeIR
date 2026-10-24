@@ -20,13 +20,13 @@ def _tc(request: Request) -> Toolchain:
 
 @router.post("/graph")
 def text_to_graph(body: ToGraphRequest, request: Request) -> dict:
-    """KIR text -> ``{graph, structure, ast, diagnostics}``."""
+    """KIR text -> ``{graph, ast, diagnostics}``."""
     return _tc(request).graph(body.text, body.scope(), body.data)
 
 
 @router.post("/text")
 def graph_to_text(body: GraphRequest, request: Request) -> dict:
-    """Graph document -> ``{text, structure, ast, diagnostics}``."""
+    """Graph document -> ``{text, ast, diagnostics}``."""
     return _tc(request).text(body.graph, body.scope(), body.with_meta)
 
 

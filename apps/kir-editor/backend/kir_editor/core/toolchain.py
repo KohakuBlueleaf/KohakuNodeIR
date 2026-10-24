@@ -31,12 +31,11 @@ from kohakunode.graph.to_graph import DATA_STYLES
 from kohakunode.lower.passes import PASSES, REQUIRES
 from kohakunode.sig import Library, NodeEnv, build_env, library_from_json, library_to_json
 from kohakunode.sig.files import SUFFIX, load_library
-from kohakunode.syntax.ast import Def, Program, TypeHints
+from kohakunode.syntax.ast import Program
 
 from kir_editor.config import Settings
 from kir_editor.core.ast_json import (
     AstJsonError,
-    block_to_json,
     program_from_json,
     program_to_json,
 )
@@ -89,21 +88,6 @@ def _from_error(exc: KirError) -> list[dict]:
 
 def _found(diagnostics) -> list[dict]:
     return [diagnostic(d.code, d.message, d.line) for d in diagnostics]
-
-
-def structure(graph: dict) -> dict:
-    """Per graph name, its statements as graph → text reads them, each tagged with its node.
-
-    ``from_graph(..., with_meta=True)`` puts ``@meta node_id`` on every statement
-    a node stands for, so the editor can box nodes by the namespace, loop or
-    arm they belong to without walking control edges itself.
-    """
-    program = from_graph(graph, with_meta=True)
-    out = {"main": block_to_json([s for s in program.body if not isinstance(s, Def | TypeHints)])}
-    for s in program.body:
-        if isinstance(s, Def):
-            out[s.name] = block_to_json(s.body)
-    return out
 
 
 def _json_safe(value):
@@ -183,40 +167,35 @@ class Toolchain:
         return env, _found(check(program, env))
 
     def graph(self, text: str, scope: Scope, data: str = "wires") -> dict:
-        """Text -> graph view (.kirgraph) in a data style, with its structure, AST and diagnostics."""
+        """Text -> graph view (.kirgraph) in a data style, with the AST and diagnostics."""
         try:
             program = parse(text)
         except KirError as exc:
-            return {"graph": None, "structure": None, "ast": None, "diagnostics": _from_error(exc)}
+            return {"graph": None, "ast": None, "diagnostics": _from_error(exc)}
         if data not in DATA_STYLES:
             return {
                 "graph": None,
-                "structure": None,
                 "ast": None,
                 "diagnostics": [diagnostic("error", f"unknown data style {data!r}")],
             }
         env, diagnostics = self.checked(program, scope)
-        graph = to_graph(program, env, data=data)
         return {
-            "graph": graph,
-            "structure": structure(graph),
+            "graph": to_graph(program, env, data=data),
             "ast": program_to_json(program),
             "diagnostics": diagnostics,
         }
 
     def text(self, graph: dict, scope: Scope, with_meta: bool) -> dict:
-        """Graph view -> canonical text, with the graph's structure, the AST and diagnostics."""
+        """Graph view -> canonical text, with the AST and diagnostics."""
         try:
             text = write(from_graph(graph, with_meta=with_meta))
             program = parse(text)
-            shape = structure(graph)
         except (KirError, KeyError, TypeError, ValueError) as exc:
             err = exc if isinstance(exc, KirError) else KirGraphError(f"malformed graph: {exc!r}")
-            return {"text": None, "structure": None, "ast": None, "diagnostics": _from_error(err)}
+            return {"text": None, "ast": None, "diagnostics": _from_error(err)}
         _, diagnostics = self.checked(program, scope)
         return {
             "text": text,
-            "structure": shape,
             "ast": program_to_json(program),
             "diagnostics": diagnostics,
         }

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col text-warm-800 dark:text-warm-100">
+  <div class="kg-theme h-full flex flex-col text-warm-800 dark:text-warm-100">
     <AppHeader />
     <div class="flex-1 flex min-h-0">
       <PalettePanel class="w-56 shrink-0" @add="addNode" />

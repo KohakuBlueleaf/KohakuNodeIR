@@ -279,7 +279,7 @@ values ([passes.md](docs/spec/passes.md)).
 | tree-sitter grammar | `editors/tree-sitter-kir/` | highlighting and structure for any tree-sitter editor |
 | VS Code extension | `editors/vscode/` | highlighting, snippets, folding, and a client for `kir-lsp` |
 | Example node editor | `apps/kir-editor/` | Vue 3 + Vue Flow + elkjs + CodeMirror: nodes, flowchart, sequence, blocks and text views of one program |
-| Display library | `packages/kir-graph/` | `@kohaku/kir-graph`: a Vue component drawing a `.kirgraph` as nodes, flowchart, frames, dataflow, blocks or sequence, with live run overlays ([README](packages/kir-graph/README.md)) |
+| Display library | `packages/kir-graph/` | `@kohaku/kir-graph`: a Vue component drawing a `.kirgraph` as nodes, flowchart, frames, dataflow, blocks or sequence, with live run overlays, and editing the graph views by events (the example editor is built on it) ([README](packages/kir-graph/README.md)) |
 
 ### Rust core
 

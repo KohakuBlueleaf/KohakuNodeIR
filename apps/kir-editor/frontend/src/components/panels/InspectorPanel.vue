@@ -145,8 +145,8 @@
 import { computed } from "vue"
 
 import InspectorField from "@/components/panels/inspector/InspectorField.vue"
-import { formatLiteral, parseLiteral } from "@/graph/literal"
-import { typeColor } from "@/graph/types"
+import { formatLiteral, parseLiteral, typeColor } from "@kohaku/kir-graph"
+
 import { useDocumentStore } from "@/stores/document"
 import { useLibraryStore } from "@/stores/library"
 

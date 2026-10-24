@@ -54,7 +54,7 @@ async function main() {
       await b.page.goto(`${base}/?${query}`)
       await settled(b.page)
       // Graph views settle when their layout lands; give fitView and the wires a moment.
-      await b.page.waitForFunction(() => !document.querySelector(".chip-iolite .animate-spin"))
+      await b.page.waitForFunction(() => !document.querySelector(".kg-flow__status .kg-spin"))
       await b.page.waitForTimeout(700)
       const file = path.join(OUT, `${name}.png`)
       await b.page.screenshot({ path: file })

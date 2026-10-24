@@ -71,8 +71,8 @@
 
 <script setup>
 import { computed } from "vue"
+import { formatLiteral } from "@kohaku/kir-graph"
 
-import { formatLiteral } from "@/graph/literal"
 import { useDocumentStore } from "@/stores/document"
 import { useUiStore } from "@/stores/ui"
 

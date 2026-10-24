@@ -4,7 +4,10 @@
  * leads to one place, a merge's input ports are numbered without gaps.
  */
 
-import { edgeKey, mergeSlot, parseHandle } from "@/graph/ports"
+import { edgeKey, isStatement, parseHandle } from "@kohaku/kir-graph"
+
+/** The free `in_<n>` slot a merge offers for one more incoming path. */
+const mergeSlot = (node) => `in_${(node.ctrl_in || []).length}`
 
 // ---------------------------------------------------------------- names
 
@@ -287,6 +290,16 @@ export function toggleDefault(graph, node) {
     node.ctrl_out.push("default")
     node.props.labels.default = fresh(usedLabels(graph), "other")
   }
+}
+
+/**
+ * The id of the last statement of `region` (a region id; null: the graph's
+ * top level) that control leaves through `out`, in program order; null when
+ * it has none.
+ */
+export function lastStatement(graph, region) {
+  const inside = graph.nodes.filter((n) => (n.region ?? null) === region && isStatement(n) && (n.ctrl_out || []).includes("out"))
+  return inside.at(-1)?.id ?? null
 }
 
 /**

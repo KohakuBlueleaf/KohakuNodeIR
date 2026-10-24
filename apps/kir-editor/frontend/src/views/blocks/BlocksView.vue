@@ -44,8 +44,8 @@
 
 <script setup>
 import { computed } from "vue"
+import { formatLiteral } from "@kohaku/kir-graph"
 
-import { formatLiteral } from "@/graph/literal"
 import { NODE_MIME, VAR_MIME } from "@/program/edit"
 import { variables } from "@/program/structure"
 import { provideStatementTree } from "@/program/useStatementTree"

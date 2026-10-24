@@ -68,8 +68,8 @@
 
 <script setup>
 import { computed, inject, ref } from "vue"
+import { shortLiteral } from "@kohaku/kir-graph"
 
-import { shortLiteral } from "@/graph/literal"
 import { ITEM_MIME, dragState, removeItem } from "@/program/edit"
 import { useStatementTree } from "@/program/useStatementTree"
 import { useUiStore } from "@/stores/ui"

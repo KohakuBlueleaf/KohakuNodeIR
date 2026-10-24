@@ -49,8 +49,35 @@ const nodeIds = (page) => store(page, () => window.__kir.doc.graph.nodes.map((n)
 async function open(page, query) {
   await page.goto(`${BASE}/?${query}`)
   await settled(page)
-  await page.waitForFunction(() => !document.querySelector(".chip-iolite .animate-spin"))
+  await page.waitForFunction(() => !document.querySelector(".kg-flow__status .kg-spin"))
 }
+
+/** A point of `view`'s canvas (relative to it) with room for a new node below and right of it, clear of nodes and chrome. */
+async function emptySpot(page, view, flowId) {
+  // Leave a margin round the graph, so a view filled by it has room
+  await page.evaluate((f) => window.__kir.flows[f]({ padding: 0.9 }), flowId)
+  await page.waitForTimeout(150)
+  const spot = await page.evaluate((v) => {
+    const surface = document.querySelector(`[data-view=${v}] .kg-flow`).getBoundingClientRect()
+    const taken = [...document.querySelectorAll(`[data-view=${v}] .vue-flow__node, [data-view=${v}] .vue-flow__controls, [data-view=${v}] .vue-flow__minimap, [data-view=${v}] .card`)].map((el) => el.getBoundingClientRect())
+    const [w, h, margin] = [260, 130, 24]
+    for (let y = margin; y + h < surface.height - margin; y += 20)
+      for (let x = margin + 40; x + w < surface.width - margin; x += 20) {
+        const r = { left: surface.x + x - 40, top: surface.y + y - 14, right: surface.x + x + w, bottom: surface.y + y + h }
+        if (!taken.some((t) => t.left < r.right && t.right > r.left && t.top < r.bottom && t.bottom > r.top)) return { x, y }
+      }
+    return null
+  }, view)
+  assert(spot, `no empty room on the ${view} canvas`)
+  return spot
+}
+
+/** The ids of the current graph's nodes that `view` draws no element for. */
+const undrawn = (page, view) =>
+  store(page, (v) => {
+    const drawn = new Set([...document.querySelectorAll(`[data-view=${v}] .vue-flow__node`)].map((el) => el.dataset.id))
+    return window.__kir.doc.graph.nodes.map((n) => n.id).filter((id) => !drawn.has(id))
+  }, view)
 
 async function center(page, selector) {
   const box = await page.locator(selector).first().boundingBox()
@@ -116,16 +143,30 @@ async function roundTrips(page, expect, label) {
 async function graphEditing(page) {
   let mul = null
 
-  await step("nodes view (exec, wires) loads clamp: 8 nodes drawn", async () => {
+  await step("nodes view (exec, wires) loads clamp: every node and edge of the graph drawn", async () => {
     await open(page, "sample=clamp&view=split&split=nodes,text&data=wires&control=exec&theme=light")
-    await page.waitForFunction(() => document.querySelectorAll("[data-view=nodes] .vue-flow__node").length === 8)
+    await page.waitForSelector("[data-view=nodes] .vue-flow__node")
+    const missing = await undrawn(page, "nodes")
+    assert(missing.length === 0, `not drawn: ${missing.join(", ")}`)
+    const unwired = await store(page, () => {
+      const drawn = new Set([...document.querySelectorAll("[data-view=nodes] .kg-wire")].flatMap((g) => g.dataset.keys.split(" ")))
+      const key = (e) => `${e.kind}|${e.from.node}|${e.from.port}|${e.to.node}|${e.to.port}`
+      return window.__kir.doc.graph.edges.map(key).filter((k) => !drawn.has(k))
+    })
+    assert(unwired.length === 0, `edges not drawn: ${unwired.join(", ")}`)
+    const terminals = await page.locator("[data-view=nodes] .kg-wire[data-ends^='__start|']").count()
+    assert(terminals === 1, `${terminals} wires leave Start`)
     assert((await text(page)).includes("(x, y)clamp(avg)"), "unexpected text")
   })
 
-  await step("drag multiply from the palette onto the canvas", async () => {
+  await step("drag multiply from the palette onto the canvas, drawn where it was dropped", async () => {
     const before = new Set(await nodeIds(page))
     const item = page.locator(".kir-pal-item").filter({ has: page.locator("span", { hasText: /^multiply$/ }) })
-    await item.dragTo(page.locator("[data-view=nodes] .kir-surface"), { targetPosition: { x: 160, y: 140 } })
+    const surface = page.locator("[data-view=nodes] .kg-flow")
+    const box = await surface.boundingBox()
+    const spot = await emptySpot(page, "nodes", "kir-nodes")
+    const unmoved = await page.evaluate(() => [...document.querySelectorAll("[data-view=nodes] .vue-flow__node")].map((el) => [el.dataset.id, el.getBoundingClientRect().x, el.getBoundingClientRect().y]))
+    await item.dragTo(surface, { targetPosition: spot })
     await page.waitForFunction(() => window.__kir.doc.graph.nodes.length === 9)
     mul = (await nodeIds(page)).find((id) => !before.has(id))
     const node = await store(page, (id) => window.__kir.doc.graph.nodes.find((n) => n.id === id), mul)
@@ -133,6 +174,13 @@ async function graphEditing(page) {
     await page.waitForSelector(`.vue-flow__node[data-id="${mul}"]`)
     await settled(page)
     assert((await text(page)).includes("()multiply(result)"), "text lacks the free multiply")
+    // The drop point is the node's top left, less the grab offset (views/shared/GraphCanvas.vue)
+    const at = await page.locator(`.vue-flow__node[data-id="${mul}"]`).boundingBox()
+    assert(Math.abs(at.x - (box.x + spot.x)) < 60 && Math.abs(at.y - (box.y + spot.y)) < 30, `multiply drawn at ${at.x - box.x}, ${at.y - box.y}, dropped at ${spot.x}, ${spot.y}`)
+    for (const [id, x, y] of unmoved) {
+      const now = await page.locator(`[data-view=nodes] .vue-flow__node[data-id="${id}"]`).boundingBox()
+      assert(now && Math.abs(now.x - x) < 1 && Math.abs(now.y - y) < 1, `${id} moved when multiply was added`)
+    }
   })
 
   await step("wire a data edge x -> multiply.a", async () => {
@@ -159,8 +207,49 @@ async function graphEditing(page) {
     assert((await text(page)).trimEnd().endsWith("(avg2)print_val()\n(x)multiply(result)"), "multiply not chained last")
   })
 
+  await step("drag multiply: it moves, its wires end on its pins, nothing else moves", async () => {
+    const rects = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-view=nodes] .vue-flow__node")].map((el) => [el.dataset.id, el.getBoundingClientRect().toJSON()])))
+    const before = await rects()
+    const head = await page.locator(`.vue-flow__node[data-id="${mul}"] .kg-card__head`).boundingBox()
+    // The drag starts on the first pointer move; the node follows the pointer from there
+    await page.mouse.move(head.x + 24, head.y + head.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(head.x + 26, head.y + head.height / 2 + 1)
+    await page.mouse.move(head.x + 146, head.y + head.height / 2 + 81, { steps: 10 })
+    await page.mouse.up()
+    await page.waitForTimeout(200)
+    const after = await rects()
+    for (const [id, r] of Object.entries(after)) {
+      const [dx, dy] = [r.x - before[id].x, r.y - before[id].y]
+      if (id === mul) assert(Math.abs(dx - 120) < 3 && Math.abs(dy - 80) < 3, `multiply moved by ${dx}, ${dy}`)
+      else assert(Math.abs(dx) < 1 && Math.abs(dy) < 1, `${id} moved by ${dx}, ${dy}`)
+    }
+    const off = await page.evaluate((id) => {
+      const out = []
+      const centre = (node, handle) => {
+        const r = document.querySelector(`[data-view=nodes] .vue-flow__handle[data-nodeid="${node}"][data-handleid="${handle}"]`)?.getBoundingClientRect()
+        return r && { x: r.x + r.width / 2, y: r.y + r.height / 2 }
+      }
+      for (const g of document.querySelectorAll("[data-view=nodes] .kg-wire")) {
+        const [s, sh, t, th] = g.dataset.ends.split("|")
+        if (s !== id && t !== id) continue
+        const path = g.querySelector(".kg-wire__line")
+        const ctm = path.getScreenCTM()
+        const at = (len) => new DOMPoint(path.getPointAtLength(len).x, path.getPointAtLength(len).y).matrixTransform(ctm)
+        const [a, b] = [at(0), at(path.getTotalLength())]
+        const [pa, pb] = [centre(s, sh), centre(t, th)]
+        out.push({ ends: g.dataset.ends, source: pa ? Math.hypot(a.x - pa.x, a.y - pa.y) : -1, target: pb ? Math.hypot(b.x - pb.x, b.y - pb.y) : -1 })
+      }
+      return out
+    }, mul)
+    // Its two wires, and the view's own wire on to End now that multiply ends the chain
+    const own = off.filter((w) => !w.ends.includes("__"))
+    assert(own.length === 2 && off.length === 3, `expected multiply's 2 wires and the one to End, found ${off.map((w) => w.ends).join(", ")}`)
+    for (const w of off) assert(w.source >= 0 && w.source < 2 && w.target >= 0 && w.target < 2, `wire ${w.ends} ends ${w.source.toFixed(1)} / ${w.target.toFixed(1)} px off its pins`)
+  })
+
   await step("type b = 7 in the node's input box (widget); graph -> text and AST -> text agree", async () => {
-    const box = page.locator(`.vue-flow__node[data-id="${mul}"] input.kir-widget`)
+    const box = page.locator(`.vue-flow__node[data-id="${mul}"] input.kg-widget`)
     assert((await box.count()) === 1, "expected one widget (a is wired, so only b has a box)")
     await box.fill("7")
     await box.press("Enter")
@@ -173,7 +262,7 @@ async function graphEditing(page) {
   let withMultiply = ""
   await step("delete multiply with the Delete key", async () => {
     withMultiply = await text(page)
-    await page.locator(`.vue-flow__node[data-id="${mul}"] .kir-card__head`).click()
+    await page.locator(`.vue-flow__node[data-id="${mul}"] .kg-card__head`).click()
     await page.keyboard.press("Delete")
     await page.waitForFunction((id) => !window.__kir.doc.graph.nodes.some((n) => n.id === id), mul)
     await settled(page)
@@ -181,7 +270,7 @@ async function graphEditing(page) {
   })
 
   await step("undo (Ctrl+Z) restores multiply, its wires, b = 7 and the text", async () => {
-    await page.locator("[data-view=nodes] .kir-surface").click({ position: { x: 30, y: 300 } })
+    await page.locator("[data-view=nodes] .kg-flow").click({ position: { x: 30, y: 300 } })
     await page.keyboard.press("Control+z")
     await page.waitForFunction((id) => window.__kir.doc.graph.nodes.some((n) => n.id === id), mul)
     const edges = await store(page, (id) => window.__kir.doc.graph.edges.filter((e) => e.to.node === id).length, mul)
@@ -204,7 +293,7 @@ async function graphEditing(page) {
     await page.keyboard.type("z = 1\n")
     await page.waitForFunction(() => window.__kir.doc.ast?.body.some((s) => s.type === "assign" && s.target === "z"))
     await settled(page)
-    await page.locator("[data-view=nodes] .kir-surface").click({ position: { x: 30, y: 300 } })
+    await page.locator("[data-view=nodes] .kg-flow").click({ position: { x: 30, y: 300 } })
     await page.keyboard.press("Control+z")
     await page.waitForFunction(() => !window.__kir.doc.ast?.body.some((s) => s.type === "assign" && s.target === "z"))
     await settled(page)
@@ -236,14 +325,14 @@ const VIEW_CHECKS = {
   "nodes&control=frames": async (page, s) => {
     const drawn = await page.locator("[data-view=nodes] .vue-flow__node-card").count()
     assert(drawn > 0, "no cards drawn")
-    if (s !== "clamp") assert((await page.locator(".kir-region").count()) > 0, "no control regions drawn")
+    if (s !== "clamp") assert((await page.locator(".kg-region").count()) > 0, "no control regions drawn")
   },
   "nodes&control=exec": async (page) => {
-    assert((await page.locator(".kir-pin--exec").count()) > 0, "no exec pins drawn")
+    assert((await page.locator(".kg-pin--ctrl").count()) > 0, "no exec pins drawn")
   },
   flowchart: async (page) => {
-    assert((await page.locator(".robo-el--start").count()) === 1, "no Start element")
-    assert((await page.locator(".robo-el--variable").count()) > 0, "no VARIABLE elements")
+    assert((await page.locator(".kg-robo--start").count()) === 1, "no Start element")
+    assert((await page.locator(".kg-robo--variable").count()) > 0, "no VARIABLE elements")
   },
   sequence: async (page) => {
     assert((await page.locator(".ev-tile").count()) > 0, "no EV3 blocks")
@@ -281,10 +370,36 @@ async function editsPerView(page) {
       const set = g.nodes.find((n) => n.kind === "set" && n.props.name === "x")
       return g.edges.find((e) => e.to.node === set.id).from.node
     })
-    const box = page.locator(`.vue-flow__node[data-id="${id}"] input.kir-widget`)
+    const box = page.locator(`.vue-flow__node[data-id="${id}"] input.kg-widget`)
     await box.fill("3")
     await box.press("Enter")
     await roundTrips(page, ["x = 3\n"], "nodes frames")
+  })
+
+  await step("nodes (frames): an assign dropped into a region box joins the end of that block", async () => {
+    const target = await page.evaluate(() => {
+      const nodes = [...document.querySelectorAll("[data-view=nodes] .vue-flow__node-card")].map((el) => el.getBoundingClientRect())
+      // A control region's box (a dataflow block's box is its owner node, and takes no drops into it)
+      for (const el of document.querySelectorAll("[data-view=nodes] .vue-flow__node-region")) {
+        if (!el.dataset.id.startsWith("region:")) continue
+        const r = el.getBoundingClientRect()
+        for (let y = r.top + 30; y < r.bottom - 4; y += 4)
+          for (let x = r.left + 4; x < r.right - 4; x += 4)
+            if (!nodes.some((n) => x > n.left - 2 && x < n.right + 2 && y > n.top - 2 && y < n.bottom + 2)) return { x, y, region: el.dataset.id }
+      }
+      return null
+    })
+    assert(target, "no free point inside a region box")
+    const rid = target.region.slice("region:".length)
+    const before = new Set(await nodeIds(page))
+    const item = page.locator(".kir-pal-item").filter({ has: page.locator("span", { hasText: /^assign$/ }) })
+    const surface = await page.locator("[data-view=nodes] .kg-flow").boundingBox()
+    await item.dragTo(page.locator("[data-view=nodes] .kg-flow"), { targetPosition: { x: target.x - surface.x, y: target.y - surface.y } })
+    await page.waitForFunction((n) => window.__kir.doc.graph.nodes.length === n + 1, before.size)
+    const added = await store(page, (ids) => window.__kir.doc.graph.nodes.find((n) => !ids.includes(n.id)), [...before])
+    assert(added.kind === "assign" && added.region === rid, `dropped ${JSON.stringify(added)} into ${rid}`)
+    const name = added.outputs[0].var
+    await roundTrips(page, [`    ${name} = 0\n`], "frames drop into a region")
   })
 
   await step("flowchart: set n = 6 on the '= value' element (inspector)", async () => {

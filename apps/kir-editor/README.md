@@ -10,7 +10,7 @@ rewrites the program, after which every view is drawn again.
 
 | View | Style | Drawn from |
 |---|---|---|
-| **Nodes** (default) | ComfyUI / Blender / Unreal: data flows left → right; literal inputs are input boxes inside the node | the graph document |
+| **Nodes** (default) | ComfyUI / Blender / Unreal cards: control runs down, data enters on the left and leaves on the right; literal inputs are input boxes inside the node | the graph document |
 | **Flowchart** | classic ROBO Pro: blue program flow from a Start element, orange data lines, yellow VARIABLE elements | the graph document (variables style) |
 | **Sequence** | LEGO EV3: a sequence beam of coloured blocks, parameter boxes along their bottoms, data wires underneath | the AST |
 | **Blocks** | Scratch: hats, command blocks with slots, C blocks | the AST |
@@ -30,16 +30,18 @@ apps/kir-editor/
         demo_nodes.py        `demo`, the runnable node library
     signatures/              .kirsig.json files listed in the palette (`vision`)
     tests/test_api.py        API tests against the golden corpus and the samples
-  frontend/                  Vue 3 + Vite + Pinia + UnoCSS + Vue Flow + elkjs + CodeMirror 6
+  frontend/                  Vue 3 + Vite + Pinia + UnoCSS + kir-graph + CodeMirror 6
     src/
       api/                   backend client
-      stores/                document (text, graph, AST, layouts, history), library, ui (view knobs)
-      graph/                 graph-view logic: ports, ELK layout, frames layout, edits, Vue Flow mapping
-        styles/              node geometry per view: card.js (nodes), robo.js (flowchart)
+      stores/
+        document/            the program: index (state), sync (text <-> graph / AST), history (undo),
+                             edits (graph edits), toolchain (passes, check, lower, run)
+        library.js ui.js     node libraries; view knobs
+      graph/edit.js          graph edits that keep a .kirgraph valid for from_graph
       program/               statement-view logic: grouping into constructs, edits, new statements
       views/
         nodes/ flowchart/ sequence/ blocks/ text/   one folder per view
-        shared/              graph canvas, wire edge, literal widget, knob switch, legend
+        shared/              graph canvas (the editable kir-graph), knob switch, legend
       components/            chrome (header, status bar) and panels (palette, inspector, bottom)
       samples/               programs shipped with the editor
     tests/e2e/               browser smoke test and screenshot tool (playwright-core + Edge)
@@ -66,6 +68,13 @@ npm run dev          # http://localhost:5173, proxies /api to 127.0.0.1:48888
 `KIR_API_TARGET` points the dev proxy at another backend address.
 `npm run build` writes a static build to `frontend/dist/`.
 
+The node and flowchart views are the display library
+[`packages/kir-graph`](../../packages/kir-graph/README.md), taken from its
+source in this repository (`vite.config.js` aliases `@kohaku/kir-graph` to
+it and resolves the libraries both share, Vue, Vue Flow and elkjs, from the
+editor's own `node_modules`), so the library needs no build or install of
+its own here.
+
 Backend settings:
 
 | Variable | Default | Meaning |
@@ -83,7 +92,7 @@ parameters override them for one page load:
 | `view` | `nodes` `flowchart` `sequence` `blocks` `text` `split` | the view on screen |
 | `split` | `<view>,<view>` | the two views of `split` |
 | `data` | `variables` (default), `wires` | node view: values inside the graph go through `get` / `set` pills while the graph's inputs and outputs are wired straight to the statements they reach (docs/spec/graph.md), or reads wired straight to their only write |
-| `control` | `auto` (default), `exec`, `frames` | node view: Unreal-style exec pins and wires; or control as boxing (each namespace, branch arm, loop body, `each` body, `@try` / `@except`, `@dataflow` is a framed region, statements top to bottom, no control wires); `auto` is frames, or nothing when the graph has no control statements |
+| `control` | `auto` (default), `exec`, `frames` | node view: Unreal-style exec pins and wires (kir-graph's `nodes` view); or control as boxing (each namespace, branch arm, loop body, `each` body, `@try` / `@except`, `@dataflow` is a framed region, statements top to bottom, no control wires: `frames`); `auto` is frames, or data only (`dataflow`) when the graph has no control statements |
 | `lanes` | `stacked` (default), `tabs` | sequence view: switch / parallel / try lanes all shown, or one at a time |
 | `sample` | `tour` `factorial` `each` `clamp` | the program to open |
 | `graph` | a `@def` name | which graph the node and flowchart views show |
@@ -94,21 +103,24 @@ parameters override them for one page load:
 - Backend: `cd apps/kir-editor/backend && ../../../.venv/Scripts/python.exe -m pytest`.
   Against the golden corpus: the graph (both data styles) is the golden
   `.kirgraph` byte for byte; text → graph → text is a fixed point; AST → JSON →
-  text is the golden canonical text for every case; the structure tags every
-  statement with its node; plus diagnostics, passes, runs of every sample.
+  text is the golden canonical text for every case; plus diagnostics, passes,
+  runs of every sample.
 - Browser smoke: `cd apps/kir-editor/frontend && npm run test:e2e`. Starts the
   backend and the dev server on their own ports (48931, 5931; `KIR_E2E_API_PORT`,
   `KIR_E2E_WEB_PORT`, `KIR_PYTHON`), drives the installed Microsoft Edge
   headless through playwright-core with a fresh profile, and checks against the
   DOM, the stores (the dev build exposes them as `window.__kir`) and the
   backend's own answers:
-  1. node view editing: drag a node in, wire data and exec, type a literal in
-     the node's input box, delete, undo, redo, undo a typed text change, run,
-     lower with a pass off;
+  1. node view editing: every node of the graph is drawn; a node dragged in
+     from the palette lands where it was dropped and moves no other node; wire
+     data and exec; drag a node, after which only it has moved and both its
+     wires end on its pins; type a literal in the node's input box, delete,
+     undo, redo, undo a typed text change, run, lower with a pass off;
   2. every view (nodes in frames and exec, flowchart, sequence, blocks, text)
      loads the `tour`, `each` and `factorial` samples;
   3. one edit per view round-trips: afterwards `/api/text` of the graph and
-     `/api/ast/text` of the AST both equal the text;
+     `/api/ast/text` of the AST both equal the text (in frames, also a node
+     dropped into a region box, which joins the end of that block);
   4. no page or console errors.
 - Screenshots: `npm run shots -- <dir> [filter]` saves one image per view ×
   style (light, plus a dark round).
@@ -178,8 +190,8 @@ come back as `diagnostics: [{code, severity, message, line, column}]`.
 
 | Route | Body | Returns |
 |---|---|---|
-| `POST /api/graph` | `text`, `data` | `graph` (.kirgraph) in that data style, `structure`, `ast`, `diagnostics` |
-| `POST /api/text` | `graph`, `with_meta` | canonical `text`, `structure`, `ast`, `diagnostics` |
+| `POST /api/graph` | `text`, `data` | `graph` (.kirgraph) in that data style, `ast`, `diagnostics` |
+| `POST /api/text` | `graph`, `with_meta` | canonical `text`, `ast`, `diagnostics` |
 | `POST /api/ast/text` | `ast` | canonical `text`, `diagnostics` |
 | `POST /api/check` | `text` | `diagnostics` |
 | `POST /api/lower` | `text`, `passes` | `lowered` text, `semantic_hash`, `full_hash`, `diagnostics` |
@@ -189,9 +201,6 @@ come back as `diagnostics: [{code, severity, message, line, column}]`.
 
 - `ast`: the program as JSON (`core/ast_json.py`): `{uses, mode, body}`, every
   statement `{type, line, meta?, hint?, …}`, expressions `{name}` / `{lit}`.
-- `structure`: per graph name, its statements as graph → text reads them,
-  each carrying `meta.node_id` of the node it stands for. The node view boxes
-  nodes into regions with it.
 - `passes`: pass names in order; omitted or null runs all, `[]` runs the
   program as written.
 
@@ -202,38 +211,50 @@ graph document (for the node and flowchart views, in the data style they
 ask for) and the AST (for the blocks and sequence views). Typing in the text
 view re-derives both. A graph edit (adding a node, wiring, deleting, typing in
 an input box, the inspector) goes graph → text and re-derives the AST; the
-graph and its layout stay as the user arranged them. A statement edit in the
+graph stays as the user arranged it, and every element stays where it is
+drawn (kir-graph keeps positions across edits of the same graph and lays out
+afresh when the graph is re-derived from text). A statement edit in the
 blocks or sequence view goes AST → text → graph. Comments live only in the
 text: an edit made in another view writes canonical text. Node ids and
 positions survive a text edit only when the text carries them (the `@meta`
 toggle).
 
 **Undo / redo.** Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y and the header buttons. Every
-edit, from any view, first records a snapshot (graph, AST, layouts, the
-matching text) in a stack of 100; undo and redo swap whole snapshots. Inside
+edit, from any view, first records a snapshot (graph, AST, the matching text)
+in a stack of 100; undo and redo swap whole snapshots. Positions are not in
+the snapshots: the graph views remember where each node was drawn, so a node
+an undo brings back returns to its place. Inside
 the text editor and input fields the keys keep their own undo. Opening a file
 or sample starts a new history.
+
+**Graph canvas.** The node and flowchart views are one `<KirGraph editable>`
+each (`views/shared/GraphCanvas.vue`). The library draws, lays out and routes;
+every edit it reports comes back here as an event: a wire drawn between two
+pins (vetted by `graph/edit.js` while it is drawn), Delete on the selection, a
+drop from the palette (with the region box it landed in), a literal typed in
+an input box, a node moved. The document applies it and the library redraws,
+keeping every other element in place; wires at a moved element are rerouted
+orthogonally. "Lay out again" in the view bar lays the graph out afresh.
 
 **Nodes view.** Cards with a header and one row per port; unwired data inputs
 carry an input box: a switch for bool, a number field, a text field, KIR
 literal syntax for lists, dicts and None. Variables are pills (`get x` with
 its output on the right, `set x` with its input on the left); a literal node
-is an amber pill with its own box. With `control=exec` every node has Unreal
-exec pins and ELK lays the graph out left to right, wrapping long chains into
-rows; back edges (jumps back into a loop merge, returns into an `each` node's
-`next`) go into ELK reversed and are drawn dashed. With `control=frames`
-(`graph/frames.js`) the regions come from the backend's `structure`, arms of
-one branch / switch / parallel / try sit side by side, pills sit beside the
-node they serve, and a node dropped into a region joins that region's
-sequence. Frames are laid out again after every edit.
+is an amber pill with its own box; a pill serving one port sits beside it.
+With `control=exec` control runs down through exec pins; back edges (jumps
+back into a loop merge, returns into an `each` node's `next`) are drawn
+dashed, and a merge offers a free "+ way in" pin for one more way in. With
+`control=frames` each region (kirgraph 3 `regions`) is a box, arms of one
+branch / switch / parallel / try side by side, and a node dropped into a
+region box joins the end of that region's sequence.
 
-**Flowchart view.** `graph/styles/robo.js`: commands are rectangles on the
+**Flowchart view.** kir-graph's flowchart: commands are rectangles on the
 flow, `x = v` is an "= value" pentagon whose output line runs to the VARIABLE
 element it writes, branch is a diamond with labelled exits, switch a
 hexagon, loops return to a labelled merge, `each` is a loop element with item
 and index outputs, parallel a bar, try a red-edged element. A Start element
 precedes the first statement and an End element follows every exit; both are
-view-only (ids with `__`) and never written back.
+drawn by the view only and never written back.
 
 **Sequence view.** Each script (the program, every `@def`) is a beam of
 tiles coloured by library (demo green, kir.std red, other libraries yellow,

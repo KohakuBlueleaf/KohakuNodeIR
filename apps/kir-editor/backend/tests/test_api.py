@@ -205,33 +205,6 @@ def test_variables_style_is_the_golden_variables_graph(client):
     assert bad["graph"] is None and "unknown data style" in bad["diagnostics"][0]["message"]
 
 
-def _node_ids(stmts):
-    for s in stmts:
-        if "node_id" in s.get("meta", {}):
-            yield s["meta"]["node_id"]
-        for k in ("body", "handler"):
-            yield from _node_ids(s.get(k, []))
-
-
-@pytest.mark.parametrize("data", ["wires", "variables"])
-def test_structure_tags_statements_with_their_nodes(client, data):
-    """Every structure statement names a node of its graph, and each call/assign node appears once."""
-    text, sig, _ = _case("v2__features")
-    scope = {"signatures": [sig], "use_demo": False}
-    out = client.post("/api/graph", json={"text": text, "data": data, **scope}).json()
-    for g in out["graph"]["graphs"]:
-        ids = list(_node_ids(out["structure"][g["name"]]))
-        nodes = {n["id"]: n for n in g["nodes"]}
-        assert set(ids) <= set(nodes), (g["name"], set(ids) - set(nodes))
-        statements = [n["id"] for n in g["nodes"] if n["kind"] in ("call", "assign")]
-        assert sorted(i for i in ids if nodes[i]["kind"] in ("call", "assign")) == sorted(
-            statements
-        )
-    main = out["structure"]["main"]
-    types = [s["type"] for s in main]
-    assert types[types.index("switch") + 1 : types.index("switch") + 4] == ["namespace"] * 3
-
-
 def test_ast_text_reports_bad_json(client):
     out = client.post("/api/ast/text", json={"ast": {"body": [{"type": "nope"}]}}).json()
     assert out["text"] is None and "unknown statement type" in out["diagnostics"][0]["message"]

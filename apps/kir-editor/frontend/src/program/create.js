@@ -3,8 +3,9 @@
  * entry: the same `spec` the graph views receive (`{kind, name?, sig?, use?}`).
  */
 
+import { formatLiteral, parseLiteral } from "@kohaku/kir-graph"
+
 import { fresh, group, usedNames } from "@/program/structure"
-import { parseLiteral, formatLiteral } from "@/graph/literal"
 
 /** A literal that fits a type, for a new input slot. */
 export function defaultFor(type) {
