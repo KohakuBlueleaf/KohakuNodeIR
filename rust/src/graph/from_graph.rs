@@ -128,6 +128,11 @@ struct GraphView<'g> {
     rename: HashMap<PortRef, String>,
     members: HashSet<String>,
     emitted: HashSet<String>,
+    /// Labelled merges a builtin's port enters under the same label: the builtin writes the
+    /// namespace, every other edge into the merge is a jump.
+    entered: HashSet<String>,
+    /// (builtin, port) -> the labelled merge that port enters as its namespace.
+    owned: HashMap<PortRef, String>,
 }
 
 fn kind_of(n: &Json) -> Result<&str> {
@@ -163,6 +168,8 @@ impl<'g> GraphView<'g> {
             rename: HashMap::new(),
             members: HashSet::new(),
             emitted: HashSet::new(),
+            entered: HashSet::new(),
+            owned: HashMap::new(),
         };
         for e in array(g, "edges")? {
             let end = |k: &str| -> Result<PortRef> {
@@ -214,6 +221,17 @@ impl<'g> GraphView<'g> {
             if kind_of(n)? == "dataflow" {
                 for m in prop(n, "members").and_then(Json::as_array).ok_or_else(|| gerr("dataflow without members"))? {
                     v.members.insert(m.as_str().ok_or_else(|| gerr("member ids are strings"))?.to_string());
+                }
+            }
+            if matches!(kind_of(n)?, "branch" | "switch" | "parallel") {
+                let nid = string(n, "id")?;
+                for (port, label) in prop(n, "labels").and_then(Json::as_object).into_iter().flatten() {
+                    let Some(dst) = v.next_of(nid, port) else { continue };
+                    let m = v.node(&dst)?;
+                    if kind_of(m)? == "merge" && prop(m, "label").and_then(Json::as_str) == label.as_str() {
+                        v.entered.insert(dst.clone());
+                        v.owned.insert((nid.to_string(), port.clone()), dst);
+                    }
                 }
             }
         }
@@ -371,15 +389,30 @@ impl<'g> GraphView<'g> {
     }
 
     /// The first node every arm reaches inside the current region; None when arms never meet.
-    fn join_of(&self, starts: &[Option<String>], stop: &HashSet<String>) -> Result<Option<String>> {
+    /// `own` is per arm the labelled merge it enters as its namespace: never the join. Any other
+    /// edge into a builtin's labelled merge is a jump the walk does not follow.
+    fn join_of(
+        &self,
+        starts: &[Option<String>],
+        stop: &HashSet<String>,
+        own: &[Option<String>],
+    ) -> Result<Option<String>> {
         if starts.is_empty() || starts.iter().any(Option::is_none) {
             return Ok(None);
         }
+        let arm_stop = |o: &Option<String>| -> HashSet<String> {
+            stop.iter().chain(self.entered.iter().filter(|m| Some(*m) != o.as_ref())).cloned().collect()
+        };
+        let stops: Vec<HashSet<String>> = starts.iter().enumerate().map(|(i, _)| arm_stop(&own[i])).collect();
         let sets = starts
             .iter()
-            .map(|s| Ok(self.reach(s.as_deref(), stop)?.into_iter().collect::<HashSet<_>>()))
+            .zip(&stops)
+            .map(|(s, st)| Ok(self.reach(s.as_deref(), st)?.into_iter().collect::<HashSet<_>>()))
             .collect::<Result<Vec<_>>>()?;
-        for nid in self.reach(starts[0].as_deref(), stop)? {
+        for nid in self.reach(starts[0].as_deref(), &stops[0])? {
+            if own.iter().any(|o| o.as_ref() == Some(&nid)) {
+                continue;
+            }
             if sets.iter().all(|s| s.contains(&nid)) {
                 return Ok(Some(nid));
             }
@@ -426,7 +459,8 @@ impl<'g> GraphView<'g> {
             let kind = kind_of(n)?;
             let label = if kind == "merge" { prop(n, "label").filter(|l| l.truthy()) } else { None };
             let label = label.map(|l| l.as_str().ok_or_else(|| gerr("labels are strings"))).transpose()?;
-            if let (Some(l), true) = (label, self.emitted.contains(&c)) {
+            // Back to a loop entry, or into a namespace its builtin writes
+            if let (Some(l), true) = (label, self.emitted.contains(&c) || self.entered.contains(&c)) {
                 let mut jump = Stmt::new(Kind::Jump { label: l.to_string() }, None);
                 jump.origin = incoming_origin;
                 out.push(jump);
@@ -532,6 +566,28 @@ impl<'g> GraphView<'g> {
         Ok(out)
     }
 
+    /// The labelled merge a builtin's port enters as its namespace, if any.
+    fn own(&self, c: &str, port: &str) -> Option<String> {
+        self.owned.get(&(c.to_string(), port.to_string())).cloned()
+    }
+
+    /// The namespace a builtin's port enters, through its labelled merge when it has one.
+    fn arm(&mut self, n: &'g Json, c: &str, port: &str, label: String, stop: &HashSet<String>) -> Result<Stmt> {
+        match self.own(c, port) {
+            Some(merge) if !self.emitted.contains(&merge) => {
+                self.emitted.insert(merge.clone());
+                let mut inner_stop = stop.clone();
+                inner_stop.insert(merge.clone());
+                let body = self.chain_next(&merge, "out", &inner_stop)?;
+                self.namespace(label, body, self.node(&merge)?, "out")
+            }
+            _ => {
+                let body = self.chain_next(c, port, stop)?;
+                self.namespace(label, body, n, port)
+            }
+        }
+    }
+
     fn branch_like(
         &mut self,
         n: &'g Json,
@@ -545,7 +601,8 @@ impl<'g> GraphView<'g> {
             .map(|p| p.as_str().ok_or_else(|| gerr("control ports are strings")))
             .collect::<Result<_>>()?;
         let starts: Vec<Option<String>> = ports.iter().map(|p| self.next_of(c, p)).collect();
-        let join = self.join_of(&starts, stop)?;
+        let own: Vec<Option<String>> = ports.iter().map(|p| self.own(c, p)).collect();
+        let join = self.join_of(&starts, stop, &own)?;
         let mut arm_stop = stop.clone();
         arm_stop.extend(join.clone());
         let labels = || prop(n, "labels").ok_or_else(|| gerr(format!("{kind} node without labels")));
@@ -569,8 +626,7 @@ impl<'g> GraphView<'g> {
                 };
                 out.push(self.decorate(Stmt::new(s, None), n)?);
                 for port in ["true", "false"] {
-                    let body = self.chain_next(c, port, &arm_stop)?;
-                    out.push(self.namespace(label_of(port)?, body, n, port)?);
+                    out.push(self.arm(n, c, port, label_of(port)?, &arm_stop)?);
                 }
             }
             "switch" => {
@@ -587,16 +643,14 @@ impl<'g> GraphView<'g> {
                 let s = Kind::Switch { value: input("value")?, cases, default };
                 out.push(self.decorate(Stmt::new(s, None), n)?);
                 for port in &ports {
-                    let body = self.chain_next(c, port, &arm_stop)?;
-                    out.push(self.namespace(label_of(port)?, body, n, port)?);
+                    out.push(self.arm(n, c, port, label_of(port)?, &arm_stop)?);
                 }
             }
             "parallel" => {
                 let s = Kind::Parallel { labels: ports.iter().map(|p| label_of(p)).collect::<Result<_>>()? };
                 out.push(self.decorate(Stmt::new(s, None), n)?);
                 for port in &ports {
-                    let body = self.chain_next(c, port, &arm_stop)?;
-                    out.push(self.namespace(label_of(port)?, body, n, port)?);
+                    out.push(self.arm(n, c, port, label_of(port)?, &arm_stop)?);
                 }
             }
             _ => {

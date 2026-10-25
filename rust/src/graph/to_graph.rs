@@ -806,8 +806,8 @@ impl<'a> Scope<'a> {
                     incoming = vec![];
                     for (port, label) in ports.iter().zip(labels) {
                         if let Some(&ns) = local.get(label.as_str()) {
-                            self.emitted.insert(ns.uid);
-                            let ends = self.namespace(ns, vec![port_ref(&id, port)])?;
+                            let src = self.entry_port(ns, port_ref(&id, port))?;
+                            let ends = self.namespace(ns, vec![src])?;
                             incoming.extend(ends);
                         }
                     }
@@ -971,10 +971,25 @@ impl<'a> Scope<'a> {
 
     fn enter(&mut self, local: &HashMap<&'a str, &'a Stmt>, label: &str, src: PortRef) -> Result<()> {
         let Some(&ns) = local.get(label) else { return Ok(()) };
-        self.emitted.insert(ns.uid);
+        let src = self.entry_port(ns, src)?;
         let ends = self.namespace(ns, vec![src])?;
         self.pending.entry(ns.uid).or_default().extend(ends);
         Ok(())
+    }
+
+    /// The port a builtin enters `ns` through. A namespace a jump also enters is drawn behind
+    /// its labelled merge: the builtin's port feeds `in_0`, each jump a further input.
+    fn entry_port(&mut self, ns: &'a Stmt, src: PortRef) -> Result<PortRef> {
+        let Kind::Namespace { label, .. } = &ns.kind else { unreachable!("a namespace") };
+        let jumped =
+            self.cfg.owners.get(&ns.uid).is_some_and(|o| o.iter().any(|s| matches!(s.kind, Kind::Jump { .. })));
+        if !jumped || self.merges.contains_key(label) {
+            self.emitted.insert(ns.uid);
+            return Ok(src);
+        }
+        let m = self.labelled_merge(ns, None)?;
+        self.join(vec![src], port_ref(&m, "in_0"))?;
+        Ok(port_ref(&m, "out"))
     }
 
     fn namespace(&mut self, ns: &'a Stmt, incoming: Vec<PortRef>) -> Result<Vec<PortRef>> {

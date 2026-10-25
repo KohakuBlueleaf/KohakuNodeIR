@@ -500,8 +500,8 @@ class _Scope:
                     for port, label in zip(ports, s.labels):
                         ns = local.get(label)
                         if ns is not None:
-                            self.emitted.add(id(ns))
-                            incoming += self.namespace(ns, [(n["id"], port)])
+                            src = self.entry_port(ns, (n["id"], port))
+                            incoming += self.namespace(ns, [src])
                 case Each() | Collect():
                     collecting = isinstance(s, Collect)
                     kind = "collect" if collecting else "each"
@@ -636,8 +636,19 @@ class _Scope:
         ns = local.get(label)
         if ns is None:
             return
-        self.emitted.add(id(ns))
+        src = self.entry_port(ns, src)
         self.pending.setdefault(id(ns), []).extend(self.namespace(ns, [src]))
+
+    def entry_port(self, ns: Namespace, src: Port) -> Port:
+        """The port a builtin enters `ns` through. A namespace a jump also enters is drawn behind
+        its labelled merge: the builtin's port feeds `in_0`, each jump a further input."""
+        jumped = any(isinstance(o, Jump) for o in self.cfg.owners.get(id(ns), []))
+        if not jumped or ns.label in self.merges:
+            self.emitted.add(id(ns))
+            return src
+        m = self.labelled_merge(ns)
+        self.join([src], (m, "in_0"))
+        return (m, "out")
 
     def namespace(self, ns: Namespace, incoming: list[Port]) -> list[Port]:
         if ns.origin is not None:

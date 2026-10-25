@@ -136,6 +136,17 @@ class _Graph:
             m for n in g["nodes"] if n["kind"] == "dataflow" for m in n["props"]["members"]
         }
         self.emitted: set[str] = set()
+        # Labelled merges a builtin's port enters under the same label: the builtin writes the
+        # namespace, every other edge into the merge is a jump
+        self.owned: dict[tuple[str, str], str] = {}
+        for n in g["nodes"]:
+            if n["kind"] in ("branch", "switch", "parallel"):
+                for port, label in n["props"]["labels"].items():
+                    dst = self.ctrl_out.get((n["id"], port))
+                    m = self.nodes[dst[0]] if dst else None
+                    if m and m["kind"] == "merge" and m.get("props", {}).get("label") == label:
+                        self.owned[(n["id"], port)] = m["id"]
+        self.entered = set(self.owned.values())
 
     # ------------------------------------------------------------ names
     def var(self, src: tuple[str, str]) -> str:
@@ -177,6 +188,20 @@ class _Graph:
     def namespace(self, label: str, body: list[Stmt], n: dict, port: str = "out") -> Namespace:
         origin = _origin(n.get("namespace_origins", {}).get(port))
         return Namespace(label, body, origin=origin)
+
+    def own(self, nid: str, port: str) -> str | None:
+        """The labelled merge a builtin's port enters as its namespace, if any."""
+        return self.owned.get((nid, port))
+
+    def arm(self, nid: str, port: str, label: str, stop: frozenset[str]) -> Namespace:
+        """The namespace a builtin's port enters, through its labelled merge when it has one."""
+        start = self.next_of(nid, port)
+        if start and start[0] == self.own(nid, port) and start[0] not in self.emitted:
+            merge = start[0]
+            self.emitted.add(merge)
+            body = self.chain(self.next_of(merge), stop | {merge})
+            return self.namespace(label, body, self.nodes[merge])
+        return self.namespace(label, self.chain(start, stop), self.nodes[nid], port)
 
     # ------------------------------------------------------------ statements
     def simple(self, n: dict) -> Stmt:
@@ -234,12 +259,20 @@ class _Graph:
                     queue.append(s)
         return out
 
-    def join_of(self, starts: list[str | None], stop: frozenset[str]) -> str | None:
-        """The first node every arm reaches inside the current region; None when arms never meet."""
+    def join_of(
+        self, starts: list[str | None], stop: frozenset[str], own: list[str | None] = ()
+    ) -> str | None:
+        """The first node every arm reaches inside the current region; None when arms never meet.
+        ``own`` is per arm the labelled merge it enters as its namespace: never the join. Any
+        other edge into a builtin's labelled merge is a jump the walk does not follow."""
         if not starts or any(s is None for s in starts):
             return None
-        sets = [set(self.reach(s, stop)) for s in starts]
-        for nid in self.reach(starts[0], stop):
+        own = list(own) or [None] * len(starts)
+        stops = [stop | (self.entered - {o}) for o in own]
+        sets = [set(self.reach(s, st)) for s, st in zip(starts, stops)]
+        for nid in self.reach(starts[0], stops[0]):
+            if nid in own:
+                continue
             if all(nid in s for s in sets):
                 return nid
         return None
@@ -265,8 +298,9 @@ class _Graph:
             n = self.nodes[cur]
             kind = n["kind"]
             label = n.get("props", {}).get("label") if kind == "merge" else None
-            if label and cur in self.emitted:
-                out.append(Jump(label, origin=incoming_origin))  # back to a loop entry
+            if label and (cur in self.emitted or cur in self.entered):
+                # Back to a loop entry, or into a namespace its builtin writes
+                out.append(Jump(label, origin=incoming_origin))
                 break
             if cur in stop:
                 # A shared labelled join is still an explicit jump from this
@@ -335,18 +369,16 @@ class _Graph:
             elif kind in ("branch", "switch", "parallel", "try"):
                 ports = n["ctrl_out"]
                 starts = [self.next_of(cur, p) for p in ports]
-                join = self.join_of([s[0] if s else None for s in starts], stop)
+                join = self.join_of(
+                    [s[0] if s else None for s in starts], stop, [self.own(cur, p) for p in ports]
+                )
                 arm_stop = stop | ({join} if join else set())
                 if kind == "branch":
                     labels = n["props"]["labels"]
                     cond = self.expr(cur, n["inputs"][0])
                     out.append(self.decorate(Branch(cond, labels["true"], labels["false"]), n))
                     for port in ("true", "false"):
-                        out.append(
-                            self.namespace(
-                                labels[port], self.chain(self.next_of(cur, port), arm_stop), n, port
-                            )
-                        )
+                        out.append(self.arm(cur, port, labels[port], arm_stop))
                 elif kind == "switch":
                     labels = n["props"]["labels"]
                     cases = [
@@ -356,20 +388,12 @@ class _Graph:
                     value = self.expr(cur, n["inputs"][0])
                     out.append(self.decorate(Switch(value, cases, labels.get("default")), n))
                     for port in ports:
-                        out.append(
-                            self.namespace(
-                                labels[port], self.chain(self.next_of(cur, port), arm_stop), n, port
-                            )
-                        )
+                        out.append(self.arm(cur, port, labels[port], arm_stop))
                 elif kind == "parallel":
                     labels = n["props"]["labels"]
                     out.append(self.decorate(Parallel([labels[p] for p in ports]), n))
                     for port in ports:
-                        out.append(
-                            self.namespace(
-                                labels[port], self.chain(self.next_of(cur, port), arm_stop), n, port
-                            )
-                        )
+                        out.append(self.arm(cur, port, labels[port], arm_stop))
                 else:
                     err = self.bound(cur, "error", n["props"].get("error_name"))
                     body = self.chain(self.next_of(cur, "try"), arm_stop)
