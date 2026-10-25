@@ -40,6 +40,8 @@ import { markClasses, nodeTooltip } from "./marks.js"
 
 /** A node-view card (or variable / literal pill); geometry from geometry/card.js, input boxes while editing. */
 const props = defineProps({ id: { type: String, required: true }, data: { type: Object, required: true } })
+// vue-flow hands every node its state as attributes; a fragment root takes only id and data
+defineOptions({ inheritAttrs: false })
 
 const state = useGraphState()
 const node = computed(() => props.data.node)

@@ -7,7 +7,7 @@
   </div>
 
   <!-- ======================================================== command block -->
-  <div v-else-if="item.t === 'stmt'" class="kg-block kg-block--cmd" :class="[`kg-tone--${tone}`, marks]" :style="heat" @click.stop="pick" @mouseenter="hover(true)" @mouseleave="hover(false)">
+  <div v-else-if="item.t === 'stmt'" class="kg-block kg-block--cmd" :class="[`kg-tone--${tone}`, marks]" :style="heat" @click.stop="pick" @dblclick.stop="open" @mouseenter="hover(true)" @mouseleave="hover(false)">
     <Icon :name="kindIcon(iconKind)" class="kg-block__icon" />
     <span class="kg-block__text kg-block__text--name">{{ title }}</span>
     <template v-if="node.kind === 'assign'">
@@ -120,6 +120,7 @@ const loopNote = computed(() => {
 const folded = (rid) => state.collapsed.value.has(rid)
 const count = (items) => items.reduce((n, it) => n + 1 + itemSlots(it).reduce((m, l) => m + count(l), 0), 0)
 const pick = () => state.select?.({ type: "node", id: node.value.id, key: key.value, node: node.value })
+const open = () => state.open?.({ type: "node", id: node.value.id, key: key.value, node: node.value })
 const pickRegion = (rid) => state.select?.({ type: "region", id: rid, key: rid })
 function hover(on) {
   state.hovered.value = on ? key.value : null

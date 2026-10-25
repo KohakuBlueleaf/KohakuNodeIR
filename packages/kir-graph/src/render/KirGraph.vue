@@ -18,6 +18,7 @@
       :is-valid-connection="isValidConnection"
       :drop-types="dropTypes"
       @select="select"
+      @open="(s) => emit('open', s)"
       @hover="(s) => emit('hover', s)"
       @layout="(s) => emit('layout', s)"
       @connect="(c) => emit('connect', c)"
@@ -72,7 +73,8 @@ import SequenceView from "./statements/SequenceView.vue"
  * a new `relayoutKey` lays out afresh. `isValidConnection(c)` vets a wire
  * being drawn; drops whose data has one of `dropTypes` are passed on.
  *
- * Emits `select` (`{type: node|region|edge, id, key, node?}` or null), `hover`,
+ * Emits `select` (`{type: node|region|edge, id, key, node?}` or null), `open` (a node or
+ * region double-clicked, as `select` gives it: a host opens a called `@def`'s graph), `hover`,
  * `layout` (`{ms, cached, nodes, regions, edges, layout}`), `update:collapsed`;
  * while editing `connect` (`{source, sourceHandle, target, targetHandle}`),
  * `delete` (`{nodes: [id], edges: [edge key]}`), `drop` (`{event, position,
@@ -107,7 +109,7 @@ const props = defineProps({
   isValidConnection: { type: Function, default: null },
   dropTypes: { type: Array, default: () => [] },
 })
-const emit = defineEmits(["select", "hover", "layout", "update:collapsed", "connect", "delete", "drop", "edit", "move"])
+const emit = defineEmits(["select", "open", "hover", "layout", "update:collapsed", "connect", "delete", "drop", "edit", "move"])
 
 const state = createGraphState()
 provideGraphState(state)
@@ -121,17 +123,18 @@ function memoryOf(id) {
   return memories.get(id)
 }
 
-const problem = ref(null)
-const model = computed(() => {
+// The model or the reason there is none, in one value: the template reads `problem` before it
+// passes `model`, so both must come from the same evaluation
+const built = computed(() => {
   void props.revision
   try {
-    problem.value = null
-    return graphModel(props.doc, props.graph)
+    return { model: graphModel(props.doc, props.graph), problem: null }
   } catch (e) {
-    problem.value = String(e?.message || e)
-    return null
+    return { model: null, problem: String(e?.message || e) }
   }
 })
+const model = computed(() => built.value.model)
+const problem = computed(() => built.value.problem)
 const graphView = computed(() => GRAPH_VIEWS[props.view] || null)
 // With an overlay, two rows of marks are kept clear over every element
 const hasOverlay = computed(() => !!(props.overlay || props.edgeOverlay || props.regionOverlay))
@@ -154,6 +157,7 @@ state.toggle = (rid) => {
   emit("update:collapsed", next)
 }
 state.select = (s) => select(s)
+state.open = (s) => emit("open", s)
 state.edit = (e) => emit("edit", e)
 
 function select(s) {

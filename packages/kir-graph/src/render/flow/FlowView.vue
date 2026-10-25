@@ -22,6 +22,7 @@
       :max-zoom="2.5"
       :delete-key-code="null"
       @node-click="onNodeClick"
+      @node-double-click="({ node }) => emit('open', selectionOf(node))"
       @edge-click="onEdgeClick"
       @node-mouse-enter="onEnter"
       @node-mouse-leave="onLeave"
@@ -88,7 +89,7 @@ const props = defineProps({
   isValidConnection: { type: Function, default: null },
   dropTypes: { type: Array, default: () => [] },
 })
-const emit = defineEmits(["select", "hover", "layout", "connect", "delete", "drop", "move"])
+const emit = defineEmits(["select", "open", "hover", "layout", "connect", "delete", "drop", "move"])
 
 const NODE_TYPES = { card: markRaw(CardNode), robo: markRaw(RoboNode), region: markRaw(RegionNode), collapsed: markRaw(CollapsedNode) }
 const EDGE_TYPES = { wire: markRaw(WireEdge) }

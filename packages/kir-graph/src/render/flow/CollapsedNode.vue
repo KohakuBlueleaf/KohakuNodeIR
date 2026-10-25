@@ -29,6 +29,8 @@ import Pins from "./Pins.vue"
  * statements it holds.
  */
 const props = defineProps({ id: { type: String, required: true }, data: { type: Object, required: true } })
+// vue-flow hands every node its state as attributes; a fragment root takes only id and data
+defineOptions({ inheritAttrs: false })
 
 const state = useGraphState()
 const g = computed(() => props.data.geom)

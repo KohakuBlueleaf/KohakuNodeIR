@@ -38,6 +38,7 @@ export function createGraphState() {
     wireStyle: ref("rail"),
     editable: ref(false),
     select: null,
+    open: null,
     toggle: null,
     edit: null,
     validConnection: null,

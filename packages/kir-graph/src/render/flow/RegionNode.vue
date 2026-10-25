@@ -29,6 +29,8 @@ import Pins from "./Pins.vue"
  * pins). The header button collapses it.
  */
 const props = defineProps({ id: { type: String, required: true }, data: { type: Object, required: true } })
+// vue-flow hands every node its state as attributes; a fragment root takes only id and data
+defineOptions({ inheritAttrs: false })
 
 const state = useGraphState()
 const entry = computed(() => state.regions.get(props.data.rid) || null)

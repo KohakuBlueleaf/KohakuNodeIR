@@ -461,4 +461,7 @@
   font-family: var(--kg-font-mono);
   font-size: 10px;
   color: var(--kg-text-muted);
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--kg-bg);
 }

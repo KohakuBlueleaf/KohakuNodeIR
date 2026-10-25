@@ -32,6 +32,8 @@ import Pins from "./Pins.vue"
 
 /** One flowchart element (ROBO Pro style); geometry from geometry/robo.js. */
 const props = defineProps({ id: { type: String, required: true }, data: { type: Object, required: true } })
+// vue-flow hands every node its state as attributes; a fragment root takes only id and data
+defineOptions({ inheritAttrs: false })
 
 const RADIUS = { value: 13, start: 15, end: 15, variable: 2, bar: 3 }
 const clipId = `kg-robo-clip-${++clips}`

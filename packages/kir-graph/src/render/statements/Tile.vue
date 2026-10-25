@@ -9,7 +9,7 @@
   </div>
 
   <!-- ======================================================== tile -->
-  <div v-else-if="item.t === 'stmt'" class="kg-tile" :class="[`kg-tone--${tone}`, marks]" :style="heat" @click.stop="pick" @mouseenter="hover(true)" @mouseleave="hover(false)">
+  <div v-else-if="item.t === 'stmt'" class="kg-tile" :class="[`kg-tone--${tone}`, marks]" :style="heat" @click.stop="pick" @dblclick.stop="open" @mouseenter="hover(true)" @mouseleave="hover(false)">
     <div class="kg-tile__top">
       <Icon :name="kindIcon(iconKind)" class="kg-tile__icon" />
       <span class="kg-tile__name" :title="title">{{ title }}</span>
@@ -98,6 +98,7 @@ const laneTitle = (i) => {
 const plugColor = (type) => `var(--kg-ev-${typeKind(type)})`
 const folded = (rid) => state.collapsed.value.has(rid)
 const pick = () => state.select?.({ type: "node", id: node.value.id, key: key.value, node: node.value })
+const open = () => state.open?.({ type: "node", id: node.value.id, key: key.value, node: node.value })
 const pickRegion = (rid) => state.select?.({ type: "region", id: rid, key: rid })
 function hover(on) {
   state.hovered.value = on ? key.value : null
